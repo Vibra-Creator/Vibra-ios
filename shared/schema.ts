@@ -17,6 +17,29 @@ export const profiles = pgTable("profiles", {
   alienType: text("alien_type").notNull(),
   isBot: boolean("is_bot").default(true),
   isVerified: boolean("is_verified").default(false),
+  
+  // Nuovi campi profilo estesi
+  birthDate: timestamp("birth_date"),
+  gender: text("gender"), // Genere
+  preferredGender: text("preferred_gender"), // Genere preferito
+  hairColor: text("hair_color"), // Colore capelli
+  eyeColor: text("eye_color"), // Colore occhi
+  bodyType: text("body_type"), // Corporatura
+  height: integer("height"), // Altezza in cm
+  preferredHeightMin: integer("preferred_height_min"), // Altezza desiderata min
+  preferredHeightMax: integer("preferred_height_max"), // Altezza desiderata max
+  preferredAgeMin: integer("preferred_age_min"), // Fascia età richiesta min
+  preferredAgeMax: integer("preferred_age_max"), // Fascia età richiesta max
+  education: text("education"), // Istruzione
+  preferredEducation: text("preferred_education"), // Istruzione preferita
+  languages: text("languages").array(), // Lingue parlate
+  relationshipType: text("relationship_type"), // Tipo di relazione ricercata
+  wantsChildren: text("wants_children"), // Voglio figli
+  zodiacSign: text("zodiac_sign"), // Segno zodiacale
+  loveLanguage: text("love_language"), // Come esprimi il tuo amore
+  communicationStyle: text("communication_style"), // Stili comunicativi
+  lifestyle: text("lifestyle"), // Stili di vita
+  accessMotivation: text("access_motivation"), // Motivi di accesso
 });
 
 export const swipes = pgTable("swipes", {
@@ -81,3 +104,73 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+
+// Stanze per interessi
+export const rooms = pgTable("rooms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  interest: text("interest").notNull(), // Interesse associato alla stanza
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true),
+});
+
+export const roomMembers = pgTable("room_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id").notNull(),
+  profileId: varchar("profile_id").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+// Stanze private
+export const privateRooms = pgTable("private_rooms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerId: varchar("owner_id").notNull(), // Chi ha creato la stanza
+  name: text("name").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true),
+});
+
+export const privateRoomRequests = pgTable("private_room_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id").notNull(),
+  requesterId: varchar("requester_id").notNull(),
+  status: text("status").default("pending"), // pending, approved, rejected
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
+});
+
+// Sfide giornaliere
+export const dailyChallenges = pgTable("daily_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  imageExample: text("image_example"), // Esempio della sfida
+  points: integer("points").default(10),
+  isActive: boolean("is_active").default(true),
+});
+
+export const challengeSubmissions = pgTable("challenge_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  challengeId: varchar("challenge_id").notNull(),
+  profileId: varchar("profile_id").notNull(),
+  imageUrl: text("image_url").notNull(), // Foto caricata dall'utente
+  status: text("status").default("pending"), // pending, approved, rejected
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+// Tipi e schemi per le nuove tabelle
+export type Room = typeof rooms.$inferSelect;
+export type PrivateRoom = typeof privateRooms.$inferSelect;
+export type PrivateRoomRequest = typeof privateRoomRequests.$inferSelect;
+export type DailyChallenge = typeof dailyChallenges.$inferSelect;
+export type ChallengeSubmission = typeof challengeSubmissions.$inferSelect;
+
+export const insertRoomSchema = createInsertSchema(rooms).omit({ id: true, createdAt: true });
+export const insertPrivateRoomSchema = createInsertSchema(privateRooms).omit({ id: true, createdAt: true });
+export const insertChallengeSchema = createInsertSchema(dailyChallenges).omit({ id: true });
+export const insertChallengeSubmissionSchema = createInsertSchema(challengeSubmissions).omit({ id: true, createdAt: true, reviewedAt: true });
