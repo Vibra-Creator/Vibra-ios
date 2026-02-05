@@ -344,8 +344,7 @@ export default function ProfileEdit() {
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        <img src="/backgrounds/vibra-solo.jpg" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
       </div>
       <div className="flex items-center gap-4 mb-4">
         <Button

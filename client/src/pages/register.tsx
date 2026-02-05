@@ -81,7 +81,7 @@ export default function Register() {
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center p-6">
       <div className="fixed inset-0 -z-10">
-        <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
+        <img src="/backgrounds/vibra-runners-front.jpg" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/75 backdrop-blur-sm" />
       </div>
       <motion.div

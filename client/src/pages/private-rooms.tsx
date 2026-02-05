@@ -110,7 +110,7 @@ export default function PrivateRooms() {
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        <img src="/backgrounds/vibra-runners.jpg" alt="" className="w-full h-full object-cover" />
+        <img src="/backgrounds/vibra-app.png" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       </div>
       <motion.div

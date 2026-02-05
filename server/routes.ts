@@ -4,6 +4,24 @@ import { storage } from "./storage";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import multer from "multer";
+import path from "path";
+import { randomUUID } from "crypto";
+
+const challengeUpload = multer({
+  storage: multer.diskStorage({
+    destination: path.join(process.cwd(), "client/public/uploads/challenges"),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname) || ".jpg";
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -329,6 +347,46 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching challenges:", error);
       res.status(500).json({ error: "Failed to fetch challenges" });
+    }
+  });
+
+  // Challenge Submission API
+  app.post("/api/challenges/:id/submit", isAuthenticated, challengeUpload.single("photo"), async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
+
+      const imageUrl = `/uploads/challenges/${req.file.filename}`;
+      const submission = await storage.createChallengeSubmission({
+        challengeId: req.params.id,
+        profileId: userProfile.id,
+        imageUrl,
+      });
+      res.status(201).json(submission);
+    } catch (error) {
+      console.error("Error submitting challenge:", error);
+      res.status(500).json({ error: "Failed to submit challenge" });
+    }
+  });
+
+  app.get("/api/challenges/submissions/me", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json([]);
+
+      const submissions = await storage.getChallengeSubmissions(userProfile.id);
+      res.json(submissions);
+    } catch (error) {
+      console.error("Error fetching submissions:", error);
+      res.status(500).json({ error: "Failed to fetch submissions" });
     }
   });
 

@@ -4,9 +4,9 @@ import {
   type Swipe, type InsertSwipe,
   type Match, type InsertMatch,
   type Message, type InsertMessage,
-  type Room, type PrivateRoom, type DailyChallenge,
+  type Room, type PrivateRoom, type DailyChallenge, type ChallengeSubmission,
   users, profiles, swipes, matches, messages,
-  rooms, privateRooms, dailyChallenges
+  rooms, privateRooms, dailyChallenges, challengeSubmissions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc } from "drizzle-orm";
@@ -46,6 +46,8 @@ export interface IStorage {
   getRooms(): Promise<Room[]>;
   getChallenges(): Promise<DailyChallenge[]>;
   getPrivateRooms(): Promise<PrivateRoom[]>;
+  createChallengeSubmission(submission: { challengeId: string; profileId: string; imageUrl: string }): Promise<ChallengeSubmission>;
+  getChallengeSubmissions(profileId: string): Promise<ChallengeSubmission[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -223,6 +225,17 @@ export class DatabaseStorage implements IStorage {
 
   async getPrivateRooms(): Promise<PrivateRoom[]> {
     return db.select().from(privateRooms).where(eq(privateRooms.isActive, true));
+  }
+
+  async createChallengeSubmission(submission: { challengeId: string; profileId: string; imageUrl: string }): Promise<ChallengeSubmission> {
+    const [result] = await db.insert(challengeSubmissions).values(submission).returning();
+    return result;
+  }
+
+  async getChallengeSubmissions(profileId: string): Promise<ChallengeSubmission[]> {
+    return db.select().from(challengeSubmissions)
+      .where(eq(challengeSubmissions.profileId, profileId))
+      .orderBy(desc(challengeSubmissions.createdAt));
   }
 }
 
