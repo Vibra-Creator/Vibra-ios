@@ -67,9 +67,17 @@ export default function Home() {
   const handleSwipeLeft = useCallback(() => handleSwipe("left"), [handleSwipe]);
   const handleSwipeRight = useCallback(() => handleSwipe("right"), [handleSwipe]);
 
+  const bgLayer = (
+    <div className="fixed inset-0 -z-10">
+      <img src="/backgrounds/vibra-dance.png" alt="" className="w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+    </div>
+  );
+
   if (profileLoading || isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
+        {bgLayer}
         <div className="w-full max-w-sm">
           <ProfileCardSkeleton />
         </div>
@@ -80,6 +88,7 @@ export default function Home() {
   if (!myProfile) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
+        {bgLayer}
         <EmptyState type="no-profiles" onRetry={() => window.location.href = "/profile/edit"} />
       </div>
     );
@@ -88,6 +97,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
+        {bgLayer}
         <EmptyState type="error" onRetry={() => refetch()} />
       </div>
     );
@@ -96,6 +106,7 @@ export default function Home() {
   if (!availableProfiles.length) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
+        {bgLayer}
         <EmptyState 
           type="no-profiles" 
           onRetry={() => {
@@ -109,6 +120,7 @@ export default function Home() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4">
+      {bgLayer}
       <div className="w-full max-w-sm relative h-[500px] sm:h-[550px]">
         {nextProfile && (
           <SwipeCard

@@ -27,7 +27,11 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-card">
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 -z-10">
+        <img src="/backgrounds/vibra-hero.jpg" alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
+      </div>
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">

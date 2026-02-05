@@ -40,6 +40,8 @@ export const profiles = pgTable("profiles", {
   communicationStyle: text("communication_style"), // Stili comunicativi
   lifestyle: text("lifestyle"), // Stili di vita
   accessMotivation: text("access_motivation"), // Motivi di accesso
+  phonePrefix: text("phone_prefix"), // Prefisso internazionale
+  phoneNumber: text("phone_number"), // Numero di telefono
 });
 
 export const swipes = pgTable("swipes", {

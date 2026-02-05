@@ -55,7 +55,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-card">
+    <div className="relative min-h-screen flex flex-col items-center justify-center p-6">
+      <div className="fixed inset-0 -z-10">
+        <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-background/75 backdrop-blur-sm" />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

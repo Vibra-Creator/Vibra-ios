@@ -80,6 +80,10 @@ export default function Profile() {
 
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto">
+      <div className="fixed inset-0 -z-10">
+        <img src="/backgrounds/vibra-solo.jpg" alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

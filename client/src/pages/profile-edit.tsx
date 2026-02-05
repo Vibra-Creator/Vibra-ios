@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +47,8 @@ import {
   interestsList,
   availableImages,
   slugify,
+  italianCities,
+  phonePrefixes,
 } from "@/lib/profile-options";
 import type { Profile } from "@shared/schema";
 
@@ -89,6 +91,8 @@ const profileFormSchema = z.object({
   communicationStyle: z.string().optional(),
   lifestyle: z.string().optional(),
   accessMotivation: z.string().optional(),
+  phonePrefix: z.string().optional(),
+  phoneNumber: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -155,6 +159,8 @@ export default function ProfileEdit() {
   const [interests, setInterests] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [interestSearch, setInterestSearch] = useState("");
+  const [citySearch, setCitySearch] = useState("");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -189,6 +195,8 @@ export default function ProfileEdit() {
       communicationStyle: "",
       lifestyle: "",
       accessMotivation: "",
+      phonePrefix: "+39",
+      phoneNumber: "",
     },
   });
 
@@ -220,9 +228,12 @@ export default function ProfileEdit() {
         communicationStyle: existingProfile.communicationStyle || "",
         lifestyle: existingProfile.lifestyle || "",
         accessMotivation: existingProfile.accessMotivation || "",
+        phonePrefix: existingProfile.phonePrefix || "+39",
+        phoneNumber: existingProfile.phoneNumber || "",
       });
       setInterests(existingProfile.interests || []);
       setLanguages(existingProfile.languages || []);
+      setCitySearch(existingProfile.location || "");
     }
   }, [existingProfile, form]);
 
@@ -332,6 +343,10 @@ export default function ProfileEdit() {
 
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto">
+      <div className="fixed inset-0 -z-10">
+        <img src="/backgrounds/vibra-solo.jpg" alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      </div>
       <div className="flex items-center gap-4 mb-4">
         <Button
           variant="ghost"
@@ -445,19 +460,113 @@ export default function ProfileEdit() {
                     <FormField
                       control={form.control}
                       name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            Posizione
-                          </FormLabel>
-                          <FormControl>
-                            <Input placeholder="La tua città" {...field} data-testid="input-location" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        const filteredCities = citySearch
+                          ? italianCities.filter(c =>
+                              c.nome.toLowerCase().includes(citySearch.toLowerCase()) ||
+                              c.provincia.toLowerCase().includes(citySearch.toLowerCase()) ||
+                              c.regione.toLowerCase().includes(citySearch.toLowerCase())
+                            )
+                          : italianCities;
+                        return (
+                          <FormItem className="relative">
+                            <FormLabel className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4" />
+                              Citta
+                            </FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  placeholder="Cerca la tua citta..."
+                                  value={citySearch}
+                                  onChange={(e) => {
+                                    setCitySearch(e.target.value);
+                                    setShowCityDropdown(true);
+                                    if (!e.target.value) {
+                                      field.onChange("");
+                                    }
+                                  }}
+                                  onFocus={() => setShowCityDropdown(true)}
+                                  onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                                  data-testid="input-location"
+                                />
+                                {showCityDropdown && filteredCities.length > 0 && (
+                                  <div className="absolute z-50 w-full mt-1 max-h-[200px] overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                                    {filteredCities.slice(0, 20).map((city) => (
+                                      <button
+                                        key={city.nome}
+                                        type="button"
+                                        className="w-full text-left px-3 py-2 text-sm hover-elevate flex items-center justify-between gap-2"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                          field.onChange(city.nome);
+                                          setCitySearch(city.nome);
+                                          setShowCityDropdown(false);
+                                        }}
+                                        data-testid={`city-option-${slugify(city.nome)}`}
+                                      >
+                                        <span>{city.nome}</span>
+                                        <span className="text-xs text-muted-foreground">{city.provincia} - {city.regione}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
+
+                    <div className="space-y-2">
+                      <FormLabel className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Telefono
+                      </FormLabel>
+                      <div className="flex gap-2">
+                        <FormField
+                          control={form.control}
+                          name="phonePrefix"
+                          render={({ field }) => (
+                            <FormItem className="w-[140px]">
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-phone-prefix">
+                                    <SelectValue placeholder="+39" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {phonePrefixes.map((p) => (
+                                    <SelectItem key={`${p.codice}-${p.paese}`} value={p.codice}>
+                                      {p.codice} {p.paese}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="phoneNumber"
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormControl>
+                                <Input
+                                  type="tel"
+                                  placeholder="Numero di telefono"
+                                  {...field}
+                                  data-testid="input-phone-number"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
 
                     <SelectField control={form.control} name="alienType" label="Tipo Cosmico" options={alienTypes} testId="select-alien-type" placeholder="Seleziona il tuo tipo" />
                   </CardContent>
