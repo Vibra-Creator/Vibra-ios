@@ -1,4 +1,4 @@
-import { Sparkles, User, Heart, Settings } from "lucide-react";
+import { Sparkles, User, Heart, Home } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 
@@ -6,7 +6,7 @@ export function Header() {
   const [location] = useLocation();
 
   const navItems = [
-    { path: "/", icon: Sparkles, label: "Scopri" },
+    { path: "/", icon: Home, label: "Scopri" },
     { path: "/matches", icon: Heart, label: "Match" },
     { path: "/profile", icon: User, label: "Profilo" },
   ];
@@ -15,12 +15,12 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full">
       <div className="flex items-center justify-between px-4 py-3 bg-card/80 backdrop-blur-xl border-b border-border">
         <Link href="/" data-testid="link-home">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-accent to-secondary flex items-center justify-center"
-                 style={{ boxShadow: "var(--glow-primary)" }}>
-              <Sparkles className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600 flex items-center justify-center"
+                 style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)" }}>
+              <Heart className="w-6 h-6 text-pink-300" strokeWidth={2} />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Vibra
             </span>
           </div>
