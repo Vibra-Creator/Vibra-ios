@@ -111,7 +111,7 @@ export default function PrivateRooms() {
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
         <img src="/backgrounds/vibra-app.png" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -124,8 +124,8 @@ export default function PrivateRooms() {
               <Lock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold" data-testid="text-private-rooms-title">Stanze Private</h1>
-              <p className="text-sm text-muted-foreground" data-testid="text-private-rooms-subtitle">Crea o richiedi accesso a stanze esclusive</p>
+              <h1 className="text-2xl font-bold text-white" data-testid="text-private-rooms-title">Stanze Private</h1>
+              <p className="text-sm text-white/60" data-testid="text-private-rooms-subtitle">Crea o richiedi accesso a stanze esclusive</p>
             </div>
           </div>
 
@@ -188,7 +188,7 @@ export default function PrivateRooms() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="overflow-hidden hover-elevate" data-testid={`card-private-room-${room.id}`}>
+                <Card className="overflow-hidden hover-elevate bg-white/10 backdrop-blur-md border-white/10" data-testid={`card-private-room-${room.id}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       <Avatar className="w-12 h-12 border-2 border-primary/30">
@@ -206,10 +206,10 @@ export default function PrivateRooms() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                        <p className="text-sm text-white/60 mb-2 line-clamp-2">
                           {room.description || "Stanza privata esclusiva"}
                         </p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-4 text-sm text-white/60">
                           <span className="flex items-center gap-1" data-testid={`text-private-room-members-${room.id}`}>
                             <Users className="w-4 h-4" />
                             {roomData.members || 0} membri

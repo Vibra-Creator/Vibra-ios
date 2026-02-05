@@ -70,7 +70,7 @@ export default function Home() {
   const bgLayer = (
     <div className="fixed inset-0 -z-10">
       <img src="/backgrounds/vibra-dance.png" alt="" className="w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-background/85 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
     </div>
   );
 

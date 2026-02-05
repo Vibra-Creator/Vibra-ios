@@ -82,7 +82,7 @@ export default function Register() {
     <div className="relative min-h-screen flex flex-col items-center justify-center p-6">
       <div className="fixed inset-0 -z-10">
         <img src="/backgrounds/vibra-runners-front.jpg" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/75 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -97,15 +97,15 @@ export default function Register() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Vibra
           </h1>
-          <p className="text-muted-foreground mt-2">Crea il tuo account</p>
+          <p className="text-white/70 mt-2">Crea il tuo account</p>
         </div>
 
-        <Card className="bg-card/80 backdrop-blur-xl border-border">
+        <Card className="bg-white/10 backdrop-blur-xl border-white/10">
           <CardContent className="p-6 space-y-6">
             <div className="space-y-3">
               <Button
                 variant="outline"
-                className="w-full h-12 text-base"
+                className="w-full h-12 text-base bg-white/10 border-white/20 text-white"
                 onClick={handleGoogleLogin}
                 data-testid="button-google-register"
               >
@@ -115,7 +115,7 @@ export default function Register() {
 
               <Button
                 variant="outline"
-                className="w-full h-12 text-base"
+                className="w-full h-12 text-base bg-white/10 border-white/20 text-white"
                 onClick={handleAppleLogin}
                 data-testid="button-apple-register"
               >
@@ -126,10 +126,10 @@ export default function Register() {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
+                <span className="w-full border-t border-white/20" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+                <span className="bg-black/40 px-2 text-white/60">
                   oppure
                 </span>
               </div>
@@ -137,16 +137,16 @@ export default function Register() {
 
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name" className="text-white/90">Nome</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <Input
                     id="name"
                     type="text"
                     placeholder="Il tuo nome"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="pl-10 h-12"
+                    className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                     required
                     data-testid="input-name"
                   />
@@ -154,16 +154,16 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-white/90">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="la-tua@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12"
+                    className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                     required
                     data-testid="input-email"
                   />
@@ -171,16 +171,16 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-white/90">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12"
+                    className="pl-10 pr-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                     required
                     minLength={8}
                     data-testid="input-password"
@@ -188,7 +188,7 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -196,16 +196,16 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Conferma Password</Label>
+                <Label htmlFor="confirmPassword" className="text-white/90">Conferma Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <Input
                     id="confirmPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 h-12"
+                    className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                     required
                     data-testid="input-confirm-password"
                   />
@@ -219,7 +219,7 @@ export default function Register() {
                   onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
                   data-testid="checkbox-terms"
                 />
-                <label htmlFor="terms" className="text-sm text-muted-foreground leading-tight">
+                <label htmlFor="terms" className="text-sm text-white/60 leading-tight">
                   Accetto i{" "}
                   <Link href="/terms" className="text-primary hover:underline">
                     Termini di Servizio
@@ -241,7 +241,7 @@ export default function Register() {
               </Button>
             </form>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-white/60">
               Hai già un account?{" "}
               <Link href="/login" className="text-primary hover:underline">
                 Accedi

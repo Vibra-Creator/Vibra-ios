@@ -140,7 +140,10 @@ export default function Challenges() {
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-background to-primary/20" />
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+          <source src="/backgrounds/vibra-video-1.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
 
       <input
@@ -163,19 +166,19 @@ export default function Challenges() {
             <Trophy className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold" data-testid="text-challenges-title">Sfide Giornaliere</h1>
-            <p className="text-sm text-muted-foreground" data-testid="text-challenges-subtitle">Completa le sfide per guadagnare punti!</p>
+            <h1 className="text-2xl font-bold text-white" data-testid="text-challenges-title">Sfide Giornaliere</h1>
+            <p className="text-sm text-white/60" data-testid="text-challenges-subtitle">Completa le sfide per guadagnare punti!</p>
           </div>
         </div>
       </motion.div>
 
-      <Card className="mb-6 bg-gradient-to-r from-primary/20 to-accent/20 border-primary/30" data-testid="card-user-points">
+      <Card className="mb-6 bg-gradient-to-r from-primary/30 to-accent/30 backdrop-blur-md border-white/10" data-testid="card-user-points">
         <CardContent className="p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Star className="w-8 h-8 text-accent" />
             <div>
-              <p className="font-bold text-lg" data-testid="text-points-label">I tuoi punti</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-bold text-lg text-white" data-testid="text-points-label">I tuoi punti</p>
+              <p className="text-sm text-white/60">
                 {submissions?.length || 0} sfide completate
               </p>
             </div>
@@ -190,7 +193,7 @@ export default function Challenges() {
           animate={{ opacity: 1, scale: 1 }}
           className="mb-6"
         >
-          <Card className="border-primary/50" data-testid="card-photo-preview">
+          <Card className="border-primary/50 bg-white/10 backdrop-blur-md border-white/10" data-testid="card-photo-preview">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold">Anteprima Foto</h3>
@@ -256,7 +259,7 @@ export default function Challenges() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Card
-                  className={`overflow-hidden hover-elevate ${isCompleted ? "border-green-500/30" : ""}`}
+                  className={`overflow-hidden hover-elevate bg-white/10 backdrop-blur-md border-white/10 ${isCompleted ? "border-green-500/30" : ""}`}
                   data-testid={`card-challenge-${challenge.id}`}
                 >
                   <CardContent className="p-4">
@@ -279,8 +282,8 @@ export default function Challenges() {
                             </Badge>
                           )}
                         </div>
-                        <h3 className="font-bold text-lg mb-1">{challenge.title}</h3>
-                        <p className="text-sm text-muted-foreground">{challenge.description}</p>
+                        <h3 className="font-bold text-lg text-white mb-1">{challenge.title}</h3>
+                        <p className="text-sm text-white/60">{challenge.description}</p>
                       </div>
 
                       {isCompleted ? (

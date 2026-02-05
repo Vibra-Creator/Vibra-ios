@@ -42,6 +42,7 @@ export const profiles = pgTable("profiles", {
   accessMotivation: text("access_motivation"), // Motivi di accesso
   phonePrefix: text("phone_prefix"), // Prefisso internazionale
   phoneNumber: text("phone_number"), // Numero di telefono
+  photos: text("photos").array(), // Foto caricate dall'utente (max 6)
 });
 
 export const swipes = pgTable("swipes", {

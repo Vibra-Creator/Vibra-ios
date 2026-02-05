@@ -23,6 +23,21 @@ const challengeUpload = multer({
   },
 });
 
+const profilePhotoUpload = multer({
+  storage: multer.diskStorage({
+    destination: path.join(process.cwd(), "client/public/uploads/profiles"),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname) || ".jpg";
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -115,6 +130,52 @@ export async function registerRoutes(
       }
       console.error("Error updating profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  app.post("/api/profiles/upload-photo", isAuthenticated, profilePhotoUpload.single("photo"), async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
+
+      const currentPhotos = userProfile.photos || [];
+      if (currentPhotos.length >= 6) {
+        return res.status(400).json({ error: "Massimo 6 foto consentite" });
+      }
+
+      const photoUrl = `/uploads/profiles/${req.file.filename}`;
+      const updatedPhotos = [...currentPhotos, photoUrl];
+      await storage.updateProfile(userProfile.id, { photos: updatedPhotos });
+
+      res.json({ url: photoUrl, photos: updatedPhotos });
+    } catch (error) {
+      console.error("Error uploading profile photo:", error);
+      res.status(500).json({ error: "Failed to upload photo" });
+    }
+  });
+
+  app.delete("/api/profiles/photo", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      const { photoUrl } = req.body;
+      const currentPhotos = userProfile.photos || [];
+      const updatedPhotos = currentPhotos.filter((p: string) => p !== photoUrl);
+      await storage.updateProfile(userProfile.id, { photos: updatedPhotos });
+
+      res.json({ photos: updatedPhotos });
+    } catch (error) {
+      console.error("Error removing profile photo:", error);
+      res.status(500).json({ error: "Failed to remove photo" });
     }
   });
 

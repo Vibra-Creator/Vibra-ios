@@ -29,7 +29,7 @@ export default function Matches() {
     <div className="flex-1 p-4">
       <div className="fixed inset-0 -z-10">
         <img src="/backgrounds/vibra-runners.jpg" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -42,8 +42,8 @@ export default function Matches() {
             <Heart className="w-5 h-5 text-white fill-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">I Tuoi Match</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold text-white">I Tuoi Match</h1>
+            <p className="text-sm text-white/60">
               {matches?.length || 0} connessioni cosmiche
             </p>
           </div>

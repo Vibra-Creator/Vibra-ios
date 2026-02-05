@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -111,14 +111,14 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="text-white/90">{label}</FormLabel>
           <Select onValueChange={field.onChange} value={field.value}>
             <FormControl>
-              <SelectTrigger data-testid={testId}>
+              <SelectTrigger className="bg-white/10 backdrop-blur-sm border-white/20 text-white" data-testid={testId}>
                 <SelectValue placeholder={placeholder || "Seleziona"} />
               </SelectTrigger>
             </FormControl>
-            <SelectContent>
+            <SelectContent className="bg-black/80 backdrop-blur-xl border-white/20">
               {options.map((opt) => (
                 <SelectItem key={opt} value={opt}>{opt}</SelectItem>
               ))}
@@ -161,6 +161,9 @@ export default function ProfileEdit() {
   const [interestSearch, setInterestSearch] = useState("");
   const [citySearch, setCitySearch] = useState("");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -234,6 +237,7 @@ export default function ProfileEdit() {
       setInterests(existingProfile.interests || []);
       setLanguages(existingProfile.languages || []);
       setCitySearch(existingProfile.location || "");
+      setUploadedPhotos(existingProfile.photos || []);
     }
   }, [existingProfile, form]);
 
@@ -327,6 +331,62 @@ export default function ProfileEdit() {
     if (step > 0) setStep(step - 1);
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Formato non valido", description: "Seleziona un'immagine (JPG, PNG, WebP)", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "File troppo grande", description: "L'immagine deve essere inferiore a 10MB", variant: "destructive" });
+      return;
+    }
+    if (uploadedPhotos.length >= 6) {
+      toast({ title: "Massimo 6 foto", description: "Rimuovi una foto prima di aggiungerne altre", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const response = await fetch("/api/profiles/upload-photo", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Upload failed");
+      const data = await response.json();
+      setUploadedPhotos(data.photos);
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      toast({ title: "Foto caricata!", description: "La tua foto è stata aggiunta al profilo." });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile caricare la foto", variant: "destructive" });
+    } finally {
+      setIsUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePhoto = async (photoUrl: string) => {
+    try {
+      const response = await fetch("/api/profiles/photo", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoUrl }),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Delete failed");
+      const data = await response.json();
+      setUploadedPhotos(data.photos);
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile rimuovere la foto", variant: "destructive" });
+    }
+  };
+
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const filteredInterests = interestSearch
@@ -336,7 +396,7 @@ export default function ProfileEdit() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Caricamento...</div>
+        <div className="animate-pulse text-white/60">Caricamento...</div>
       </div>
     );
   }
@@ -344,7 +404,10 @@ export default function ProfileEdit() {
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+          <source src="/backgrounds/vibra-video-2.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <div className="flex items-center gap-4 mb-4">
         <Button
@@ -359,10 +422,10 @@ export default function ProfileEdit() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold" data-testid="text-step-title">
+          <h1 className="text-xl font-bold text-white" data-testid="text-step-title">
             {existingProfile ? "Modifica Profilo" : "Crea il Tuo Profilo"}
           </h1>
-          <p className="text-sm text-muted-foreground" data-testid="text-step-subtitle">
+          <p className="text-sm text-white/60" data-testid="text-step-subtitle">
             {stepTitles[step]} — {step + 1}/{TOTAL_STEPS}
           </p>
         </div>
@@ -381,9 +444,9 @@ export default function ProfileEdit() {
               transition={{ duration: 0.2 }}
             >
               {step === 0 && (
-                <Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
                       <User className="w-5 h-5 text-primary" />
                       Info di Base
                     </CardTitle>
@@ -394,7 +457,7 @@ export default function ProfileEdit() {
                       name="imageUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center gap-2">
+                          <FormLabel className="flex items-center gap-2 text-white/90">
                             <Camera className="w-4 h-4" />
                             Foto Profilo
                           </FormLabel>
@@ -422,15 +485,63 @@ export default function ProfileEdit() {
                       )}
                     />
 
+                    <div>
+                      <FormLabel className="flex items-center gap-2 text-white/90 mb-3">
+                        <ImagePlus className="w-4 h-4" />
+                        Le Tue Foto ({uploadedPhotos.length}/6)
+                      </FormLabel>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
+                        data-testid="input-profile-photos"
+                      />
+                      <div className="grid grid-cols-3 gap-2">
+                        {uploadedPhotos.map((photo, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white/20">
+                            <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-profile-photo-${idx}`} />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(photo)}
+                              className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                              data-testid={`button-remove-photo-${idx}`}
+                            >
+                              <X className="w-3 h-3 text-white" />
+                            </button>
+                          </div>
+                        ))}
+                        {uploadedPhotos.length < 6 && (
+                          <button
+                            type="button"
+                            onClick={() => photoInputRef.current?.click()}
+                            disabled={isUploadingPhoto}
+                            className="aspect-square rounded-xl border-2 border-dashed border-white/30 flex flex-col items-center justify-center gap-1 text-white/50 hover:border-primary/50 hover:text-primary transition-colors"
+                            data-testid="button-add-photo"
+                          >
+                            {isUploadingPhoto ? (
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                            ) : (
+                              <>
+                                <Camera className="w-6 h-6" />
+                                <span className="text-xs">Aggiungi</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Nome</FormLabel>
+                            <FormLabel className="text-white/90">Nome</FormLabel>
                             <FormControl>
-                              <Input placeholder="Il tuo nome" {...field} data-testid="input-name" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40" placeholder="Il tuo nome" {...field} data-testid="input-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -441,9 +552,9 @@ export default function ProfileEdit() {
                         name="age"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Età</FormLabel>
+                            <FormLabel className="text-white/90">Età</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="25" {...field} data-testid="input-age" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40" type="number" placeholder="25" {...field} data-testid="input-age" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -469,13 +580,14 @@ export default function ProfileEdit() {
                           : italianCities;
                         return (
                           <FormItem className="relative">
-                            <FormLabel className="flex items-center gap-2">
+                            <FormLabel className="flex items-center gap-2 text-white/90">
                               <MapPin className="w-4 h-4" />
                               Citta
                             </FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Input
+                                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                                   placeholder="Cerca la tua citta..."
                                   value={citySearch}
                                   onChange={(e) => {
@@ -490,7 +602,7 @@ export default function ProfileEdit() {
                                   data-testid="input-location"
                                 />
                                 {showCityDropdown && filteredCities.length > 0 && (
-                                  <div className="absolute z-50 w-full mt-1 max-h-[200px] overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                                  <div className="absolute z-50 w-full mt-1 max-h-[200px] overflow-y-auto rounded-md bg-black/80 backdrop-blur-xl border-white/20 border shadow-md">
                                     {filteredCities.slice(0, 20).map((city) => (
                                       <button
                                         key={city.nome}
@@ -505,7 +617,7 @@ export default function ProfileEdit() {
                                         data-testid={`city-option-${slugify(city.nome)}`}
                                       >
                                         <span>{city.nome}</span>
-                                        <span className="text-xs text-muted-foreground">{city.provincia} - {city.regione}</span>
+                                        <span className="text-xs text-white/60">{city.provincia} - {city.regione}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -519,7 +631,7 @@ export default function ProfileEdit() {
                     />
 
                     <div className="space-y-2">
-                      <FormLabel className="flex items-center gap-2">
+                      <FormLabel className="flex items-center gap-2 text-white/90">
                         <Phone className="w-4 h-4" />
                         Telefono
                       </FormLabel>
@@ -531,11 +643,11 @@ export default function ProfileEdit() {
                             <FormItem className="w-[140px]">
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger data-testid="select-phone-prefix">
+                                  <SelectTrigger className="bg-white/10 backdrop-blur-sm border-white/20 text-white" data-testid="select-phone-prefix">
                                     <SelectValue placeholder="+39" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
+                                <SelectContent className="bg-black/80 backdrop-blur-xl border-white/20">
                                   {phonePrefixes.map((p) => (
                                     <SelectItem key={`${p.codice}-${p.paese}`} value={p.codice}>
                                       {p.codice} {p.paese}
@@ -554,6 +666,7 @@ export default function ProfileEdit() {
                             <FormItem className="flex-1">
                               <FormControl>
                                 <Input
+                                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                                   type="tel"
                                   placeholder="Numero di telefono"
                                   {...field}
@@ -573,9 +686,9 @@ export default function ProfileEdit() {
               )}
 
               {step === 1 && (
-                <Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
                       <Ruler className="w-5 h-5 text-accent" />
                       Aspetto Fisico
                     </CardTitle>
@@ -592,24 +705,23 @@ export default function ProfileEdit() {
                         name="height"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Altezza (cm)</FormLabel>
+                            <FormLabel className="text-white/90">Altezza (cm)</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="175" {...field} data-testid="input-height" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40" type="number" placeholder="175" {...field} data-testid="input-height" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                    <SelectField control={form.control} name="education" label="Istruzione" options={educationOptions} testId="select-education" />
                   </CardContent>
                 </Card>
               )}
 
               {step === 2 && (
-                <Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
                       <Heart className="w-5 h-5 text-primary" />
                       Preferenze Partner
                     </CardTitle>
@@ -621,9 +733,9 @@ export default function ProfileEdit() {
                         name="preferredAgeMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Età Min</FormLabel>
+                            <FormLabel className="text-white/90">Età Min</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="18" {...field} data-testid="input-age-min" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40" type="number" placeholder="18" {...field} data-testid="input-age-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -634,9 +746,9 @@ export default function ProfileEdit() {
                         name="preferredAgeMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Età Max</FormLabel>
+                            <FormLabel className="text-white/90">Età Max</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="40" {...field} data-testid="input-age-max" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40" type="number" placeholder="40" {...field} data-testid="input-age-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -649,9 +761,9 @@ export default function ProfileEdit() {
                         name="preferredHeightMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Altezza Min (cm)</FormLabel>
+                            <FormLabel className="text-white/90">Altezza Min (cm)</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="150" {...field} data-testid="input-height-min" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40" type="number" placeholder="150" {...field} data-testid="input-height-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -662,24 +774,25 @@ export default function ProfileEdit() {
                         name="preferredHeightMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Altezza Max (cm)</FormLabel>
+                            <FormLabel className="text-white/90">Altezza Max (cm)</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="190" {...field} data-testid="input-height-max" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40" type="number" placeholder="190" {...field} data-testid="input-height-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
+                    <SelectField control={form.control} name="education" label="Istruzione" options={educationOptions} testId="select-education" />
                     <SelectField control={form.control} name="preferredEducation" label="Istruzione Preferita" options={educationOptions} testId="select-preferred-education" />
                   </CardContent>
                 </Card>
               )}
 
               {step === 3 && (
-                <Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
                       <Star className="w-5 h-5 text-accent" />
                       Personalità e Stile
                     </CardTitle>
@@ -694,9 +807,9 @@ export default function ProfileEdit() {
               )}
 
               {step === 4 && (
-                <Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
                       <Search className="w-5 h-5 text-primary" />
                       Cosa Cerchi
                     </CardTitle>
@@ -710,16 +823,16 @@ export default function ProfileEdit() {
               )}
 
               {step === 5 && (
-                <Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
                       <Languages className="w-5 h-5 text-secondary" />
                       Lingue e Bio
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <FormLabel className="mb-3 block">Lingue Parlate</FormLabel>
+                      <FormLabel className="mb-3 block text-white/90">Lingue Parlate</FormLabel>
                       <div className="flex flex-wrap gap-2">
                         {languageOptions.map((lang) => (
                           <Badge
@@ -740,16 +853,16 @@ export default function ProfileEdit() {
                       name="bio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>La Tua Bio</FormLabel>
+                          <FormLabel className="text-white/90">La Tua Bio</FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="Racconta qualcosa di te..."
-                              className="resize-none min-h-[120px]"
+                              className="resize-none min-h-[120px] bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                               {...field}
                               data-testid="input-bio"
                             />
                           </FormControl>
-                          <div className="text-xs text-muted-foreground text-right">
+                          <div className="text-xs text-white/60 text-right">
                             {field.value?.length || 0}/500
                           </div>
                           <FormMessage />
@@ -761,15 +874,15 @@ export default function ProfileEdit() {
               )}
 
               {step === 6 && (
-                <Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
+                    <CardTitle className="flex items-center gap-2 text-lg text-white">
                       <Sparkles className="w-5 h-5 text-accent" />
                       Interessi
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-white/60">
                       Seleziona fino a 10 interessi ({interests.length}/10)
                     </p>
 
@@ -791,12 +904,12 @@ export default function ProfileEdit() {
                     )}
 
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
                       <Input
                         placeholder="Cerca interessi..."
                         value={interestSearch}
                         onChange={(e) => setInterestSearch(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
                         data-testid="input-search-interests"
                       />
                     </div>

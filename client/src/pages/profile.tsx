@@ -43,8 +43,8 @@ function CreateProfilePrompt() {
              style={{ boxShadow: "var(--glow-primary)" }}>
           <Sparkles className="w-12 h-12 text-white" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Crea il Tuo Profilo</h2>
-        <p className="text-muted-foreground mb-6">
+        <h2 className="text-2xl font-bold text-white mb-2">Crea il Tuo Profilo</h2>
+        <p className="text-white/60 mb-6">
           Unisciti alla comunità galattica e inizia a trovare le tue connessioni cosmiche!
         </p>
         <Button 
@@ -64,7 +64,7 @@ function CreateProfilePrompt() {
 const ProfileBackground = () => (
   <div className="fixed inset-0 -z-10">
     <img src="/backgrounds/vibra-solo.jpg" alt="" className="w-full h-full object-cover" />
-    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+    <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
   </div>
 );
 
@@ -142,6 +142,16 @@ export default function Profile() {
           </div>
         </div>
 
+        {profile.photos && profile.photos.length > 0 && (
+          <div className="grid grid-cols-3 gap-2" data-testid="gallery-photos">
+            {profile.photos.map((photo, idx) => (
+              <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-white/10">
+                <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-gallery-photo-${idx}`} />
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-3">
           {stats.map((stat, index) => (
             <motion.div
@@ -150,31 +160,31 @@ export default function Profile() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * index }}
             >
-              <Card className="text-center">
+              <Card className="text-center bg-white/10 backdrop-blur-md border-white/10">
                 <CardContent className="p-4">
                   <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                  <div className="text-2xl font-bold text-white">{stat.value}</div>
+                  <div className="text-xs text-white/60">{stat.label}</div>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
         </div>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-md border-white/10">
           <CardContent className="p-4 space-y-4">
             <div>
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
                 <User className="w-4 h-4 text-primary" />
                 Bio
               </h3>
-              <p className="text-muted-foreground text-sm" data-testid="user-profile-bio">
+              <p className="text-white/60 text-sm" data-testid="user-profile-bio">
                 {profile.bio}
               </p>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
                 <Sparkles className="w-4 h-4 text-secondary" />
                 Interessi
               </h3>
@@ -193,7 +203,7 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-md border-white/10">
           <CardContent className="p-4 space-y-2">
             <Button 
               variant="outline" 

@@ -43,7 +43,7 @@ export default function Rooms() {
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
         <img src="/backgrounds/vibra-scene.png" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -55,8 +55,8 @@ export default function Rooms() {
             <Users className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold" data-testid="text-rooms-title">Stanze</h1>
-            <p className="text-sm text-muted-foreground" data-testid="text-rooms-subtitle">Entra in stanze basate sui tuoi interessi</p>
+            <h1 className="text-2xl font-bold text-white" data-testid="text-rooms-title">Stanze</h1>
+            <p className="text-sm text-white/60" data-testid="text-rooms-subtitle">Entra in stanze basate sui tuoi interessi</p>
           </div>
         </div>
       </motion.div>
@@ -73,7 +73,7 @@ export default function Rooms() {
               transition={{ delay: index * 0.1 }}
             >
               <Card 
-                className="overflow-hidden cursor-pointer hover-elevate group"
+                className="overflow-hidden cursor-pointer hover-elevate group bg-white/10 backdrop-blur-md border-white/10"
                 onClick={() => setLocation(`/room/${room.id}`)}
                 data-testid={`card-room-${room.id}`}
               >
@@ -96,7 +96,7 @@ export default function Rooms() {
                   </div>
                 </div>
                 <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground mb-3">{room.description}</p>
+                  <p className="text-sm text-white/60 mb-3">{room.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
                       <Users className="w-4 h-4 text-primary" />

@@ -113,7 +113,7 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-full bg-background/50">
-      <header className="flex items-center gap-3 p-4 border-b border-border bg-card/80 backdrop-blur-sm">
+      <header className="flex items-center gap-3 p-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
         <Button
           variant="ghost"
           size="icon"
@@ -208,7 +208,7 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-border bg-card/80 backdrop-blur-sm">
+      <div className="p-4 bg-black/40 backdrop-blur-xl border-t border-white/10">
         <div className="flex items-center gap-2">
           <Input
             ref={inputRef}

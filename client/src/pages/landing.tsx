@@ -30,7 +30,7 @@ export default function Landing() {
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10">
         <img src="/backgrounds/vibra-hero.jpg" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -44,10 +44,10 @@ export default function Landing() {
             </span>
           </div>
           
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Funzionalità</a>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">Termini</Link>
+          <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
+            <a href="#features" className="hover:text-white transition-colors">Funzionalità</a>
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Termini</Link>
           </nav>
 
           <a href="/api/login">
@@ -70,7 +70,7 @@ export default function Landing() {
               <Heart className="w-14 h-14 text-pink-300" />
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               L'app di incontri che ti fa{" "}
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 vibrare
@@ -78,7 +78,7 @@ export default function Landing() {
               di emozione
             </h1>
             
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+            <p className="text-xl text-white/70 max-w-2xl mx-auto mb-10">
               Connettiti con chi vibra come te. Scopri profili autentici, chatta in sicurezza e trova la tua connessione speciale.
             </p>
 
@@ -91,7 +91,7 @@ export default function Landing() {
               </a>
             </div>
 
-            <div className="mt-8 flex items-center justify-center gap-6 text-sm text-muted-foreground">
+            <div className="mt-8 flex items-center justify-center gap-6 text-sm text-white/60">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-green-500" />
                 <span>Gratis per sempre</span>
@@ -111,10 +111,10 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Come Funziona Vibra
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-white/60">
               Semplice, sicuro, autentico
             </p>
           </motion.div>
@@ -128,15 +128,15 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="bg-card/50 backdrop-blur-sm border-border h-full hover:bg-card/80 transition-colors">
+                <Card className="bg-white/10 backdrop-blur-md border-white/10 h-full hover:bg-white/15 transition-colors">
                   <CardContent className="p-8 text-center">
                     <div className={`w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br ${feature.color} flex items-center justify-center`}>
                       <feature.icon className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-3">
+                    <h3 className="text-xl font-semibold text-white mb-3">
                       {feature.title}
                     </h3>
-                    <p className="text-muted-foreground">
+                    <p className="text-white/60">
                       {feature.description}
                     </p>
                   </CardContent>
@@ -152,10 +152,10 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
               Pronto a Vibrare?
             </h2>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-lg text-white/60 mb-8">
               Unisciti a migliaia di persone che hanno già trovato la loro connessione su Vibra
             </p>
             <a href="/api/login">
@@ -168,7 +168,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
+      <footer className="border-t border-white/10 py-8 text-center text-sm text-white/60">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
