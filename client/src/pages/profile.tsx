@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/use-auth";
 import type { Profile } from "@shared/schema";
-
-const CURRENT_USER_ID = "user-1";
 
 const stats = [
   { icon: Heart, label: "Match", value: "12", color: "text-accent" },
@@ -64,9 +63,11 @@ function CreateProfilePrompt() {
 
 export default function Profile() {
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
 
   const { data: profile, isLoading } = useQuery<Profile | null>({
-    queryKey: ["/api/my-profile", CURRENT_USER_ID],
+    queryKey: ["/api/profiles/me"],
+    enabled: !!user,
   });
 
   if (isLoading) {

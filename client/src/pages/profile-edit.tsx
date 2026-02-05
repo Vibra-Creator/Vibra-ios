@@ -28,9 +28,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import type { Profile } from "@shared/schema";
-
-const CURRENT_USER_ID = "user-1";
 
 const alienTypes = [
   "Nebulare",
@@ -84,11 +83,13 @@ const suggestedInterests = [
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [interests, setInterests] = useState<string[]>([]);
   const [newInterest, setNewInterest] = useState("");
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
-    queryKey: ["/api/my-profile", CURRENT_USER_ID],
+    queryKey: ["/api/profiles/me"],
+    enabled: !!user,
   });
 
   const form = useForm<ProfileFormValues>({
@@ -121,12 +122,12 @@ export default function ProfileEdit() {
     mutationFn: async (data: ProfileFormValues & { interests: string[] }) => {
       return apiRequest("POST", "/api/profiles", {
         ...data,
-        userId: CURRENT_USER_ID,
+        userId: user?.id,
         interests: data.interests,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/my-profile", CURRENT_USER_ID] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       toast({
         title: "Profilo Creato!",
@@ -151,7 +152,7 @@ export default function ProfileEdit() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/my-profile", CURRENT_USER_ID] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       toast({
         title: "Profilo Aggiornato!",
