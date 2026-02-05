@@ -9,10 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import type { Room } from "@shared/schema";
 
-const roomBackgrounds = [
-  "/backgrounds/61A4AF15-8ED1-45A7-8DA2-B369AB5D8E4F_1770326642077.PNG",
-];
-
 function RoomSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,7 +81,7 @@ export default function Rooms() {
                   <div 
                     className="absolute inset-0 bg-gradient-to-br from-primary/80 to-accent/80"
                     style={{
-                      backgroundImage: `url(${roomBackgrounds[0]})`,
+                      backgroundImage: `url(/backgrounds/vibra-dance.png)`,
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                     }}
