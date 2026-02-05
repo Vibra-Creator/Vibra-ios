@@ -3,11 +3,29 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  await setupAuth(app);
+  registerAuthRoutes(app);
+
+  app.get("/api/profiles/me", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const profile = await storage.getProfileByUserId(userId);
+      res.json(profile || null);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
   
   app.get("/api/profiles", async (req, res) => {
     try {
