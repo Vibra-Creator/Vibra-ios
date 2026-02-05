@@ -1,14 +1,24 @@
-import { Sparkles, User, Heart, Home } from "lucide-react";
+import { User, Heart, Home, Shield } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import type { User as UserType } from "@shared/schema";
 
 export function Header() {
   const [location] = useLocation();
+  const { user } = useAuth();
+
+  const { data: currentUser } = useQuery<UserType | null>({
+    queryKey: ["/api/auth/user"],
+    enabled: !!user,
+  });
 
   const navItems = [
     { path: "/", icon: Home, label: "Scopri" },
     { path: "/matches", icon: Heart, label: "Match" },
     { path: "/profile", icon: User, label: "Profilo" },
+    ...(currentUser?.isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 
   return (

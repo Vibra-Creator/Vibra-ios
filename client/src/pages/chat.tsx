@@ -46,7 +46,6 @@ export default function Chat() {
     mutationFn: async (content: string) => {
       return apiRequest("POST", "/api/messages", {
         matchId,
-        senderId: myProfile?.id,
         content,
       });
     },

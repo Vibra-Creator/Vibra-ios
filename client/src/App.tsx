@@ -14,6 +14,7 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Landing from "@/pages/landing";
 import Chat from "@/pages/chat";
+import Admin from "@/pages/admin";
 import { useAuth } from "@/hooks/use-auth";
 
 const publicPages = ["/privacy", "/terms"];
@@ -28,6 +29,7 @@ function AuthenticatedRouter() {
       <Route path="/chat/:matchId" component={Chat} />
       <Route path="/profile" component={Profile} />
       <Route path="/profile/edit" component={ProfileEdit} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

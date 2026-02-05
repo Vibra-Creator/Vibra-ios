@@ -16,6 +16,7 @@ export const profiles = pgTable("profiles", {
   interests: text("interests").array().notNull(),
   alienType: text("alien_type").notNull(),
   isBot: boolean("is_bot").default(true),
+  isVerified: boolean("is_verified").default(false),
 });
 
 export const swipes = pgTable("swipes", {
@@ -50,6 +51,7 @@ export const updateProfileSchema = createInsertSchema(profiles).omit({
   id: true,
   userId: true,
   isBot: true,
+  isVerified: true,
 }).partial();
 
 export const insertSwipeSchema = createInsertSchema(swipes).omit({

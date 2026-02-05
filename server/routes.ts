@@ -50,8 +50,12 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/my-profile/:userId", async (req, res) => {
+  app.get("/api/my-profile/:userId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub;
+      if (userId !== req.params.userId) {
+        return res.status(403).json({ error: "Not authorized to view this profile" });
+      }
       const profile = await storage.getProfileByUserId(req.params.userId);
       res.json(profile || null);
     } catch (error) {
@@ -136,8 +140,15 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/matches/:userId", async (req, res) => {
+  app.get("/api/matches/:userId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub;
+      const userProfile = await storage.getProfileByUserId(userId);
+      
+      if (!userProfile || userProfile.id !== req.params.userId) {
+        return res.status(403).json({ error: "Not authorized to view these matches" });
+      }
+      
       const matches = await storage.getMatchesForUser(req.params.userId);
       res.json(matches);
     } catch (error) {
@@ -178,6 +189,88 @@ export async function registerRoutes(
     }
   });
 
+  const isAdmin = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      next();
+    } catch (error) {
+      res.status(500).json({ error: "Server error" });
+    }
+  };
+
+  app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const [users, profiles, matches, messages] = await Promise.all([
+        storage.getAllUsers(),
+        storage.getAllProfiles(),
+        storage.getAllMatches(),
+        storage.getAllMessages(),
+      ]);
+      
+      res.json({
+        totalUsers: users.length,
+        totalProfiles: profiles.length,
+        totalMatches: matches.length,
+        totalMessages: messages.length,
+        recentUsers: users.slice(0, 10),
+        recentMatches: matches.slice(0, 10),
+      });
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/profiles", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const profiles = await storage.getAllProfiles();
+      res.json(profiles);
+    } catch (error) {
+      console.error("Error fetching profiles:", error);
+      res.status(500).json({ error: "Failed to fetch profiles" });
+    }
+  });
+
+  app.delete("/api/admin/profiles/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.deleteProfile(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting profile:", error);
+      res.status(500).json({ error: "Failed to delete profile" });
+    }
+  });
+
+  app.patch("/api/admin/profiles/:id/verify", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { isVerified } = req.body;
+      const profile = await storage.setProfileVerified(req.params.id, isVerified);
+      res.json(profile);
+    } catch (error) {
+      console.error("Error updating profile verification:", error);
+      res.status(500).json({ error: "Failed to update profile verification" });
+    }
+  });
+
   app.post("/api/messages", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
@@ -185,9 +278,13 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Unauthorized" });
       }
       
-      const validatedData = insertMessageSchema.parse(req.body);
+      const { matchId, content } = req.body;
       
-      const match = await storage.getMatchById(validatedData.matchId);
+      if (!matchId || !content) {
+        return res.status(400).json({ error: "matchId and content are required" });
+      }
+      
+      const match = await storage.getMatchById(matchId);
       if (!match) {
         return res.status(404).json({ error: "Match not found" });
       }
@@ -201,16 +298,13 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Not authorized to send messages in this chat" });
       }
       
-      if (validatedData.senderId !== userProfile.id) {
-        return res.status(403).json({ error: "Sender ID must match your profile" });
-      }
-      
-      const message = await storage.createMessage(validatedData);
+      const message = await storage.createMessage({
+        matchId,
+        senderId: userProfile.id,
+        content,
+      });
       res.status(201).json(message);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid message data", details: error.errors });
-      }
       console.error("Error creating message:", error);
       res.status(500).json({ error: "Failed to send message" });
     }

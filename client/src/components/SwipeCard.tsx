@@ -1,6 +1,6 @@
 import { useState, forwardRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Profile } from "@shared/schema";
 
@@ -81,9 +81,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 </Badge>
               </div>
               
-              <h2 className="text-3xl font-bold text-white mb-1" data-testid={`profile-name-${profile.id}`}>
-                {profile.name}, {profile.age}
-              </h2>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-3xl font-bold text-white" data-testid={`profile-name-${profile.id}`}>
+                  {profile.name}, {profile.age}
+                </h2>
+                {profile.isVerified && (
+                  <BadgeCheck className="w-6 h-6 text-blue-400" />
+                )}
+              </div>
               
               <div className="flex items-center gap-1 text-white/80 mb-3">
                 <MapPin className="w-4 h-4" />

@@ -33,6 +33,13 @@ export interface IStorage {
   getMessagesForMatch(matchId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   markMessagesAsRead(matchId: string, recipientId: string): Promise<void>;
+  
+  getAllUsers(): Promise<User[]>;
+  getAllProfiles(): Promise<Profile[]>;
+  getAllMatches(): Promise<Match[]>;
+  getAllMessages(): Promise<Message[]>;
+  deleteProfile(id: string): Promise<void>;
+  setProfileVerified(id: string, isVerified: boolean): Promise<Profile | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -167,13 +174,37 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(messages.matchId, matchId),
-          and(
-            eq(messages.read, false),
-            // Mark as read only messages NOT sent by the recipient (i.e., messages TO them)
-            // This is handled by the caller knowing the senderId != recipientId
-          )
+          eq(messages.read, false)
         )
       );
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async getAllProfiles(): Promise<Profile[]> {
+    return db.select().from(profiles);
+  }
+
+  async getAllMatches(): Promise<Match[]> {
+    return db.select().from(matches).orderBy(desc(matches.createdAt));
+  }
+
+  async getAllMessages(): Promise<Message[]> {
+    return db.select().from(messages).orderBy(desc(messages.createdAt));
+  }
+
+  async deleteProfile(id: string): Promise<void> {
+    await db.delete(profiles).where(eq(profiles.id, id));
+  }
+
+  async setProfileVerified(id: string, isVerified: boolean): Promise<Profile | undefined> {
+    const [profile] = await db.update(profiles)
+      .set({ isVerified })
+      .where(eq(profiles.id, id))
+      .returning();
+    return profile;
   }
 }
 
