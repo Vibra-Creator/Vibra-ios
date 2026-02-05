@@ -81,11 +81,11 @@ export const loveLanguageOptions = [
 ];
 
 export const communicationStyleOptions = [
-  "Diretto",
-  "Diplomatico",
-  "Ascoltatore",
-  "Espressivo",
-  "Riflessivo",
+  "Messaggi vocali",
+  "Messaggi di testo",
+  "Chiamate",
+  "Videochiamate",
+  "Di persona",
 ];
 
 export const lifestyleOptions = [
@@ -130,24 +130,63 @@ export const alienTypes = [
   "Etereo",
 ];
 
-export const suggestedInterests = [
-  "Esplorazione Spaziale",
-  "Musica Cosmica",
-  "Filosofia Galattica",
-  "Ologrammi",
-  "Danza Luminescente",
-  "Navigazione Stellare",
-  "Poesia Quantica",
-  "Arte Cristallina",
-  "Meditazione Cosmica",
-  "Botanica Aliena",
-  "Viaggi Dimensionali",
-  "Fisica Quantistica",
-  "Aurora Boreale",
-  "Energie Luminose",
-  "Telepatia",
-  "Alchimia Stellare",
+export const interestsList = [
+  "Viaggiare",
+  "Cucinare",
+  "Sport",
+  "Lettura",
+  "Cinema",
+  "Musica",
+  "Ballare",
+  "Palestra",
+  "Yoga",
+  "Meditazione",
+  "Fotografia",
+  "Arte",
+  "Musei",
+  "Natura",
+  "Mare",
+  "Montagna",
+  "Camminare",
+  "Caffè",
+  "Vino",
+  "Cibo etnico",
+  "Shopping",
+  "Moda",
+  "Auto",
+  "Moto",
+  "Tecnologia",
+  "Gaming",
+  "Serie TV",
+  "Animali",
+  "Cani",
+  "Gatti",
+  "Viaggi avventura",
+  "Campeggio",
+  "Volontariato",
+  "Spiritualità",
+  "Scrittura",
+  "Lingue straniere",
+  "Gastronomia",
+  "Teatro",
+  "Concerti",
+  "Ciclismo",
+  "Running",
+  "Nuoto",
+  "Pesca",
+  "Fumetti",
+  "Astrologia",
+  "Scacchi",
+  "Mindfulness",
+  "Giardinaggio",
+  "Pittura",
 ];
+
+export const suggestedInterests = interestsList;
+
+export function slugify(str: string): string {
+  return str.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
 
 export const availableImages = [
   "/images/profile-1.png",
