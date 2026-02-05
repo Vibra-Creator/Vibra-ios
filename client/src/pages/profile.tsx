@@ -1,19 +1,14 @@
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Zap } from "lucide-react";
+import { useLocation } from "wouter";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Zap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Profile } from "@shared/schema";
 
-const mockUserProfile = {
-  id: "user-1",
-  name: "Viaggiatore Cosmico",
-  age: 28,
-  bio: "Esploratore di galassie in cerca di anime affini. Amo le stelle, la musica cosmica e le conversazioni profonde sotto le aurore di Andromeda.",
-  imageUrl: "/images/profile-1.png",
-  location: "Nebulosa di Orione",
-  interests: ["Esplorazione Spaziale", "Musica Cosmica", "Filosofia Galattica", "Ologrammi"],
-  alienType: "Viaggiatore Stellare",
-};
+const CURRENT_USER_ID = "user-1";
 
 const stats = [
   { icon: Heart, label: "Match", value: "12", color: "text-accent" },
@@ -21,7 +16,67 @@ const stats = [
   { icon: Zap, label: "Boost", value: "3", color: "text-primary" },
 ];
 
+function ProfileSkeleton() {
+  return (
+    <div className="flex-1 p-4 max-w-lg mx-auto space-y-6">
+      <Skeleton className="aspect-[4/3] rounded-2xl" />
+      <div className="grid grid-cols-3 gap-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-24 rounded-lg" />
+        ))}
+      </div>
+      <Skeleton className="h-48 rounded-lg" />
+    </div>
+  );
+}
+
+function CreateProfilePrompt() {
+  const [, setLocation] = useLocation();
+
+  return (
+    <div className="flex-1 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center max-w-sm"
+      >
+        <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center"
+             style={{ boxShadow: "var(--glow-primary)" }}>
+          <Sparkles className="w-12 h-12 text-white" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Crea il Tuo Profilo</h2>
+        <p className="text-muted-foreground mb-6">
+          Unisciti alla comunità galattica e inizia a trovare le tue connessioni cosmiche!
+        </p>
+        <Button 
+          size="lg" 
+          className="w-full"
+          onClick={() => setLocation("/profile/edit")}
+          data-testid="button-create-profile"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Crea Profilo
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function Profile() {
+  const [, setLocation] = useLocation();
+
+  const { data: profile, isLoading } = useQuery<Profile | null>({
+    queryKey: ["/api/my-profile", CURRENT_USER_ID],
+  });
+
+  if (isLoading) {
+    return <ProfileSkeleton />;
+  }
+
+  if (!profile) {
+    return <CreateProfilePrompt />;
+  }
+
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto">
       <motion.div
@@ -32,8 +87,8 @@ export default function Profile() {
         <div className="relative">
           <div className="aspect-[4/3] rounded-2xl overflow-hidden">
             <img
-              src={mockUserProfile.imageUrl}
-              alt={mockUserProfile.name}
+              src={profile.imageUrl}
+              alt={profile.name}
               className="w-full h-full object-cover"
               data-testid="user-profile-image"
             />
@@ -44,6 +99,7 @@ export default function Profile() {
             size="icon"
             variant="secondary"
             className="absolute top-4 right-4"
+            onClick={() => setLocation("/profile/edit")}
             data-testid="button-edit-profile"
           >
             <Edit2 className="w-4 h-4" />
@@ -55,14 +111,14 @@ export default function Profile() {
               className="bg-primary/80 text-primary-foreground backdrop-blur-sm mb-2"
             >
               <Sparkles className="w-3 h-3 mr-1" />
-              {mockUserProfile.alienType}
+              {profile.alienType}
             </Badge>
             <h1 className="text-2xl font-bold text-white" data-testid="user-profile-name">
-              {mockUserProfile.name}, {mockUserProfile.age}
+              {profile.name}, {profile.age}
             </h1>
             <div className="flex items-center gap-1 text-white/80">
               <MapPin className="w-4 h-4" />
-              <span className="text-sm">{mockUserProfile.location}</span>
+              <span className="text-sm">{profile.location}</span>
             </div>
           </div>
         </div>
@@ -94,7 +150,7 @@ export default function Profile() {
                 Bio
               </h3>
               <p className="text-muted-foreground text-sm" data-testid="user-profile-bio">
-                {mockUserProfile.bio}
+                {profile.bio}
               </p>
             </div>
             
@@ -104,7 +160,7 @@ export default function Profile() {
                 Interessi
               </h3>
               <div className="flex flex-wrap gap-2">
-                {mockUserProfile.interests.map((interest, idx) => (
+                {profile.interests.map((interest, idx) => (
                   <Badge 
                     key={idx} 
                     variant="outline"
@@ -119,7 +175,16 @@ export default function Profile() {
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-2">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start gap-3"
+              onClick={() => setLocation("/profile/edit")}
+              data-testid="button-edit-full-profile"
+            >
+              <Edit2 className="w-5 h-5" />
+              Modifica Profilo
+            </Button>
             <Button 
               variant="outline" 
               className="w-full justify-start gap-3"

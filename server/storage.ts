@@ -16,7 +16,9 @@ export interface IStorage {
   
   getProfiles(): Promise<Profile[]>;
   getProfile(id: string): Promise<Profile | undefined>;
+  getProfileByUserId(userId: string): Promise<Profile | undefined>;
   createProfile(profile: InsertProfile): Promise<Profile>;
+  updateProfile(id: string, profile: Partial<InsertProfile>): Promise<Profile | undefined>;
   
   createSwipe(swipe: InsertSwipe): Promise<Swipe>;
   getSwipe(swiperId: string, swipedId: string): Promise<Swipe | undefined>;
@@ -54,6 +56,19 @@ export class DatabaseStorage implements IStorage {
 
   async createProfile(insertProfile: InsertProfile): Promise<Profile> {
     const [profile] = await db.insert(profiles).values(insertProfile).returning();
+    return profile;
+  }
+
+  async getProfileByUserId(userId: string): Promise<Profile | undefined> {
+    const [profile] = await db.select().from(profiles).where(eq(profiles.userId, userId));
+    return profile;
+  }
+
+  async updateProfile(id: string, profileData: Partial<InsertProfile>): Promise<Profile | undefined> {
+    const [profile] = await db.update(profiles)
+      .set(profileData)
+      .where(eq(profiles.id, id))
+      .returning();
     return profile;
   }
 

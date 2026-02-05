@@ -11,6 +11,7 @@ export const users = pgTable("users", {
 
 export const profiles = pgTable("profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
   name: text("name").notNull(),
   age: integer("age").notNull(),
   bio: text("bio").notNull(),
@@ -18,6 +19,7 @@ export const profiles = pgTable("profiles", {
   location: text("location").notNull(),
   interests: text("interests").array().notNull(),
   alienType: text("alien_type").notNull(),
+  isBot: boolean("is_bot").default(true),
 });
 
 export const swipes = pgTable("swipes", {
@@ -43,6 +45,12 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertProfileSchema = createInsertSchema(profiles).omit({
   id: true,
 });
+
+export const updateProfileSchema = createInsertSchema(profiles).omit({
+  id: true,
+  userId: true,
+  isBot: true,
+}).partial();
 
 export const insertSwipeSchema = createInsertSchema(swipes).omit({
   id: true,

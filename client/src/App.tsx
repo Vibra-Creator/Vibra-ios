@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Matches from "@/pages/matches";
 import Profile from "@/pages/profile";
+import ProfileEdit from "@/pages/profile-edit";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/matches" component={Matches} />
       <Route path="/profile" component={Profile} />
+      <Route path="/profile/edit" component={ProfileEdit} />
       <Route component={NotFound} />
     </Switch>
   );
