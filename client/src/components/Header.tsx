@@ -1,4 +1,4 @@
-import { User, Heart, Home, Shield } from "lucide-react";
+import { User, Heart, Home, Shield, Users, Trophy, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +17,9 @@ export function Header() {
   const navItems = [
     { path: "/", icon: Home, label: "Scopri" },
     { path: "/matches", icon: Heart, label: "Match" },
+    { path: "/rooms", icon: Users, label: "Stanze" },
+    { path: "/challenges", icon: Trophy, label: "Sfide" },
+    { path: "/private-rooms", icon: Lock, label: "Private" },
     { path: "/profile", icon: User, label: "Profilo" },
     ...(currentUser?.isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
@@ -36,7 +39,7 @@ export function Header() {
           </div>
         </Link>
 
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location === item.path;
             return (
@@ -44,14 +47,14 @@ export function Header() {
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`relative flex items-center justify-center w-12 h-12 rounded-xl transition-colors ${
+                  className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                     isActive 
                       ? "bg-primary text-white" 
                       : "bg-secondary/30 text-white hover:bg-secondary/50"
                   }`}
                   data-testid={`nav-${item.label.toLowerCase()}`}
                 >
-                  <item.icon className="w-6 h-6" />
+                  <item.icon className="w-5 h-5" />
                 </motion.div>
               </Link>
             );

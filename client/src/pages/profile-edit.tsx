@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, Save, Plus, X } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, Save, Plus, X, Users, Ruler, GraduationCap, Languages, Star, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,62 +29,62 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  genderOptions,
+  hairColorOptions,
+  eyeColorOptions,
+  bodyTypeOptions,
+  educationOptions,
+  relationshipTypeOptions,
+  wantsChildrenOptions,
+  zodiacSignOptions,
+  loveLanguageOptions,
+  communicationStyleOptions,
+  lifestyleOptions,
+  accessMotivationOptions,
+  languageOptions,
+  alienTypes,
+  suggestedInterests,
+  availableImages,
+} from "@/lib/profile-options";
 import type { Profile } from "@shared/schema";
-
-const alienTypes = [
-  "Nebulare",
-  "Cristallino", 
-  "Biotico",
-  "Dimensionale",
-  "Solare",
-  "Viaggiatore Stellare",
-  "Quantico",
-  "Etereo",
-];
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Il nome deve avere almeno 2 caratteri"),
-  age: z.coerce.number().min(18, "Devi avere almeno 18 anni cosmici").max(999, "Età massima 999"),
+  age: z.coerce.number().min(18, "Devi avere almeno 18 anni").max(120, "Età massima 120"),
   bio: z.string().min(10, "La bio deve avere almeno 10 caratteri").max(500, "Massimo 500 caratteri"),
   location: z.string().min(2, "Inserisci una posizione valida"),
-  alienType: z.string().min(1, "Seleziona un tipo alieno"),
+  alienType: z.string().min(1, "Seleziona un tipo"),
   imageUrl: z.string().min(1, "Seleziona un'immagine"),
+  gender: z.string().optional(),
+  preferredGender: z.string().optional(),
+  hairColor: z.string().optional(),
+  eyeColor: z.string().optional(),
+  bodyType: z.string().optional(),
+  height: z.coerce.number().min(100).max(250).optional().or(z.literal("")),
+  preferredHeightMin: z.coerce.number().min(100).max(250).optional().or(z.literal("")),
+  preferredHeightMax: z.coerce.number().min(100).max(250).optional().or(z.literal("")),
+  preferredAgeMin: z.coerce.number().min(18).max(120).optional().or(z.literal("")),
+  preferredAgeMax: z.coerce.number().min(18).max(120).optional().or(z.literal("")),
+  education: z.string().optional(),
+  preferredEducation: z.string().optional(),
+  relationshipType: z.string().optional(),
+  wantsChildren: z.string().optional(),
+  zodiacSign: z.string().optional(),
+  loveLanguage: z.string().optional(),
+  communicationStyle: z.string().optional(),
+  lifestyle: z.string().optional(),
+  accessMotivation: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
-
-const availableImages = [
-  "/images/profile-1.png",
-  "/images/profile-2.png",
-  "/images/profile-3.png",
-  "/images/profile-4.png",
-  "/images/profile-5.png",
-];
-
-const suggestedInterests = [
-  "Esplorazione Spaziale",
-  "Musica Cosmica",
-  "Filosofia Galattica",
-  "Ologrammi",
-  "Danza Luminescente",
-  "Navigazione Stellare",
-  "Poesia Quantica",
-  "Arte Cristallina",
-  "Meditazione Cosmica",
-  "Botanica Aliena",
-  "Viaggi Dimensionali",
-  "Fisica Quantistica",
-  "Aurora Boreale",
-  "Energie Luminose",
-  "Telepatia",
-  "Alchimia Stellare",
-];
 
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [interests, setInterests] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
   const [newInterest, setNewInterest] = useState("");
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
@@ -101,6 +101,25 @@ export default function ProfileEdit() {
       location: "",
       alienType: "",
       imageUrl: availableImages[0],
+      gender: "",
+      preferredGender: "",
+      hairColor: "",
+      eyeColor: "",
+      bodyType: "",
+      height: "",
+      preferredHeightMin: "",
+      preferredHeightMax: "",
+      preferredAgeMin: "",
+      preferredAgeMax: "",
+      education: "",
+      preferredEducation: "",
+      relationshipType: "",
+      wantsChildren: "",
+      zodiacSign: "",
+      loveLanguage: "",
+      communicationStyle: "",
+      lifestyle: "",
+      accessMotivation: "",
     },
   });
 
@@ -113,25 +132,50 @@ export default function ProfileEdit() {
         location: existingProfile.location,
         alienType: existingProfile.alienType,
         imageUrl: existingProfile.imageUrl,
+        gender: existingProfile.gender || "",
+        preferredGender: existingProfile.preferredGender || "",
+        hairColor: existingProfile.hairColor || "",
+        eyeColor: existingProfile.eyeColor || "",
+        bodyType: existingProfile.bodyType || "",
+        height: existingProfile.height || "",
+        preferredHeightMin: existingProfile.preferredHeightMin || "",
+        preferredHeightMax: existingProfile.preferredHeightMax || "",
+        preferredAgeMin: existingProfile.preferredAgeMin || "",
+        preferredAgeMax: existingProfile.preferredAgeMax || "",
+        education: existingProfile.education || "",
+        preferredEducation: existingProfile.preferredEducation || "",
+        relationshipType: existingProfile.relationshipType || "",
+        wantsChildren: existingProfile.wantsChildren || "",
+        zodiacSign: existingProfile.zodiacSign || "",
+        loveLanguage: existingProfile.loveLanguage || "",
+        communicationStyle: existingProfile.communicationStyle || "",
+        lifestyle: existingProfile.lifestyle || "",
+        accessMotivation: existingProfile.accessMotivation || "",
       });
       setInterests(existingProfile.interests || []);
+      setLanguages(existingProfile.languages || []);
     }
   }, [existingProfile, form]);
 
   const createMutation = useMutation({
-    mutationFn: async (data: ProfileFormValues & { interests: string[] }) => {
-      return apiRequest("POST", "/api/profiles", {
+    mutationFn: async (data: ProfileFormValues & { interests: string[]; languages: string[] }) => {
+      const payload = {
         ...data,
         userId: user?.id,
-        interests: data.interests,
-      });
+        height: data.height ? Number(data.height) : null,
+        preferredHeightMin: data.preferredHeightMin ? Number(data.preferredHeightMin) : null,
+        preferredHeightMax: data.preferredHeightMax ? Number(data.preferredHeightMax) : null,
+        preferredAgeMin: data.preferredAgeMin ? Number(data.preferredAgeMin) : null,
+        preferredAgeMax: data.preferredAgeMax ? Number(data.preferredAgeMax) : null,
+      };
+      return apiRequest("POST", "/api/profiles", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       toast({
         title: "Profilo Creato!",
-        description: "Il tuo profilo cosmico è pronto per essere scoperto.",
+        description: "Il tuo profilo è pronto per essere scoperto.",
       });
       setLocation("/");
     },
@@ -145,11 +189,16 @@ export default function ProfileEdit() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: ProfileFormValues & { interests: string[] }) => {
-      return apiRequest("PUT", `/api/profiles/${existingProfile!.id}`, {
+    mutationFn: async (data: ProfileFormValues & { interests: string[]; languages: string[] }) => {
+      const payload = {
         ...data,
-        interests: data.interests,
-      });
+        height: data.height ? Number(data.height) : null,
+        preferredHeightMin: data.preferredHeightMin ? Number(data.preferredHeightMin) : null,
+        preferredHeightMax: data.preferredHeightMax ? Number(data.preferredHeightMax) : null,
+        preferredAgeMin: data.preferredAgeMin ? Number(data.preferredAgeMin) : null,
+        preferredAgeMax: data.preferredAgeMax ? Number(data.preferredAgeMax) : null,
+      };
+      return apiRequest("PUT", `/api/profiles/${existingProfile!.id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -179,8 +228,8 @@ export default function ProfileEdit() {
       return;
     }
 
-    const profileData = { ...data, interests };
-    
+    const profileData = { ...data, interests, languages };
+
     if (existingProfile) {
       updateMutation.mutate(profileData);
     } else {
@@ -196,7 +245,15 @@ export default function ProfileEdit() {
   };
 
   const removeInterest = (interest: string) => {
-    setInterests(interests.filter(i => i !== interest));
+    setInterests(interests.filter((i) => i !== interest));
+  };
+
+  const toggleLanguage = (lang: string) => {
+    if (languages.includes(lang)) {
+      setLanguages(languages.filter((l) => l !== lang));
+    } else {
+      setLanguages([...languages, lang]);
+    }
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -210,12 +267,8 @@ export default function ProfileEdit() {
   }
 
   return (
-    <div className="flex-1 p-4 max-w-lg mx-auto pb-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
-      >
+    <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
         <div className="flex items-center gap-4 mb-6">
           <Button
             variant="ghost"
@@ -226,17 +279,16 @@ export default function ProfileEdit() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">
-              {existingProfile ? "Modifica Profilo" : "Crea il Tuo Profilo"}
-            </h1>
+            <h1 className="text-2xl font-bold">{existingProfile ? "Modifica Profilo" : "Crea il Tuo Profilo"}</h1>
             <p className="text-sm text-muted-foreground">
-              {existingProfile ? "Aggiorna le tue informazioni cosmiche" : "Unisciti alla comunità galattica"}
+              {existingProfile ? "Aggiorna le tue informazioni" : "Unisciti alla comunità"}
             </p>
           </div>
         </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Foto Profilo */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -264,11 +316,7 @@ export default function ProfileEdit() {
                               }`}
                               data-testid={`button-select-image-${idx}`}
                             >
-                              <img
-                                src={img}
-                                alt={`Avatar ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
+                              <img src={img} alt={`Avatar ${idx + 1}`} className="w-full h-full object-cover" />
                             </button>
                           ))}
                         </div>
@@ -280,6 +328,7 @@ export default function ProfileEdit() {
               </CardContent>
             </Card>
 
+            {/* Informazioni Base */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -288,42 +337,85 @@ export default function ProfileEdit() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Il tuo nome cosmico"
-                          {...field}
-                          data-testid="input-name"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Il tuo nome" {...field} data-testid="input-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Età</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="25" {...field} data-testid="input-age" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                <FormField
-                  control={form.control}
-                  name="age"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Età (anni cosmici)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="25"
-                          {...field}
-                          data-testid="input-age"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Genere</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-gender">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {genderOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="preferredGender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cerco</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-preferred-gender">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {genderOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
@@ -332,14 +424,10 @@ export default function ProfileEdit() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
-                        Posizione Galattica
+                        Posizione
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Nebulosa di Orione"
-                          {...field}
-                          data-testid="input-location"
-                        />
+                        <Input placeholder="La tua città" {...field} data-testid="input-location" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -353,7 +441,7 @@ export default function ProfileEdit() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
-                        Tipo Alieno
+                        Tipo Cosmico
                       </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
@@ -376,10 +464,456 @@ export default function ProfileEdit() {
               </CardContent>
             </Card>
 
+            {/* Aspetto Fisico */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Ruler className="w-5 h-5 text-accent" />
+                  Aspetto Fisico
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="hairColor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Colore Capelli</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-hair-color">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {hairColorOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="eyeColor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Colore Occhi</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-eye-color">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {eyeColorOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="bodyType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Corporatura</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-body-type">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {bodyTypeOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="height"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Altezza (cm)</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="175" {...field} data-testid="input-height" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Preferenze Partner */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Users className="w-5 h-5 text-primary" />
+                  Preferenze Partner
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="preferredAgeMin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Età Min</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="18" {...field} data-testid="input-age-min" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="preferredAgeMax"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Età Max</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="40" {...field} data-testid="input-age-max" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="preferredHeightMin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Altezza Min (cm)</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="150" {...field} data-testid="input-height-min" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="preferredHeightMax"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Altezza Max (cm)</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="200" {...field} data-testid="input-height-max" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="preferredEducation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Istruzione Preferita</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-preferred-education">
+                            <SelectValue placeholder="Qualsiasi" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {educationOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Personalità e Stile */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Star className="w-5 h-5 text-secondary" />
+                  Personalità e Stile
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="zodiacSign"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Segno Zodiacale</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-zodiac">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {zodiacSignOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="education"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Istruzione</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-education">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {educationOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="loveLanguage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Come Esprimi l'Amore</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-love-language">
+                            <SelectValue placeholder="Seleziona" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {loveLanguageOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="communicationStyle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Stile Comunicativo</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-communication">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {communicationStyleOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lifestyle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Stile di Vita</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-lifestyle">
+                              <SelectValue placeholder="Seleziona" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {lifestyleOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Relazione */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Heart className="w-5 h-5 text-accent" />
+                  Cosa Cerchi
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="relationshipType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo di Relazione</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-relationship">
+                            <SelectValue placeholder="Cosa stai cercando?" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {relationshipTypeOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="wantsChildren"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vuoi Figli?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-children">
+                            <SelectValue placeholder="Seleziona" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {wantsChildrenOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="accessMotivation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Perché sei qui?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-motivation">
+                            <SelectValue placeholder="Seleziona" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {accessMotivationOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Lingue */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Languages className="w-5 h-5 text-primary" />
+                  Lingue Parlate
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {languageOptions.map((lang) => (
+                    <Badge
+                      key={lang}
+                      variant={languages.includes(lang) ? "default" : "outline"}
+                      className="cursor-pointer hover-elevate"
+                      onClick={() => toggleLanguage(lang)}
+                      data-testid={`badge-language-${lang}`}
+                    >
+                      {lang}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Bio e Interessi */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MessageCircle className="w-5 h-5 text-accent" />
                   Chi Sei
                 </CardTitle>
               </CardHeader>
@@ -392,15 +926,13 @@ export default function ProfileEdit() {
                       <FormLabel>Bio</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Racconta qualcosa di te... Cosa ti rende unico nell'universo?"
+                          placeholder="Racconta qualcosa di te..."
                           className="min-h-[120px] resize-none"
                           {...field}
                           data-testid="input-bio"
                         />
                       </FormControl>
-                      <div className="text-xs text-muted-foreground text-right">
-                        {field.value?.length || 0}/500
-                      </div>
+                      <div className="text-xs text-muted-foreground text-right">{field.value?.length || 0}/500</div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -408,14 +940,10 @@ export default function ProfileEdit() {
 
                 <div>
                   <FormLabel className="mb-3 block">Interessi ({interests.length}/8)</FormLabel>
-                  
+
                   <div className="flex flex-wrap gap-2 mb-3">
                     {interests.map((interest) => (
-                      <Badge
-                        key={interest}
-                        variant="secondary"
-                        className="pl-3 pr-1 py-1 gap-1"
-                      >
+                      <Badge key={interest} variant="secondary" className="pl-3 pr-1 py-1 gap-1">
                         {interest}
                         <button
                           type="button"
@@ -475,12 +1003,7 @@ export default function ProfileEdit() {
               </CardContent>
             </Card>
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-lg"
-              disabled={isPending}
-              data-testid="button-save-profile"
-            >
+            <Button type="submit" className="w-full h-12 text-lg" disabled={isPending} data-testid="button-save-profile">
               {isPending ? (
                 <span className="flex items-center gap-2">
                   <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />

@@ -7,7 +7,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Swipe Cards**: Drag-to-swipe interface similar to Tinder
 - **Match System**: When two users like each other, a match is created
 - **Real-time Chat**: Chat with your matches in a beautiful chat interface
-- **User Profile**: Create and edit your own alien profile
+- **User Profile**: Create and edit your own alien profile with 20+ customization fields
 - **Verified Profiles**: Admin can verify profiles (blue checkmark badge)
 - **Admin Dashboard**: Statistics, user management, profile moderation
 - **Alien Theme**: Cosmic color scheme with purple, cyan, and pink glows
@@ -15,6 +15,9 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Generated Profile Images**: AI-generated alien humanoid portraits
 - **PWA Support**: Installable on mobile devices as a standalone app
 - **Replit Auth**: Login with Google, Apple, GitHub, Email
+- **Interest Rooms**: Join public chat rooms based on interests (Stanze)
+- **Daily Challenges**: Complete photo challenges to earn points (Sfide Giornaliere)
+- **Private Rooms**: Create exclusive private rooms with access approval system (Stanze Private)
 
 ## Tech Stack
 - **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion
@@ -44,7 +47,10 @@ client/
 │   │   ├── home.tsx           # Main swipe interface
 │   │   ├── matches.tsx        # List of user matches
 │   │   ├── profile.tsx        # User profile view
-│   │   └── profile-edit.tsx   # Profile creation/edit form
+│   │   ├── profile-edit.tsx   # Profile creation/edit form
+│   │   ├── rooms.tsx          # Interest-based chat rooms
+│   │   ├── challenges.tsx     # Daily photo challenges
+│   │   └── private-rooms.tsx  # Private rooms with access control
 │   └── App.tsx               # Main app with routing
 server/
 ├── db.ts                     # Database connection
@@ -70,13 +76,22 @@ shared/
 - `GET /api/admin/profiles` - Get all profiles (admin required)
 - `DELETE /api/admin/profiles/:id` - Delete a profile (admin required)
 - `PATCH /api/admin/profiles/:id/verify` - Verify/unverify a profile (admin required)
+- `GET /api/rooms` - Get all active rooms (auth required)
+- `GET /api/challenges` - Get all active challenges (auth required)
+- `GET /api/private-rooms` - Get all private rooms (auth required)
 
 ## Database Schema
 - **users**: id, email, firstName, lastName, profileImageUrl, isAdmin, createdAt, updatedAt
-- **profiles**: id, userId, name, age, bio, imageUrl, location, interests[], alienType, isBot, isVerified
+- **profiles**: id, userId, name, age, bio, imageUrl, location, interests[], alienType, isBot, isVerified + 20 new fields (gender, hairColor, eyeColor, bodyType, height, education, languages[], relationshipType, zodiacSign, loveLanguage, etc.)
 - **swipes**: id, swiperId, swipedId, liked, createdAt
 - **matches**: id, profile1Id, profile2Id, createdAt
 - **messages**: id, matchId, senderId, content, read, createdAt
+- **rooms**: id, name, description, interest, imageUrl, createdAt, isActive
+- **room_members**: id, roomId, profileId, joinedAt
+- **private_rooms**: id, ownerId, name, description, imageUrl, createdAt, isActive
+- **private_room_requests**: id, roomId, requesterId, status, createdAt, respondedAt
+- **daily_challenges**: id, title, description, imageExample, points, isActive
+- **challenge_submissions**: id, challengeId, profileId, imageUrl, status, createdAt, reviewedAt
 
 ## Color Theme
 The app uses a cosmic color palette:

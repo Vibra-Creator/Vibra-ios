@@ -310,5 +310,38 @@ export async function registerRoutes(
     }
   });
 
+  // Rooms API
+  app.get("/api/rooms", isAuthenticated, async (req, res) => {
+    try {
+      const rooms = await storage.getRooms();
+      res.json(rooms);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      res.status(500).json({ error: "Failed to fetch rooms" });
+    }
+  });
+
+  // Daily Challenges API
+  app.get("/api/challenges", isAuthenticated, async (req, res) => {
+    try {
+      const challenges = await storage.getChallenges();
+      res.json(challenges);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      res.status(500).json({ error: "Failed to fetch challenges" });
+    }
+  });
+
+  // Private Rooms API
+  app.get("/api/private-rooms", isAuthenticated, async (req, res) => {
+    try {
+      const privateRooms = await storage.getPrivateRooms();
+      res.json(privateRooms);
+    } catch (error) {
+      console.error("Error fetching private rooms:", error);
+      res.status(500).json({ error: "Failed to fetch private rooms" });
+    }
+  });
+
   return httpServer;
 }

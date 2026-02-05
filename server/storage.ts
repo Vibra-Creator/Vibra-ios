@@ -4,7 +4,9 @@ import {
   type Swipe, type InsertSwipe,
   type Match, type InsertMatch,
   type Message, type InsertMessage,
-  users, profiles, swipes, matches, messages
+  type Room, type PrivateRoom, type DailyChallenge,
+  users, profiles, swipes, matches, messages,
+  rooms, privateRooms, dailyChallenges
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc } from "drizzle-orm";
@@ -40,6 +42,10 @@ export interface IStorage {
   getAllMessages(): Promise<Message[]>;
   deleteProfile(id: string): Promise<void>;
   setProfileVerified(id: string, isVerified: boolean): Promise<Profile | undefined>;
+  
+  getRooms(): Promise<Room[]>;
+  getChallenges(): Promise<DailyChallenge[]>;
+  getPrivateRooms(): Promise<PrivateRoom[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -205,6 +211,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(profiles.id, id))
       .returning();
     return profile;
+  }
+
+  async getRooms(): Promise<Room[]> {
+    return db.select().from(rooms).where(eq(rooms.isActive, true));
+  }
+
+  async getChallenges(): Promise<DailyChallenge[]> {
+    return db.select().from(dailyChallenges).where(eq(dailyChallenges.isActive, true));
+  }
+
+  async getPrivateRooms(): Promise<PrivateRoom[]> {
+    return db.select().from(privateRooms).where(eq(privateRooms.isActive, true));
   }
 }
 
