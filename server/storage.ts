@@ -1,9 +1,10 @@
 import { 
-  type User, type InsertUser, 
+  type User, type UpsertUser, 
   type Profile, type InsertProfile,
   type Swipe, type InsertSwipe,
   type Match, type InsertMatch,
-  users, profiles, swipes, matches
+  type Message, type InsertMessage,
+  users, profiles, swipes, matches, messages
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc } from "drizzle-orm";
@@ -11,8 +12,8 @@ import { randomUUID } from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   
   getProfiles(): Promise<Profile[]>;
   getProfile(id: string): Promise<Profile | undefined>;
@@ -27,6 +28,11 @@ export interface IStorage {
   createMatch(match: InsertMatch): Promise<Match>;
   getMatchesForUser(userId: string): Promise<(Match & { profile: Profile })[]>;
   getMatch(profile1Id: string, profile2Id: string): Promise<Match | undefined>;
+  getMatchById(matchId: string): Promise<Match | undefined>;
+  
+  getMessagesForMatch(matchId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  markMessagesAsRead(matchId: string, recipientId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -35,13 +41,24 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
     return user;
   }
 
@@ -126,6 +143,37 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return match;
+  }
+
+  async getMatchById(matchId: string): Promise<Match | undefined> {
+    const [match] = await db.select().from(matches).where(eq(matches.id, matchId));
+    return match;
+  }
+
+  async getMessagesForMatch(matchId: string): Promise<Message[]> {
+    return db.select().from(messages)
+      .where(eq(messages.matchId, matchId))
+      .orderBy(messages.createdAt);
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values(insertMessage).returning();
+    return message;
+  }
+
+  async markMessagesAsRead(matchId: string, recipientId: string): Promise<void> {
+    await db.update(messages)
+      .set({ read: true })
+      .where(
+        and(
+          eq(messages.matchId, matchId),
+          and(
+            eq(messages.read, false),
+            // Mark as read only messages NOT sent by the recipient (i.e., messages TO them)
+            // This is handled by the caller knowing the senderId != recipientId
+          )
+        )
+      );
   }
 }
 

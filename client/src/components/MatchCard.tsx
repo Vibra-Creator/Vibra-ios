@@ -2,15 +2,18 @@ import { motion } from "framer-motion";
 import { Heart, MessageCircle, Sparkles, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 import type { Profile } from "@shared/schema";
 
 interface MatchCardProps {
   profile: Profile;
+  matchId: string;
   matchDate?: Date;
   index?: number;
 }
 
-export function MatchCard({ profile, matchDate, index = 0 }: MatchCardProps) {
+export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardProps) {
+  const [, setLocation] = useLocation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -53,6 +56,7 @@ export function MatchCard({ profile, matchDate, index = 0 }: MatchCardProps) {
             <Button 
               size="lg"
               className="bg-primary/90 backdrop-blur-sm"
+              onClick={() => setLocation(`/chat/${matchId}`)}
               data-testid={`button-message-${profile.id}`}
             >
               <MessageCircle className="w-5 h-5 mr-2" />

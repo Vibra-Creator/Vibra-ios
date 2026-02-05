@@ -1,28 +1,32 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import type { Profile, Match } from "@shared/schema";
 
-const CURRENT_USER_ID = "user-1";
-
 export default function Home() {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+
+  const { data: myProfile, isLoading: profileLoading } = useQuery<Profile | null>({
+    queryKey: ["/api/profiles/me"],
+    enabled: !!user,
+  });
 
   const { data: profiles, isLoading, error, refetch } = useQuery<Profile[]>({
     queryKey: ["/api/profiles"],
+    enabled: !!myProfile,
   });
 
   const swipeMutation = useMutation({
     mutationFn: async ({ profileId, liked }: { profileId: string; liked: boolean }) => {
       const response = await apiRequest("POST", "/api/swipe", {
-        swiperId: CURRENT_USER_ID,
+        swiperId: myProfile?.id,
         swipedId: profileId,
         liked,
       });
@@ -35,19 +39,25 @@ export default function Home() {
           setMatchedProfile(matchProfile);
           setShowMatch(true);
         }
-        queryClient.invalidateQueries({ queryKey: ["/api/matches", CURRENT_USER_ID] });
+        queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
       }
     },
   });
 
-  const availableProfiles = profiles?.filter(p => !swipedProfiles.has(p.id)) || [];
+  const availableProfiles = profiles?.filter(p => 
+    p.id !== myProfile?.id && !swipedProfiles.has(p.id)
+  ) || [];
   const currentProfile = availableProfiles[0];
   const nextProfile = availableProfiles[1];
 
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
     
-    setSwipedProfiles(prev => new Set([...prev, currentProfile.id]));
+    setSwipedProfiles(prev => {
+      const newSet = new Set(prev);
+      newSet.add(currentProfile.id);
+      return newSet;
+    });
     swipeMutation.mutate({
       profileId: currentProfile.id,
       liked: direction === "right",
@@ -57,12 +67,20 @@ export default function Home() {
   const handleSwipeLeft = useCallback(() => handleSwipe("left"), [handleSwipe]);
   const handleSwipeRight = useCallback(() => handleSwipe("right"), [handleSwipe]);
 
-  if (isLoading) {
+  if (profileLoading || isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <ProfileCardSkeleton />
         </div>
+      </div>
+    );
+  }
+
+  if (!myProfile) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <EmptyState type="no-profiles" onRetry={() => window.location.href = "/profile/edit"} />
       </div>
     );
   }
@@ -88,8 +106,6 @@ export default function Home() {
       </div>
     );
   }
-
-  const userProfile = profiles?.find(p => p.id === "1");
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4">
@@ -122,7 +138,7 @@ export default function Home() {
         isOpen={showMatch}
         onClose={() => setShowMatch(false)}
         matchedProfile={matchedProfile}
-        currentProfile={userProfile}
+        currentProfile={myProfile}
       />
     </div>
   );

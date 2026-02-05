@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 
@@ -143,6 +143,76 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching matches:", error);
       res.status(500).json({ error: "Failed to fetch matches" });
+    }
+  });
+
+  app.get("/api/messages/:matchId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const match = await storage.getMatchById(req.params.matchId);
+      if (!match) {
+        return res.status(404).json({ error: "Match not found" });
+      }
+      
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) {
+        return res.status(403).json({ error: "Profile not found" });
+      }
+      
+      if (match.profile1Id !== userProfile.id && match.profile2Id !== userProfile.id) {
+        return res.status(403).json({ error: "Not authorized to view these messages" });
+      }
+      
+      const messages = await storage.getMessagesForMatch(req.params.matchId);
+      
+      await storage.markMessagesAsRead(req.params.matchId, userProfile.id);
+      
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const validatedData = insertMessageSchema.parse(req.body);
+      
+      const match = await storage.getMatchById(validatedData.matchId);
+      if (!match) {
+        return res.status(404).json({ error: "Match not found" });
+      }
+      
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) {
+        return res.status(403).json({ error: "Profile not found" });
+      }
+      
+      if (match.profile1Id !== userProfile.id && match.profile2Id !== userProfile.id) {
+        return res.status(403).json({ error: "Not authorized to send messages in this chat" });
+      }
+      
+      if (validatedData.senderId !== userProfile.id) {
+        return res.status(403).json({ error: "Sender ID must match your profile" });
+      }
+      
+      const message = await storage.createMessage(validatedData);
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid message data", details: error.errors });
+      }
+      console.error("Error creating message:", error);
+      res.status(500).json({ error: "Failed to send message" });
     }
   });
 

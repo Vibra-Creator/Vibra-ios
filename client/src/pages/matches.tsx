@@ -4,19 +4,25 @@ import { Heart } from "lucide-react";
 import { MatchCard, MatchCardSkeleton } from "@/components/MatchCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import type { Profile, Match } from "@shared/schema";
 
 interface MatchWithProfile extends Match {
   profile: Profile;
 }
 
-const CURRENT_USER_ID = "user-1";
-
 export default function Matches() {
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
+
+  const { data: myProfile } = useQuery<Profile | null>({
+    queryKey: ["/api/profiles/me"],
+    enabled: !!user,
+  });
 
   const { data: matches, isLoading, error, refetch } = useQuery<MatchWithProfile[]>({
-    queryKey: ["/api/matches", CURRENT_USER_ID],
+    queryKey: ["/api/matches", myProfile?.id],
+    enabled: !!myProfile,
   });
 
   return (
@@ -59,6 +65,7 @@ export default function Matches() {
             <MatchCard
               key={match.id}
               profile={match.profile}
+              matchId={match.id}
               matchDate={match.createdAt}
               index={index}
             />
