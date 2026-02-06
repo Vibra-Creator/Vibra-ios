@@ -157,6 +157,7 @@ export default function ProfileEdit() {
   const [step, setStep] = useState(0);
   const [interests, setInterests] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
+  const [communicationStyles, setCommunicationStyles] = useState<string[]>([]);
   const [interestSearch, setInterestSearch] = useState("");
   const [citySearch, setCitySearch] = useState("");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -235,6 +236,7 @@ export default function ProfileEdit() {
       });
       setInterests(existingProfile.interests || []);
       setLanguages(existingProfile.languages || []);
+      setCommunicationStyles(existingProfile.communicationStyle ? existingProfile.communicationStyle.split(",").filter(Boolean) : []);
       setCitySearch(existingProfile.location || "");
       setUploadedPhotos(existingProfile.photos || []);
     }
@@ -292,7 +294,7 @@ export default function ProfileEdit() {
       toast({ title: "Aggiungi Interessi", description: "Aggiungi almeno un interesse al tuo profilo.", variant: "destructive" });
       return;
     }
-    const profileData = { ...data, interests, languages };
+    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(",") };
     if (existingProfile) {
       updateMutation.mutate(profileData);
     } else {
@@ -315,6 +317,14 @@ export default function ProfileEdit() {
       setLanguages(languages.filter((l) => l !== lang));
     } else {
       setLanguages([...languages, lang]);
+    }
+  };
+
+  const toggleCommunicationStyle = (style: string) => {
+    if (communicationStyles.includes(style)) {
+      setCommunicationStyles(communicationStyles.filter((s) => s !== style));
+    } else {
+      setCommunicationStyles([...communicationStyles, style]);
     }
   };
 
@@ -829,7 +839,22 @@ export default function ProfileEdit() {
                   </div>
                     <SelectField control={form.control} name="zodiacSign" label="Segno Zodiacale" options={zodiacSignOptions} testId="select-zodiac" />
                     <SelectField control={form.control} name="loveLanguage" label="Come Esprimi il Tuo Amore" options={loveLanguageOptions} testId="select-love-language" />
-                    <SelectField control={form.control} name="communicationStyle" label="Come Preferisci Comunicare" options={communicationStyleOptions} testId="select-communication" />
+                    <div>
+                      <FormLabel className="mb-3 block text-white/90">Come Preferisci Comunicare</FormLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {communicationStyleOptions.map((style) => (
+                          <Badge
+                            key={style}
+                            variant={communicationStyles.includes(style) ? "default" : "outline"}
+                            className={`cursor-pointer transition-all toggle-elevate ${communicationStyles.includes(style) ? "toggle-elevated" : ""}`}
+                            onClick={() => toggleCommunicationStyle(style)}
+                            data-testid={`badge-comm-${style.toLowerCase().replace(/\s+/g, "-")}`}
+                          >
+                            {style}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
                     <SelectField control={form.control} name="lifestyle" label="Stile di Vita" options={lifestyleOptions} testId="select-lifestyle" />
                 </div>
               )}

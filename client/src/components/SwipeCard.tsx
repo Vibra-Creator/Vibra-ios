@@ -1,8 +1,161 @@
-import { useState, forwardRef } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck } from "lucide-react";
+import { useState, forwardRef, useRef } from "react";
+import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { Profile } from "@shared/schema";
+
+interface ProfileDetailModalProps {
+  profile: Profile;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function ProfileDetailModal({ profile, isOpen, onClose }: ProfileDetailModalProps) {
+  if (!isOpen) return null;
+
+  const detailItems = [
+    { label: "Tipo Alieno", value: profile.alienType, icon: Sparkles },
+    { label: "Genere", value: profile.gender, icon: User },
+    { label: "Altezza", value: profile.height ? `${profile.height} cm` : null, icon: Ruler },
+    { label: "Istruzione", value: profile.education, icon: GraduationCap },
+    { label: "Stile di Vita", value: profile.lifestyle, icon: Briefcase },
+    { label: "Comunicazione", value: profile.communicationStyle ? profile.communicationStyle.split(",").join(", ") : null, icon: MessageCircle },
+  ].filter(item => item.value);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          onClick={onClose}
+          data-testid="profile-detail-overlay"
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="profile-detail-modal"
+          >
+            <div className="relative">
+              <img
+                src={profile.imageUrl}
+                alt={profile.name}
+                className="w-full aspect-[4/3] object-cover"
+                data-testid="detail-profile-image"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute top-4 right-4 text-white bg-black/30 backdrop-blur-sm"
+                onClick={onClose}
+                data-testid="button-close-profile-detail"
+              >
+                <ChevronDown className="w-5 h-5" />
+              </Button>
+
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-3xl font-bold text-white" data-testid="detail-profile-name">
+                    {profile.name}, {profile.age}
+                  </h2>
+                  {profile.isVerified && (
+                    <BadgeCheck className="w-6 h-6 text-blue-400" />
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-white/80">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-sm">{profile.location}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-black/90 backdrop-blur-xl p-6 space-y-5">
+              <Badge variant="secondary" className="bg-primary/80 text-primary-foreground">
+                <Sparkles className="w-3 h-3 mr-1" />
+                {profile.alienType}
+              </Badge>
+
+              {profile.bio && (
+                <div>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">Bio</h3>
+                  <p className="text-white/90 text-sm leading-relaxed" data-testid="detail-profile-bio">{profile.bio}</p>
+                </div>
+              )}
+
+              {detailItems.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {detailItems.map((item) => (
+                    <div key={item.label} className="flex items-center gap-2 p-2 rounded-lg bg-white/5" data-testid={`detail-${item.label.toLowerCase().replace(/\s+/g, "-")}`}>
+                      <item.icon className="w-4 h-4 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-[10px] text-white/40 uppercase tracking-wider">{item.label}</div>
+                        <div className="text-xs text-white/90 truncate">{item.value}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {profile.interests && profile.interests.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">Interessi</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.interests.map((interest, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="outline"
+                        className="bg-white/10 border-white/30 text-white"
+                      >
+                        {interest}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.photos && profile.photos.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">Foto</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {profile.photos.map((photo, idx) => (
+                      <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-white/10">
+                        <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`detail-photo-${idx}`} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.languages && profile.languages.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">Lingue</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.languages.map((lang, idx) => (
+                      <Badge key={idx} variant="outline" className="bg-white/10 border-white/30 text-white">
+                        {lang}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 interface SwipeCardProps {
   profile: Profile;
@@ -13,6 +166,8 @@ interface SwipeCardProps {
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
   function SwipeCard({ profile, onSwipe, isTop = false }, ref) {
     const [exitX, setExitX] = useState(0);
+    const [showDetail, setShowDetail] = useState(false);
+    const dragDistanceRef = useRef(0);
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-200, 200], [-25, 25]);
     const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
@@ -20,7 +175,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const likeOpacity = useTransform(x, [0, 100], [0, 1]);
     const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
 
+    const handleDragStart = () => {
+      dragDistanceRef.current = 0;
+    };
+
     const handleDragEnd = (_: any, info: PanInfo) => {
+      dragDistanceRef.current = Math.abs(info.offset.x) + Math.abs(info.offset.y);
       if (info.offset.x > 100) {
         setExitX(300);
         onSwipe("right");
@@ -30,90 +190,106 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       }
     };
 
+    const handleImageTap = () => {
+      if (dragDistanceRef.current < 10 && isTop) {
+        setShowDetail(true);
+      }
+    };
+
     return (
-      <motion.div
-        ref={ref}
-        className="absolute w-full cursor-grab active:cursor-grabbing"
-        style={{ x, rotate, opacity }}
-        drag={isTop ? "x" : false}
-        dragConstraints={{ left: 0, right: 0 }}
-        onDragEnd={handleDragEnd}
-        initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 20 }}
-        animate={{ 
-          scale: isTop ? 1 : 0.95, 
-          y: isTop ? 0 : 20,
-          x: exitX,
-        }}
-        exit={{ x: exitX, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        data-testid={`swipe-card-${profile.id}`}
-      >
-        <div className="relative rounded-2xl overflow-hidden bg-card shadow-2xl border border-card-border">
-          <div className="relative aspect-[3/4] overflow-hidden">
-            <img
-              src={profile.imageUrl}
-              alt={profile.name}
-              className="w-full h-full object-cover"
-              data-testid={`profile-image-${profile.id}`}
-            />
-            
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            
-            <motion.div 
-              className="absolute top-6 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm"
-              style={{ opacity: likeOpacity }}
-            >
-              <span className="text-green-400 font-bold text-xl tracking-wider">LIKE</span>
-            </motion.div>
-            
-            <motion.div 
-              className="absolute top-6 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm"
-              style={{ opacity: nopeOpacity }}
-            >
-              <span className="text-red-400 font-bold text-xl tracking-wider">NOPE</span>
-            </motion.div>
-            
-            <div className="absolute bottom-0 left-0 right-0 p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  {profile.alienType}
-                </Badge>
-              </div>
+      <>
+        <motion.div
+          ref={ref}
+          className="absolute w-full cursor-grab active:cursor-grabbing"
+          style={{ x, rotate, opacity }}
+          drag={isTop ? "x" : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 20 }}
+          animate={{ 
+            scale: isTop ? 1 : 0.95, 
+            y: isTop ? 0 : 20,
+            x: exitX,
+          }}
+          exit={{ x: exitX, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          data-testid={`swipe-card-${profile.id}`}
+        >
+          <div className="relative rounded-2xl overflow-hidden bg-card shadow-2xl border border-card-border">
+            <div className="relative aspect-[3/4] overflow-hidden">
+              <img
+                src={profile.imageUrl}
+                alt={profile.name}
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={handleImageTap}
+                data-testid={`profile-image-${profile.id}`}
+              />
               
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-3xl font-bold text-white" data-testid={`profile-name-${profile.id}`}>
-                  {profile.name}, {profile.age}
-                </h2>
-                {profile.isVerified && (
-                  <BadgeCheck className="w-6 h-6 text-blue-400" />
-                )}
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
               
-              <div className="flex items-center gap-1 text-white/80 mb-3">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm">{profile.location}</span>
-              </div>
+              <motion.div 
+                className="absolute top-6 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm pointer-events-none"
+                style={{ opacity: likeOpacity }}
+              >
+                <span className="text-green-400 font-bold text-xl tracking-wider">LIKE</span>
+              </motion.div>
               
-              <p className="text-white/90 text-sm line-clamp-2 mb-3" data-testid={`profile-bio-${profile.id}`}>
-                {profile.bio}
-              </p>
+              <motion.div 
+                className="absolute top-6 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm pointer-events-none"
+                style={{ opacity: nopeOpacity }}
+              >
+                <span className="text-red-400 font-bold text-xl tracking-wider">NOPE</span>
+              </motion.div>
               
-              <div className="flex flex-wrap gap-2">
-                {profile.interests.slice(0, 3).map((interest, idx) => (
-                  <Badge 
-                    key={idx} 
-                    variant="outline" 
-                    className="bg-white/10 border-white/30 text-white backdrop-blur-sm"
-                  >
-                    {interest}
+              <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    {profile.alienType}
                   </Badge>
-                ))}
+                </div>
+                
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-3xl font-bold text-white" data-testid={`profile-name-${profile.id}`}>
+                    {profile.name}, {profile.age}
+                  </h2>
+                  {profile.isVerified && (
+                    <BadgeCheck className="w-6 h-6 text-blue-400" />
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-1 text-white/80 mb-3">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-sm">{profile.location}</span>
+                </div>
+                
+                <p className="text-white/90 text-sm line-clamp-2 mb-3" data-testid={`profile-bio-${profile.id}`}>
+                  {profile.bio}
+                </p>
+                
+                <div className="flex flex-wrap gap-2">
+                  {profile.interests.slice(0, 3).map((interest, idx) => (
+                    <Badge 
+                      key={idx} 
+                      variant="outline" 
+                      className="bg-white/10 border-white/30 text-white backdrop-blur-sm"
+                    >
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+
+        <ProfileDetailModal
+          profile={profile}
+          isOpen={showDetail}
+          onClose={() => setShowDetail(false)}
+        />
+      </>
     );
   }
 );

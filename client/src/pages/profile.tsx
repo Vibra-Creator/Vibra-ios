@@ -221,6 +221,7 @@ export default function Profile() {
           <Button 
             variant="outline" 
             className="w-full justify-start gap-3"
+            onClick={() => setLocation("/profile/edit")}
             data-testid="button-settings"
           >
             <Settings className="w-5 h-5" />
