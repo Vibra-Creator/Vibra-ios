@@ -400,6 +400,66 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/rooms/:id", isAuthenticated, async (req, res) => {
+    try {
+      const room = await storage.getRoom(req.params.id as string);
+      if (!room) return res.status(404).json({ error: "Room not found" });
+      res.json(room);
+    } catch (error) {
+      console.error("Error fetching room:", error);
+      res.status(500).json({ error: "Failed to fetch room" });
+    }
+  });
+
+  app.get("/api/rooms/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const msgs = await storage.getRoomMessages(req.params.id as string);
+      res.json(msgs);
+    } catch (error) {
+      console.error("Error fetching room messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/rooms/:id/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      const { content } = req.body;
+      if (!content?.trim()) return res.status(400).json({ error: "Message content required" });
+
+      const message = await storage.createRoomMessage({
+        roomId: req.params.id,
+        senderId: userProfile.id,
+        senderName: userProfile.name,
+        senderImage: userProfile.imageUrl || undefined,
+        content: content.trim(),
+      });
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error sending room message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  app.post("/api/rooms/:id/join", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      await storage.joinRoom(req.params.id, userProfile.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error joining room:", error);
+      res.status(500).json({ error: "Failed to join room" });
+    }
+  });
+
   // Daily Challenges API
   app.get("/api/challenges", isAuthenticated, async (req, res) => {
     try {

@@ -4,7 +4,6 @@ import { useLocation } from "wouter";
 import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Zap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import type { Profile } from "@shared/schema";
@@ -160,70 +159,64 @@ export default function Profile() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * index }}
             >
-              <Card className="text-center bg-white/10 backdrop-blur-md border-white/10">
-                <CardContent className="p-4">
-                  <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-xs text-white/60">{stat.label}</div>
-                </CardContent>
-              </Card>
+              <div className="text-center p-4">
+                <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
+                <div className="text-2xl font-bold text-white">{stat.value}</div>
+                <div className="text-xs text-white/60">{stat.label}</div>
+              </div>
             </motion.div>
           ))}
         </div>
 
-        <Card className="bg-white/10 backdrop-blur-md border-white/10">
-          <CardContent className="p-4 space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
-                <User className="w-4 h-4 text-primary" />
-                Bio
-              </h3>
-              <p className="text-white/60 text-sm" data-testid="user-profile-bio">
-                {profile.bio}
-              </p>
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
+              <User className="w-4 h-4 text-primary" />
+              Bio
+            </h3>
+            <p className="text-white/60 text-sm" data-testid="user-profile-bio">
+              {profile.bio}
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
+              <Sparkles className="w-4 h-4 text-secondary" />
+              Interessi
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.interests.map((interest, idx) => (
+                <Badge 
+                  key={idx} 
+                  variant="outline"
+                  className="bg-white/20 text-white border-white/30"
+                >
+                  {interest}
+                </Badge>
+              ))}
             </div>
-            
-            <div>
-              <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
-                <Sparkles className="w-4 h-4 text-secondary" />
-                Interessi
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {profile.interests.map((interest, idx) => (
-                  <Badge 
-                    key={idx} 
-                    variant="outline"
-                    className="bg-muted/50"
-                  >
-                    {interest}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="bg-white/10 backdrop-blur-md border-white/10">
-          <CardContent className="p-4 space-y-2">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start gap-3"
-              onClick={() => setLocation("/profile/edit")}
-              data-testid="button-edit-full-profile"
-            >
-              <Edit2 className="w-5 h-5" />
-              Modifica Profilo
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start gap-3"
-              data-testid="button-settings"
-            >
-              <Settings className="w-5 h-5" />
-              Impostazioni
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-2">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-3"
+            onClick={() => setLocation("/profile/edit")}
+            data-testid="button-edit-full-profile"
+          >
+            <Edit2 className="w-5 h-5" />
+            Modifica Profilo
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-3"
+            data-testid="button-settings"
+          >
+            <Settings className="w-5 h-5" />
+            Impostazioni
+          </Button>
+        </div>
       </motion.div>
     </div>
   );

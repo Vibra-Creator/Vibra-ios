@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -172,20 +171,18 @@ export default function Challenges() {
         </div>
       </motion.div>
 
-      <Card className="mb-6 bg-gradient-to-r from-primary/30 to-accent/30 backdrop-blur-md border-white/10" data-testid="card-user-points">
-        <CardContent className="p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Star className="w-8 h-8 text-accent" />
-            <div>
-              <p className="font-bold text-lg text-white" data-testid="text-points-label">I tuoi punti</p>
-              <p className="text-sm text-white/60">
-                {submissions?.length || 0} sfide completate
-              </p>
-            </div>
+      <div className="rounded-xl p-4 flex items-center justify-between gap-4 mb-6" data-testid="card-user-points">
+        <div className="flex items-center gap-3">
+          <Star className="w-8 h-8 text-accent" />
+          <div>
+            <p className="font-bold text-lg text-white" data-testid="text-points-label">I tuoi punti</p>
+            <p className="text-sm text-white/70">
+              {submissions?.length || 0} sfide completate
+            </p>
           </div>
-          <div className="text-3xl font-bold text-accent" data-testid="text-points-value">{totalPoints}</div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="text-3xl font-bold text-accent" data-testid="text-points-value">{totalPoints}</div>
+      </div>
 
       {previewUrl && uploadingChallengeId && (
         <motion.div
@@ -193,53 +190,51 @@ export default function Challenges() {
           animate={{ opacity: 1, scale: 1 }}
           className="mb-6"
         >
-          <Card className="border-primary/50 bg-white/10 backdrop-blur-md border-white/10" data-testid="card-photo-preview">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold">Anteprima Foto</h3>
-                <Button size="icon" variant="ghost" onClick={resetUpload} data-testid="button-cancel-upload">
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="aspect-square rounded-lg overflow-hidden mb-4 max-w-xs mx-auto">
-                <img
-                  src={previewUrl}
-                  alt="Anteprima"
-                  className="w-full h-full object-cover"
-                  data-testid="img-photo-preview"
-                />
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={resetUpload}
-                  disabled={submitMutation.isPending}
-                  data-testid="button-change-photo"
-                >
-                  Cambia foto
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={handleConfirmUpload}
-                  disabled={submitMutation.isPending}
-                  data-testid="button-confirm-upload"
-                >
-                  {submitMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Caricamento...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="w-4 h-4 mr-2" />
-                      Invia Foto
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl p-4" data-testid="card-photo-preview">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-white">Anteprima Foto</h3>
+              <Button size="icon" variant="ghost" onClick={resetUpload} data-testid="button-cancel-upload">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="aspect-square rounded-lg overflow-hidden mb-4 max-w-xs mx-auto">
+              <img
+                src={previewUrl}
+                alt="Anteprima"
+                className="w-full h-full object-cover"
+                data-testid="img-photo-preview"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={resetUpload}
+                disabled={submitMutation.isPending}
+                data-testid="button-change-photo"
+              >
+                Cambia foto
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleConfirmUpload}
+                disabled={submitMutation.isPending}
+                data-testid="button-confirm-upload"
+              >
+                {submitMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Caricamento...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-4 h-4 mr-2" />
+                    Invia Foto
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </motion.div>
       )}
 
@@ -258,59 +253,57 @@ export default function Challenges() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card
-                  className={`overflow-hidden hover-elevate bg-white/10 backdrop-blur-md border-white/10 ${isCompleted ? "border-green-500/30" : ""}`}
+                <div
+                  className={`rounded-xl p-4 overflow-hidden ${isCompleted ? "" : ""}`}
                   data-testid={`card-challenge-${challenge.id}`}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="secondary" className="bg-accent/20 text-accent">
-                            <Star className="w-3 h-3 mr-1" />
-                            {challenge.points} punti
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <Badge variant="secondary" className="bg-accent/20 text-accent">
+                          <Star className="w-3 h-3 mr-1" />
+                          {challenge.points} punti
+                        </Badge>
+                        {isCompleted ? (
+                          <Badge variant="secondary" className="bg-green-500/20 text-green-400">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Completata
                           </Badge>
-                          {isCompleted ? (
-                            <Badge variant="secondary" className="bg-green-500/20 text-green-400">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Completata
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              <Clock className="w-3 h-3 mr-1" />
-                              Oggi
-                            </Badge>
-                          )}
-                        </div>
-                        <h3 className="font-bold text-lg text-white mb-1">{challenge.title}</h3>
-                        <p className="text-sm text-white/60">{challenge.description}</p>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Oggi
+                          </Badge>
+                        )}
                       </div>
-
-                      {isCompleted ? (
-                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
-                          <img
-                            src={submission.imageUrl}
-                            alt="Submission"
-                            className="w-full h-full object-cover"
-                            data-testid={`img-submission-${challenge.id}`}
-                          />
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="gap-1 shrink-0"
-                          onClick={() => handleSelectPhoto(challenge.id)}
-                          disabled={submitMutation.isPending}
-                          data-testid={`button-submit-challenge-${challenge.id}`}
-                        >
-                          <ImagePlus className="w-4 h-4" />
-                          Carica Foto
-                        </Button>
-                      )}
+                      <h3 className="font-bold text-lg text-white mb-1">{challenge.title}</h3>
+                      <p className="text-sm text-white/70">{challenge.description}</p>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    {isCompleted ? (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                        <img
+                          src={submission.imageUrl}
+                          alt="Submission"
+                          className="w-full h-full object-cover"
+                          data-testid={`img-submission-${challenge.id}`}
+                        />
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="gap-1 shrink-0"
+                        onClick={() => handleSelectPhoto(challenge.id)}
+                        disabled={submitMutation.isPending}
+                        data-testid={`button-submit-challenge-${challenge.id}`}
+                      >
+                        <ImagePlus className="w-4 h-4" />
+                        Carica Foto
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </motion.div>
             );
           })}

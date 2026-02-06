@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Users, Sparkles, ArrowRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,8 +71,8 @@ export default function Rooms() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card 
-                className="overflow-hidden cursor-pointer hover-elevate group bg-white/10 backdrop-blur-md border-white/10"
+              <div 
+                className="rounded-xl overflow-hidden cursor-pointer group"
                 onClick={() => setLocation(`/room/${room.id}`)}
                 data-testid={`card-room-${room.id}`}
               >
@@ -95,19 +94,19 @@ export default function Rooms() {
                     <h3 className="text-lg font-bold text-white">{room.name}</h3>
                   </div>
                 </div>
-                <CardContent className="p-4">
-                  <p className="text-sm text-white/60 mb-3">{room.description}</p>
+                <div className="p-4">
+                  <p className="text-sm text-white/70 mb-3">{room.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
-                      <Users className="w-4 h-4 text-primary" />
-                      <span>{(room as any).memberCount || Math.floor(Math.random() * 50 + 10)} membri</span>
+                      <Users className="w-4 h-4 text-cyan-300/80" />
+                      <span className="text-cyan-300/80">{(room as any).memberCount || Math.floor(Math.random() * 50 + 10)} membri</span>
                     </div>
                     <Button size="sm" variant="ghost" className="gap-1 group-hover:text-primary" data-testid={`button-enter-room-${room.id}`}>
                       Entra <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>

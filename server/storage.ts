@@ -4,9 +4,9 @@ import {
   type Swipe, type InsertSwipe,
   type Match, type InsertMatch,
   type Message, type InsertMessage,
-  type Room, type PrivateRoom, type DailyChallenge, type ChallengeSubmission,
+  type Room, type RoomMessage, type PrivateRoom, type DailyChallenge, type ChallengeSubmission,
   users, profiles, swipes, matches, messages,
-  rooms, privateRooms, dailyChallenges, challengeSubmissions
+  rooms, roomMembers, roomMessages, privateRooms, dailyChallenges, challengeSubmissions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc } from "drizzle-orm";
@@ -44,6 +44,10 @@ export interface IStorage {
   setProfileVerified(id: string, isVerified: boolean): Promise<Profile | undefined>;
   
   getRooms(): Promise<Room[]>;
+  getRoom(id: string): Promise<Room | undefined>;
+  getRoomMessages(roomId: string): Promise<RoomMessage[]>;
+  createRoomMessage(msg: { roomId: string; senderId: string; senderName: string; senderImage?: string; content: string }): Promise<RoomMessage>;
+  joinRoom(roomId: string, profileId: string): Promise<void>;
   getChallenges(): Promise<DailyChallenge[]>;
   getPrivateRooms(): Promise<PrivateRoom[]>;
   createChallengeSubmission(submission: { challengeId: string; profileId: string; imageUrl: string }): Promise<ChallengeSubmission>;
@@ -217,6 +221,30 @@ export class DatabaseStorage implements IStorage {
 
   async getRooms(): Promise<Room[]> {
     return db.select().from(rooms).where(eq(rooms.isActive, true));
+  }
+
+  async getRoom(id: string): Promise<Room | undefined> {
+    const [room] = await db.select().from(rooms).where(eq(rooms.id, id));
+    return room;
+  }
+
+  async getRoomMessages(roomId: string): Promise<RoomMessage[]> {
+    return db.select().from(roomMessages)
+      .where(eq(roomMessages.roomId, roomId))
+      .orderBy(roomMessages.createdAt);
+  }
+
+  async createRoomMessage(msg: { roomId: string; senderId: string; senderName: string; senderImage?: string; content: string }): Promise<RoomMessage> {
+    const [message] = await db.insert(roomMessages).values(msg).returning();
+    return message;
+  }
+
+  async joinRoom(roomId: string, profileId: string): Promise<void> {
+    const existing = await db.select().from(roomMembers)
+      .where(and(eq(roomMembers.roomId, roomId), eq(roomMembers.profileId, profileId)));
+    if (existing.length === 0) {
+      await db.insert(roomMembers).values({ roomId, profileId });
+    }
   }
 
   async getChallenges(): Promise<DailyChallenge[]> {

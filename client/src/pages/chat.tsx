@@ -104,7 +104,7 @@ export default function Chat() {
   if (!otherProfile && !messagesLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-muted-foreground">Chat non trovata</p>
+        <p className="text-white/60">Chat non trovata</p>
       </div>
     );
   }
@@ -112,7 +112,14 @@ export default function Chat() {
   const groupedMessages = groupMessagesByDate(messages || []);
 
   return (
-    <div className="flex flex-col h-full bg-background/50">
+    <div className="flex flex-col h-full">
+      <div className="fixed inset-0 -z-10">
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+          <source src="/backgrounds/5e8d7f392f6b41939b06e7f70a2114dd.mp4_1770326642074.MP4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50" />
+      </div>
+
       <header className="flex items-center gap-3 p-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
         <Button
           variant="ghost"
@@ -130,8 +137,8 @@ export default function Chat() {
               <AvatarFallback>{otherProfile.name[0]}</AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="font-semibold text-foreground">{otherProfile.name}</h2>
-              <p className="text-xs text-muted-foreground">{otherProfile.alienType}</p>
+              <h2 className="font-semibold text-white">{otherProfile.name}</h2>
+              <p className="text-xs text-white/60">{otherProfile.alienType}</p>
             </div>
           </div>
         )}
@@ -147,10 +154,10 @@ export default function Chat() {
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
               <Send className="w-10 h-10 text-primary/60" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
+            <h3 className="text-lg font-medium text-white mb-2">
               Inizia la conversazione!
             </h3>
-            <p className="text-sm text-muted-foreground max-w-xs">
+            <p className="text-sm text-white/60 max-w-xs">
               Fai il primo passo e invia un messaggio a {otherProfile?.name}
             </p>
           </div>
@@ -158,7 +165,7 @@ export default function Chat() {
           Object.entries(groupedMessages).map(([date, msgs]) => (
             <div key={date}>
               <div className="flex items-center justify-center my-4">
-                <span className="px-3 py-1 rounded-full bg-muted text-xs text-muted-foreground">
+                <span className="px-3 py-1 rounded-full bg-white/15 text-xs text-white/60">
                   {date}
                 </span>
               </div>
@@ -180,13 +187,13 @@ export default function Chat() {
                         className={`max-w-[75%] px-4 py-2 rounded-2xl ${
                           isMe
                             ? "bg-gradient-to-r from-primary to-accent text-white rounded-br-md"
-                            : "bg-card border border-border rounded-bl-md"
+                            : "bg-white/15 backdrop-blur-sm text-white rounded-bl-md"
                         }`}
                         data-testid={`message-${message.id}`}
                       >
                         <p className="text-sm break-words">{message.content}</p>
                         <div className={`flex items-center gap-1 mt-1 ${isMe ? "justify-end" : "justify-start"}`}>
-                          <span className={`text-xs ${isMe ? "text-white/70" : "text-muted-foreground"}`}>
+                          <span className={`text-xs ${isMe ? "text-white/70" : "text-white/60"}`}>
                             {formatTime(message.createdAt)}
                           </span>
                           {isMe && (
@@ -216,7 +223,7 @@ export default function Chat() {
             onChange={(e) => setMessageText(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Scrivi un messaggio..."
-            className="flex-1 bg-background/50 border-border"
+            className="flex-1 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
             disabled={sendMessage.isPending}
             data-testid="input-message"
           />

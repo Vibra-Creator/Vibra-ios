@@ -166,7 +166,18 @@ export const challengeSubmissions = pgTable("challenge_submissions", {
   reviewedAt: timestamp("reviewed_at"),
 });
 
+export const roomMessages = pgTable("room_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderImage: text("sender_image"),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Tipi e schemi per le nuove tabelle
+export type RoomMessage = typeof roomMessages.$inferSelect;
 export type Room = typeof rooms.$inferSelect;
 export type PrivateRoom = typeof privateRooms.$inferSelect;
 export type PrivateRoomRequest = typeof privateRoomRequests.$inferSelect;

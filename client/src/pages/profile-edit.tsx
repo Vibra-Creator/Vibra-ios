@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -444,14 +443,11 @@ export default function ProfileEdit() {
               transition={{ duration: 0.2 }}
             >
               {step === 0 && (
-                <Card className="bg-white/10 backdrop-blur-md border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg text-white">
-                      <User className="w-5 h-5 text-primary" />
-                      Info di Base
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-white">
+                    <User className="w-5 h-5 text-primary" />
+                    Info di Base
+                  </div>
                     <FormField
                       control={form.control}
                       name="imageUrl"
@@ -681,19 +677,15 @@ export default function ProfileEdit() {
                     </div>
 
                     <SelectField control={form.control} name="alienType" label="Tipo Cosmico" options={alienTypes} testId="select-alien-type" placeholder="Seleziona il tuo tipo" />
-                  </CardContent>
-                </Card>
+                </div>
               )}
 
               {step === 1 && (
-                <Card className="bg-white/10 backdrop-blur-md border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg text-white">
-                      <Ruler className="w-5 h-5 text-accent" />
-                      Aspetto Fisico
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-white">
+                    <Ruler className="w-5 h-5 text-accent" />
+                    Aspetto Fisico
+                  </div>
                     <div className="grid grid-cols-2 gap-4">
                       <SelectField control={form.control} name="hairColor" label="Colore Capelli" options={hairColorOptions} testId="select-hair-color" />
                       <SelectField control={form.control} name="eyeColor" label="Colore Occhi" options={eyeColorOptions} testId="select-eye-color" />
@@ -714,19 +706,15 @@ export default function ProfileEdit() {
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
               )}
 
               {step === 2 && (
-                <Card className="bg-white/10 backdrop-blur-md border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg text-white">
-                      <Heart className="w-5 h-5 text-primary" />
-                      Preferenze Partner
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-white">
+                    <Heart className="w-5 h-5 text-primary" />
+                    Preferenze Partner
+                  </div>
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -785,52 +773,40 @@ export default function ProfileEdit() {
                     </div>
                     <SelectField control={form.control} name="education" label="Istruzione" options={educationOptions} testId="select-education" />
                     <SelectField control={form.control} name="preferredEducation" label="Istruzione Preferita" options={educationOptions} testId="select-preferred-education" />
-                  </CardContent>
-                </Card>
+                </div>
               )}
 
               {step === 3 && (
-                <Card className="bg-white/10 backdrop-blur-md border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg text-white">
-                      <Star className="w-5 h-5 text-accent" />
-                      Personalità e Stile
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-white">
+                    <Star className="w-5 h-5 text-accent" />
+                    Personalità e Stile
+                  </div>
                     <SelectField control={form.control} name="zodiacSign" label="Segno Zodiacale" options={zodiacSignOptions} testId="select-zodiac" />
                     <SelectField control={form.control} name="loveLanguage" label="Come Esprimi il Tuo Amore" options={loveLanguageOptions} testId="select-love-language" />
                     <SelectField control={form.control} name="communicationStyle" label="Come Preferisci Comunicare" options={communicationStyleOptions} testId="select-communication" />
                     <SelectField control={form.control} name="lifestyle" label="Stile di Vita" options={lifestyleOptions} testId="select-lifestyle" />
-                  </CardContent>
-                </Card>
+                </div>
               )}
 
               {step === 4 && (
-                <Card className="bg-white/10 backdrop-blur-md border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg text-white">
-                      <Search className="w-5 h-5 text-primary" />
-                      Cosa Cerchi
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-white">
+                    <Search className="w-5 h-5 text-primary" />
+                    Cosa Cerchi
+                  </div>
                     <SelectField control={form.control} name="relationshipType" label="Tipo di Relazione" options={relationshipTypeOptions} testId="select-relationship" />
                     <SelectField control={form.control} name="wantsChildren" label="Figli" options={wantsChildrenOptions} testId="select-children" />
                     <SelectField control={form.control} name="accessMotivation" label="Perché Sei Qui" options={accessMotivationOptions} testId="select-motivation" />
-                  </CardContent>
-                </Card>
+                </div>
               )}
 
               {step === 5 && (
-                <Card className="bg-white/10 backdrop-blur-md border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg text-white">
-                      <Languages className="w-5 h-5 text-secondary" />
-                      Lingue e Bio
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-white">
+                    <Languages className="w-5 h-5 text-secondary" />
+                    Lingue e Bio
+                  </div>
                     <div>
                       <FormLabel className="mb-3 block text-white/90">Lingue Parlate</FormLabel>
                       <div className="flex flex-wrap gap-2">
@@ -869,19 +845,15 @@ export default function ProfileEdit() {
                         </FormItem>
                       )}
                     />
-                  </CardContent>
-                </Card>
+                </div>
               )}
 
               {step === 6 && (
-                <Card className="bg-white/10 backdrop-blur-md border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg text-white">
-                      <Sparkles className="w-5 h-5 text-accent" />
-                      Interessi
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-white">
+                    <Sparkles className="w-5 h-5 text-accent" />
+                    Interessi
+                  </div>
                     <p className="text-sm text-white/60">
                       Seleziona fino a 10 interessi ({interests.length}/10)
                     </p>
@@ -935,8 +907,7 @@ export default function ProfileEdit() {
                         );
                       })}
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
               )}
             </motion.div>
           </AnimatePresence>

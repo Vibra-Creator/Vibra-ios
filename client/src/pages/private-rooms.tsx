@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Lock, Plus, Users, Check, X, Crown, Bell } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -188,60 +187,58 @@ export default function PrivateRooms() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="overflow-hidden hover-elevate bg-white/10 backdrop-blur-md border-white/10" data-testid={`card-private-room-${room.id}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="w-12 h-12 border-2 border-primary/30">
-                        <AvatarImage src={roomData.ownerImage || "/images/profile-1.png"} />
-                        <AvatarFallback>{room.name[0]}</AvatarFallback>
-                      </Avatar>
+                <div className="rounded-xl overflow-hidden p-4" data-testid={`card-private-room-${room.id}`}>
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-12 h-12 border-2 border-primary/30">
+                      <AvatarImage src={roomData.ownerImage || "/images/profile-1.png"} />
+                      <AvatarFallback>{room.name[0]}</AvatarFallback>
+                    </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold text-lg truncate">{room.name}</h3>
-                          {isOwner && (
-                            <Badge variant="secondary" className="bg-accent/20 text-accent shrink-0">
-                              <Crown className="w-3 h-3 mr-1" />
-                              Proprietario
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-white/60 mb-2 line-clamp-2">
-                          {room.description || "Stanza privata esclusiva"}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-white/60">
-                          <span className="flex items-center gap-1" data-testid={`text-private-room-members-${room.id}`}>
-                            <Users className="w-4 h-4" />
-                            {roomData.members || 0} membri
-                          </span>
-                          {isOwner && roomData.pendingRequests > 0 && (
-                            <span className="flex items-center gap-1 text-accent" data-testid={`text-pending-requests-${room.id}`}>
-                              <Bell className="w-4 h-4" />
-                              {roomData.pendingRequests} richieste
-                            </span>
-                          )}
-                        </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-lg truncate text-white">{room.name}</h3>
+                        {isOwner && (
+                          <Badge variant="secondary" className="bg-accent/20 text-accent shrink-0">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Proprietario
+                          </Badge>
+                        )}
                       </div>
-
-                      <div className="shrink-0">
-                        {isOwner ? (
-                          <Button size="sm" variant="outline" data-testid={`button-manage-room-${room.id}`}>
-                            Gestisci
-                          </Button>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="default"
-                            onClick={() => handleRequestAccess(room.id, room.name)}
-                            data-testid={`button-request-access-${room.id}`}
-                          >
-                            Richiedi Accesso
-                          </Button>
+                      <p className="text-sm text-white/70 mb-2 line-clamp-2">
+                        {room.description || "Stanza privata esclusiva"}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm text-purple-300/80">
+                        <span className="flex items-center gap-1" data-testid={`text-private-room-members-${room.id}`}>
+                          <Users className="w-4 h-4" />
+                          {roomData.members || 0} membri
+                        </span>
+                        {isOwner && roomData.pendingRequests > 0 && (
+                          <span className="flex items-center gap-1 text-accent" data-testid={`text-pending-requests-${room.id}`}>
+                            <Bell className="w-4 h-4" />
+                            {roomData.pendingRequests} richieste
+                          </span>
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="shrink-0">
+                      {isOwner ? (
+                        <Button size="sm" variant="outline" data-testid={`button-manage-room-${room.id}`}>
+                          Gestisci
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="default"
+                          onClick={() => handleRequestAccess(room.id, room.name)}
+                          data-testid={`button-request-access-${room.id}`}
+                        >
+                          Richiedi Accesso
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             );
           })}
