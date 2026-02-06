@@ -5,11 +5,13 @@ import {
   type Match, type InsertMatch,
   type Message, type InsertMessage,
   type Room, type RoomMessage, type PrivateRoom, type DailyChallenge, type ChallengeSubmission,
+  type VirtualGift, type SentGift,
   users, profiles, swipes, matches, messages,
-  rooms, roomMembers, roomMessages, privateRooms, dailyChallenges, challengeSubmissions
+  rooms, roomMembers, roomMessages, privateRooms, dailyChallenges, challengeSubmissions,
+  virtualGifts, sentGifts
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -52,6 +54,18 @@ export interface IStorage {
   getPrivateRooms(): Promise<PrivateRoom[]>;
   createChallengeSubmission(submission: { challengeId: string; profileId: string; imageUrl: string }): Promise<ChallengeSubmission>;
   getChallengeSubmissions(profileId: string): Promise<ChallengeSubmission[]>;
+  getAllChallengeSubmissions(): Promise<ChallengeSubmission[]>;
+  updateChallengeSubmissionStatus(id: string, status: string): Promise<ChallengeSubmission | undefined>;
+  
+  getVirtualGifts(): Promise<VirtualGift[]>;
+  getVirtualGift(id: string): Promise<VirtualGift | undefined>;
+  sendGift(data: { giftId: string; senderId: string; receiverId: string; message?: string }): Promise<SentGift>;
+  getReceivedGifts(profileId: string): Promise<(SentGift & { gift: VirtualGift; sender: Profile })[]>;
+  getSentGifts(profileId: string): Promise<(SentGift & { gift: VirtualGift; receiver: Profile })[]>;
+  markGiftSeen(giftId: string): Promise<void>;
+  addPoints(profileId: string, points: number): Promise<Profile | undefined>;
+  deductPoints(profileId: string, points: number): Promise<Profile | undefined>;
+  getProfilePoints(profileId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -264,6 +278,89 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(challengeSubmissions)
       .where(eq(challengeSubmissions.profileId, profileId))
       .orderBy(desc(challengeSubmissions.createdAt));
+  }
+
+  async getAllChallengeSubmissions(): Promise<ChallengeSubmission[]> {
+    return db.select().from(challengeSubmissions).orderBy(desc(challengeSubmissions.createdAt));
+  }
+
+  async updateChallengeSubmissionStatus(id: string, status: string): Promise<ChallengeSubmission | undefined> {
+    const [result] = await db.update(challengeSubmissions)
+      .set({ status, reviewedAt: new Date() })
+      .where(eq(challengeSubmissions.id, id))
+      .returning();
+    return result;
+  }
+
+  async getVirtualGifts(): Promise<VirtualGift[]> {
+    return db.select().from(virtualGifts).orderBy(virtualGifts.sortOrder);
+  }
+
+  async getVirtualGift(id: string): Promise<VirtualGift | undefined> {
+    const [gift] = await db.select().from(virtualGifts).where(eq(virtualGifts.id, id));
+    return gift;
+  }
+
+  async sendGift(data: { giftId: string; senderId: string; receiverId: string; message?: string }): Promise<SentGift> {
+    const [result] = await db.insert(sentGifts).values(data).returning();
+    return result;
+  }
+
+  async getReceivedGifts(profileId: string): Promise<(SentGift & { gift: VirtualGift; sender: Profile })[]> {
+    const gifts = await db.select().from(sentGifts)
+      .where(eq(sentGifts.receiverId, profileId))
+      .orderBy(desc(sentGifts.createdAt));
+    
+    const result: (SentGift & { gift: VirtualGift; sender: Profile })[] = [];
+    for (const sg of gifts) {
+      const gift = await this.getVirtualGift(sg.giftId);
+      const sender = await this.getProfile(sg.senderId);
+      if (gift && sender) {
+        result.push({ ...sg, gift, sender });
+      }
+    }
+    return result;
+  }
+
+  async getSentGifts(profileId: string): Promise<(SentGift & { gift: VirtualGift; receiver: Profile })[]> {
+    const gifts = await db.select().from(sentGifts)
+      .where(eq(sentGifts.senderId, profileId))
+      .orderBy(desc(sentGifts.createdAt));
+    
+    const result: (SentGift & { gift: VirtualGift; receiver: Profile })[] = [];
+    for (const sg of gifts) {
+      const gift = await this.getVirtualGift(sg.giftId);
+      const receiver = await this.getProfile(sg.receiverId);
+      if (gift && receiver) {
+        result.push({ ...sg, gift, receiver });
+      }
+    }
+    return result;
+  }
+
+  async markGiftSeen(giftId: string): Promise<void> {
+    await db.update(sentGifts).set({ seen: true }).where(eq(sentGifts.id, giftId));
+  }
+
+  async addPoints(profileId: string, points: number): Promise<Profile | undefined> {
+    const [profile] = await db.update(profiles)
+      .set({ points: sql`COALESCE(${profiles.points}, 0) + ${points}` })
+      .where(eq(profiles.id, profileId))
+      .returning();
+    return profile;
+  }
+
+  async deductPoints(profileId: string, points: number): Promise<Profile | undefined> {
+    const [profile] = await db.update(profiles)
+      .set({ points: sql`GREATEST(COALESCE(${profiles.points}, 0) - ${points}, 0)` })
+      .where(eq(profiles.id, profileId))
+      .returning();
+    return profile;
+  }
+
+  async getProfilePoints(profileId: string): Promise<number> {
+    const profile = await this.getProfile(profileId);
+    return profile?.points ?? 0;
   }
 }
 

@@ -366,6 +366,40 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/challenge-submissions", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const submissions = await storage.getAllChallengeSubmissions();
+      res.json(submissions);
+    } catch (error) {
+      console.error("Error fetching submissions:", error);
+      res.status(500).json({ error: "Failed to fetch submissions" });
+    }
+  });
+
+  app.patch("/api/admin/challenge-submissions/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { status } = req.body;
+      if (!status || !["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const submission = await storage.updateChallengeSubmissionStatus(req.params.id, status);
+      if (!submission) return res.status(404).json({ error: "Submission not found" });
+
+      if (status === "approved") {
+        const challenges = await storage.getChallenges();
+        const challenge = challenges.find(c => c.id === submission.challengeId);
+        const pointsToAward = challenge?.points ?? 10;
+        await storage.addPoints(submission.profileId, pointsToAward);
+      }
+
+      res.json(submission);
+    } catch (error) {
+      console.error("Error updating submission:", error);
+      res.status(500).json({ error: "Failed to update submission" });
+    }
+  });
+
   app.post("/api/messages", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
@@ -535,6 +569,115 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching private rooms:", error);
       res.status(500).json({ error: "Failed to fetch private rooms" });
+    }
+  });
+
+  // Virtual Gifts API
+  app.get("/api/gifts", isAuthenticated, async (req, res) => {
+    try {
+      const gifts = await storage.getVirtualGifts();
+      res.json(gifts);
+    } catch (error) {
+      console.error("Error fetching gifts:", error);
+      res.status(500).json({ error: "Failed to fetch gifts" });
+    }
+  });
+
+  app.get("/api/gifts/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json([]);
+      const gifts = await storage.getReceivedGifts(userProfile.id);
+      res.json(gifts);
+    } catch (error) {
+      console.error("Error fetching received gifts:", error);
+      res.status(500).json({ error: "Failed to fetch received gifts" });
+    }
+  });
+
+  app.get("/api/gifts/sent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json([]);
+      const gifts = await storage.getSentGifts(userProfile.id);
+      res.json(gifts);
+    } catch (error) {
+      console.error("Error fetching sent gifts:", error);
+      res.status(500).json({ error: "Failed to fetch sent gifts" });
+    }
+  });
+
+  app.post("/api/gifts/send", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      const { giftId, receiverId, message } = req.body;
+      if (!giftId || !receiverId) return res.status(400).json({ error: "Missing giftId or receiverId" });
+
+      const receiverProfile = await storage.getProfile(receiverId);
+      if (!receiverProfile) return res.status(404).json({ error: "Receiver not found" });
+
+      if (receiverId === userProfile.id) return res.status(400).json({ error: "Cannot send gift to yourself" });
+
+      const gift = await storage.getVirtualGift(giftId);
+      if (!gift) return res.status(404).json({ error: "Gift not found" });
+
+      const currentPoints = userProfile.points ?? 0;
+      if (currentPoints < gift.cost) {
+        return res.status(400).json({ error: "Punti insufficienti", required: gift.cost, available: currentPoints });
+      }
+
+      await storage.deductPoints(userProfile.id, gift.cost);
+      const sentGift = await storage.sendGift({
+        giftId,
+        senderId: userProfile.id,
+        receiverId,
+        message,
+      });
+
+      res.status(201).json(sentGift);
+    } catch (error) {
+      console.error("Error sending gift:", error);
+      res.status(500).json({ error: "Failed to send gift" });
+    }
+  });
+
+  app.patch("/api/gifts/:id/seen", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      const receivedGifts = await storage.getReceivedGifts(userProfile.id);
+      const gift = receivedGifts.find(g => g.id === req.params.id);
+      if (!gift) return res.status(403).json({ error: "Not your gift" });
+
+      await storage.markGiftSeen(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking gift seen:", error);
+      res.status(500).json({ error: "Failed to mark gift seen" });
+    }
+  });
+
+  app.get("/api/points/me", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json({ points: 0 });
+      res.json({ points: userProfile.points ?? 0 });
+    } catch (error) {
+      console.error("Error fetching points:", error);
+      res.status(500).json({ error: "Failed to fetch points" });
     }
   });
 

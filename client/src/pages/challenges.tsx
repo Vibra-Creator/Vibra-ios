@@ -1,14 +1,14 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2 } from "lucide-react";
+import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import type { DailyChallenge, ChallengeSubmission } from "@shared/schema";
+import type { DailyChallenge, ChallengeSubmission, Profile } from "@shared/schema";
 
 function ChallengeSkeleton() {
   return (
@@ -27,6 +27,11 @@ export default function Challenges() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: myProfile } = useQuery<Profile | null>({
+    queryKey: ["/api/profiles/me"],
+    enabled: !!user,
+  });
 
   const { data: challenges, isLoading } = useQuery<DailyChallenge[]>({
     queryKey: ["/api/challenges"],
@@ -160,13 +165,21 @@ export default function Challenges() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+              <Trophy className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white" data-testid="text-challenges-title">Sfide Giornaliere</h1>
+              <p className="text-sm text-white/60" data-testid="text-challenges-subtitle">Completa le sfide per guadagnare punti!</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white" data-testid="text-challenges-title">Sfide Giornaliere</h1>
-            <p className="text-sm text-white/60" data-testid="text-challenges-subtitle">Completa le sfide per guadagnare punti!</p>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-400/20 backdrop-blur-sm">
+            <Coins className="w-4 h-4 text-yellow-400" />
+            <span className="text-sm font-bold text-yellow-400" data-testid="text-points-balance">
+              {myProfile?.points ?? 0}
+            </span>
           </div>
         </div>
       </motion.div>

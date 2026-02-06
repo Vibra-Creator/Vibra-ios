@@ -43,6 +43,7 @@ export const profiles = pgTable("profiles", {
   phonePrefix: text("phone_prefix"), // Prefisso internazionale
   phoneNumber: text("phone_number"), // Numero di telefono
   photos: text("photos").array(), // Foto caricate dall'utente (max 6)
+  points: integer("points").default(0), // Punti guadagnati dalle sfide
 });
 
 export const swipes = pgTable("swipes", {
@@ -176,6 +177,28 @@ export const roomMessages = pgTable("room_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Regali virtuali
+export const virtualGifts = pgTable("virtual_gifts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  cost: integer("cost").notNull(),
+  animationType: text("animation_type").notNull(),
+  icon: text("icon").notNull(),
+  color: text("color").notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
+export const sentGifts = pgTable("sent_gifts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  giftId: varchar("gift_id").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  receiverId: varchar("receiver_id").notNull(),
+  message: text("message"),
+  seen: boolean("seen").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Tipi e schemi per le nuove tabelle
 export type RoomMessage = typeof roomMessages.$inferSelect;
 export type Room = typeof rooms.$inferSelect;
@@ -183,8 +206,11 @@ export type PrivateRoom = typeof privateRooms.$inferSelect;
 export type PrivateRoomRequest = typeof privateRoomRequests.$inferSelect;
 export type DailyChallenge = typeof dailyChallenges.$inferSelect;
 export type ChallengeSubmission = typeof challengeSubmissions.$inferSelect;
+export type VirtualGift = typeof virtualGifts.$inferSelect;
+export type SentGift = typeof sentGifts.$inferSelect;
 
 export const insertRoomSchema = createInsertSchema(rooms).omit({ id: true, createdAt: true });
 export const insertPrivateRoomSchema = createInsertSchema(privateRooms).omit({ id: true, createdAt: true });
 export const insertChallengeSchema = createInsertSchema(dailyChallenges).omit({ id: true });
 export const insertChallengeSubmissionSchema = createInsertSchema(challengeSubmissions).omit({ id: true, createdAt: true, reviewedAt: true });
+export const insertSentGiftSchema = createInsertSchema(sentGifts).omit({ id: true, createdAt: true, seen: true });

@@ -1,18 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Zap, Plus } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import type { Profile } from "@shared/schema";
-
-const stats = [
-  { icon: Heart, label: "Match", value: "12", color: "text-accent" },
-  { icon: Star, label: "Super Like", value: "5", color: "text-secondary" },
-  { icon: Zap, label: "Boost", value: "3", color: "text-primary" },
-];
+import type { Profile, Match, SentGift, VirtualGift } from "@shared/schema";
 
 function ProfileSkeleton() {
   return (
@@ -75,6 +69,22 @@ export default function Profile() {
     queryKey: ["/api/profiles/me"],
     enabled: !!user,
   });
+
+  const { data: matchesData } = useQuery<(Match & { profile: Profile })[]>({
+    queryKey: ["/api/matches", profile?.id],
+    enabled: !!profile,
+  });
+
+  const { data: receivedGiftsData } = useQuery<(SentGift & { gift: VirtualGift; sender: Profile })[]>({
+    queryKey: ["/api/gifts/received"],
+    enabled: !!profile,
+  });
+
+  const stats = [
+    { icon: Heart, label: "Match", value: String(matchesData?.length ?? 0), color: "text-accent" },
+    { icon: Coins, label: "Punti", value: String(profile?.points ?? 0), color: "text-yellow-400" },
+    { icon: Gift, label: "Regali", value: String(receivedGiftsData?.length ?? 0), color: "text-primary" },
+  ];
 
   if (isLoading) {
     return (

@@ -1,18 +1,29 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Check, CheckCheck } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, Gift, Star, Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Message, Profile, Match } from "@shared/schema";
+import GiftPicker from "@/components/GiftPicker";
+import GiftAnimation from "@/components/GiftAnimation";
+import type { Message, Profile, Match, VirtualGift, SentGift } from "@shared/schema";
 
 interface ChatPageParams {
   matchId: string;
 }
+
+const giftIconMap: Record<string, typeof Star> = {
+  star: Star,
+  flower: Sparkles,
+  heart: Heart,
+  ring: Sparkles,
+  explosion: Star,
+  galaxy: Sparkles,
+};
 
 export default function Chat() {
   const params = useParams<ChatPageParams>();
@@ -20,6 +31,8 @@ export default function Chat() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const [messageText, setMessageText] = useState("");
+  const [showGiftPicker, setShowGiftPicker] = useState(false);
+  const [giftAnimation, setGiftAnimation] = useState<{ gift: VirtualGift; senderName: string; message?: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -28,7 +41,7 @@ export default function Chat() {
     enabled: !!user,
   });
 
-  const { data: messages, isLoading: messagesLoading, refetch } = useQuery<Message[]>({
+  const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", matchId],
     enabled: !!matchId && !!myProfile,
     refetchInterval: 3000,
@@ -39,8 +52,31 @@ export default function Chat() {
     enabled: !!myProfile,
   });
 
+  const { data: receivedGifts = [] } = useQuery<(SentGift & { gift: VirtualGift; sender: Profile })[]>({
+    queryKey: ["/api/gifts/received"],
+    enabled: !!myProfile,
+    refetchInterval: 5000,
+  });
+
   const currentMatch = matches?.find(m => m.id === matchId);
   const otherProfile = currentMatch?.profile;
+
+  const unseenGifts = receivedGifts.filter(
+    g => !g.seen && g.senderId === otherProfile?.id
+  );
+
+  useEffect(() => {
+    if (unseenGifts.length > 0 && !giftAnimation) {
+      const latest = unseenGifts[0];
+      setGiftAnimation({
+        gift: latest.gift,
+        senderName: latest.sender.name,
+        message: latest.message,
+      });
+      apiRequest("PATCH", `/api/gifts/${latest.id}/seen`);
+      queryClient.invalidateQueries({ queryKey: ["/api/gifts/received"] });
+    }
+  }, [unseenGifts, giftAnimation, otherProfile]);
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
@@ -110,6 +146,8 @@ export default function Chat() {
   }
 
   const groupedMessages = groupMessagesByDate(messages || []);
+
+  const giftsFromThisUser = receivedGifts.filter(g => g.senderId === otherProfile?.id && g.seen);
 
   return (
     <div className="flex flex-col h-full">
@@ -212,11 +250,34 @@ export default function Chat() {
             </div>
           ))
         )}
+
+        {giftsFromThisUser.length > 0 && (
+          <div className="flex items-center justify-center my-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
+              <Gift className="w-3.5 h-3.5 text-yellow-400" />
+              <span className="text-xs text-white/70">
+                {giftsFromThisUser.length} {giftsFromThisUser.length === 1 ? "regalo ricevuto" : "regali ricevuti"}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 bg-black/40 backdrop-blur-xl border-t border-white/10">
         <div className="flex items-center gap-2">
+          {otherProfile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowGiftPicker(true)}
+              className="text-yellow-400"
+              data-testid="button-open-gifts"
+            >
+              <Gift className="w-5 h-5" />
+            </Button>
+          )}
           <Input
             ref={inputRef}
             value={messageText}
@@ -238,6 +299,28 @@ export default function Chat() {
           </Button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showGiftPicker && otherProfile && (
+          <GiftPicker
+            receiverId={otherProfile.id}
+            receiverName={otherProfile.name}
+            onClose={() => setShowGiftPicker(false)}
+            onGiftSent={(gift) => {
+              setShowGiftPicker(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {giftAnimation && (
+        <GiftAnimation
+          gift={giftAnimation.gift}
+          senderName={giftAnimation.senderName}
+          message={giftAnimation.message}
+          onComplete={() => setGiftAnimation(null)}
+        />
+      )}
     </div>
   );
 }
