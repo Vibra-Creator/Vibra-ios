@@ -90,10 +90,7 @@ export default function Register() {
         className="w-full max-w-md"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600 flex items-center justify-center mb-4"
-               style={{ boxShadow: "0 0 30px rgba(139, 92, 246, 0.5)" }}>
-            <Heart className="w-10 h-10 text-pink-300" />
-          </div>
+          <img src="/images/logo-heart.png" alt="Vibra" className="w-20 h-20 rounded-full mb-4" style={{ boxShadow: "0 0 30px rgba(139, 92, 246, 0.5)" }} />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Vibra
           </h1>

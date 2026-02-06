@@ -28,11 +28,8 @@ export function Header() {
     <header className="sticky top-0 z-40 w-full">
       <div className="flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-xl border-b border-white/10">
         <Link href="/" data-testid="link-home">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600 flex items-center justify-center"
-                 style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)" }}>
-              <Heart className="w-6 h-6 text-pink-300" strokeWidth={2} />
-            </div>
+          <div className="flex items-center gap-2">
+            <img src="/images/logo-heart.png" alt="Vibra" className="w-10 h-10 rounded-full" style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)" }} />
             <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Vibra
             </span>

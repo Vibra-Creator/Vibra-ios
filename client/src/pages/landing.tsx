@@ -34,11 +34,8 @@ export default function Landing() {
       </div>
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600 flex items-center justify-center"
-                 style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}>
-              <Heart className="w-5 h-5 text-pink-300" />
-            </div>
+          <div className="flex items-center gap-2">
+            <img src="/images/logo-heart.png" alt="Vibra" className="w-10 h-10 rounded-full" style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }} />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Vibra
             </span>
@@ -65,10 +62,7 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="w-28 h-28 mx-auto mb-8 rounded-full bg-gradient-to-b from-indigo-500 to-purple-600 flex items-center justify-center"
-                 style={{ boxShadow: "0 0 60px rgba(139, 92, 246, 0.5)" }}>
-              <Heart className="w-14 h-14 text-pink-300" />
-            </div>
+            <img src="/images/logo-vibra.png" alt="Vibra" className="w-64 mx-auto mb-8" style={{ filter: "drop-shadow(0 0 40px rgba(139, 92, 246, 0.5))" }} />
             
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               L'app di incontri che ti fa{" "}
