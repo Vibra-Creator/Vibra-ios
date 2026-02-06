@@ -9,19 +9,14 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
+import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 fs.mkdirSync(path.join(uploadsDir, "profiles"), { recursive: true });
 fs.mkdirSync(path.join(uploadsDir, "challenges"), { recursive: true });
 
-const challengeUpload = multer({
-  storage: multer.diskStorage({
-    destination: path.join(uploadsDir, "challenges"),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname) || ".jpg";
-      cb(null, `${randomUUID()}${ext}`);
-    },
-  }),
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -29,20 +24,7 @@ const challengeUpload = multer({
   },
 });
 
-const profilePhotoUpload = multer({
-  storage: multer.diskStorage({
-    destination: path.join(uploadsDir, "profiles"),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname) || ".jpg";
-      cb(null, `${randomUUID()}${ext}`);
-    },
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    cb(null, allowed.includes(file.mimetype));
-  },
-});
+const objectStorageService = new ObjectStorageService();
 
 export async function registerRoutes(
   httpServer: Server,
@@ -51,6 +33,7 @@ export async function registerRoutes(
   
   await setupAuth(app);
   registerAuthRoutes(app);
+  registerObjectStorageRoutes(app);
 
   app.use("/uploads", express.static(uploadsDir));
 
@@ -141,7 +124,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/profiles/upload-photo", isAuthenticated, profilePhotoUpload.single("photo"), async (req: any, res) => {
+  app.post("/api/profiles/upload-photo", isAuthenticated, memoryUpload.single("photo"), async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -156,15 +139,28 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Massimo 6 foto consentite" });
       }
 
-      const photoUrl = `/uploads/profiles/${req.file.filename}`;
-      const updatedPhotos = [...currentPhotos, photoUrl];
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+
+      await fetch(uploadURL, {
+        method: "PUT",
+        body: req.file.buffer,
+        headers: { "Content-Type": req.file.mimetype },
+      });
+
+      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+        owner: userId,
+        visibility: "public",
+      });
+
+      const updatedPhotos = [...currentPhotos, objectPath];
       const updateData: any = { photos: updatedPhotos };
       if (currentPhotos.length === 0 || userProfile.imageUrl === '/images/profile-1.png' || !userProfile.imageUrl) {
-        updateData.imageUrl = photoUrl;
+        updateData.imageUrl = objectPath;
       }
       await storage.updateProfile(userProfile.id, updateData);
 
-      res.json({ url: photoUrl, photos: updatedPhotos });
+      res.json({ url: objectPath, photos: updatedPhotos });
     } catch (error) {
       console.error("Error uploading profile photo:", error);
       res.status(500).json({ error: "Failed to upload photo" });
@@ -192,6 +188,30 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error removing profile photo:", error);
       res.status(500).json({ error: "Failed to remove photo" });
+    }
+  });
+
+  app.post("/api/profiles/set-profile-photo", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+
+      const { photoUrl } = req.body;
+      if (!photoUrl) return res.status(400).json({ error: "Missing photoUrl" });
+
+      const currentPhotos = userProfile.photos || [];
+      if (!currentPhotos.includes(photoUrl)) {
+        return res.status(400).json({ error: "Photo not found in your gallery" });
+      }
+
+      await storage.updateProfile(userProfile.id, { imageUrl: photoUrl });
+      res.json({ imageUrl: photoUrl });
+    } catch (error) {
+      console.error("Error setting profile photo:", error);
+      res.status(500).json({ error: "Failed to set profile photo" });
     }
   });
 
@@ -522,7 +542,7 @@ export async function registerRoutes(
   });
 
   // Challenge Submission API
-  app.post("/api/challenges/:id/submit", isAuthenticated, challengeUpload.single("photo"), async (req: any, res) => {
+  app.post("/api/challenges/:id/submit", isAuthenticated, memoryUpload.single("photo"), async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -532,11 +552,24 @@ export async function registerRoutes(
 
       if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
 
-      const imageUrl = `/uploads/challenges/${req.file.filename}`;
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+
+      await fetch(uploadURL, {
+        method: "PUT",
+        body: req.file.buffer,
+        headers: { "Content-Type": req.file.mimetype },
+      });
+
+      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+        owner: userId,
+        visibility: "public",
+      });
+
       const submission = await storage.createChallengeSubmission({
         challengeId: req.params.id,
         profileId: userProfile.id,
-        imageUrl,
+        imageUrl: objectPath,
       });
       res.status(201).json(submission);
     } catch (error) {

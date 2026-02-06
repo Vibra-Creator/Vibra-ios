@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2 } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -386,6 +386,22 @@ export default function ProfileEdit() {
     }
   };
 
+  const handleSetProfilePhoto = async (photoUrl: string) => {
+    try {
+      const response = await fetch("/api/profiles/set-profile-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoUrl }),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed");
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      toast({ title: "Foto profilo aggiornata!", description: "Questa foto è ora la tua immagine del profilo." });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile impostare la foto del profilo", variant: "destructive" });
+    }
+  };
+
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const filteredInterests = interestSearch
@@ -507,19 +523,36 @@ export default function ProfileEdit() {
                         data-testid="input-profile-photos"
                       />
                       <div className="grid grid-cols-3 gap-2">
-                        {uploadedPhotos.map((photo, idx) => (
-                          <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white/20">
-                            <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-profile-photo-${idx}`} />
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePhoto(photo)}
-                              className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
-                              data-testid={`button-remove-photo-${idx}`}
-                            >
-                              <X className="w-3 h-3 text-white" />
-                            </button>
-                          </div>
-                        ))}
+                        {uploadedPhotos.map((photo, idx) => {
+                          const isProfilePhoto = existingProfile?.imageUrl === photo;
+                          return (
+                            <div key={idx} className={`relative aspect-square rounded-xl overflow-hidden border-2 ${isProfilePhoto ? 'border-primary' : 'border-white/20'}`}>
+                              <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-profile-photo-${idx}`} />
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto(photo)}
+                                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                                data-testid={`button-remove-photo-${idx}`}
+                              >
+                                <X className="w-3 h-3 text-white" />
+                              </button>
+                              {isProfilePhoto ? (
+                                <div className="absolute bottom-0 left-0 right-0 bg-primary/80 py-0.5 text-center">
+                                  <span className="text-[10px] font-bold text-white">PROFILO</span>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetProfilePhoto(photo)}
+                                  className="absolute bottom-1 left-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                                  data-testid={`button-set-profile-photo-${idx}`}
+                                >
+                                  <UserCircle className="w-4 h-4 text-white/70" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                         {uploadedPhotos.length < 6 && (
                           <button
                             type="button"
