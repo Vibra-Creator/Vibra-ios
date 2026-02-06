@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins } from "lucide-react";
+import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins, Sofa, Shirt, Apple, Coffee } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -84,9 +84,20 @@ export default function Challenges() {
     { id: "6", title: "Talento Nascosto", description: "Mostra un tuo talento nascosto in foto - sorprendici!", points: 25, isActive: true, imageExample: null },
     { id: "7", title: "Look del Mattino", description: "Selfie appena sveglio/a senza filtri - sii autentico/a!", points: 20, isActive: true, imageExample: null },
     { id: "8", title: "Outfit Creativo", description: "Indossa qualcosa di creativo o divertente e fotografati!", points: 15, isActive: true, imageExample: null },
+    { id: "9", title: "Angolo Relax", description: "Quale e' il posto dove ti senti a casa? Mostraci il tuo angolo di pace!", points: 15, isActive: true, imageExample: null },
+    { id: "10", title: "Outfit del \"Ma Anche No\"", description: "Indossa l'abbinamento piu' assurdo che hai e sfoggialo con orgoglio!", points: 20, isActive: true, imageExample: null },
+    { id: "11", title: "Healthy Snack", description: "Mostraci il tuo spuntino o colazione salutare di oggi!", points: 10, isActive: true, imageExample: null },
+    { id: "12", title: "Caffeina Check", description: "Mostraci la tua tazza piu' originale dove bevi il caffe'!", points: 10, isActive: true, imageExample: null },
   ];
 
   const displayChallenges = challenges?.length ? challenges : defaultChallenges;
+
+  const challengeBannerConfig: Record<string, { icon: any; gradient: string }> = {
+    "Angolo Relax": { icon: Sofa, gradient: "from-teal-200 to-cyan-100" },
+    "Outfit del \"Ma Anche No\"": { icon: Shirt, gradient: "from-pink-200 to-rose-100" },
+    "Healthy Snack": { icon: Apple, gradient: "from-green-200 to-lime-100" },
+    "Caffeina Check": { icon: Coffee, gradient: "from-amber-200 to-yellow-100" },
+  };
 
   const getSubmissionForChallenge = (challengeId: string) => {
     return submissions?.find(s => s.challengeId === challengeId);
@@ -259,6 +270,8 @@ export default function Challenges() {
             const submission = getSubmissionForChallenge(challenge.id);
             const isCompleted = !!submission;
 
+            const bannerCfg = challengeBannerConfig[challenge.title];
+
             return (
               <motion.div
                 key={challenge.id}
@@ -267,54 +280,67 @@ export default function Challenges() {
                 transition={{ delay: index * 0.1 }}
               >
                 <div
-                  className={`rounded-xl p-4 overflow-hidden ${isCompleted ? "" : ""}`}
+                  className="rounded-xl overflow-hidden"
                   data-testid={`card-challenge-${challenge.id}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Badge variant="secondary" className="bg-accent/20 text-accent">
-                          <Star className="w-3 h-3 mr-1" />
-                          {challenge.points} punti
-                        </Badge>
-                        {isCompleted ? (
-                          <Badge variant="secondary" className="bg-green-500/20 text-green-400">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Completata
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Oggi
-                          </Badge>
-                        )}
+                  {bannerCfg && (
+                    <div className={`relative h-28 bg-gradient-to-r ${bannerCfg.gradient} flex items-center justify-center`}>
+                      {challenge.imageExample ? (
+                        <img src={challenge.imageExample} alt={challenge.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <bannerCfg.icon className="w-14 h-14 text-gray-500/30" />
+                      )}
+                      <div className="absolute bottom-2 left-3">
+                        <h3 className="font-bold text-lg text-gray-800 drop-shadow-sm">{challenge.title}</h3>
                       </div>
-                      <h3 className="font-bold text-lg text-white mb-1">{challenge.title}</h3>
-                      <p className="text-sm text-white/70">{challenge.description}</p>
                     </div>
-
-                    {isCompleted ? (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
-                        <img
-                          src={submission.imageUrl}
-                          alt="Submission"
-                          className="w-full h-full object-cover"
-                          data-testid={`img-submission-${challenge.id}`}
-                        />
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="gap-1 shrink-0"
-                        onClick={() => handleSelectPhoto(challenge.id)}
-                        disabled={submitMutation.isPending}
-                        data-testid={`button-submit-challenge-${challenge.id}`}
-                      >
-                        <ImagePlus className="w-4 h-4" />
-                        Carica Foto
-                      </Button>
+                  )}
+                  <div className="p-4">
+                    {!bannerCfg && (
+                      <h3 className="font-bold text-lg text-white mb-1">{challenge.title}</h3>
                     )}
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <Badge variant="secondary" className="bg-accent/20 text-accent">
+                        <Star className="w-3 h-3 mr-1" />
+                        {challenge.points} punti
+                      </Badge>
+                      {isCompleted ? (
+                        <Badge variant="secondary" className="bg-green-500/20 text-green-400">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Completata
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Oggi
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-white/70 mb-3">{challenge.description}</p>
+                    <div className="flex items-center justify-end gap-3">
+                      {isCompleted ? (
+                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                          <img
+                            src={submission.imageUrl}
+                            alt="Submission"
+                            className="w-full h-full object-cover"
+                            data-testid={`img-submission-${challenge.id}`}
+                          />
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="gap-1 shrink-0"
+                          onClick={() => handleSelectPhoto(challenge.id)}
+                          disabled={submitMutation.isPending}
+                          data-testid={`button-submit-challenge-${challenge.id}`}
+                        >
+                          <ImagePlus className="w-4 h-4" />
+                          Carica Foto
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </motion.div>
