@@ -13,6 +13,8 @@ import ProfileEdit from "@/pages/profile-edit";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Landing from "@/pages/landing";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import Chat from "@/pages/chat";
 import Admin from "@/pages/admin";
 import Rooms from "@/pages/rooms";
@@ -20,16 +22,23 @@ import Challenges from "@/pages/challenges";
 import PrivateRooms from "@/pages/private-rooms";
 import PrivateRoomDetail from "@/pages/private-room-detail";
 import RoomDetail from "@/pages/room-detail";
-import Consent from "@/pages/consent";
 import { useAuth } from "@/hooks/use-auth";
 
-const publicPages = ["/privacy", "/terms", "/consent"];
+const publicPages = ["/privacy", "/terms", "/login", "/register"];
+
+function RedirectHome() {
+  const [, setLocation] = useLocation();
+  setLocation("/");
+  return null;
+}
 
 function AuthenticatedRouter() {
   return (
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/login" component={RedirectHome} />
+      <Route path="/register" component={RedirectHome} />
       <Route path="/" component={Home} />
       <Route path="/matches" component={Matches} />
       <Route path="/chat/:matchId" component={Chat} />
@@ -51,7 +60,8 @@ function UnauthenticatedRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
-      <Route path="/consent" component={Consent} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/" component={Landing} />
       <Route component={Landing} />
     </Switch>

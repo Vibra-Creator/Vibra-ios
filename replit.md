@@ -15,7 +15,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Video Background Support**: Animated starfield background
 - **Generated Profile Images**: AI-generated alien humanoid portraits
 - **PWA Support**: Installable on mobile devices as a standalone app
-- **Replit Auth**: Login with Google, Apple, GitHub, Email
+- **Email/Password Auth**: Custom authentication with bcrypt password hashing and session management
 - **Interest Rooms**: Join public chat rooms based on interests (Stanze)
 - **Daily Challenges**: Complete photo challenges to earn points (Sfide Giornaliere)
 - **Virtual Gifts**: Spend earned points to send animated gifts to other users (Regali Virtuali)

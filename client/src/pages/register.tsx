@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
-import { SiGoogle, SiApple } from "react-icons/si";
+import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -45,37 +45,33 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      localStorage.setItem("vibra_user_id", "user-1");
-      localStorage.setItem("vibra_user_email", email);
-      localStorage.setItem("vibra_user_name", name);
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Impossibile creare l'account");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Benvenuto su Vibra!",
         description: "Account creato con successo",
       });
       setLocation("/profile/edit");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Errore",
-        description: "Impossibile creare l'account",
+        description: error.message || "Impossibile creare l'account",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGoogleLogin = () => {
-    toast({
-      title: "Google Login",
-      description: "Funzionalità in arrivo presto!",
-    });
-  };
-
-  const handleAppleLogin = () => {
-    toast({
-      title: "Apple Login",
-      description: "Funzionalità in arrivo presto!",
-    });
   };
 
   return (
@@ -99,39 +95,6 @@ export default function Register() {
 
         <Card className="bg-white/10 backdrop-blur-xl border-white/10">
           <CardContent className="p-6 space-y-6">
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full h-12 text-base bg-white/10 border-white/20 text-white"
-                onClick={handleGoogleLogin}
-                data-testid="button-google-register"
-              >
-                <SiGoogle className="w-5 h-5 mr-3" />
-                Registrati con Google
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full h-12 text-base bg-white/10 border-white/20 text-white"
-                onClick={handleAppleLogin}
-                data-testid="button-apple-register"
-              >
-                <SiApple className="w-5 h-5 mr-3" />
-                Registrati con Apple
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/20" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-black/40 px-2 text-white/60">
-                  oppure
-                </span>
-              </div>
-            </div>
-
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-white/90">Nome</Label>

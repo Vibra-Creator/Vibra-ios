@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { SiGoogle, SiApple } from "react-icons/si";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -22,36 +22,33 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      localStorage.setItem("vibra_user_id", "user-1");
-      localStorage.setItem("vibra_user_email", email);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Credenziali non valide");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Benvenuto!",
         description: "Accesso effettuato con successo",
       });
       setLocation("/");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Errore",
-        description: "Credenziali non valide",
+        description: error.message || "Credenziali non valide",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGoogleLogin = () => {
-    toast({
-      title: "Google Login",
-      description: "Funzionalità in arrivo presto!",
-    });
-  };
-
-  const handleAppleLogin = () => {
-    toast({
-      title: "Apple Login",
-      description: "Funzionalità in arrivo presto!",
-    });
   };
 
   return (
@@ -75,39 +72,6 @@ export default function Login() {
 
         <Card className="bg-white/10 backdrop-blur-xl border-white/10">
           <CardContent className="p-6 space-y-6">
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full h-12 text-base bg-white/10 border-white/20 text-white"
-                onClick={handleGoogleLogin}
-                data-testid="button-google-login"
-              >
-                <SiGoogle className="w-5 h-5 mr-3" />
-                Continua con Google
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full h-12 text-base bg-white/10 border-white/20 text-white"
-                onClick={handleAppleLogin}
-                data-testid="button-apple-login"
-              >
-                <SiApple className="w-5 h-5 mr-3" />
-                Continua con Apple
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/20" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-black/40 px-2 text-white/60">
-                  oppure
-                </span>
-              </div>
-            </div>
-
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-white/90">Email</Label>
@@ -160,17 +124,12 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="text-center space-y-2">
-              <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-                Password dimenticata?
+            <p className="text-center text-sm text-white/60">
+              Non hai un account?{" "}
+              <Link href="/register" className="text-primary hover:underline">
+                Registrati
               </Link>
-              <p className="text-sm text-white/60">
-                Non hai un account?{" "}
-                <Link href="/register" className="text-primary hover:underline">
-                  Registrati
-                </Link>
-              </p>
-            </div>
+            </p>
           </CardContent>
         </Card>
 
