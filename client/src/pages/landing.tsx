@@ -55,14 +55,14 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="pt-24">
-        <section className="max-w-6xl mx-auto px-4 py-20 text-center">
+      <main className="pt-20">
+        <section className="max-w-6xl mx-auto px-4 py-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <img src="/images/logo-vibra.png" alt="Vibra" className="w-64 mx-auto mb-8" style={{ filter: "drop-shadow(0 0 40px rgba(139, 92, 246, 0.5))" }} />
+            <img src="/images/logo-vibra.png" alt="Vibra" className="w-52 mx-auto mb-6" style={{ filter: "drop-shadow(0 0 40px rgba(139, 92, 246, 0.5))" }} />
             
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               L'app di incontri che ti fa{" "}
