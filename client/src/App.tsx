@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoBackground } from "@/components/VideoBackground";
-import { Header } from "@/components/Header";
+import { Header, BottomNav } from "@/components/Header";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Matches from "@/pages/matches";
@@ -76,9 +76,10 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
       {showHeader && <Header />}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
       </main>
+      {showHeader && <BottomNav />}
     </div>
   );
 }

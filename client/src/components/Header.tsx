@@ -6,6 +6,23 @@ import { useAuth } from "@/hooks/use-auth";
 import type { User as UserType } from "@shared/schema";
 
 export function Header() {
+  return (
+    <header className="sticky top-0 z-40 w-full">
+      <div className="flex items-center justify-center px-4 py-3 bg-black/30 backdrop-blur-xl border-b border-white/10">
+        <Link href="/" data-testid="link-home">
+          <div className="flex items-center gap-2">
+            <img src="/images/logo-heart.png" alt="Vibra" className="w-10 h-10 rounded-full" style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)" }} />
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Vibra
+            </span>
+          </div>
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+export function BottomNav() {
   const [location] = useLocation();
   const { user } = useAuth();
 
@@ -25,39 +42,32 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full">
-      <div className="flex items-center justify-between px-4 py-3 bg-black/30 backdrop-blur-xl border-b border-white/10">
-        <Link href="/" data-testid="link-home">
-          <div className="flex items-center gap-2">
-            <img src="/images/logo-heart.png" alt="Vibra" className="w-10 h-10 rounded-full" style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)" }} />
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Vibra
-            </span>
-          </div>
-        </Link>
-
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const isActive = location === item.path;
-            return (
-              <Link key={item.path} href={item.path}>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
-                    isActive 
-                      ? "bg-primary text-white" 
-                      : "bg-secondary/30 text-white hover:bg-secondary/50"
-                  }`}
-                  data-testid={`nav-${item.label.toLowerCase()}`}
-                >
+    <nav className="sticky bottom-0 z-40 w-full bg-black/40 backdrop-blur-xl border-t border-white/10" data-testid="bottom-nav">
+      <div className="flex items-center justify-around px-2 py-2">
+        {navItems.map((item) => {
+          const isActive = location === item.path;
+          return (
+            <Link key={item.path} href={item.path}>
+              <motion.div
+                whileTap={{ scale: 0.9 }}
+                className="flex flex-col items-center gap-1"
+                data-testid={`nav-${item.label.toLowerCase()}`}
+              >
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
+                  isActive
+                    ? "bg-primary text-white"
+                    : "text-white/60"
+                }`}>
                   <item.icon className="w-5 h-5" />
-                </motion.div>
-              </Link>
-            );
-          })}
-        </nav>
+                </div>
+                <span className={`text-[10px] ${isActive ? "text-white font-medium" : "text-white/50"}`}>
+                  {item.label}
+                </span>
+              </motion.div>
+            </Link>
+          );
+        })}
       </div>
-    </header>
+    </nav>
   );
 }
