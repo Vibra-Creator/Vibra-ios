@@ -405,6 +405,8 @@ export default function ProfileEdit() {
       <div className="fixed inset-0 -z-10">
         {step === 1 ? (
           <img src="/backgrounds/vibra-alien-soldier.gif" alt="" className="w-full h-full object-cover" />
+        ) : step === 2 ? (
+          <img src="/backgrounds/vibra-partner-pref.gif" alt="" className="w-full h-full object-cover" />
         ) : (
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
             <source src="/backgrounds/vibra-video-2.mp4" type="video/mp4" />
