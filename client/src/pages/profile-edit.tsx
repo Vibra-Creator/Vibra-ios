@@ -403,9 +403,13 @@ export default function ProfileEdit() {
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-          <source src="/backgrounds/vibra-video-2.mp4" type="video/mp4" />
-        </video>
+        {step === 2 ? (
+          <img src="/backgrounds/vibra-alien-soldier.gif" alt="" className="w-full h-full object-cover" />
+        ) : (
+          <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+            <source src="/backgrounds/vibra-video-2.mp4" type="video/mp4" />
+          </video>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <div className="flex items-center gap-4 mb-4">
