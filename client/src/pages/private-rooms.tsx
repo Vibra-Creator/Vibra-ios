@@ -109,8 +109,8 @@ export default function PrivateRooms() {
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        <img src="/backgrounds/vibra-app.png" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
+        <img src="/images/private-rooms-bg.gif" alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
