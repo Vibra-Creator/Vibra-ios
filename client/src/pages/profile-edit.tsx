@@ -403,7 +403,7 @@ export default function ProfileEdit() {
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        {step === 2 ? (
+        {step === 1 ? (
           <img src="/backgrounds/vibra-alien-soldier.gif" alt="" className="w-full h-full object-cover" />
         ) : (
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
