@@ -47,11 +47,11 @@ export default function Landing() {
             <Link href="/terms" className="hover:text-white transition-colors">Termini</Link>
           </nav>
 
-          <a href="/api/login">
+          <Link href="/consent">
             <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-login-header">
               Accedi
             </Button>
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -77,12 +77,12 @@ export default function Landing() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="/api/login">
+              <Link href="/consent">
                 <Button size="lg" className="h-14 px-8 text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-get-started">
                   Inizia Ora
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </Button>
-              </a>
+              </Link>
             </div>
 
             <div className="mt-8 flex items-center justify-center gap-8 text-base text-white/70">
@@ -152,12 +152,12 @@ export default function Landing() {
             <p className="text-lg text-white/60 mb-8">
               Unisciti a migliaia di persone che hanno già trovato la loro connessione su Vibra
             </p>
-            <a href="/api/login">
+            <Link href="/consent">
               <Button size="lg" className="h-14 px-10 text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-join-now">
                 Entra in Vibrazione
                 <Heart className="w-5 h-5 ml-2" />
               </Button>
-            </a>
+            </Link>
           </motion.div>
         </section>
       </main>

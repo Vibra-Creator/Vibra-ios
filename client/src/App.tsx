@@ -19,9 +19,10 @@ import Rooms from "@/pages/rooms";
 import Challenges from "@/pages/challenges";
 import PrivateRooms from "@/pages/private-rooms";
 import RoomDetail from "@/pages/room-detail";
+import Consent from "@/pages/consent";
 import { useAuth } from "@/hooks/use-auth";
 
-const publicPages = ["/privacy", "/terms"];
+const publicPages = ["/privacy", "/terms", "/consent"];
 
 function AuthenticatedRouter() {
   return (
@@ -48,6 +49,7 @@ function UnauthenticatedRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/consent" component={Consent} />
       <Route path="/" component={Landing} />
       <Route component={Landing} />
     </Switch>
