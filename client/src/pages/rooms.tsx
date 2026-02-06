@@ -8,6 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import type { Room } from "@shared/schema";
 
+const ROOM_BANNERS: Record<string, string> = {
+  "1": "/images/room-banner-1.jpg",
+  "2": "/images/room-banner-2.jpg",
+  "3": "/images/room-banner-3.jpg",
+  "4": "/images/room-banner-4.jpg",
+  "5": "/images/room-banner-5.jpg",
+  "6": "/images/room-banner-6.jpg",
+};
+
 function RoomSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -39,11 +48,7 @@ export default function Rooms() {
   const displayRooms = rooms?.length ? rooms : defaultRooms;
 
   return (
-    <div className="flex-1 p-4 pb-8 overflow-y-auto">
-      <div className="fixed inset-0 -z-10">
-        <img src="/backgrounds/vibra-scene.png" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
-      </div>
+    <div className="flex-1 p-4 pb-8 overflow-y-auto" style={{ backgroundColor: "#e8e0f0" }}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -54,8 +59,8 @@ export default function Rooms() {
             <Users className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white" data-testid="text-rooms-title">Stanze</h1>
-            <p className="text-sm text-white/60" data-testid="text-rooms-subtitle">Entra in stanze basate sui tuoi interessi</p>
+            <h1 className="text-2xl font-bold text-gray-900" data-testid="text-rooms-title">Stanze</h1>
+            <p className="text-sm text-gray-600" data-testid="text-rooms-subtitle">Entra in stanze basate sui tuoi interessi</p>
           </div>
         </div>
       </motion.div>
@@ -64,51 +69,52 @@ export default function Rooms() {
         <RoomSkeleton />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {displayRooms.map((room, index) => (
-            <motion.div
-              key={room.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <div 
-                className="rounded-xl overflow-hidden cursor-pointer group"
-                onClick={() => setLocation(`/room/${room.id}`)}
-                data-testid={`card-room-${room.id}`}
+          {displayRooms.map((room, index) => {
+            const bannerUrl = ROOM_BANNERS[String(room.id)] || ROOM_BANNERS["1"];
+            return (
+              <motion.div
+                key={room.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
               >
-                <div className="relative h-32">
-                  <div 
-                    className="absolute inset-0 bg-gradient-to-br from-primary/80 to-accent/80"
-                    style={{
-                      backgroundImage: `url(/backgrounds/vibra-dance.png)`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <Badge variant="secondary" className="mb-2 bg-primary/80 text-primary-foreground">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      {room.interest}
-                    </Badge>
-                    <h3 className="text-lg font-bold text-white">{room.name}</h3>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <p className="text-sm text-white/70 mb-3">{room.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
-                      <Users className="w-4 h-4 text-cyan-300/80" />
-                      <span className="text-cyan-300/80">{(room as any).memberCount || Math.floor(Math.random() * 50 + 10)} membri</span>
+                <div
+                  className="rounded-xl overflow-hidden cursor-pointer group shadow-md hover-elevate"
+                  style={{ backgroundColor: "#f5f0fa" }}
+                  onClick={() => setLocation(`/room/${room.id}`)}
+                  data-testid={`card-room-${room.id}`}
+                >
+                  <div className="relative h-36">
+                    <img
+                      src={bannerUrl}
+                      alt={room.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <Badge variant="secondary" className="mb-2 bg-primary/80 text-primary-foreground">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        {room.interest}
+                      </Badge>
+                      <h3 className="text-lg font-bold text-white drop-shadow-md">{room.name}</h3>
                     </div>
-                    <Button size="sm" variant="ghost" className="gap-1 group-hover:text-primary" data-testid={`button-enter-room-${room.id}`}>
-                      Entra <ArrowRight className="w-4 h-4" />
-                    </Button>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm text-gray-700 mb-3">{room.description}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
+                        <Users className="w-4 h-4 text-primary" />
+                        <span className="text-primary font-medium">{(room as any).memberCount || Math.floor(Math.random() * 50 + 10)} membri</span>
+                      </div>
+                      <Button size="sm" variant="ghost" className="gap-1" data-testid={`button-enter-room-${room.id}`}>
+                        Entra <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </div>
