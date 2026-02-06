@@ -18,6 +18,7 @@ import Admin from "@/pages/admin";
 import Rooms from "@/pages/rooms";
 import Challenges from "@/pages/challenges";
 import PrivateRooms from "@/pages/private-rooms";
+import PrivateRoomDetail from "@/pages/private-room-detail";
 import RoomDetail from "@/pages/room-detail";
 import Consent from "@/pages/consent";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,6 +40,7 @@ function AuthenticatedRouter() {
       <Route path="/room/:roomId" component={RoomDetail} />
       <Route path="/challenges" component={Challenges} />
       <Route path="/private-rooms" component={PrivateRooms} />
+      <Route path="/private-room/:roomId" component={PrivateRoomDetail} />
       <Route component={NotFound} />
     </Switch>
   );

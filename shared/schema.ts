@@ -147,6 +147,16 @@ export const privateRoomRequests = pgTable("private_room_requests", {
   respondedAt: timestamp("responded_at"),
 });
 
+export const privateRoomMessages = pgTable("private_room_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderImage: text("sender_image"),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Sfide giornaliere
 export const dailyChallenges = pgTable("daily_challenges", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -204,6 +214,7 @@ export type RoomMessage = typeof roomMessages.$inferSelect;
 export type Room = typeof rooms.$inferSelect;
 export type PrivateRoom = typeof privateRooms.$inferSelect;
 export type PrivateRoomRequest = typeof privateRoomRequests.$inferSelect;
+export type PrivateRoomMessage = typeof privateRoomMessages.$inferSelect;
 export type DailyChallenge = typeof dailyChallenges.$inferSelect;
 export type ChallengeSubmission = typeof challengeSubmissions.$inferSelect;
 export type VirtualGift = typeof virtualGifts.$inferSelect;

@@ -4,10 +4,12 @@ import {
   type Swipe, type InsertSwipe,
   type Match, type InsertMatch,
   type Message, type InsertMessage,
-  type Room, type RoomMessage, type PrivateRoom, type DailyChallenge, type ChallengeSubmission,
+  type Room, type RoomMessage, type PrivateRoom, type PrivateRoomRequest, type PrivateRoomMessage,
+  type DailyChallenge, type ChallengeSubmission,
   type VirtualGift, type SentGift,
   users, profiles, swipes, matches, messages,
-  rooms, roomMembers, roomMessages, privateRooms, dailyChallenges, challengeSubmissions,
+  rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
+  dailyChallenges, challengeSubmissions,
   virtualGifts, sentGifts
 } from "@shared/schema";
 import { db } from "./db";
@@ -52,6 +54,16 @@ export interface IStorage {
   joinRoom(roomId: string, profileId: string): Promise<void>;
   getChallenges(): Promise<DailyChallenge[]>;
   getPrivateRooms(): Promise<PrivateRoom[]>;
+  getPrivateRoom(id: string): Promise<PrivateRoom | undefined>;
+  createPrivateRoom(data: { ownerId: string; name: string; description?: string; imageUrl?: string }): Promise<PrivateRoom>;
+  requestPrivateRoomAccess(roomId: string, requesterId: string): Promise<PrivateRoomRequest>;
+  getPrivateRoomRequests(roomId: string): Promise<(PrivateRoomRequest & { requester: Profile })[]>;
+  getMyPrivateRoomRequest(roomId: string, requesterId: string): Promise<PrivateRoomRequest | undefined>;
+  respondToPrivateRoomRequest(requestId: string, status: "approved" | "rejected"): Promise<PrivateRoomRequest | undefined>;
+  getPrivateRoomMembers(roomId: string): Promise<Profile[]>;
+  getPrivateRoomMessages(roomId: string): Promise<PrivateRoomMessage[]>;
+  createPrivateRoomMessage(msg: { roomId: string; senderId: string; senderName: string; senderImage?: string; content: string }): Promise<PrivateRoomMessage>;
+  isPrivateRoomMember(roomId: string, profileId: string): Promise<boolean>;
   createChallengeSubmission(submission: { challengeId: string; profileId: string; imageUrl: string }): Promise<ChallengeSubmission>;
   getChallengeSubmissions(profileId: string): Promise<ChallengeSubmission[]>;
   getAllChallengeSubmissions(): Promise<ChallengeSubmission[]>;
@@ -267,6 +279,109 @@ export class DatabaseStorage implements IStorage {
 
   async getPrivateRooms(): Promise<PrivateRoom[]> {
     return db.select().from(privateRooms).where(eq(privateRooms.isActive, true));
+  }
+
+  async getPrivateRoom(id: string): Promise<PrivateRoom | undefined> {
+    const [room] = await db.select().from(privateRooms).where(eq(privateRooms.id, id));
+    return room;
+  }
+
+  async createPrivateRoom(data: { ownerId: string; name: string; description?: string; imageUrl?: string }): Promise<PrivateRoom> {
+    const [room] = await db.insert(privateRooms).values({
+      ownerId: data.ownerId,
+      name: data.name,
+      description: data.description || null,
+      imageUrl: data.imageUrl || null,
+      isActive: true,
+    }).returning();
+    return room;
+  }
+
+  async requestPrivateRoomAccess(roomId: string, requesterId: string): Promise<PrivateRoomRequest> {
+    const existing = await this.getMyPrivateRoomRequest(roomId, requesterId);
+    if (existing) return existing;
+    const [request] = await db.insert(privateRoomRequests).values({
+      roomId,
+      requesterId,
+      status: "pending",
+    }).returning();
+    return request;
+  }
+
+  async getPrivateRoomRequests(roomId: string): Promise<(PrivateRoomRequest & { requester: Profile })[]> {
+    const requests = await db.select().from(privateRoomRequests)
+      .where(eq(privateRoomRequests.roomId, roomId))
+      .orderBy(desc(privateRoomRequests.createdAt));
+    const result: (PrivateRoomRequest & { requester: Profile })[] = [];
+    for (const req of requests) {
+      const requester = await this.getProfile(req.requesterId);
+      if (requester) {
+        result.push({ ...req, requester });
+      }
+    }
+    return result;
+  }
+
+  async getMyPrivateRoomRequest(roomId: string, requesterId: string): Promise<PrivateRoomRequest | undefined> {
+    const [request] = await db.select().from(privateRoomRequests)
+      .where(and(
+        eq(privateRoomRequests.roomId, roomId),
+        eq(privateRoomRequests.requesterId, requesterId)
+      ));
+    return request;
+  }
+
+  async respondToPrivateRoomRequest(requestId: string, status: "approved" | "rejected"): Promise<PrivateRoomRequest | undefined> {
+    const [result] = await db.update(privateRoomRequests)
+      .set({ status, respondedAt: new Date() })
+      .where(eq(privateRoomRequests.id, requestId))
+      .returning();
+    return result;
+  }
+
+  async getPrivateRoomMembers(roomId: string): Promise<Profile[]> {
+    const approvedRequests = await db.select().from(privateRoomRequests)
+      .where(and(
+        eq(privateRoomRequests.roomId, roomId),
+        eq(privateRoomRequests.status, "approved")
+      ));
+    const members: Profile[] = [];
+    for (const req of approvedRequests) {
+      const profile = await this.getProfile(req.requesterId);
+      if (profile) members.push(profile);
+    }
+    const room = await this.getPrivateRoom(roomId);
+    if (room) {
+      const owner = await this.getProfile(room.ownerId);
+      if (owner && !members.find(m => m.id === owner.id)) {
+        members.unshift(owner);
+      }
+    }
+    return members;
+  }
+
+  async getPrivateRoomMessages(roomId: string): Promise<PrivateRoomMessage[]> {
+    return db.select().from(privateRoomMessages)
+      .where(eq(privateRoomMessages.roomId, roomId))
+      .orderBy(privateRoomMessages.createdAt);
+  }
+
+  async createPrivateRoomMessage(msg: { roomId: string; senderId: string; senderName: string; senderImage?: string; content: string }): Promise<PrivateRoomMessage> {
+    const [result] = await db.insert(privateRoomMessages).values(msg).returning();
+    return result;
+  }
+
+  async isPrivateRoomMember(roomId: string, profileId: string): Promise<boolean> {
+    const room = await this.getPrivateRoom(roomId);
+    if (!room) return false;
+    if (room.ownerId === profileId) return true;
+    const [request] = await db.select().from(privateRoomRequests)
+      .where(and(
+        eq(privateRoomRequests.roomId, roomId),
+        eq(privateRoomRequests.requesterId, profileId),
+        eq(privateRoomRequests.status, "approved")
+      ));
+    return !!request;
   }
 
   async createChallengeSubmission(submission: { challengeId: string; profileId: string; imageUrl: string }): Promise<ChallengeSubmission> {

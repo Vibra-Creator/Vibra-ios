@@ -597,11 +597,160 @@ export async function registerRoutes(
   // Private Rooms API
   app.get("/api/private-rooms", isAuthenticated, async (req, res) => {
     try {
-      const privateRooms = await storage.getPrivateRooms();
-      res.json(privateRooms);
+      const rooms = await storage.getPrivateRooms();
+      res.json(rooms);
     } catch (error) {
       console.error("Error fetching private rooms:", error);
       res.status(500).json({ error: "Failed to fetch private rooms" });
+    }
+  });
+
+  app.get("/api/private-rooms/:id", isAuthenticated, async (req, res) => {
+    try {
+      const room = await storage.getPrivateRoom(req.params.id);
+      if (!room) return res.status(404).json({ error: "Room not found" });
+      res.json(room);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch room" });
+    }
+  });
+
+  app.post("/api/private-rooms", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) {
+        console.error("Private room create: no profile for userId", userId);
+        return res.status(400).json({ error: "Profile required" });
+      }
+      const { name, description, imageUrl } = req.body;
+      if (!name) return res.status(400).json({ error: "Room name is required" });
+      const room = await storage.createPrivateRoom({
+        ownerId: userProfile.id,
+        name,
+        description,
+        imageUrl: imageUrl || userProfile.imageUrl || null,
+      });
+      res.json(room);
+    } catch (error) {
+      console.error("Error creating private room:", error);
+      res.status(500).json({ error: "Failed to create room" });
+    }
+  });
+
+  app.post("/api/private-rooms/:id/request", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(400).json({ error: "Profile required" });
+      const room = await storage.getPrivateRoom(req.params.id);
+      if (!room) return res.status(404).json({ error: "Room not found" });
+      if (room.ownerId === userProfile.id) return res.status(400).json({ error: "You own this room" });
+      const request = await storage.requestPrivateRoomAccess(req.params.id, userProfile.id);
+      res.json(request);
+    } catch (error) {
+      console.error("Error requesting access:", error);
+      res.status(500).json({ error: "Failed to request access" });
+    }
+  });
+
+  app.get("/api/private-rooms/:id/requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(400).json({ error: "Profile required" });
+      const room = await storage.getPrivateRoom(req.params.id);
+      if (!room) return res.status(404).json({ error: "Room not found" });
+      if (room.ownerId !== userProfile.id) return res.status(403).json({ error: "Only owner can view requests" });
+      const requests = await storage.getPrivateRoomRequests(req.params.id);
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch requests" });
+    }
+  });
+
+  app.get("/api/private-rooms/:id/my-request", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json(null);
+      const request = await storage.getMyPrivateRoomRequest(req.params.id, userProfile.id);
+      res.json(request || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check request status" });
+    }
+  });
+
+  app.post("/api/private-rooms/requests/:requestId/respond", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(400).json({ error: "Profile required" });
+      const { status } = req.body;
+      if (!["approved", "rejected"].includes(status)) return res.status(400).json({ error: "Invalid status" });
+      const result = await storage.respondToPrivateRoomRequest(req.params.requestId, status);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to respond to request" });
+    }
+  });
+
+  app.get("/api/private-rooms/:id/members", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(400).json({ error: "Profile required" });
+      const isMember = await storage.isPrivateRoomMember(req.params.id, userProfile.id);
+      if (!isMember) return res.json([]);
+      const members = await storage.getPrivateRoomMembers(req.params.id);
+      res.json(members);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch members" });
+    }
+  });
+
+  app.get("/api/private-rooms/:id/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(400).json({ error: "Profile required" });
+      const isMember = await storage.isPrivateRoomMember(req.params.id, userProfile.id);
+      if (!isMember) return res.status(403).json({ error: "Not a member of this room" });
+      const messages = await storage.getPrivateRoomMessages(req.params.id);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/private-rooms/:id/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(400).json({ error: "Profile required" });
+      const isMember = await storage.isPrivateRoomMember(req.params.id, userProfile.id);
+      if (!isMember) return res.status(403).json({ error: "Not a member of this room" });
+      const { content } = req.body;
+      if (!content?.trim()) return res.status(400).json({ error: "Message content required" });
+      const message = await storage.createPrivateRoomMessage({
+        roomId: req.params.id,
+        senderId: userProfile.id,
+        senderName: userProfile.name,
+        senderImage: userProfile.imageUrl || undefined,
+        content: content.trim(),
+      });
+      res.json(message);
+    } catch (error) {
+      console.error("Error sending private room message:", error);
+      res.status(500).json({ error: "Failed to send message" });
     }
   });
 
