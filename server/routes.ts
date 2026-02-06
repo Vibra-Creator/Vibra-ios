@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema } from "@shared/schema";
@@ -6,11 +7,16 @@ import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { randomUUID } from "crypto";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+fs.mkdirSync(path.join(uploadsDir, "profiles"), { recursive: true });
+fs.mkdirSync(path.join(uploadsDir, "challenges"), { recursive: true });
 
 const challengeUpload = multer({
   storage: multer.diskStorage({
-    destination: path.join(process.cwd(), "client/public/uploads/challenges"),
+    destination: path.join(uploadsDir, "challenges"),
     filename: (_req, file, cb) => {
       const ext = path.extname(file.originalname) || ".jpg";
       cb(null, `${randomUUID()}${ext}`);
@@ -25,7 +31,7 @@ const challengeUpload = multer({
 
 const profilePhotoUpload = multer({
   storage: multer.diskStorage({
-    destination: path.join(process.cwd(), "client/public/uploads/profiles"),
+    destination: path.join(uploadsDir, "profiles"),
     filename: (_req, file, cb) => {
       const ext = path.extname(file.originalname) || ".jpg";
       cb(null, `${randomUUID()}${ext}`);
@@ -45,6 +51,8 @@ export async function registerRoutes(
   
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  app.use("/uploads", express.static(uploadsDir));
 
   app.get("/api/profiles/me", isAuthenticated, async (req: any, res) => {
     try {

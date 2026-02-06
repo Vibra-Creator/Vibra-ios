@@ -85,13 +85,13 @@ export default function Landing() {
               </a>
             </div>
 
-            <div className="mt-8 flex items-center justify-center gap-6 text-sm text-white/60">
+            <div className="mt-8 flex items-center justify-center gap-8 text-base text-white/70">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-green-500" />
-                <span>Gratis per sempre</span>
+                <ShieldCheck className="w-5 h-5 text-green-500" />
+                <span>Free per un periodo di 30 giorni</span>
               </div>
               <div className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-pink-500" />
+                <Heart className="w-5 h-5 text-pink-500" />
                 <span>Nessun costo nascosto</span>
               </div>
             </div>
