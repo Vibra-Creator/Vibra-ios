@@ -150,7 +150,11 @@ export async function registerRoutes(
 
       const photoUrl = `/uploads/profiles/${req.file.filename}`;
       const updatedPhotos = [...currentPhotos, photoUrl];
-      await storage.updateProfile(userProfile.id, { photos: updatedPhotos });
+      const updateData: any = { photos: updatedPhotos };
+      if (currentPhotos.length === 0 || userProfile.imageUrl === '/images/profile-1.png' || !userProfile.imageUrl) {
+        updateData.imageUrl = photoUrl;
+      }
+      await storage.updateProfile(userProfile.id, updateData);
 
       res.json({ url: photoUrl, photos: updatedPhotos });
     } catch (error) {
@@ -170,7 +174,11 @@ export async function registerRoutes(
       const { photoUrl } = req.body;
       const currentPhotos = userProfile.photos || [];
       const updatedPhotos = currentPhotos.filter((p: string) => p !== photoUrl);
-      await storage.updateProfile(userProfile.id, { photos: updatedPhotos });
+      const updateData: any = { photos: updatedPhotos };
+      if (userProfile.imageUrl === photoUrl) {
+        updateData.imageUrl = updatedPhotos.length > 0 ? updatedPhotos[0] : '/images/profile-1.png';
+      }
+      await storage.updateProfile(userProfile.id, updateData);
 
       res.json({ photos: updatedPhotos });
     } catch (error) {
