@@ -3,6 +3,7 @@ import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight } from "lucid
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { VortexLogo } from "@/components/VortexLogo";
 
 export default function Landing() {
   const features = [
@@ -35,7 +36,7 @@ export default function Landing() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/images/logo-heart.png" alt="Vibra" className="w-10 h-10 rounded-full" style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }} />
+            <VortexLogo size="sm" />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Vibra
             </span>
@@ -62,7 +63,9 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <img src="/images/logo-vibra.png" alt="Vibra" className="w-52 mx-auto mb-6" style={{ filter: "drop-shadow(0 0 40px rgba(139, 92, 246, 0.5))" }} />
+            <div className="mx-auto mb-6">
+              <VortexLogo size="lg" />
+            </div>
             
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               L'app di incontri che ti fa{" "}

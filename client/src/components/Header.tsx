@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { VortexLogo } from "@/components/VortexLogo";
 import type { User as UserType } from "@shared/schema";
 
 export function Header() {
@@ -11,7 +12,7 @@ export function Header() {
       <div className="flex items-center justify-center px-4 py-3 bg-black/30 backdrop-blur-xl border-b border-white/10">
         <Link href="/" data-testid="link-home">
           <div className="flex items-center gap-2">
-            <img src="/images/logo-heart.png" alt="Vibra" className="w-10 h-10 rounded-full" style={{ boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)" }} />
+            <VortexLogo size="sm" />
             <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Vibra
             </span>

@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import { VortexLogo } from "@/components/VortexLogo";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -86,7 +87,7 @@ export default function Register() {
         className="w-full max-w-md"
       >
         <div className="flex flex-col items-center mb-8">
-          <img src="/images/logo-vibra.png" alt="Vibra" className="w-44 mb-2" style={{ filter: "drop-shadow(0 0 30px rgba(139, 92, 246, 0.5))" }} />
+          <VortexLogo size="md" className="mb-2" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Vibra
           </h1>
