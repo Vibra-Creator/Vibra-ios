@@ -344,14 +344,20 @@ export default function ProfileEdit() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Formato non valido", description: "Seleziona un'immagine (JPG, PNG, WebP)", variant: "destructive" });
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Formato non supportato", description: "Usa JPG, PNG, WebP o GIF.", variant: "destructive" });
+      if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "File troppo grande", description: "L'immagine deve essere inferiore a 10MB", variant: "destructive" });
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ title: "File troppo grande", description: `La foto deve essere massimo 5 MB. La tua è ${(file.size / (1024 * 1024)).toFixed(1)} MB.`, variant: "destructive" });
+      if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
+
     if (uploadedPhotos.length >= 6) {
       toast({ title: "Massimo 6 foto", description: "Rimuovi una foto prima di aggiungerne altre", variant: "destructive" });
       return;

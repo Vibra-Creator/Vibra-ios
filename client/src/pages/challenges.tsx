@@ -112,19 +112,21 @@ export default function Challenges() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
       toast({
-        title: "Formato non valido",
-        description: "Seleziona un file immagine (JPG, PNG, WebP, GIF)",
+        title: "Formato non supportato",
+        description: "Usa JPG, PNG, WebP o GIF.",
         variant: "destructive",
       });
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
       toast({
         title: "File troppo grande",
-        description: "L'immagine deve essere inferiore a 10MB",
+        description: `La foto deve essere massimo 5 MB. La tua è ${(file.size / (1024 * 1024)).toFixed(1)} MB.`,
         variant: "destructive",
       });
       return;
