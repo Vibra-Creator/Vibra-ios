@@ -1,7 +1,7 @@
-import { useRef, useEffect } from "react";
+import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770463123334.png";
 
 interface VortexLogoProps {
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   className?: string;
 }
 
@@ -9,31 +9,11 @@ const sizePx = {
   sm: 40,
   md: 80,
   lg: 144,
+  xl: 200,
 };
 
 export function VortexLogo({ size = "sm", className = "" }: VortexLogoProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const px = sizePx[size];
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const tryPlay = () => {
-      video.muted = true;
-      video.play().catch(() => {});
-    };
-
-    if (video.readyState >= 2) {
-      tryPlay();
-    } else {
-      video.addEventListener("loadeddata", tryPlay, { once: true });
-    }
-
-    return () => {
-      video.removeEventListener("loadeddata", tryPlay);
-    };
-  }, []);
 
   return (
     <div
@@ -41,21 +21,19 @@ export function VortexLogo({ size = "sm", className = "" }: VortexLogoProps) {
       style={{
         width: px,
         height: px,
-        borderRadius: "50%",
-        overflow: "hidden",
-        boxShadow: "0 0 25px rgba(139, 92, 246, 0.5)",
         flexShrink: 0,
       }}
+      data-testid="vibra-logo"
     >
-      <video
-        ref={videoRef}
-        src="/images/vibra-vortex.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      <img
+        src={vibraLogo}
+        alt="Vibra"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          display: "block",
+        }}
       />
     </div>
   );
