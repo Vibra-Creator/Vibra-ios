@@ -21,7 +21,14 @@ export default function Home() {
   });
 
   const { data: profiles, isLoading, error, refetch } = useQuery<Profile[]>({
-    queryKey: ["/api/profiles/swipable"],
+    queryKey: ["/api/profiles/swipable", myProfile?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/profiles/swipable?profileId=${myProfile?.id}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch profiles");
+      return res.json();
+    },
     enabled: !!myProfile,
   });
 

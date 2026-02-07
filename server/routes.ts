@@ -61,20 +61,17 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/profiles/swipable", isAuthenticated, async (req: any, res) => {
+  app.get("/api/profiles/swipable", async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
-      if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      const myProfile = await storage.getProfileByUserId(userId);
-      if (!myProfile) {
-        return res.status(404).json({ error: "Profile not found" });
+      const profileId = req.query.profileId as string;
+      if (!profileId) {
+        const allProfiles = await storage.getProfiles();
+        return res.json(allProfiles);
       }
       const allProfiles = await storage.getProfiles();
-      const swipedIds = await storage.getSwipedProfileIds(myProfile.id);
+      const swipedIds = await storage.getSwipedProfileIds(profileId);
       const swipedSet = new Set(swipedIds);
-      const swipable = allProfiles.filter(p => p.id !== myProfile.id && !swipedSet.has(p.id));
+      const swipable = allProfiles.filter(p => p.id !== profileId && !swipedSet.has(p.id));
       res.json(swipable);
     } catch (error) {
       console.error("Error fetching swipable profiles:", error);
