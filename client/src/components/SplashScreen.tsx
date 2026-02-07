@@ -8,33 +8,44 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   const [fadeOut, setFadeOut] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const dismiss = () => {
+    if (fadeOut) return;
+    setFadeOut(true);
+    setTimeout(onComplete, 800);
+  };
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    video.muted = false;
-    video.play().catch(() => {
-      video.muted = true;
-      video.play().catch(() => {});
-    });
-
-    const handleEnded = () => {
-      setFadeOut(true);
-      setTimeout(onComplete, 800);
+    const tryPlay = async () => {
+      try {
+        video.muted = true;
+        await video.play();
+        try {
+          video.muted = false;
+        } catch {}
+      } catch {
+        dismiss();
+      }
     };
 
-    video.addEventListener("ended", handleEnded);
+    if (video.readyState >= 2) {
+      tryPlay();
+    } else {
+      video.addEventListener("canplay", tryPlay, { once: true });
+    }
 
-    const fallback = setTimeout(() => {
-      setFadeOut(true);
-      setTimeout(onComplete, 800);
-    }, 12000);
+    video.addEventListener("ended", dismiss);
+
+    const fallback = setTimeout(dismiss, 12000);
 
     return () => {
-      video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("canplay", tryPlay);
+      video.removeEventListener("ended", dismiss);
       clearTimeout(fallback);
     };
-  }, [onComplete]);
+  }, []);
 
   return (
     <div
@@ -50,14 +61,12 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         opacity: fadeOut ? 0 : 1,
         transition: "opacity 0.8s ease-out",
       }}
-      onClick={() => {
-        setFadeOut(true);
-        setTimeout(onComplete, 800);
-      }}
+      onClick={dismiss}
     >
       <video
         ref={videoRef}
         src="/images/splash-video.mp4"
+        muted
         playsInline
         preload="auto"
         style={{
