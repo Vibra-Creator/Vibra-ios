@@ -244,7 +244,7 @@ export default function PrivateRoomDetail() {
             onChange={(e) => setMessageText(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Scrivi un messaggio..."
-            className="flex-1 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
+            className="flex-1 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
             disabled={sendMessage.isPending}
             data-testid="input-private-room-message"
           />
