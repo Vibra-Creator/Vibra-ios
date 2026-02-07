@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
-import { VortexLogo } from "@/components/VortexLogo";
+import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770463123334.png";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -86,12 +86,9 @@ export default function Register() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="flex flex-col items-center mb-8">
-          <VortexLogo size="md" className="mb-2" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Vibra
-          </h1>
-          <p className="text-white/70 mt-2">Crea il tuo account</p>
+        <div className="flex flex-col items-center mb-6">
+          <img src={vibraLogo} alt="Vibra" className="w-28 h-28 object-contain" data-testid="vibra-logo-register" />
+          <p className="text-white/70 mt-1">Crea il tuo account</p>
         </div>
 
         <Card className="bg-white/10 backdrop-blur-xl border-white/10">
