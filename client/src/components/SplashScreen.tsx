@@ -6,46 +6,52 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
   const [fadeOut, setFadeOut] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const dismissedRef = useRef(false);
 
   const dismiss = () => {
-    if (fadeOut) return;
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
     setFadeOut(true);
     setTimeout(onComplete, 800);
   };
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-
-    const tryPlay = async () => {
-      try {
-        video.muted = true;
-        await video.play();
-        try {
-          video.muted = false;
-        } catch {}
-      } catch {
-        dismiss();
-      }
-    };
-
-    if (video.readyState >= 2) {
-      tryPlay();
-    } else {
-      video.addEventListener("canplay", tryPlay, { once: true });
+    if (!video) {
+      dismiss();
+      return;
     }
 
+    const playVideo = () => {
+      video.play().catch(() => {
+        console.log("[Splash] Video play failed, dismissing");
+        dismiss();
+      });
+    };
+
     video.addEventListener("ended", dismiss);
+    video.addEventListener("error", () => {
+      console.log("[Splash] Video error");
+      setVideoError(true);
+      dismiss();
+    });
+
+    if (video.readyState >= 3) {
+      playVideo();
+    } else {
+      video.addEventListener("canplay", playVideo, { once: true });
+    }
 
     const fallback = setTimeout(dismiss, 12000);
 
     return () => {
-      video.removeEventListener("canplay", tryPlay);
-      video.removeEventListener("ended", dismiss);
       clearTimeout(fallback);
     };
   }, []);
+
+  if (videoError) return null;
 
   return (
     <div
@@ -65,9 +71,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     >
       <video
         ref={videoRef}
-        src="/images/splash-video.mp4"
         muted
         playsInline
+        autoPlay
         preload="auto"
         style={{
           position: "absolute",
@@ -77,7 +83,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
           objectFit: "contain",
           backgroundColor: "#000",
         }}
-      />
+      >
+        <source src="/images/splash-video.mp4" type="video/mp4" />
+      </video>
     </div>
   );
 }
