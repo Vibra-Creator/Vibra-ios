@@ -44,7 +44,7 @@ export async function setupAuth(app: Express) {
       }
 
       const existingUser = await authStorage.getUserByEmail(email);
-      if (existingUser) {
+      if (existingUser && existingUser.password) {
         return res.status(409).json({ message: "Un account con questa email esiste già" });
       }
 
@@ -53,12 +53,21 @@ export async function setupAuth(app: Express) {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(" ") || "";
 
-      const user = await authStorage.upsertUser({
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-      });
+      let user;
+      if (existingUser) {
+        const updated = await authStorage.updateUserPassword(existingUser.id, hashedPassword);
+        if (!updated) {
+          return res.status(500).json({ message: "Errore durante l'aggiornamento dell'account" });
+        }
+        user = updated;
+      } else {
+        user = await authStorage.upsertUser({
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+        });
+      }
 
       (req.session as any).userId = user.id;
       res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
