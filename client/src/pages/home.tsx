@@ -5,6 +5,7 @@ import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import type { Profile, Match } from "@shared/schema";
 
 export default function Home() {
@@ -12,6 +13,7 @@ export default function Home() {
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: myProfile, isLoading: profileLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -19,7 +21,7 @@ export default function Home() {
   });
 
   const { data: profiles, isLoading, error, refetch } = useQuery<Profile[]>({
-    queryKey: ["/api/profiles"],
+    queryKey: ["/api/profiles/swipable"],
     enabled: !!myProfile,
   });
 
@@ -30,7 +32,7 @@ export default function Home() {
         swipedId: profileId,
         liked,
       });
-      return response as { match: boolean; matchData?: Match };
+      return response as { swipe: any; match: boolean; matchData?: Match };
     },
     onSuccess: (data, variables) => {
       if (data.match) {
@@ -41,11 +43,24 @@ export default function Home() {
         }
         queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
       }
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
+    },
+    onError: (error: Error) => {
+      console.error("[Swipe error]", error.message);
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
+      if (error.message.includes("Already swiped")) {
+        return;
+      }
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante lo swipe. Riprova.",
+        variant: "destructive",
+      });
     },
   });
 
   const availableProfiles = profiles?.filter(p => 
-    p.id !== myProfile?.id && !swipedProfiles.has(p.id)
+    !swipedProfiles.has(p.id)
   ) || [];
   const currentProfile = availableProfiles[0];
   const nextProfile = availableProfiles[1];

@@ -61,6 +61,27 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/profiles/swipable", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      const allProfiles = await storage.getProfiles();
+      const swipedIds = await storage.getSwipedProfileIds(myProfile.id);
+      const swipedSet = new Set(swipedIds);
+      const swipable = allProfiles.filter(p => p.id !== myProfile.id && !swipedSet.has(p.id));
+      res.json(swipable);
+    } catch (error) {
+      console.error("Error fetching swipable profiles:", error);
+      res.status(500).json({ error: "Failed to fetch profiles" });
+    }
+  });
+
   app.get("/api/profiles/:id", async (req, res) => {
     try {
       const profile = await storage.getProfile(req.params.id);
@@ -219,8 +240,11 @@ export async function registerRoutes(
     try {
       const validatedData = insertSwipeSchema.parse(req.body);
       
+      console.log(`[SWIPE] ${validatedData.swiperId} -> ${validatedData.swipedId}, liked: ${validatedData.liked}`);
+      
       const existingSwipe = await storage.getSwipe(validatedData.swiperId, validatedData.swipedId);
       if (existingSwipe) {
+        console.log(`[SWIPE] Already swiped, skipping`);
         return res.status(400).json({ error: "Already swiped on this profile" });
       }
       
@@ -231,9 +255,11 @@ export async function registerRoutes(
       
       if (validatedData.liked) {
         const isMutualLike = await storage.checkMutualLike(validatedData.swiperId, validatedData.swipedId);
+        console.log(`[SWIPE] Mutual like check: ${isMutualLike}`);
         
         if (isMutualLike) {
           const existingMatch = await storage.getMatch(validatedData.swiperId, validatedData.swipedId);
+          console.log(`[SWIPE] Existing match: ${!!existingMatch}`);
           
           if (!existingMatch) {
             matchData = await storage.createMatch({
@@ -241,6 +267,7 @@ export async function registerRoutes(
               profile2Id: validatedData.swipedId,
             });
             match = true;
+            console.log(`[SWIPE] MATCH CREATED! ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
           }
         }
       }
@@ -248,9 +275,10 @@ export async function registerRoutes(
       res.json({ swipe, match, matchData });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("[SWIPE] Validation error:", error.errors);
         return res.status(400).json({ error: "Invalid swipe data", details: error.errors });
       }
-      console.error("Error creating swipe:", error);
+      console.error("[SWIPE] Error:", error);
       res.status(500).json({ error: "Failed to create swipe" });
     }
   });
