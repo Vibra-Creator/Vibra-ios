@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,15 @@ export default function PrivateRooms() {
     enabled: !!user,
   });
 
+  const { data: pointsData } = useQuery<{ points: number }>({
+    queryKey: ["/api/points/me"],
+    enabled: !!user,
+  });
+
+  const userPoints = pointsData?.points ?? myProfile?.points ?? 0;
+  const requiredPoints = 45;
+  const canCreateRoom = userPoints >= requiredPoints;
+
   const { data: privateRooms, isLoading } = useQuery<PrivateRoom[]>({
     queryKey: ["/api/private-rooms"],
     enabled: !!user,
@@ -60,8 +69,15 @@ export default function PrivateRooms() {
       setNewRoomName("");
       setNewRoomDescription("");
     },
-    onError: () => {
-      toast({ title: "Errore", description: "Impossibile creare la stanza.", variant: "destructive" });
+    onError: (error: any) => {
+      let msg = "Impossibile creare la stanza.";
+      try {
+        const raw = error?.message || "";
+        const jsonPart = raw.substring(raw.indexOf("{"));
+        const parsed = JSON.parse(jsonPart);
+        if (parsed.error) msg = parsed.error;
+      } catch {}
+      toast({ title: "Errore", description: msg, variant: "destructive" });
     },
   });
 
@@ -109,48 +125,64 @@ export default function PrivateRooms() {
             </div>
           </div>
 
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1" data-testid="button-create-room">
-                <Plus className="w-4 h-4" />
-                Crea Stanza
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Crea Stanza Privata</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
-                  <Input
-                    value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
-                    placeholder="Es. Il Mio Angolo Cosmico"
-                    data-testid="input-room-name"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Descrizione</label>
-                  <Textarea
-                    value={newRoomDescription}
-                    onChange={(e) => setNewRoomDescription(e.target.value)}
-                    placeholder="Descrivi la tua stanza..."
-                    className="resize-none"
-                    data-testid="input-room-description"
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={handleCreateRoom}
-                  disabled={createRoomMutation.isPending}
-                  data-testid="button-confirm-create-room"
-                >
-                  {createRoomMutation.isPending ? "Creazione..." : "Crea Stanza"}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-300 shrink-0" data-testid="badge-user-points">
+              <Star className="w-3 h-3 mr-1" />
+              {userPoints}/{requiredPoints} punti
+            </Badge>
+            <Dialog open={isCreateOpen} onOpenChange={(open) => {
+              if (open && !canCreateRoom) {
+                toast({
+                  title: "Punti insufficienti",
+                  description: `Servono almeno ${requiredPoints} punti per creare una stanza privata. Hai ${userPoints} punti. Completa le sfide giornaliere per guadagnare punti!`,
+                  variant: "destructive",
+                });
+                return;
+              }
+              setIsCreateOpen(open);
+            }}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1" disabled={!canCreateRoom} data-testid="button-create-room">
+                  <Plus className="w-4 h-4" />
+                  Crea Stanza
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Crea Stanza Privata</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
+                    <Input
+                      value={newRoomName}
+                      onChange={(e) => setNewRoomName(e.target.value)}
+                      placeholder="Es. Il Mio Angolo Cosmico"
+                      data-testid="input-room-name"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Descrizione</label>
+                    <Textarea
+                      value={newRoomDescription}
+                      onChange={(e) => setNewRoomDescription(e.target.value)}
+                      placeholder="Descrivi la tua stanza..."
+                      className="resize-none"
+                      data-testid="input-room-description"
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handleCreateRoom}
+                    disabled={createRoomMutation.isPending}
+                    data-testid="button-confirm-create-room"
+                  >
+                    {createRoomMutation.isPending ? "Creazione..." : "Crea Stanza"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </motion.div>
 

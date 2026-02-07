@@ -655,6 +655,15 @@ export async function registerRoutes(
         console.error("Private room create: no profile for userId", userId);
         return res.status(400).json({ error: "Profile required" });
       }
+      const currentPoints = userProfile.points ?? 0;
+      const requiredPoints = 45;
+      if (currentPoints < requiredPoints) {
+        return res.status(403).json({
+          error: `Servono almeno ${requiredPoints} punti per creare una stanza privata. Hai ${currentPoints} punti.`,
+          requiredPoints,
+          currentPoints,
+        });
+      }
       const { name, description, imageUrl } = req.body;
       if (!name) return res.status(400).json({ error: "Room name is required" });
       const room = await storage.createPrivateRoom({

@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, swipes } from "@shared/schema";
+import { profiles, swipes, privateRooms } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const seedProfiles = [
@@ -86,6 +86,21 @@ export async function seedDatabase() {
       console.log("Database seeded successfully!");
     } else {
       console.log("Database already has data, skipping seed.");
+    }
+
+    const defaultRoomId = "default-room-entra-chi-dico-io";
+    const existingDefaultRoom = await db.select().from(privateRooms).where(eq(privateRooms.id, defaultRoomId));
+    if (existingDefaultRoom.length === 0) {
+      console.log("Seeding default private room 'Entra chi dico io'...");
+      await db.insert(privateRooms).values({
+        id: defaultRoomId,
+        ownerId: "1",
+        name: "Entra chi dico io",
+        description: "Stanza soggetta ad accettazione",
+        imageUrl: "/images/profile-1.png",
+        isActive: true,
+      });
+      console.log("Default private room seeded.");
     }
   } catch (error) {
     console.error("Error seeding database:", error);
