@@ -81,16 +81,24 @@ export async function setupAuth(app: Express) {
     try {
       const { email, password } = req.body;
 
+      console.log("[LOGIN DEBUG] Attempt for email:", email, "| password length:", password?.length, "| password first/last char:", password?.[0], password?.[password?.length - 1]);
+
       if (!email || !password) {
+        console.log("[LOGIN DEBUG] Missing email or password");
         return res.status(400).json({ message: "Email e password sono obbligatori" });
       }
 
-      const user = await authStorage.getUserByEmail(email);
+      const trimmedEmail = email.trim().toLowerCase();
+      const user = await authStorage.getUserByEmail(trimmedEmail);
+      console.log("[LOGIN DEBUG] User found:", !!user, "| has password:", !!user?.password, "| user email in db:", user?.email);
+      
       if (!user || !user.password) {
+        console.log("[LOGIN DEBUG] No user or no password in DB");
         return res.status(401).json({ message: "Credenziali non valide" });
       }
 
       const isValid = await bcrypt.compare(password, user.password);
+      console.log("[LOGIN DEBUG] bcrypt compare result:", isValid, "| hash prefix:", user.password.substring(0, 10));
       if (!isValid) {
         return res.status(401).json({ message: "Credenziali non valide" });
       }
