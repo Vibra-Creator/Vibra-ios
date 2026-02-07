@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,7 +63,7 @@ const ProfileBackground = () => (
 
 export default function Profile() {
   const [, setLocation] = useLocation();
-  const { user } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
 
   const { data: profile, isLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -226,6 +226,16 @@ export default function Profile() {
           >
             <Settings className="w-5 h-5" />
             Impostazioni
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-3 text-red-400 border-red-400/30 hover:text-red-300"
+            onClick={() => logout()}
+            disabled={isLoggingOut}
+            data-testid="button-logout"
+          >
+            <LogOut className="w-5 h-5" />
+            {isLoggingOut ? "Uscita..." : "Esci"}
           </Button>
         </div>
       </motion.div>
