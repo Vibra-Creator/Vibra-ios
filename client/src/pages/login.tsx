@@ -42,9 +42,10 @@ export default function Login() {
       });
       setLocation("/");
     } catch (error: any) {
+      console.error("[LOGIN] Failed:", error.message, "| email:", email, "| pass length:", password.length);
       toast({
         title: "Errore",
-        description: error.message || "Credenziali non valide",
+        description: `${error.message || "Credenziali non valide"} (email: ${email.trim()}, pwd len: ${password.length})`,
         variant: "destructive",
       });
     } finally {
