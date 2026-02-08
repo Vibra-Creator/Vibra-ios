@@ -2,7 +2,9 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages } from "@shared/schema";
+import { db } from "./db";
+import { eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import multer from "multer";
@@ -493,6 +495,56 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating submission:", error);
       res.status(500).json({ error: "Failed to update submission" });
+    }
+  });
+
+  app.post("/api/admin/reset-test-data", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const testEmails = ["luna@test.com", "nova@test.com", "orion@test.com"];
+      const testProfileIds: string[] = [];
+
+      for (const email of testEmails) {
+        const testUser = await storage.getUserByEmail(email);
+        if (testUser) {
+          const profile = await storage.getProfileByUserId(testUser.id);
+          if (profile) testProfileIds.push(profile.id);
+        }
+      }
+
+      if (testProfileIds.length === 0) {
+        return res.json({ success: true, deleted: { swipes: 0, matches: 0, messages: 0 }, note: "Nessun profilo di test trovato" });
+      }
+
+      let totalSwipes = 0;
+      let totalMatches = 0;
+      let totalMessages = 0;
+
+      for (const profileId of testProfileIds) {
+        const profileMatches = await db.select().from(matches).where(
+          or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId))
+        );
+        for (const m of profileMatches) {
+          const deletedMsgs = await db.delete(messages).where(eq(messages.matchId, m.id)).returning();
+          totalMessages += deletedMsgs.length;
+        }
+        const deletedMatches = await db.delete(matches).where(
+          or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId))
+        ).returning();
+        totalMatches += deletedMatches.length;
+
+        const deletedSwipes = await db.delete(swipes).where(
+          or(eq(swipes.swiperId, profileId), eq(swipes.swipedId, profileId))
+        ).returning();
+        totalSwipes += deletedSwipes.length;
+      }
+
+      res.json({
+        success: true,
+        deleted: { swipes: totalSwipes, matches: totalMatches, messages: totalMessages },
+      });
+    } catch (error) {
+      console.error("Error resetting test data:", error);
+      res.status(500).json({ error: "Failed to reset test data" });
     }
   });
 

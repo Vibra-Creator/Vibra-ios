@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { User, Profile } from "@shared/schema";
 
 interface AdminStats {
@@ -22,6 +23,7 @@ interface AdminStats {
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -51,6 +53,25 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
+    },
+  });
+
+  const resetTestDataMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/admin/reset-test-data") as Promise<{ deleted: { swipes: number; matches: number; messages: number } }>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+      toast({
+        title: "Dati di test resettati!",
+        description: `Eliminati: ${data.deleted.swipes} swipe, ${data.deleted.matches} match, ${data.deleted.messages} messaggi`,
+      });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile resettare i dati di test.", variant: "destructive" });
     },
   });
 
@@ -121,6 +142,24 @@ export default function Admin() {
           </motion.div>
         ))}
       </div>
+
+      <Card className="mb-8">
+        <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-semibold text-foreground">Reset Dati di Test</h3>
+            <p className="text-sm text-muted-foreground">Resetta swipe, match e messaggi dei profili di test (Luna, Nova, Orion) per riutilizzarli</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => resetTestDataMutation.mutate()}
+            disabled={resetTestDataMutation.isPending}
+            data-testid="button-reset-test-data"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            {resetTestDataMutation.isPending ? "Resettando..." : "Reset Test Data"}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="profiles" className="w-full">
         <TabsList className="mb-4">
