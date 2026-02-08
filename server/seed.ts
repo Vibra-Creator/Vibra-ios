@@ -221,8 +221,6 @@ async function ensureTestAccounts() {
 
 export async function seedDatabase() {
   try {
-    await cleanupUserByEmail("famax61@yahoo.com");
-    await cleanupUserByEmail("famax61@gmail.com");
 
     const existingProfiles = await db.select().from(profiles);
     
