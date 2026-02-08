@@ -43,6 +43,45 @@ export async function registerRoutes(
 
   app.use("/uploads", express.static(uploadsDir));
 
+  app.delete("/api/admin/cleanup-user/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      const secret = req.headers["x-cleanup-secret"];
+      if (secret !== "vibra-cleanup-2024") {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.json({ message: "User not found", email });
+      }
+      const profile = await storage.getProfileByUserId(user.id);
+      if (profile) {
+        const { db: database } = await import("./db");
+        const { swipes, matches, messages, roomMembers, challengeSubmissions, sentGifts, privateRoomRequests, profiles } = await import("@shared/schema");
+        const { eq, or } = await import("drizzle-orm");
+        await database.delete(sentGifts).where(or(eq(sentGifts.senderId, profile.id), eq(sentGifts.receiverId, profile.id)));
+        await database.delete(challengeSubmissions).where(eq(challengeSubmissions.profileId, profile.id));
+        await database.delete(roomMembers).where(eq(roomMembers.profileId, profile.id));
+        const userMatches = await database.select().from(matches).where(or(eq(matches.profile1Id, profile.id), eq(matches.profile2Id, profile.id)));
+        for (const m of userMatches) {
+          await database.delete(messages).where(eq(messages.matchId, m.id));
+        }
+        await database.delete(matches).where(or(eq(matches.profile1Id, profile.id), eq(matches.profile2Id, profile.id)));
+        await database.delete(swipes).where(or(eq(swipes.swiperId, profile.id), eq(swipes.swipedId, profile.id)));
+        await database.delete(privateRoomRequests).where(eq(privateRoomRequests.requesterId, profile.id));
+        await database.delete(profiles).where(eq(profiles.id, profile.id));
+      }
+      const { db: database2 } = await import("./db");
+      const { users } = await import("@shared/schema");
+      const { eq: eq2 } = await import("drizzle-orm");
+      await database2.delete(users).where(eq2(users.id, user.id));
+      res.json({ message: "User and all related data deleted", email, userId: user.id, profileId: profile?.id });
+    } catch (error: any) {
+      console.error("Cleanup error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/profiles/me", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
