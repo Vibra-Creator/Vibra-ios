@@ -148,7 +148,17 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/profiles/upload-photo", isAuthenticated, memoryUpload.single("photo"), async (req: any, res) => {
+  app.post("/api/profiles/upload-photo", isAuthenticated, (req: any, res: any, next: any) => {
+    memoryUpload.single("photo")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ error: "File troppo grande. Massimo 5 MB." });
+        }
+        return res.status(400).json({ error: err.message || "Errore nel caricamento del file" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -166,11 +176,16 @@ export async function registerRoutes(
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
-      await fetch(uploadURL, {
+      const putResponse = await fetch(uploadURL, {
         method: "PUT",
         body: req.file.buffer,
         headers: { "Content-Type": req.file.mimetype },
       });
+
+      if (!putResponse.ok) {
+        console.error("Object storage PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+        return res.status(500).json({ error: "Errore nel salvataggio della foto. Riprova." });
+      }
 
       await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
         owner: userId,
@@ -185,9 +200,9 @@ export async function registerRoutes(
       await storage.updateProfile(userProfile.id, updateData);
 
       res.json({ url: objectPath, photos: updatedPhotos });
-    } catch (error) {
-      console.error("Error uploading profile photo:", error);
-      res.status(500).json({ error: "Failed to upload photo" });
+    } catch (error: any) {
+      console.error("Error uploading profile photo:", error?.message || error);
+      res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
     }
   });
 
@@ -573,7 +588,17 @@ export async function registerRoutes(
   });
 
   // Challenge Submission API
-  app.post("/api/challenges/:id/submit", isAuthenticated, memoryUpload.single("photo"), async (req: any, res) => {
+  app.post("/api/challenges/:id/submit", isAuthenticated, (req: any, res: any, next: any) => {
+    memoryUpload.single("photo")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ error: "File troppo grande. Massimo 5 MB." });
+        }
+        return res.status(400).json({ error: err.message || "Errore nel caricamento del file" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
@@ -586,11 +611,16 @@ export async function registerRoutes(
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
-      await fetch(uploadURL, {
+      const putResponse = await fetch(uploadURL, {
         method: "PUT",
         body: req.file.buffer,
         headers: { "Content-Type": req.file.mimetype },
       });
+
+      if (!putResponse.ok) {
+        console.error("Challenge storage PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+        return res.status(500).json({ error: "Errore nel salvataggio della foto. Riprova." });
+      }
 
       await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
         owner: userId,
@@ -603,9 +633,9 @@ export async function registerRoutes(
         imageUrl: objectPath,
       });
       res.status(201).json(submission);
-    } catch (error) {
-      console.error("Error submitting challenge:", error);
-      res.status(500).json({ error: "Failed to submit challenge" });
+    } catch (error: any) {
+      console.error("Error submitting challenge:", error?.message || error);
+      res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
     }
   });
 
@@ -636,9 +666,9 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/private-rooms/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/private-rooms/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const room = await storage.getPrivateRoom(req.params.id);
+      const room = await storage.getPrivateRoom(req.params.id as string);
       if (!room) return res.status(404).json({ error: "Room not found" });
       res.json(room);
     } catch (error) {

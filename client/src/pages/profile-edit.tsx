@@ -372,13 +372,17 @@ export default function ProfileEdit() {
         body: formData,
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Upload failed");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Upload failed");
+      }
       const data = await response.json();
       setUploadedPhotos(data.photos);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({ title: "Foto caricata!", description: "La tua foto è stata aggiunta al profilo." });
-    } catch {
-      toast({ title: "Errore", description: "Impossibile caricare la foto", variant: "destructive" });
+    } catch (err: any) {
+      const msg = err?.message || "Impossibile caricare la foto";
+      toast({ title: "Errore", description: msg, variant: "destructive" });
     } finally {
       setIsUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = "";
