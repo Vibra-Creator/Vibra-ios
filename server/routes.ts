@@ -163,8 +163,23 @@ export async function registerRoutes(
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const userProfile = await storage.getProfileByUserId(userId);
-      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      let userProfile = await storage.getProfileByUserId(userId);
+      
+      if (!userProfile) {
+        const user = await storage.getUser(userId);
+        const tempName = user?.firstName || "Nuovo Utente";
+        userProfile = await storage.createProfile({
+          userId,
+          name: tempName,
+          age: 25,
+          bio: "",
+          imageUrl: "/images/profile-1.png",
+          location: "",
+          interests: [],
+          alienType: "Andromediano",
+          isBot: false,
+        });
+      }
 
       if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
 
