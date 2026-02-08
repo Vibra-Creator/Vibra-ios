@@ -859,6 +859,7 @@ export async function registerRoutes(
         description,
         imageUrl: imageUrl || userProfile.imageUrl || null,
       });
+      await storage.updateProfile(userProfile.id, { points: currentPoints - requiredPoints });
       res.json(room);
     } catch (error) {
       console.error("Error creating private room:", error);

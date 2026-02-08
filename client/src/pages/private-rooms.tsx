@@ -78,6 +78,8 @@ export default function PrivateRooms() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/private-rooms/categorized"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/points/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({ title: "Stanza creata!", description: `La tua stanza "${newRoomName}" è stata creata.` });
       setIsCreateOpen(false);
       setNewRoomName("");
@@ -390,19 +392,9 @@ function MyRoomSection({
         <div className="rounded-xl backdrop-blur-md bg-white/5 border border-white/10 p-6 text-center">
           <Lock className="w-8 h-8 text-white/30 mx-auto mb-2" />
           <p className="text-white/50 text-sm mb-3">Non hai ancora una stanza privata</p>
-          <Dialog open={isCreateOpen} onOpenChange={(open) => {
-            if (open && !canCreateRoom) {
-              toast({
-                title: "Punti insufficienti",
-                description: `Servono almeno ${requiredPoints} punti per creare una stanza privata. Hai ${userPoints} punti. Completa le sfide giornaliere per guadagnare punti!`,
-                variant: "destructive",
-              });
-              return;
-            }
-            setIsCreateOpen(open);
-          }}>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-1" disabled={!canCreateRoom} data-testid="button-create-room">
+              <Button size="sm" className="gap-1" data-testid="button-create-room">
                 <Plus className="w-4 h-4" />
                 Crea la tua Stanza ({requiredPoints} punti)
               </Button>
@@ -411,35 +403,53 @@ function MyRoomSection({
               <DialogHeader>
                 <DialogTitle>Crea la tua Stanza Privata</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
-                  <Input
-                    value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
-                    placeholder="Es. Il Mio Angolo Cosmico"
-                    data-testid="input-room-name"
-                  />
+              {!canCreateRoom ? (
+                <div className="space-y-4 pt-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
+                    <Star className="w-8 h-8 text-yellow-400" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Servono almeno <strong>{requiredPoints} punti</strong> per creare una stanza privata.
+                    <br />Hai <strong>{userPoints} punti</strong>.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Completa le sfide giornaliere per guadagnare punti!
+                  </p>
+                  <Button variant="outline" className="w-full" onClick={() => setIsCreateOpen(false)} data-testid="button-close-dialog">
+                    Ho capito
+                  </Button>
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Descrizione</label>
-                  <Textarea
-                    value={newRoomDescription}
-                    onChange={(e) => setNewRoomDescription(e.target.value)}
-                    placeholder="Descrivi la tua stanza..."
-                    className="resize-none"
-                    data-testid="input-room-description"
-                  />
+              ) : (
+                <div className="space-y-4 pt-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
+                    <Input
+                      value={newRoomName}
+                      onChange={(e) => setNewRoomName(e.target.value)}
+                      placeholder="Es. Il Mio Angolo Cosmico"
+                      data-testid="input-room-name"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Descrizione</label>
+                    <Textarea
+                      value={newRoomDescription}
+                      onChange={(e) => setNewRoomDescription(e.target.value)}
+                      placeholder="Descrivi la tua stanza..."
+                      className="resize-none"
+                      data-testid="input-room-description"
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handleCreateRoom}
+                    disabled={isCreating}
+                    data-testid="button-confirm-create-room"
+                  >
+                    {isCreating ? "Creazione..." : `Crea Stanza (${requiredPoints} punti)`}
+                  </Button>
                 </div>
-                <Button
-                  className="w-full"
-                  onClick={handleCreateRoom}
-                  disabled={isCreating}
-                  data-testid="button-confirm-create-room"
-                >
-                  {isCreating ? "Creazione..." : "Crea Stanza"}
-                </Button>
-              </div>
+              )}
             </DialogContent>
           </Dialog>
         </div>
