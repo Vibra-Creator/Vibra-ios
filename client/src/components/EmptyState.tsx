@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
-import { Sparkles, Heart, Rocket, RefreshCw } from "lucide-react";
+import { Sparkles, Heart, Rocket, RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
   type: "no-profiles" | "no-matches" | "loading" | "error";
   onRetry?: () => void;
+  onResetDislikes?: () => void;
+  isResetting?: boolean;
 }
 
-export function EmptyState({ type, onRetry }: EmptyStateProps) {
+export function EmptyState({ type, onRetry, onResetDislikes, isResetting }: EmptyStateProps) {
   const content = {
     "no-profiles": {
       icon: Rocket,
@@ -55,11 +57,25 @@ export function EmptyState({ type, onRetry }: EmptyStateProps) {
       <h3 className="text-xl font-bold mb-2" data-testid="empty-state-title">{title}</h3>
       <p className="text-muted-foreground max-w-sm mb-6">{description}</p>
       
-      {action && onRetry && (
-        <Button onClick={onRetry} data-testid="button-retry">
-          {action}
-        </Button>
-      )}
+      <div className="flex items-center gap-3 flex-wrap justify-center">
+        {action && onRetry && (
+          <Button onClick={onRetry} data-testid="button-retry">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            {action}
+          </Button>
+        )}
+        {type === "no-profiles" && onResetDislikes && (
+          <Button 
+            variant="outline" 
+            onClick={onResetDislikes} 
+            disabled={isResetting}
+            data-testid="button-reset-dislikes"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            {isResetting ? "Ripristino..." : "Rivedi Scartati"}
+          </Button>
+        )}
+      </div>
     </motion.div>
   );
 }

@@ -30,6 +30,7 @@ export interface IStorage {
   createSwipe(swipe: InsertSwipe): Promise<Swipe>;
   getSwipe(swiperId: string, swipedId: string): Promise<Swipe | undefined>;
   getSwipedProfileIds(swiperId: string): Promise<string[]>;
+  resetDislikedSwipes(swiperId: string): Promise<number>;
   checkMutualLike(userId1: string, userId2: string): Promise<boolean>;
   
   createMatch(match: InsertMatch): Promise<Match>;
@@ -115,6 +116,13 @@ export class DatabaseStorage implements IStorage {
   async getSwipedProfileIds(swiperId: string): Promise<string[]> {
     const result = await db.select({ swipedId: swipes.swipedId }).from(swipes).where(eq(swipes.swiperId, swiperId));
     return result.map(r => r.swipedId);
+  }
+
+  async resetDislikedSwipes(swiperId: string): Promise<number> {
+    const result = await db.delete(swipes).where(
+      and(eq(swipes.swiperId, swiperId), eq(swipes.liked, false))
+    ).returning();
+    return result.length;
   }
 
   async getProfile(id: string): Promise<Profile | undefined> {

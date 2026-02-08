@@ -127,6 +127,21 @@ export default function Home() {
     );
   }
 
+  const resetDislikesMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("DELETE", "/api/swipes/disliked");
+    },
+    onSuccess: () => {
+      setSwipedProfiles(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
+      refetch();
+      toast({ title: "Profili ripristinati!", description: "I profili scartati sono di nuovo disponibili." });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Non è stato possibile ripristinare i profili.", variant: "destructive" });
+    },
+  });
+
   if (!availableProfiles.length) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
@@ -136,7 +151,9 @@ export default function Home() {
           onRetry={() => {
             setSwipedProfiles(new Set());
             refetch();
-          }} 
+          }}
+          onResetDislikes={() => resetDislikesMutation.mutate()}
+          isResetting={resetDislikesMutation.isPending}
         />
       </div>
     );

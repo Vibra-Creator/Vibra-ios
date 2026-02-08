@@ -85,6 +85,21 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/swipes/disliked", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+
+      const count = await storage.resetDislikedSwipes(userProfile.id);
+      res.json({ reset: count });
+    } catch (error) {
+      console.error("Error resetting disliked swipes:", error);
+      res.status(500).json({ error: "Failed to reset swipes" });
+    }
+  });
+
   app.get("/api/profiles/:id", async (req, res) => {
     try {
       const profile = await storage.getProfile(req.params.id);
