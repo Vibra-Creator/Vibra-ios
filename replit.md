@@ -19,7 +19,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Interest Rooms**: Join public chat rooms based on interests (Stanze)
 - **Daily Challenges**: Complete photo challenges to earn points (Sfide Giornaliere)
 - **Virtual Gifts**: Spend earned points to send animated gifts to other users (Regali Virtuali)
-- **Private Rooms**: Create exclusive private rooms with access approval system (Stanze Private)
+- **Private Rooms**: Create exclusive private rooms with access approval system (Stanze Private) - limit 1 per user, categorized view (La Mia Stanza, Stanze dei Match, Popolari), "Stanza VIP" badge on swipe cards
 
 ## Tech Stack
 - **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion

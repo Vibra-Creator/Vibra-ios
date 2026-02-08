@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Profile } from "@shared/schema";
@@ -9,9 +9,10 @@ interface ProfileDetailModalProps {
   profile: Profile;
   isOpen: boolean;
   onClose: () => void;
+  hasPrivateRoom?: boolean;
 }
 
-function ProfileDetailModal({ profile, isOpen, onClose }: ProfileDetailModalProps) {
+function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }: ProfileDetailModalProps) {
   if (!isOpen) return null;
 
   const detailItems = [
@@ -81,10 +82,18 @@ function ProfileDetailModal({ profile, isOpen, onClose }: ProfileDetailModalProp
             </div>
 
             <div className="bg-black/90 backdrop-blur-xl p-6 space-y-5">
-              <Badge variant="secondary" className="bg-primary/80 text-primary-foreground">
-                <Sparkles className="w-3 h-3 mr-1" />
-                {profile.alienType}
-              </Badge>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary" className="bg-primary/80 text-primary-foreground">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  {profile.alienType}
+                </Badge>
+                {hasPrivateRoom && (
+                  <Badge variant="secondary" className="bg-amber-500/80 text-white" data-testid={`detail-badge-private-room-${profile.id}`}>
+                    <Lock className="w-3 h-3 mr-1" />
+                    Ha una Stanza VIP
+                  </Badge>
+                )}
+              </div>
 
               {profile.bio && (
                 <div>
@@ -161,10 +170,11 @@ interface SwipeCardProps {
   profile: Profile;
   onSwipe: (direction: "left" | "right") => void;
   isTop?: boolean;
+  hasPrivateRoom?: boolean;
 }
 
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
-  function SwipeCard({ profile, onSwipe, isTop = false }, ref) {
+  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false }, ref) {
     const [exitX, setExitX] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
     const dragDistanceRef = useRef(0);
@@ -243,11 +253,17 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               </motion.div>
               
               <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm">
                     <Sparkles className="w-3 h-3 mr-1" />
                     {profile.alienType}
                   </Badge>
+                  {hasPrivateRoom && (
+                    <Badge variant="secondary" className="bg-amber-500/80 text-white backdrop-blur-sm" data-testid={`badge-private-room-${profile.id}`}>
+                      <Lock className="w-3 h-3 mr-1" />
+                      Stanza VIP
+                    </Badge>
+                  )}
                 </div>
                 
                 <div className="flex items-center gap-2 mb-1">
@@ -288,6 +304,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           profile={profile}
           isOpen={showDetail}
           onClose={() => setShowDetail(false)}
+          hasPrivateRoom={hasPrivateRoom}
         />
       </>
     );

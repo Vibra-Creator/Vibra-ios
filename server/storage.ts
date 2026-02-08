@@ -57,6 +57,7 @@ export interface IStorage {
   getChallenges(): Promise<DailyChallenge[]>;
   getPrivateRooms(): Promise<PrivateRoom[]>;
   getPrivateRoom(id: string): Promise<PrivateRoom | undefined>;
+  getPrivateRoomByOwner(ownerId: string): Promise<PrivateRoom | undefined>;
   createPrivateRoom(data: { ownerId: string; name: string; description?: string; imageUrl?: string }): Promise<PrivateRoom>;
   requestPrivateRoomAccess(roomId: string, requesterId: string): Promise<PrivateRoomRequest>;
   getPrivateRoomRequests(roomId: string): Promise<(PrivateRoomRequest & { requester: Profile })[]>;
@@ -297,6 +298,12 @@ export class DatabaseStorage implements IStorage {
 
   async getPrivateRoom(id: string): Promise<PrivateRoom | undefined> {
     const [room] = await db.select().from(privateRooms).where(eq(privateRooms.id, id));
+    return room;
+  }
+
+  async getPrivateRoomByOwner(ownerId: string): Promise<PrivateRoom | undefined> {
+    const [room] = await db.select().from(privateRooms)
+      .where(and(eq(privateRooms.ownerId, ownerId), eq(privateRooms.isActive, true)));
     return room;
   }
 

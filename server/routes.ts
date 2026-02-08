@@ -738,6 +738,31 @@ export async function registerRoutes(
   });
 
   // Private Rooms API
+
+  app.get("/api/private-rooms/by-owner/:profileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const room = await storage.getPrivateRoomByOwner(req.params.profileId);
+      res.json(room || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch room" });
+    }
+  });
+
+  app.get("/api/private-rooms/owners", isAuthenticated, async (req: any, res) => {
+    try {
+      const profileIds = (req.query.profileIds as string || "").split(",").filter(Boolean);
+      if (!profileIds.length) return res.json({});
+      const result: Record<string, boolean> = {};
+      for (const pid of profileIds) {
+        const room = await storage.getPrivateRoomByOwner(pid);
+        result[pid] = !!room;
+      }
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check rooms" });
+    }
+  });
+
   app.get("/api/private-rooms", isAuthenticated, async (req, res) => {
     try {
       const rooms = await storage.getPrivateRooms();
@@ -745,6 +770,52 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching private rooms:", error);
       res.status(500).json({ error: "Failed to fetch private rooms" });
+    }
+  });
+
+  app.get("/api/private-rooms/categorized", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(400).json({ error: "Profile required" });
+
+      const allRooms = await storage.getPrivateRooms();
+      const userMatches = await storage.getMatchesForUser(userProfile.id);
+      const matchProfileIds = new Set(userMatches.map(m => m.profile.id));
+
+      const myRoom = allRooms.find(r => r.ownerId === userProfile.id) || null;
+      const matchRooms = allRooms.filter(r => matchProfileIds.has(r.ownerId) && r.ownerId !== userProfile.id);
+
+      const memberCounts: Record<string, number> = {};
+      for (const room of allRooms) {
+        const members = await storage.getPrivateRoomMembers(room.id);
+        memberCounts[room.id] = members.length;
+      }
+
+      const popularRooms = allRooms
+        .filter(r => r.ownerId !== userProfile.id && !matchProfileIds.has(r.ownerId))
+        .sort((a, b) => (memberCounts[b.id] || 0) - (memberCounts[a.id] || 0))
+        .slice(0, 10);
+
+      const ownerProfiles: Record<string, { name: string; imageUrl: string | null }> = {};
+      for (const room of allRooms) {
+        const owner = await storage.getProfile(room.ownerId);
+        if (owner) {
+          ownerProfiles[room.ownerId] = { name: owner.name, imageUrl: owner.imageUrl };
+        }
+      }
+
+      res.json({
+        myRoom,
+        matchRooms,
+        popularRooms,
+        memberCounts,
+        ownerProfiles,
+      });
+    } catch (error) {
+      console.error("Error fetching categorized rooms:", error);
+      res.status(500).json({ error: "Failed to fetch categorized rooms" });
     }
   });
 
@@ -775,6 +846,10 @@ export async function registerRoutes(
           requiredPoints,
           currentPoints,
         });
+      }
+      const existingRoom = await storage.getPrivateRoomByOwner(userProfile.id);
+      if (existingRoom) {
+        return res.status(400).json({ error: "Puoi avere solo una stanza privata. Hai già creato la stanza: " + existingRoom.name });
       }
       const { name, description, imageUrl } = req.body;
       if (!name) return res.status(400).json({ error: "Room name is required" });

@@ -33,6 +33,19 @@ export default function Home() {
     enabled: !!myProfile,
   });
 
+  const profileIds = profiles?.map(p => p.id).join(",") || "";
+  const { data: roomOwners } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/private-rooms/owners", profileIds],
+    queryFn: async () => {
+      const res = await fetch(`/api/private-rooms/owners?profileIds=${profileIds}`, {
+        credentials: "include",
+      });
+      if (!res.ok) return {};
+      return res.json();
+    },
+    enabled: !!profiles && profiles.length > 0,
+  });
+
   const swipeMutation = useMutation({
     mutationFn: async ({ profileId, liked }: { profileId: string; liked: boolean }) => {
       const response = await apiRequest("POST", "/api/swipe", {
@@ -169,6 +182,7 @@ export default function Home() {
             profile={nextProfile}
             onSwipe={() => {}}
             isTop={false}
+            hasPrivateRoom={roomOwners?.[nextProfile.id] || false}
           />
         )}
         {currentProfile && (
@@ -177,6 +191,7 @@ export default function Home() {
             profile={currentProfile}
             onSwipe={handleSwipe}
             isTop={true}
+            hasPrivateRoom={roomOwners?.[currentProfile.id] || false}
           />
         )}
       </div>
