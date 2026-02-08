@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 import type { Profile } from "@shared/schema";
 
 interface MatchModalProps {
@@ -8,9 +9,11 @@ interface MatchModalProps {
   onClose: () => void;
   matchedProfile: Profile | null;
   currentProfile?: Profile | null;
+  matchId?: string | null;
 }
 
-export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile }: MatchModalProps) {
+export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, matchId }: MatchModalProps) {
+  const [, setLocation] = useLocation();
   if (!matchedProfile) return null;
 
   return (
@@ -108,7 +111,19 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile }: 
                   transition={{ delay: 0.5 }}
                   className="space-y-3"
                 >
-                  <Button className="w-full" size="lg" data-testid="button-send-message">
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    onClick={() => {
+                      onClose();
+                      if (matchId) {
+                        setLocation(`/chat/${matchId}`);
+                      } else {
+                        setLocation("/matches");
+                      }
+                    }}
+                    data-testid="button-send-message"
+                  >
                     <MessageCircle className="w-5 h-5 mr-2" />
                     Invia un Messaggio
                   </Button>

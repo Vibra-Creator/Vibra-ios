@@ -11,6 +11,7 @@ import type { Profile, Match } from "@shared/schema";
 export default function Home() {
   const [showMatch, setShowMatch] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
+  const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { toast } = useToast();
@@ -46,6 +47,7 @@ export default function Home() {
         const matchProfile = profiles?.find(p => p.id === variables.profileId);
         if (matchProfile) {
           setMatchedProfile(matchProfile);
+          setCurrentMatchId(data.matchData?.id || null);
           setShowMatch(true);
         }
         queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
@@ -173,6 +175,7 @@ export default function Home() {
         onClose={() => setShowMatch(false)}
         matchedProfile={matchedProfile}
         currentProfile={myProfile}
+        matchId={currentMatchId}
       />
     </div>
   );
