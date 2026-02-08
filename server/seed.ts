@@ -1,6 +1,7 @@
 import { db } from "./db";
-import { profiles, swipes, privateRooms } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { profiles, swipes, matches, messages, privateRooms, roomMembers, challengeSubmissions, sentGifts, privateRoomRequests, users } from "@shared/schema";
+import { eq, or } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 const seedProfiles = [
   {
