@@ -1,11 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Profile, Match, SentGift, VirtualGift } from "@shared/schema";
 
 function ProfileSkeleton() {
@@ -64,6 +78,23 @@ const ProfileBackground = () => (
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { user, logout, isLoggingOut } = useAuth();
+  const { toast } = useToast();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const deleteProfileMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("DELETE", "/api/profiles/me");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      toast({ title: "Profilo eliminato", description: "Il tuo profilo e tutti i dati associati sono stati cancellati." });
+      setIsDeleteOpen(false);
+      setLocation("/profile/edit");
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Non è stato possibile eliminare il profilo.", variant: "destructive" });
+    },
+  });
 
   const { data: profile, isLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -239,6 +270,38 @@ export default function Profile() {
             <LogOut className="w-5 h-5" />
             {isLoggingOut ? "Uscita..." : "Esci"}
           </Button>
+
+          <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-3 text-red-500 border-red-500/30"
+                data-testid="button-delete-profile"
+              >
+                <Trash2 className="w-5 h-5" />
+                Elimina Profilo
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Questa azione è irreversibile. Il tuo profilo, i match, i messaggi, le stanze private e tutti i dati associati verranno eliminati definitivamente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-delete">Annulla</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => deleteProfileMutation.mutate()}
+                  disabled={deleteProfileMutation.isPending}
+                  data-testid="button-confirm-delete"
+                >
+                  {deleteProfileMutation.isPending ? "Eliminazione..." : "Elimina Profilo"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </motion.div>
     </div>

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests } from "@shared/schema";
 import { db } from "./db";
 import { eq, or } from "drizzle-orm";
 import { z } from "zod";
@@ -162,6 +162,42 @@ export async function registerRoutes(
       }
       console.error("Error creating profile:", error);
       res.status(500).json({ error: "Failed to create profile" });
+    }
+  });
+
+  app.delete("/api/profiles/me", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "No profile found" });
+
+      const profileId = userProfile.id;
+      await db.delete(sentGifts).where(or(eq(sentGifts.senderId, profileId), eq(sentGifts.receiverId, profileId)));
+      await db.delete(challengeSubmissions).where(eq(challengeSubmissions.profileId, profileId));
+      await db.delete(roomMembers).where(eq(roomMembers.profileId, profileId));
+      await db.delete(roomMessages).where(eq(roomMessages.senderId, profileId));
+      await db.delete(privateRoomMessages).where(eq(privateRoomMessages.senderId, profileId));
+      const ownedRooms = await db.select().from(privateRooms).where(eq(privateRooms.ownerId, profileId));
+      for (const room of ownedRooms) {
+        await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, room.id));
+        await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, room.id));
+        await db.delete(roomMembers).where(eq(roomMembers.roomId, room.id));
+      }
+      await db.delete(privateRooms).where(eq(privateRooms.ownerId, profileId));
+      await db.delete(privateRoomRequests).where(eq(privateRoomRequests.requesterId, profileId));
+      const userMatches = await db.select().from(matches).where(or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId)));
+      for (const m of userMatches) {
+        await db.delete(messages).where(eq(messages.matchId, m.id));
+      }
+      await db.delete(matches).where(or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId)));
+      await db.delete(swipes).where(or(eq(swipes.swiperId, profileId), eq(swipes.swipedId, profileId)));
+      await db.delete(profiles).where(eq(profiles.id, profileId));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting own profile:", error);
+      res.status(500).json({ error: "Failed to delete profile" });
     }
   });
 
