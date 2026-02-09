@@ -52,6 +52,11 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Unauthorized" });
       }
       const profile = await storage.getProfileByUserId(userId);
+      if (profile) {
+        console.log(`[/api/profiles/me] userId=${userId} profileId=${profile.id} points=${profile.points}`);
+      } else {
+        console.log(`[/api/profiles/me] userId=${userId} NO PROFILE FOUND`);
+      }
       res.json(profile || null);
     } catch (error) {
       console.error("Error fetching user profile:", error);
