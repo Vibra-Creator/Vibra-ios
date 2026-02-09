@@ -1,4 +1,4 @@
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 self.addEventListener('install', (event) => {
@@ -16,5 +16,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
+  );
 });

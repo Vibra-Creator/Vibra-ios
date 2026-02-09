@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, Component, type ReactNode } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -25,8 +25,55 @@ import PrivateRooms from "@/pages/private-rooms";
 import PrivateRoomDetail from "@/pages/private-room-detail";
 import RoomDetail from "@/pages/room-detail";
 import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 const publicPages = ["/privacy", "/terms", "/login", "/register"];
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#0a0118" }}>
+          <div className="text-center max-w-sm">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-red-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Qualcosa è andato storto</h2>
+            <p className="text-white/60 mb-6">
+              Prova a ricaricare l'app. Se il problema persiste, cancella la cache del browser.
+            </p>
+            <Button
+              onClick={() => {
+                if ('caches' in window) {
+                  caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                  });
+                }
+                window.location.reload();
+              }}
+              className="w-full"
+              data-testid="button-reload-app"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Ricarica App
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function RedirectHome() {
   const [, setLocation] = useLocation();
@@ -112,14 +159,16 @@ function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-        <VideoBackground fallbackGradient={true} />
-        <AppContent />
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+          <VideoBackground fallbackGradient={true} />
+          <AppContent />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

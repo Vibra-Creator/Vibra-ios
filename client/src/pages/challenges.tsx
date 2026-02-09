@@ -60,12 +60,14 @@ export default function Challenges() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      const awarded = data?.pointsAwarded;
       toast({
-        title: "Foto caricata!",
-        description: "La tua foto per la sfida e' stata inviata con successo.",
+        title: "Sfida completata!",
+        description: awarded ? `Hai guadagnato ${awarded} punti!` : "La tua foto e' stata inviata con successo.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/challenges/submissions/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       resetUpload();
     },
     onError: (error: Error) => {
@@ -151,10 +153,8 @@ export default function Challenges() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const totalPoints = submissions?.reduce((sum, s) => {
-    const challenge = displayChallenges.find(c => c.id === s.challengeId);
-    return sum + (challenge?.points || 0);
-  }, 0) || 0;
+  const approvedSubmissions = submissions?.filter(s => s.status === "approved") || [];
+  const totalPoints = myProfile?.points ?? 0;
 
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
@@ -205,7 +205,7 @@ export default function Challenges() {
           <div>
             <p className="font-bold text-lg text-white" data-testid="text-points-label">I tuoi punti</p>
             <p className="text-sm text-white/70">
-              {submissions?.length || 0} sfide completate
+              {approvedSubmissions.length} sfide completate
             </p>
           </div>
         </div>

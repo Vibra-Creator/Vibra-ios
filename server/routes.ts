@@ -719,7 +719,17 @@ export async function registerRoutes(
         profileId: userProfile.id,
         imageUrl: objectPath,
       });
-      res.status(201).json(submission);
+
+      await storage.updateChallengeSubmissionStatus(submission.id, "approved");
+
+      const allChallenges = await storage.getChallenges();
+      const challenge = allChallenges.find(c => c.id === req.params.id);
+      const pointsToAward = challenge?.points ?? 10;
+      await storage.addPoints(userProfile.id, pointsToAward);
+
+      const updatedProfile = await storage.getProfileByUserId(userId);
+
+      res.status(201).json({ ...submission, status: "approved", pointsAwarded: pointsToAward, totalPoints: updatedProfile?.points ?? 0 });
     } catch (error: any) {
       console.error("Error submitting challenge:", error?.message || error);
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
