@@ -53,12 +53,7 @@ export default function PrivateRooms() {
     enabled: !!user,
   });
 
-  const { data: pointsData } = useQuery<{ points: number }>({
-    queryKey: ["/api/points/me"],
-    enabled: !!user,
-  });
-
-  const userPoints = pointsData?.points ?? myProfile?.points ?? 0;
+  const userPoints = myProfile?.points ?? 0;
   const requiredPoints = 45;
   const canCreateRoom = userPoints >= requiredPoints;
 
@@ -78,7 +73,6 @@ export default function PrivateRooms() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/private-rooms/categorized"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/points/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({ title: "Stanza creata!", description: `La tua stanza "${newRoomName}" è stata creata.` });
       setIsCreateOpen(false);
