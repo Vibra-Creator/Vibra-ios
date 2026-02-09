@@ -48,17 +48,11 @@ export default function PrivateRooms() {
   const [newRoomDescription, setNewRoomDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: myProfile, isLoading: profileLoading, error: profileError } = useQuery<Profile | null>({
+  const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
     enabled: !!user,
     staleTime: 0,
     refetchOnMount: "always",
-    queryFn: async () => {
-      const res = await fetch("/api/profiles/me", { credentials: "include" });
-      if (res.status === 401) return null;
-      if (!res.ok) throw new Error("Failed to fetch profile");
-      return res.json();
-    },
   });
 
   const userPoints = myProfile?.points ?? 0;
