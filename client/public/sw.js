@@ -1,10 +1,7 @@
-const CACHE_NAME = 'vibra-v1';
+const CACHE_NAME = 'vibra-v3';
 const urlsToCache = [
   '/',
-  '/manifest.json',
-  '/favicon.png',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,6 +30,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/icons/') || url.pathname === '/favicon.png' || url.pathname === '/apple-touch-icon.png') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
     return;
   }
   
