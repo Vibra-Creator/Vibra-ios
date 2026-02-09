@@ -68,6 +68,8 @@ export default function Profile() {
   const { data: profile, isLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
     enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: matchesData } = useQuery<(Match & { profile: Profile })[]>({

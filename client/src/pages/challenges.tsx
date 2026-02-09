@@ -31,6 +31,8 @@ export default function Challenges() {
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
     enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: challenges, isLoading } = useQuery<DailyChallenge[]>({
