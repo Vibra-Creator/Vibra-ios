@@ -38,19 +38,46 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
   useEffect(() => {
     const vid = videoRef.current;
-    if (vid) {
+    if (!vid) {
+      handleVideoEnd();
+      return;
+    }
+
+    let mounted = true;
+
+    const tryPlay = () => {
+      if (!mounted) return;
       vid.play().catch(() => {
-        handleVideoEnd();
+        setTimeout(() => {
+          if (!mounted) return;
+          vid.play().catch(() => {
+            if (mounted) handleVideoEnd();
+          });
+        }, 300);
       });
+    };
+
+    if (vid.readyState >= 2) {
+      tryPlay();
+    } else {
+      vid.addEventListener("canplay", tryPlay, { once: true });
+      setTimeout(() => {
+        if (mounted && stage === "video" && vid.paused) {
+          tryPlay();
+        }
+      }, 1000);
     }
 
     const safety = setTimeout(() => {
-      if (stage === "video") {
+      if (mounted && stage === "video") {
         handleVideoEnd();
       }
     }, 15000);
 
-    return () => clearTimeout(safety);
+    return () => {
+      mounted = false;
+      clearTimeout(safety);
+    };
   }, []);
 
   useEffect(() => {
