@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,27 @@ import { Link } from "wouter";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Landing() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    const tryPlay = () => {
+      video.play().catch(() => {});
+    };
+    tryPlay();
+    const handleClick = () => { tryPlay(); };
+    document.addEventListener("touchstart", handleClick, { once: true });
+    document.addEventListener("click", handleClick, { once: true });
+    return () => {
+      document.removeEventListener("touchstart", handleClick);
+      document.removeEventListener("click", handleClick);
+    };
+  }, []);
   const features = [
     {
       icon: Sparkles,
@@ -31,15 +53,18 @@ export default function Landing() {
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10">
         <video
+          ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
+          webkit-playsinline=""
+          preload="auto"
+          poster="/backgrounds/vibra-hero.jpg"
           className="w-full h-full object-cover"
           data-testid="video-landing-background"
-        >
-          <source src="/backgrounds/vibra-landing.mp4" type="video/mp4" />
-        </video>
+          src="/backgrounds/vibra-landing.mp4"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
