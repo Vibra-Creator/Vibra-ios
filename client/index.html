@@ -25,12 +25,9 @@
     <div id="root"></div>
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister(); });
-        });
-        caches.keys().then(function(names) {
-          names.forEach(function(n) { caches.delete(n); });
-        });
+        navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          reg.update();
+        }).catch(function() {});
       }
     </script>
     <script type="module" src="/src/main.tsx"></script>
