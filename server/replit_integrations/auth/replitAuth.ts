@@ -18,9 +18,10 @@ export function getSession() {
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: "auto",
       sameSite: "lax",
       maxAge: sessionTtl,
     },
