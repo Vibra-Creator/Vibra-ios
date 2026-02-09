@@ -153,7 +153,7 @@ export async function registerRoutes(
         ...validatedData,
         userId,
         isBot: false,
-        points: 50,
+        points: 0,
       });
       res.status(201).json(profile);
     } catch (error) {
@@ -250,7 +250,7 @@ export async function registerRoutes(
           interests: [],
           alienType: "Andromediano",
           isBot: false,
-          points: 50,
+          points: 0,
         });
       }
 

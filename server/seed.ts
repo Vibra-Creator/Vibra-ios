@@ -219,24 +219,6 @@ async function ensureTestAccounts() {
   }
 }
 
-async function fixProfilePoints() {
-  try {
-    const allProfiles = await db.select().from(profiles);
-    const MINIMUM_POINTS = 50;
-    let fixed = 0;
-    for (const profile of allProfiles) {
-      if ((profile.points ?? 0) < MINIMUM_POINTS) {
-        await db.update(profiles).set({ points: MINIMUM_POINTS }).where(eq(profiles.id, profile.id));
-        fixed++;
-      }
-    }
-    if (fixed > 0) {
-      console.log(`Fixed points for ${fixed} profiles (set to minimum ${MINIMUM_POINTS}).`);
-    }
-  } catch (error) {
-    console.error("Error fixing profile points:", error);
-  }
-}
 
 async function cleanupTestData() {
   try {
@@ -268,7 +250,7 @@ export async function seedDatabase() {
       console.log("Seeding database with initial profiles...");
       
       for (const profile of seedProfiles) {
-        await db.insert(profiles).values({ ...profile, points: 50 });
+        await db.insert(profiles).values({ ...profile, points: 0 });
       }
       
       for (const swipe of seedSwipesToCreateMatch) {
@@ -297,7 +279,6 @@ export async function seedDatabase() {
 
     await ensureAdminAccount();
     await cleanupTestData();
-    await fixProfilePoints();
   } catch (error) {
     console.error("Error seeding database:", error);
   }

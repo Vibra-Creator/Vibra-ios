@@ -1,10 +1,8 @@
 import { User, Heart, Home, Shield, Users, Trophy, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
-import type { User as UserType } from "@shared/schema";
 
 export function Header() {
   return (
@@ -24,10 +22,7 @@ export function BottomNav() {
   const [location] = useLocation();
   const { user } = useAuth();
 
-  const { data: currentUser } = useQuery<UserType | null>({
-    queryKey: ["/api/auth/user"],
-    enabled: !!user,
-  });
+  const isAdmin = !!user?.isAdmin;
 
   const navItems = [
     { path: "/", icon: Home, label: "Scopri" },
@@ -36,7 +31,7 @@ export function BottomNav() {
     { path: "/challenges", icon: Trophy, label: "Sfide" },
     { path: "/private-rooms", icon: Lock, label: "Private" },
     { path: "/profile", icon: User, label: "Profilo" },
-    ...(currentUser?.isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin" }] : []),
+    ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 
   return (

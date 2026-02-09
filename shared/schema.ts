@@ -43,7 +43,7 @@ export const profiles = pgTable("profiles", {
   phonePrefix: text("phone_prefix"), // Prefisso internazionale
   phoneNumber: text("phone_number"), // Numero di telefono
   photos: text("photos").array(), // Foto caricate dall'utente (max 6)
-  points: integer("points").default(50), // Punti di benvenuto + sfide
+  points: integer("points").default(0),
 });
 
 export const swipes = pgTable("swipes", {
