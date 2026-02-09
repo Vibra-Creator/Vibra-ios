@@ -30,8 +30,17 @@ export default function Landing() {
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 -z-10">
-        <img src="/backgrounds/vibra-hero.jpg" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          data-testid="video-landing-background"
+        >
+          <source src="/backgrounds/vibra-landing.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
