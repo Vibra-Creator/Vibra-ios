@@ -134,12 +134,26 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/profiles", async (req, res) => {
+  app.post("/api/profiles", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const existingProfile = await storage.getProfileByUserId(userId);
+      if (existingProfile) {
+        const validatedData = insertProfileSchema.parse(req.body);
+        const updated = await storage.updateProfile(existingProfile.id, {
+          ...validatedData,
+          userId,
+          isBot: false,
+        });
+        return res.json(updated);
+      }
       const validatedData = insertProfileSchema.parse(req.body);
       const profile = await storage.createProfile({
         ...validatedData,
+        userId,
         isBot: false,
+        points: 50,
       });
       res.status(201).json(profile);
     } catch (error) {
@@ -200,6 +214,7 @@ export async function registerRoutes(
           interests: [],
           alienType: "Andromediano",
           isBot: false,
+          points: 50,
         });
       }
 

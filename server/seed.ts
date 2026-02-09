@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users } from "@shared/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 const seedProfiles = [
@@ -219,6 +219,46 @@ async function ensureTestAccounts() {
   }
 }
 
+async function fixProfilePoints() {
+  try {
+    const allProfiles = await db.select().from(profiles);
+    const MINIMUM_POINTS = 50;
+    let fixed = 0;
+    for (const profile of allProfiles) {
+      if ((profile.points ?? 0) < MINIMUM_POINTS) {
+        await db.update(profiles).set({ points: MINIMUM_POINTS }).where(eq(profiles.id, profile.id));
+        fixed++;
+      }
+    }
+    if (fixed > 0) {
+      console.log(`Fixed points for ${fixed} profiles (set to minimum ${MINIMUM_POINTS}).`);
+    }
+  } catch (error) {
+    console.error("Error fixing profile points:", error);
+  }
+}
+
+async function cleanupTestData() {
+  try {
+    const testEmails = await db.select().from(users).where(
+      or(
+        sql`${users.email} LIKE '%@test.com'`,
+        sql`${users.email} LIKE '%@vibra.test'`,
+        sql`${users.email} LIKE '%@example.com'`
+      )
+    );
+    for (const testUser of testEmails) {
+      if (testUser.email === "admin@vibra.app") continue;
+      await cleanupUserByEmail(testUser.email!);
+    }
+    if (testEmails.length > 0) {
+      console.log(`Cleaned up ${testEmails.length} test accounts.`);
+    }
+  } catch (error) {
+    console.error("Error cleaning up test data:", error);
+  }
+}
+
 export async function seedDatabase() {
   try {
 
@@ -228,7 +268,7 @@ export async function seedDatabase() {
       console.log("Seeding database with initial profiles...");
       
       for (const profile of seedProfiles) {
-        await db.insert(profiles).values(profile);
+        await db.insert(profiles).values({ ...profile, points: 50 });
       }
       
       for (const swipe of seedSwipesToCreateMatch) {
@@ -256,7 +296,8 @@ export async function seedDatabase() {
     }
 
     await ensureAdminAccount();
-    await ensureTestAccounts();
+    await cleanupTestData();
+    await fixProfilePoints();
   } catch (error) {
     console.error("Error seeding database:", error);
   }
