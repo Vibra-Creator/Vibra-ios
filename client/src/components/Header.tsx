@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770463123334.png";
+import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 import type { User as UserType } from "@shared/schema";
 
 export function Header() {

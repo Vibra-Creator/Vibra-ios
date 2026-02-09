@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770463123334.png";
+import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");

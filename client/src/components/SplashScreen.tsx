@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770463123334.png";
+import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 interface SplashScreenProps {
   onComplete: () => void;
