@@ -10,7 +10,7 @@ import type { Room } from "@shared/schema";
 
 const ROOM_BANNERS: Record<string, string> = {
   "1": "/images/room-tecnologia-spaziale.jpeg",
-  "2": "/images/room-banner-2.jpg",
+  "2": "/images/room-musica-cosmica.png",
   "3": "/images/room-banner-3.jpg",
   "4": "/images/room-banner-4.jpg",
   "5": "/images/room-banner-5.jpg",
