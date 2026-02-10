@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { Room } from "@shared/schema";
 
 const ROOM_BANNERS: Record<string, string> = {
-  "1": "/images/room-banner-1.jpg",
+  "1": "/images/room-tecnologia-spaziale.jpeg",
   "2": "/images/room-banner-2.jpg",
   "3": "/images/room-banner-3.jpg",
   "4": "/images/room-banner-4.jpg",
@@ -37,7 +37,7 @@ export default function Rooms() {
   });
 
   const defaultRooms = [
-    { id: "1", name: "Esplorazione Spaziale", interest: "Esplorazione Spaziale", description: "Per gli amanti dello spazio e delle stelle", memberCount: 42 },
+    { id: "1", name: "Tecnologia Spaziale", interest: "Tecnologia Spaziale", description: "Per gli amanti dello spazio e delle stelle", memberCount: 42 },
     { id: "2", name: "Musica Cosmica", interest: "Musica Cosmica", description: "Condividi la tua musica preferita", memberCount: 38 },
     { id: "3", name: "Filosofia Galattica", interest: "Filosofia Galattica", description: "Discussioni profonde sull'universo", memberCount: 25 },
     { id: "4", name: "Arte Cristallina", interest: "Arte Cristallina", description: "Creatività e ispirazione artistica", memberCount: 31 },
