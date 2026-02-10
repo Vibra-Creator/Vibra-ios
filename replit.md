@@ -13,7 +13,8 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Admin Dashboard**: Statistics, user management, profile moderation
 - **Alien Theme**: Cosmic color scheme with purple, cyan, and pink glows
 - **Video Background Support**: Animated starfield background
-- **Generated Profile Images**: AI-generated alien humanoid portraits
+- **Generated Profile Images**: AI-generated realistic portraits for bot profiles
+- **AI Bot Chat**: Bot profiles automatically reply to user messages using OpenAI AI with personality-aware responses in Italian
 - **PWA Support**: Installable on mobile devices as a standalone app
 - **Email/Password Auth**: Custom authentication with bcrypt password hashing and session management
 - **Interest Rooms**: Join public chat rooms based on interests (Stanze)

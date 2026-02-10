@@ -12,6 +12,64 @@ import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
+
+async function generateBotReply(
+  botProfile: any,
+  userProfile: any,
+  chatHistory: { senderId: string; content: string }[]
+): Promise<string> {
+  try {
+    const recentMessages = chatHistory.slice(-10);
+
+    const systemPrompt = `Sei ${botProfile.name}, una ${botProfile.gender === "Uomo" ? "ragazzo" : "ragazza"} di ${botProfile.age} anni che vive a ${botProfile.location}. ${botProfile.bio}
+
+I tuoi interessi sono: ${(botProfile.interests || []).join(", ")}.
+${botProfile.education ? `Istruzione: ${botProfile.education}.` : ""}
+${botProfile.zodiacSign ? `Segno zodiacale: ${botProfile.zodiacSign}.` : ""}
+${botProfile.communicationStyle ? `Il tuo stile comunicativo è: ${botProfile.communicationStyle}.` : ""}
+${botProfile.lifestyle ? `Il tuo stile di vita è: ${botProfile.lifestyle}.` : ""}
+${botProfile.loveLanguage ? `Il tuo linguaggio dell'amore è: ${botProfile.loveLanguage}.` : ""}
+
+Stai chattando su un'app di incontri con ${userProfile.name}. Rispondi in modo naturale, come una persona vera. Sii ${botProfile.gender === "Uomo" ? "caloroso" : "calorosa"}, ${botProfile.gender === "Uomo" ? "interessato" : "interessata"} e flirta leggermente quando appropriato. Usa l'italiano colloquiale, rispondi in modo breve e naturale (1-3 frasi), come in una vera chat. Non usare emoji eccessivi, al massimo 1-2. Non ripetere mai le stesse frasi. Non dire mai che sei un bot o un'IA.`;
+
+    const messagesForAI: any[] = [
+      { role: "system", content: systemPrompt }
+    ];
+
+    for (const msg of recentMessages) {
+      const isBot = msg.senderId === botProfile.id;
+      messagesForAI.push({
+        role: isBot ? "assistant" : "user",
+        content: msg.content
+      });
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: messagesForAI,
+      max_tokens: 150,
+      temperature: 0.9,
+    });
+
+    return response.choices[0]?.message?.content || "Scusa, non ho capito bene... puoi ripetere?";
+  } catch (error) {
+    console.error("Error generating bot reply:", error);
+    const fallbackReplies = [
+      "Che bello! Raccontami di più",
+      "Mi piace come la pensi!",
+      "Davvero interessante, dimmi di più",
+      "Ah che carino! E tu cosa fai di bello?",
+      "Mi fa piacere sentirti, continua pure",
+    ];
+    return fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
+  }
+}
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 fs.mkdirSync(path.join(uploadsDir, "profiles"), { recursive: true });
@@ -790,6 +848,25 @@ export async function registerRoutes(
         content,
       });
       res.status(201).json(message);
+
+      const otherProfileId = match.profile1Id === userProfile.id ? match.profile2Id : match.profile1Id;
+      const otherProfile = await storage.getProfile(otherProfileId);
+      if (otherProfile && otherProfile.isBot) {
+        const delay = 2000 + Math.random() * 4000;
+        setTimeout(async () => {
+          try {
+            const allMessages = await storage.getMessagesForMatch(matchId);
+            const botReply = await generateBotReply(otherProfile, userProfile, allMessages);
+            await storage.createMessage({
+              matchId,
+              senderId: otherProfile.id,
+              content: botReply,
+            });
+          } catch (err) {
+            console.error("Bot auto-reply error:", err);
+          }
+        }, delay);
+      }
     } catch (error) {
       console.error("Error creating message:", error);
       res.status(500).json({ error: "Failed to send message" });
