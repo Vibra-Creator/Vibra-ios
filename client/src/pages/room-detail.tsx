@@ -10,6 +10,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Room, RoomMessage } from "@shared/schema";
 
+const ROOM_BACKGROUNDS: Record<string, { type: "image"; src: string } | { type: "video"; src: string }> = {
+  "1": { type: "image", src: "/images/room-tecnologia-spaziale.jpeg" },
+  "2": { type: "image", src: "/images/room-musica-cosmica.png" },
+};
+
+const DEFAULT_BG = { type: "video" as const, src: "/backgrounds/6ae793b4126a4617a0c715db39223f26.mp4_1770326642075.MP4" };
+
 export default function RoomDetail() {
   const params = useParams<{ roomId: string }>();
   const roomId = params.roomId;
@@ -78,9 +85,16 @@ export default function RoomDetail() {
   return (
     <div className="flex flex-col h-full">
       <div className="fixed inset-0 z-0">
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-          <source src="/backgrounds/6ae793b4126a4617a0c715db39223f26.mp4_1770326642075.MP4" type="video/mp4" />
-        </video>
+        {(() => {
+          const bg = ROOM_BACKGROUNDS[roomId || ""] || DEFAULT_BG;
+          return bg.type === "image" ? (
+            <img src={bg.src} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+              <source src={bg.src} type="video/mp4" />
+            </video>
+          );
+        })()}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50" />
       </div>
 
