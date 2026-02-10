@@ -118,7 +118,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       {stage === "video" && (
         <video
           ref={videoRef}
-          src="/images/splash-intro.mp4"
+          src="/videos/vibra-splash.mp4"
           muted
           playsInline
           onEnded={handleVideoEnd}
