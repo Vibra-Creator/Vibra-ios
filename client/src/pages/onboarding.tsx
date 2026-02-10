@@ -54,7 +54,7 @@ export default function Onboarding() {
   const Icon = slide.icon;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-card">
+    <div className="h-full overflow-y-auto flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-card">
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"

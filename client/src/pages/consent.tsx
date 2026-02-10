@@ -5,8 +5,8 @@ import { Link } from "wouter";
 
 export default function Consent() {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="fixed inset-0 -z-10">
+    <div className="relative h-full overflow-y-auto flex flex-col items-center justify-center p-6">
+      <div className="fixed inset-0 -z-[5]">
         <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>

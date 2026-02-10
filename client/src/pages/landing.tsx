@@ -50,8 +50,8 @@ export default function Landing() {
   ];
 
   return (
-    <div className="relative min-h-screen">
-      <div className="fixed inset-0 -z-10">
+    <div className="relative h-full overflow-y-auto">
+      <div className="fixed inset-0 -z-[5]">
         <video
           ref={videoRef}
           autoPlay

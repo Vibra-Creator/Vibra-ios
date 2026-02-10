@@ -124,7 +124,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
       </div>
     );
@@ -137,7 +137,7 @@ function AppContent() {
   const showHeader = isAuthenticated && !isPublicPage;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {showHeader && <Header />}
       <main className="flex-1 flex flex-col overflow-hidden">
         {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}

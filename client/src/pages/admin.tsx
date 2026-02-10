@@ -103,7 +103,7 @@ export default function Admin() {
 
   return (
     <div className="flex-1 p-4 md:p-6 max-w-7xl mx-auto overflow-y-auto">
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 -z-[5]">
         <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>

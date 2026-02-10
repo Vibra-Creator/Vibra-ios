@@ -54,10 +54,10 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="fixed inset-0 -z-10">
+    <div className="relative h-full flex flex-col items-center justify-center p-6 overflow-y-auto">
+      <div className="fixed inset-0 -z-[5]">
         <img src="/images/vibra-alien-hero.gif" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}

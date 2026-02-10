@@ -158,7 +158,7 @@ export default function Challenges() {
 
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 -z-[5]">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src="/backgrounds/vibra-video-1.mp4" type="video/mp4" />
         </video>

@@ -6,7 +6,7 @@ import { Link } from "wouter";
 
 export default function Terms() {
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-b from-background via-background to-card">
+    <div className="h-full overflow-y-auto p-6 bg-gradient-to-b from-background via-background to-card">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
