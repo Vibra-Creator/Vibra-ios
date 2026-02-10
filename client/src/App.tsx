@@ -117,10 +117,13 @@ function UnauthenticatedRouter() {
   );
 }
 
+const pagesWithOwnBackground = ["/login", "/register", "/", "/privacy", "/terms"];
+
 function AppContent() {
   const [location] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
   const isPublicPage = publicPages.includes(location);
+  const hideVideoBackground = pagesWithOwnBackground.includes(location) || !isAuthenticated;
 
   if (isLoading) {
     return (
@@ -137,13 +140,16 @@ function AppContent() {
   const showHeader = isAuthenticated && !isPublicPage;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {showHeader && <Header />}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
-      </main>
-      {showHeader && <BottomNav />}
-    </div>
+    <>
+      {!hideVideoBackground && <VideoBackground fallbackGradient={true} />}
+      <div className="h-full flex flex-col overflow-hidden">
+        {showHeader && <Header />}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
+        </main>
+        {showHeader && <BottomNav />}
+      </div>
+    </>
   );
 }
 
@@ -163,7 +169,6 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-          <VideoBackground fallbackGradient={true} />
           <AppContent />
           <Toaster />
         </TooltipProvider>

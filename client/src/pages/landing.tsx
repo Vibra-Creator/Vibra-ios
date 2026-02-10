@@ -51,7 +51,7 @@ export default function Landing() {
 
   return (
     <div className="relative h-full overflow-y-auto">
-      <div className="fixed inset-0 -z-[5]">
+      <div className="fixed inset-0 z-0">
         <video
           ref={videoRef}
           autoPlay
@@ -87,7 +87,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="pt-20">
+      <main className="relative z-10 pt-20">
         <section className="max-w-6xl mx-auto px-4 py-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -196,7 +196,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="border-t border-white/10 py-8 text-center text-sm text-white/60">
+      <footer className="relative z-10 border-t border-white/10 py-8 text-center text-sm text-white/60">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@ import { Link } from "wouter";
 export default function Consent() {
   return (
     <div className="relative h-full overflow-y-auto flex flex-col items-center justify-center p-6">
-      <div className="fixed inset-0 -z-[5]">
+      <div className="fixed inset-0 z-0">
         <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
@@ -15,7 +15,7 @@ export default function Consent() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-sm"
+        className="relative z-10 w-full max-w-sm"
       >
         <div className="rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 p-8 text-center">
           <img

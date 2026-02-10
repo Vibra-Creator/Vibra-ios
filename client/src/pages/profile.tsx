@@ -69,7 +69,7 @@ function CreateProfilePrompt() {
 }
 
 const ProfileBackground = () => (
-  <div className="fixed inset-0 -z-[5]">
+  <div className="fixed inset-0 z-0">
     <img src="/backgrounds/vibra-solo.jpg" alt="" className="w-full h-full object-cover" />
     <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
   </div>
@@ -138,7 +138,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex-1 p-4 max-w-lg mx-auto">
+    <div className="flex-1 p-4 max-w-lg mx-auto overflow-y-auto">
       <ProfileBackground />
       <motion.div
         initial={{ opacity: 0, y: 20 }}

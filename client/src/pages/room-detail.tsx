@@ -77,7 +77,7 @@ export default function RoomDetail() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="fixed inset-0 -z-[5]">
+      <div className="fixed inset-0 z-0">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src="/backgrounds/6ae793b4126a4617a0c715db39223f26.mp4_1770326642075.MP4" type="video/mp4" />
         </video>

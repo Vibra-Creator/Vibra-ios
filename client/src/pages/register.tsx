@@ -77,14 +77,14 @@ export default function Register() {
 
   return (
     <div className="relative h-full flex flex-col items-center justify-center p-6 overflow-y-auto">
-      <div className="fixed inset-0 -z-[5]">
+      <div className="fixed inset-0 z-0">
         <img src="/images/vibra-alien-hero.gif" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="relative z-10 w-full max-w-md"
       >
         <div className="flex flex-col items-center mb-6">
           <img src={vibraLogo} alt="Vibra" className="w-28 h-28 object-contain" data-testid="vibra-logo-register" />

@@ -18,7 +18,7 @@ export function VideoBackground({ videoUrl, fallbackGradient = true }: VideoBack
   if (!videoUrl || videoError) {
     if (fallbackGradient) {
       return (
-        <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="fixed inset-0 -z-[1] overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-background via-[hsl(280,50%,8%)] to-[hsl(260,60%,5%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(280,100%,20%,0.15),transparent_50%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_hsl(185,85%,30%,0.1),transparent_50%)]" />
@@ -31,7 +31,7 @@ export function VideoBackground({ videoUrl, fallbackGradient = true }: VideoBack
   }
 
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden">
+    <div className="fixed inset-0 -z-[1] overflow-hidden">
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
