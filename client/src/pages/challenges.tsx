@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins, Sofa, Shirt, Apple, Coffee } from "lucide-react";
+import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins, Sofa, Shirt, Apple, Coffee, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import type { DailyChallenge, ChallengeSubmission, Profile } from "@shared/schema";
 
@@ -23,6 +24,7 @@ function ChallengeSkeleton() {
 export default function Challenges() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [uploadingChallengeId, setUploadingChallengeId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -184,6 +186,9 @@ export default function Challenges() {
       >
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="text-white bg-black/30 backdrop-blur-sm" onClick={() => setLocation("/")} data-testid="button-back">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
               <Trophy className="w-5 h-5 text-white" />
             </div>

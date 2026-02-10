@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, ShieldCheck, ChevronRight, Sparkles } from "lucide-react";
+import { Heart, MessageCircle, ShieldCheck, ChevronRight, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
@@ -55,6 +55,15 @@ export default function Onboarding() {
 
   return (
     <div className="h-full overflow-y-auto flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background via-background to-card">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 left-4 text-muted-foreground"
+        onClick={() => setLocation("/landing")}
+        data-testid="button-back"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </Button>
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"

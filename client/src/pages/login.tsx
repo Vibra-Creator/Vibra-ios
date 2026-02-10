@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +59,16 @@ export default function Login() {
         <img src="/images/vibra-alien-hero.gif" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 left-4 z-20 text-white bg-black/30 backdrop-blur-sm"
+        onClick={() => setLocation("/landing")}
+        data-testid="button-back"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </Button>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

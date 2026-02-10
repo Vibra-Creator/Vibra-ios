@@ -2,9 +2,10 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function Privacy() {
+  const [, setLocation] = useLocation();
   return (
     <div className="h-full overflow-y-auto p-6 bg-gradient-to-b from-background via-background to-card">
       <motion.div
@@ -13,11 +14,9 @@ export default function Privacy() {
         className="max-w-3xl mx-auto"
       >
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/login">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/landing")} data-testid="button-back">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />

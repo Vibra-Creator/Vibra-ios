@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Heart } from "lucide-react";
+import { Heart, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MatchCard, MatchCardSkeleton } from "@/components/MatchCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useLocation } from "wouter";
@@ -38,6 +39,9 @@ export default function Matches() {
         className="mb-6"
       >
         <div className="flex items-center gap-3 mb-2">
+          <Button variant="ghost" size="icon" className="text-white bg-black/30 backdrop-blur-sm" onClick={() => setLocation("/")} data-testid="button-back">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center"
                style={{ boxShadow: "var(--glow-accent)" }}>
             <Heart className="w-5 h-5 text-white fill-white" />

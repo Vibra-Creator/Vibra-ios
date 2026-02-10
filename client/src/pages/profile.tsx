@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2 } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -149,6 +149,9 @@ export default function Profile() {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 space-y-6"
       >
+        <Button variant="ghost" size="icon" className="text-white bg-black/30 backdrop-blur-sm" onClick={() => setLocation("/")} data-testid="button-back">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <div className="relative">
           <div className="aspect-[4/3] rounded-2xl overflow-hidden">
             <img

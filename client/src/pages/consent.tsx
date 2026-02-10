@@ -1,15 +1,26 @@
 import { motion } from "framer-motion";
-import { ShieldCheck, User, Mail, LogIn } from "lucide-react";
+import { ShieldCheck, User, Mail, LogIn, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function Consent() {
+  const [, setLocation] = useLocation();
   return (
     <div className="relative h-full overflow-y-auto flex flex-col items-center justify-center p-6">
       <div className="fixed inset-0 z-0">
         <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 left-4 z-20 text-white bg-black/30 backdrop-blur-sm"
+        onClick={() => setLocation("/landing")}
+        data-testid="button-back"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </Button>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Users, Sparkles, ArrowRight } from "lucide-react";
+import { Users, Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +63,9 @@ export default function Rooms() {
         className="mb-6"
       >
         <div className="flex items-center gap-3 mb-2">
+          <Button variant="ghost" size="icon" className="text-white bg-black/30 backdrop-blur-sm" onClick={() => setLocation("/")} data-testid="button-back">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
             <Users className="w-5 h-5 text-white" />
           </div>
