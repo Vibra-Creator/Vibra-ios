@@ -53,6 +53,106 @@ const seedProfiles = [
     location: "Corona Solare",
     interests: ["Fusione Nucleare", "Aurora Boreale", "Energia Luminosa"],
     alienType: "Solare"
+  },
+  {
+    id: "6",
+    name: "Lyria",
+    age: 112,
+    bio: "Cantante delle frequenze cosmiche. La mia voce può far vibrare le stelle. Cerco qualcuno che sappia ascoltare il silenzio tra le note.",
+    imageUrl: "/images/profile-6.png",
+    location: "Nebulosa del Cigno",
+    interests: ["Musica Cosmica", "Frequenze Vibrazionali", "Telepatia Emotiva"],
+    alienType: "Sonico"
+  },
+  {
+    id: "7",
+    name: "Orion",
+    age: 145,
+    bio: "Esploratore di galassie sconosciute. Ho mappato più di mille sistemi stellari, ma il territorio più affascinante resta il cuore.",
+    imageUrl: "/images/profile-7.png",
+    location: "Cintura di Orione",
+    interests: ["Cartografia Stellare", "Avventura Spaziale", "Cucina Interplanetaria"],
+    alienType: "Esploratore"
+  },
+  {
+    id: "8",
+    name: "Celeste",
+    age: 78,
+    bio: "Artista olografica e sognatrice quantica. Creo mondi con il pensiero e cerco qualcuno con cui condividere i miei sogni più luminosi.",
+    imageUrl: "/images/profile-8.png",
+    location: "Stazione Orbitale Artemis",
+    interests: ["Arte Olografica", "Sogni Quantici", "Design Dimensionale"],
+    alienType: "Onirico"
+  },
+  {
+    id: "9",
+    name: "Draco",
+    age: 189,
+    bio: "Guardiano delle correnti gravitazionali. Forte e silenzioso, ma con un cuore che batte alla velocità della luce per chi sa vederlo.",
+    imageUrl: "/images/profile-9.png",
+    location: "Vortice di Magellan",
+    interests: ["Gravità Quantistica", "Arti Marziali Cosmiche", "Filosofia Stellare"],
+    alienType: "Gravitazionale"
+  },
+  {
+    id: "10",
+    name: "Rosalia",
+    age: 67,
+    bio: "Biologa delle emozioni cosmiche. Studio come l'amore si propaga attraverso le galassie. Cerco il mio esperimento più bello.",
+    imageUrl: "/images/profile-10.png",
+    location: "Pianeta Empatia",
+    interests: ["Biologia Emozionale", "Empatia Cosmica", "Giardinaggio Astrale"],
+    alienType: "Empatico"
+  },
+  {
+    id: "11",
+    name: "Obsidian",
+    age: 234,
+    bio: "Antico viaggiatore dell'oscurità cosmica. Non temere le ombre - sono loro che rivelano la vera luce. Mistero è la mia seconda natura.",
+    imageUrl: "/images/profile-11.png",
+    location: "Buco Nero di Cygnus",
+    interests: ["Materia Oscura", "Misteri Cosmici", "Poesia delle Ombre"],
+    alienType: "Oscuro"
+  },
+  {
+    id: "12",
+    name: "Perla",
+    age: 56,
+    bio: "Tessitrice di sogni iridescenti. Ogni incontro è un arcobaleno da scoprire. Cerco anime pure che brillino della propria luce.",
+    imageUrl: "/images/profile-12.png",
+    location: "Anelli di Saturno",
+    interests: ["Tessiture Cosmiche", "Cristalloterapia", "Danza Astrale"],
+    alienType: "Iridescente"
+  },
+  {
+    id: "13",
+    name: "Vulcan",
+    age: 168,
+    bio: "Forgiatore di metalli stellari e cuori ardenti. Le mie mani plasmano asteroidi, ma il tocco più delicato lo riservo a chi amo.",
+    imageUrl: "/images/profile-13.png",
+    location: "Fornace di Antares",
+    interests: ["Metallurgia Stellare", "Scultura Cosmica", "Cucina con il Plasma"],
+    alienType: "Igneo"
+  },
+  {
+    id: "14",
+    name: "Luna",
+    age: 91,
+    bio: "Custode dei segreti lunari. Silenziosa come la notte stellata, ma piena di storie da sussurrare a chi sa ascoltare con il cuore.",
+    imageUrl: "/images/profile-14.png",
+    location: "Faccia Nascosta della Luna",
+    interests: ["Astronomia Lunare", "Meditazione Notturna", "Scrittura Cosmica"],
+    alienType: "Lunare"
+  },
+  {
+    id: "15",
+    name: "Jade",
+    age: 83,
+    bio: "Guaritore con il pollice verde cosmico. Le mie piante crescono con la musica delle stelle. Cerco qualcuno con cui coltivare amore.",
+    imageUrl: "/images/profile-15.png",
+    location: "Serra Galattica Zen",
+    interests: ["Botanica Spaziale", "Guarigione Naturale", "Yoga Interstellare"],
+    alienType: "Vegetale"
   }
 ];
 
@@ -245,21 +345,24 @@ export async function seedDatabase() {
   try {
 
     const existingProfiles = await db.select().from(profiles);
+    const existingIds = new Set(existingProfiles.map(p => p.id));
+    
+    const missingProfiles = seedProfiles.filter(p => !existingIds.has(p.id));
+    
+    if (missingProfiles.length > 0) {
+      console.log(`Seeding ${missingProfiles.length} new bot profiles...`);
+      for (const profile of missingProfiles) {
+        await db.insert(profiles).values({ ...profile, isBot: true, points: 50 });
+      }
+      console.log("Bot profiles seeded successfully!");
+    } else {
+      console.log("All bot profiles already exist, skipping seed.");
+    }
     
     if (existingProfiles.length === 0) {
-      console.log("Seeding database with initial profiles...");
-      
-      for (const profile of seedProfiles) {
-        await db.insert(profiles).values({ ...profile, points: 0 });
-      }
-      
       for (const swipe of seedSwipesToCreateMatch) {
         await db.insert(swipes).values(swipe);
       }
-      
-      console.log("Database seeded successfully!");
-    } else {
-      console.log("Database already has data, skipping seed.");
     }
 
     const defaultRoomId = "default-room-entra-chi-dico-io";
