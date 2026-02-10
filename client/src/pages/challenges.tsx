@@ -157,13 +157,15 @@ export default function Challenges() {
   const totalPoints = myProfile?.points ?? 0;
 
   return (
-    <div className="flex-1 p-4 pb-8 overflow-y-auto">
+    <div className="flex-1 p-4 pb-8 overflow-y-auto relative">
       <div className="fixed inset-0 z-0">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src="/backgrounds/vibra-video-1.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
+
+      <div className="relative z-10">
 
       <input
         ref={fileInputRef}
@@ -199,7 +201,7 @@ export default function Challenges() {
         </div>
       </motion.div>
 
-      <div className="rounded-xl p-4 flex items-center justify-between gap-4 mb-6" data-testid="card-user-points">
+      <div className="rounded-xl p-4 flex items-center justify-between gap-4 mb-6 bg-white/10 backdrop-blur-sm" data-testid="card-user-points">
         <div className="flex items-center gap-3">
           <Star className="w-8 h-8 text-accent" />
           <div>
@@ -218,7 +220,7 @@ export default function Challenges() {
           animate={{ opacity: 1, scale: 1 }}
           className="mb-6"
         >
-          <div className="rounded-xl p-4" data-testid="card-photo-preview">
+          <div className="rounded-xl p-4 bg-white/10 backdrop-blur-sm" data-testid="card-photo-preview">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-white">Anteprima Foto</h3>
               <Button size="icon" variant="ghost" onClick={resetUpload} data-testid="button-cancel-upload">
@@ -284,7 +286,7 @@ export default function Challenges() {
                 transition={{ delay: index * 0.1 }}
               >
                 <div
-                  className="rounded-xl overflow-hidden"
+                  className="rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm"
                   data-testid={`card-challenge-${challenge.id}`}
                 >
                   {bannerCfg && (
@@ -352,6 +354,7 @@ export default function Challenges() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }
