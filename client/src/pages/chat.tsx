@@ -35,17 +35,28 @@ export default function Chat() {
   const [giftAnimation, setGiftAnimation] = useState<{ gift: VirtualGift; senderName: string; message?: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pendingSendCount = useRef(0);
+  const [sendingCount, setSendingCount] = useState(0);
+  const optimisticMessagesRef = useRef<Map<string, Message>>(new Map());
+  const [optimisticVersion, setOptimisticVersion] = useState(0);
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
     enabled: !!user,
   });
 
-  const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({
+  const { data: serverMessages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", matchId],
     enabled: !!matchId && !!myProfile,
-    refetchInterval: 3000,
+    refetchInterval: sendingCount > 0 ? false : 3000,
   });
+
+  const messages = (() => {
+    const server = serverMessages || [];
+    const pending = Array.from(optimisticMessagesRef.current.values());
+    if (pending.length === 0) return server;
+    return [...server, ...pending];
+  })();
 
   const { data: matches } = useQuery<(Match & { profile: Profile })[]>({
     queryKey: ["/api/matches", myProfile?.id],
@@ -79,37 +90,39 @@ export default function Chat() {
   }, [unseenGifts, giftAnimation, otherProfile]);
 
   const sendMessage = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, tempId }: { content: string; tempId: string }) => {
       return apiRequest("POST", "/api/messages", {
         matchId,
         content,
       });
     },
-    onMutate: async (content: string) => {
-      await queryClient.cancelQueries({ queryKey: ["/api/messages", matchId] });
-      const previousMessages = queryClient.getQueryData<Message[]>(["/api/messages", matchId]);
+    onMutate: async ({ content, tempId }) => {
+      pendingSendCount.current += 1;
+      setSendingCount(pendingSendCount.current);
       const optimisticMessage: Message = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
         matchId: matchId!,
         senderId: myProfile!.id,
         content,
         read: false,
         createdAt: new Date(),
       };
-      queryClient.setQueryData<Message[]>(["/api/messages", matchId], (old) => [
-        ...(old || []),
-        optimisticMessage,
-      ]);
+      optimisticMessagesRef.current.set(tempId, optimisticMessage);
+      setOptimisticVersion(v => v + 1);
       setMessageText("");
-      return { previousMessages };
     },
-    onError: (_err, _content, context) => {
-      if (context?.previousMessages) {
-        queryClient.setQueryData(["/api/messages", matchId], context.previousMessages);
-      }
+    onError: (_err, { tempId }) => {
+      optimisticMessagesRef.current.delete(tempId);
+      setOptimisticVersion(v => v + 1);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
+    onSettled: (_data, _error, { tempId }) => {
+      pendingSendCount.current -= 1;
+      setTimeout(() => {
+        optimisticMessagesRef.current.delete(tempId);
+        setOptimisticVersion(v => v + 1);
+        queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
+        setSendingCount(pendingSendCount.current);
+      }, 1500);
     },
   });
 
@@ -119,7 +132,8 @@ export default function Chat() {
 
   const handleSend = () => {
     if (messageText.trim() && myProfile) {
-      sendMessage.mutate(messageText.trim());
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      sendMessage.mutate({ content: messageText.trim(), tempId });
     }
   };
 
