@@ -1,8 +1,11 @@
 import { useState, forwardRef, useRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@shared/schema";
 
 interface ProfileDetailModalProps {
@@ -13,6 +16,29 @@ interface ProfileDetailModalProps {
 }
 
 function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }: ProfileDetailModalProps) {
+  const { toast } = useToast();
+  const [showReportMenu, setShowReportMenu] = useState(false);
+
+  const reportMutation = useMutation({
+    mutationFn: (data: { reportedId: string; reason: string }) =>
+      apiRequest("POST", "/api/reports", data),
+    onSuccess: () => {
+      toast({ title: "Segnalazione inviata", description: "Grazie per la tua segnalazione. Il nostro team la esaminerà." });
+      setShowReportMenu(false);
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Non è stato possibile inviare la segnalazione.", variant: "destructive" });
+    },
+  });
+
+  const reportReasons = [
+    "Contenuto inappropriato",
+    "Profilo falso",
+    "Comportamento molesto",
+    "Spam",
+    "Altro",
+  ];
+
   if (!isOpen) return null;
 
   const detailItems = [
@@ -158,6 +184,44 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                   </div>
                 </div>
               )}
+
+              <div className="pt-3 border-t border-white/10">
+                {!showReportMenu ? (
+                  <Button
+                    variant="ghost"
+                    className="w-full text-white/50 hover:text-red-400"
+                    onClick={() => setShowReportMenu(true)}
+                    data-testid={`button-report-${profile.id}`}
+                  >
+                    <Flag className="w-4 h-4 mr-2" />
+                    Segnala profilo
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-white/60 text-center">Seleziona il motivo:</p>
+                    {reportReasons.map((reason) => (
+                      <Button
+                        key={reason}
+                        variant="ghost"
+                        className="w-full text-white/80 justify-start"
+                        onClick={() => reportMutation.mutate({ reportedId: profile.id, reason })}
+                        disabled={reportMutation.isPending}
+                        data-testid={`button-report-reason-${reason.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        {reason}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="ghost"
+                      className="w-full text-white/40"
+                      onClick={() => setShowReportMenu(false)}
+                      data-testid="button-cancel-report"
+                    >
+                      Annulla
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </motion.div>

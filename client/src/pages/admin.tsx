@@ -1,16 +1,18 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { User, Profile } from "@shared/schema";
+import type { User, Profile, Report, UserSuspension, BannedWord, RoomMessage, ChallengeSubmission } from "@shared/schema";
 
 interface AdminStats {
   totalUsers: number;
@@ -24,6 +26,10 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [suspendUserId, setSuspendUserId] = useState("");
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspendPermanent, setSuspendPermanent] = useState(false);
+  const [newBannedWord, setNewBannedWord] = useState("");
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -37,41 +43,113 @@ export default function Admin() {
     queryKey: ["/api/admin/users"],
   });
 
+  const { data: reports } = useQuery<Report[]>({
+    queryKey: ["/api/admin/reports"],
+  });
+
+  const { data: suspensions } = useQuery<UserSuspension[]>({
+    queryKey: ["/api/admin/suspensions"],
+  });
+
+  const { data: bannedWordsList } = useQuery<BannedWord[]>({
+    queryKey: ["/api/admin/banned-words"],
+  });
+
+  const { data: roomMessages } = useQuery<RoomMessage[]>({
+    queryKey: ["/api/admin/room-messages"],
+  });
+
+  const { data: submissions } = useQuery<ChallengeSubmission[]>({
+    queryKey: ["/api/admin/challenge-submissions"],
+  });
+
   const deleteProfileMutation = useMutation({
-    mutationFn: async (profileId: string) => {
-      return apiRequest("DELETE", `/api/admin/profiles/${profileId}`);
-    },
+    mutationFn: async (profileId: string) => apiRequest("DELETE", `/api/admin/profiles/${profileId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "Profilo eliminato" });
     },
   });
 
   const verifyProfileMutation = useMutation({
-    mutationFn: async ({ profileId, isVerified }: { profileId: string; isVerified: boolean }) => {
-      return apiRequest("PATCH", `/api/admin/profiles/${profileId}/verify`, { isVerified });
-    },
+    mutationFn: async ({ profileId, isVerified }: { profileId: string; isVerified: boolean }) =>
+      apiRequest("PATCH", `/api/admin/profiles/${profileId}/verify`, { isVerified }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
+      toast({ title: "Stato verifica aggiornato" });
     },
   });
 
   const resetTestDataMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/admin/reset-test-data") as Promise<{ deleted: { swipes: number; matches: number; messages: number } }>;
-    },
+    mutationFn: async () => apiRequest("POST", "/api/admin/reset-test-data") as Promise<{ deleted: { swipes: number; matches: number; messages: number } }>,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
-      toast({
-        title: "Dati di test resettati!",
-        description: `Eliminati: ${data.deleted.swipes} swipe, ${data.deleted.matches} match, ${data.deleted.messages} messaggi`,
-      });
+      toast({ title: "Dati di test resettati!", description: `Eliminati: ${data.deleted.swipes} swipe, ${data.deleted.matches} match, ${data.deleted.messages} messaggi` });
     },
-    onError: () => {
-      toast({ title: "Errore", description: "Impossibile resettare i dati di test.", variant: "destructive" });
+  });
+
+  const updateReportMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) =>
+      apiRequest("PATCH", `/api/admin/reports/${id}`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+      toast({ title: "Segnalazione aggiornata" });
+    },
+  });
+
+  const suspendUserMutation = useMutation({
+    mutationFn: async (data: { userId: string; reason: string; isPermanent: boolean }) =>
+      apiRequest("POST", "/api/admin/suspensions", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
+      setSuspendUserId("");
+      setSuspendReason("");
+      setSuspendPermanent(false);
+      toast({ title: "Utente sospeso" });
+    },
+  });
+
+  const liftSuspensionMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/admin/suspensions/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
+      toast({ title: "Sospensione rimossa" });
+    },
+  });
+
+  const addBannedWordMutation = useMutation({
+    mutationFn: async (word: string) => apiRequest("POST", "/api/admin/banned-words", { word }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banned-words"] });
+      setNewBannedWord("");
+      toast({ title: "Parola aggiunta alla lista" });
+    },
+  });
+
+  const removeBannedWordMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/admin/banned-words/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banned-words"] });
+      toast({ title: "Parola rimossa" });
+    },
+  });
+
+  const deleteRoomMessageMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/admin/room-messages/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/room-messages"] });
+      toast({ title: "Messaggio eliminato" });
+    },
+  });
+
+  const reviewSubmissionMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) =>
+      apiRequest("PATCH", `/api/admin/challenge-submissions/${id}`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/challenge-submissions"] });
+      toast({ title: "Foto revisata" });
     },
   });
 
@@ -82,24 +160,36 @@ export default function Admin() {
           <CardContent className="p-8 text-center">
             <Shield className="w-16 h-16 mx-auto mb-4 text-destructive" />
             <h2 className="text-xl font-semibold mb-2">Accesso Negato</h2>
-            <p className="text-muted-foreground mb-4">
-              Non hai i permessi per accedere alla dashboard admin.
-            </p>
-            <Button onClick={() => setLocation("/")} data-testid="button-back-home">
-              Torna alla Home
-            </Button>
+            <p className="text-muted-foreground mb-4">Non hai i permessi per accedere alla dashboard admin.</p>
+            <Button onClick={() => setLocation("/")} data-testid="button-back-home">Torna alla Home</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  const pendingReports = reports?.filter(r => r.status === "pending") || [];
+  const activeSuspensions = suspensions?.filter(s => s.isActive) || [];
+  const pendingSubmissions = submissions?.filter(s => s.status === "pending") || [];
+
   const statCards = [
     { label: "Utenti", value: stats?.totalUsers || 0, icon: Users, color: "from-blue-500 to-cyan-500" },
     { label: "Profili", value: stats?.totalProfiles || 0, icon: UserCheck, color: "from-purple-500 to-pink-500" },
     { label: "Match", value: stats?.totalMatches || 0, icon: Heart, color: "from-pink-500 to-red-500" },
     { label: "Messaggi", value: stats?.totalMessages || 0, icon: MessageCircle, color: "from-green-500 to-emerald-500" },
+    { label: "Segnalazioni", value: pendingReports.length, icon: Flag, color: "from-orange-500 to-red-500" },
+    { label: "Sospesi", value: activeSuspensions.length, icon: Ban, color: "from-red-500 to-rose-500" },
   ];
+
+  const getProfileName = (profileId: string) => {
+    const p = profiles?.find(pr => pr.id === profileId);
+    return p ? p.name : profileId;
+  };
+
+  const getUserEmail = (userId: string) => {
+    const u = users?.find(usr => usr.id === userId);
+    return u ? (u.email || `${u.firstName} ${u.lastName}`) : userId;
+  };
 
   return (
     <div className="flex-1 p-4 md:p-6 max-w-7xl mx-auto overflow-y-auto">
@@ -107,214 +197,327 @@ export default function Admin() {
         <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
-      <div className="flex items-center gap-4 mb-8">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setLocation("/")}
-          data-testid="button-back"
-        >
-          <ArrowLeft className="w-5 h-5 text-white" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-sm text-white/60">Gestisci l'app Vibra</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {statCards.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card className="hover-elevate">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center flex-shrink-0`}>
-                    <stat.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-
-      <Card className="mb-8">
-        <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h3 className="font-semibold text-foreground">Reset Dati di Test</h3>
-            <p className="text-sm text-muted-foreground">Resetta swipe, match e messaggi dei profili di test (Luna, Nova, Orion) per riutilizzarli</p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => resetTestDataMutation.mutate()}
-            disabled={resetTestDataMutation.isPending}
-            data-testid="button-reset-test-data"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            {resetTestDataMutation.isPending ? "Resettando..." : "Reset Test Data"}
+      <div className="relative z-10">
+        <div className="flex items-center gap-4 mb-8">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} data-testid="button-back">
+            <ArrowLeft className="w-5 h-5 text-white" />
           </Button>
-        </CardContent>
-      </Card>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+            <p className="text-sm text-white/60">Gestisci e modera l'app Vibra</p>
+          </div>
+        </div>
 
-      <Tabs defaultValue="profiles" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="profiles" data-testid="tab-profiles">
-            Profili ({profiles?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="users" data-testid="tab-users">
-            Utenti ({users?.length || 0})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profiles">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Gestione Profili</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {profilesLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 animate-pulse">
-                      <div className="w-12 h-12 rounded-full bg-muted" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-muted rounded w-32" />
-                        <div className="h-3 bg-muted rounded w-24" />
-                      </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+          {statCards.map((stat, index) => (
+            <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+              <Card className="hover-elevate">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center flex-shrink-0`}>
+                      <stat.icon className="w-4 h-4 text-white" />
                     </div>
-                  ))}
-                </div>
-              ) : (
+                    <div>
+                      <p className="text-xl font-bold text-foreground">{stat.value}</p>
+                      <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        <Card className="mb-6">
+          <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="font-semibold text-foreground">Reset Dati di Test</h3>
+              <p className="text-sm text-muted-foreground">Resetta swipe, match e messaggi dei profili di test</p>
+            </div>
+            <Button variant="outline" onClick={() => resetTestDataMutation.mutate()} disabled={resetTestDataMutation.isPending} data-testid="button-reset-test-data">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              {resetTestDataMutation.isPending ? "Resettando..." : "Reset Test Data"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="profiles" className="w-full">
+          <TabsList className="mb-4 flex-wrap h-auto gap-1">
+            <TabsTrigger value="profiles" data-testid="tab-profiles">Profili</TabsTrigger>
+            <TabsTrigger value="users" data-testid="tab-users">Utenti</TabsTrigger>
+            <TabsTrigger value="reports" data-testid="tab-reports">
+              Segnalazioni {pendingReports.length > 0 && <Badge variant="destructive" className="ml-1">{pendingReports.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="suspensions" data-testid="tab-suspensions">Sospensioni</TabsTrigger>
+            <TabsTrigger value="messages" data-testid="tab-messages">Messaggi</TabsTrigger>
+            <TabsTrigger value="photos" data-testid="tab-photos">
+              Foto {pendingSubmissions.length > 0 && <Badge variant="destructive" className="ml-1">{pendingSubmissions.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="words" data-testid="tab-words">Filtro Parole</TabsTrigger>
+          </TabsList>
+
+          {/* PROFILI TAB */}
+          <TabsContent value="profiles">
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Gestione Profili</CardTitle></CardHeader>
+              <CardContent>
                 <div className="space-y-2">
                   {profiles?.map((profile) => (
-                    <div
-                      key={profile.id}
-                      className="flex items-center gap-4 p-3 rounded-lg bg-card border border-border hover-elevate"
-                      data-testid={`profile-row-${profile.id}`}
-                    >
-                      <Avatar className="w-12 h-12">
+                    <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover-elevate" data-testid={`profile-row-${profile.id}`}>
+                      <Avatar className="w-10 h-10">
                         <AvatarImage src={profile.imageUrl} alt={profile.name} />
                         <AvatarFallback>{profile.name[0]}</AvatarFallback>
                       </Avatar>
-                      
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-foreground truncate">
-                            {profile.name}, {profile.age}
-                          </h3>
-                          {profile.isVerified && (
-                            <BadgeCheck className="w-4 h-4 text-blue-500" />
-                          )}
-                          {profile.isBot && (
-                            <Badge variant="secondary" className="text-xs">
-                              Bot
-                            </Badge>
-                          )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-medium text-foreground truncate">{profile.name}, {profile.age}</h3>
+                          {profile.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                          {profile.isBot && <Badge variant="secondary" className="text-xs">Bot</Badge>}
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {profile.alienType} • {profile.location}
-                        </p>
+                        <p className="text-sm text-muted-foreground truncate">{profile.alienType} - {profile.location}</p>
                       </div>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={profile.isVerified ? "text-blue-500 hover:bg-blue-500/10" : "text-muted-foreground hover:bg-muted"}
-                        onClick={() => verifyProfileMutation.mutate({ 
-                          profileId: profile.id, 
-                          isVerified: !profile.isVerified 
-                        })}
-                        disabled={verifyProfileMutation.isPending}
-                        data-testid={`button-verify-${profile.id}`}
-                      >
+                      <Button variant="ghost" size="icon" className={profile.isVerified ? "text-blue-500" : "text-muted-foreground"} onClick={() => verifyProfileMutation.mutate({ profileId: profile.id, isVerified: !profile.isVerified })} data-testid={`button-verify-${profile.id}`}>
                         <BadgeCheck className="w-4 h-4" />
                       </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => {
-                          if (confirm(`Sei sicuro di voler eliminare il profilo di ${profile.name}?`)) {
-                            deleteProfileMutation.mutate(profile.id);
-                          }
-                        }}
-                        disabled={deleteProfileMutation.isPending}
-                        data-testid={`button-delete-${profile.id}`}
-                      >
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   ))}
-
-                  {(!profiles || profiles.length === 0) && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Nessun profilo trovato
-                    </div>
-                  )}
+                  {(!profiles || profiles.length === 0) && <div className="text-center py-8 text-muted-foreground">Nessun profilo trovato</div>}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Utenti Registrati</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {users?.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-card border border-border"
-                    data-testid={`user-row-${u.id}`}
-                  >
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={u.profileImageUrl || undefined} alt={u.firstName || "User"} />
-                      <AvatarFallback>{(u.firstName?.[0] || u.email?.[0] || "U").toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-foreground truncate">
-                          {u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email || "Utente"}
-                        </h3>
-                        {u.isAdmin && (
-                          <Badge className="bg-purple-500">Admin</Badge>
-                        )}
+          {/* UTENTI TAB */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Utenti Registrati</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {users?.map((u) => (
+                    <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border" data-testid={`user-row-${u.id}`}>
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={u.profileImageUrl || undefined} alt={u.firstName || "User"} />
+                        <AvatarFallback>{(u.firstName?.[0] || u.email?.[0] || "U").toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-medium text-foreground truncate">{u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email || "Utente"}</h3>
+                          {u.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{u.email || "Nessuna email"}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {u.email || "Nessuna email"}
-                      </p>
+                      <span className="text-xs text-muted-foreground">{u.createdAt ? new Date(u.createdAt).toLocaleDateString("it-IT") : "N/A"}</span>
                     </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                    <span className="text-xs text-muted-foreground">
-                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString("it-IT") : "N/A"}
-                    </span>
-                  </div>
-                ))}
-
-                {(!users || users.length === 0) && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Nessun utente trovato
+          {/* SEGNALAZIONI TAB */}
+          <TabsContent value="reports">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Flag className="w-5 h-5" /> Segnalazioni Utenti</CardTitle></CardHeader>
+              <CardContent>
+                {(!reports || reports.length === 0) ? (
+                  <div className="text-center py-8 text-muted-foreground">Nessuna segnalazione</div>
+                ) : (
+                  <div className="space-y-3">
+                    {reports.map((report) => (
+                      <div key={report.id} className="p-4 rounded-lg bg-card border border-border" data-testid={`report-row-${report.id}`}>
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <Badge variant={report.status === "pending" ? "destructive" : "secondary"}>
+                                {report.status === "pending" ? "In attesa" : report.status === "resolved" ? "Risolta" : "Archiviata"}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">{new Date(report.createdAt).toLocaleString("it-IT")}</span>
+                            </div>
+                            <p className="text-sm text-foreground"><strong>Da:</strong> {getProfileName(report.reporterId)} <strong>Contro:</strong> {getProfileName(report.reportedId)}</p>
+                            <p className="text-sm text-foreground mt-1"><strong>Motivo:</strong> {report.reason}</p>
+                            {report.description && <p className="text-sm text-muted-foreground mt-1">{report.description}</p>}
+                          </div>
+                          {report.status === "pending" && (
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="text-green-600" onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })} data-testid={`button-resolve-report-${report.id}`}>
+                                <CheckCircle className="w-4 h-4 mr-1" /> Risolvi
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-muted-foreground" onClick={() => updateReportMutation.mutate({ id: report.id, status: "dismissed" })} data-testid={`button-dismiss-report-${report.id}`}>
+                                <XCircle className="w-4 h-4 mr-1" /> Archivia
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SOSPENSIONI TAB */}
+          <TabsContent value="suspensions">
+            <Card className="mb-4">
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Ban className="w-5 h-5" /> Sospendi Utente</CardTitle></CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2 flex-wrap">
+                    <select className="flex-1 min-w-[200px] rounded-md border border-border bg-background px-3 py-2 text-sm" value={suspendUserId} onChange={(e) => setSuspendUserId(e.target.value)} data-testid="select-suspend-user">
+                      <option value="">Seleziona utente...</option>
+                      {users?.filter(u => !u.isAdmin).map((u) => (
+                        <option key={u.id} value={u.id}>{u.email || `${u.firstName} ${u.lastName}`} ({u.id.slice(0, 8)}...)</option>
+                      ))}
+                    </select>
+                    <Input placeholder="Motivo della sospensione" value={suspendReason} onChange={(e) => setSuspendReason(e.target.value)} className="flex-1 min-w-[200px]" data-testid="input-suspend-reason" />
+                  </div>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                      <input type="checkbox" checked={suspendPermanent} onChange={(e) => setSuspendPermanent(e.target.checked)} className="rounded" />
+                      Sospensione permanente
+                    </label>
+                    <Button onClick={() => { if (suspendUserId && suspendReason) suspendUserMutation.mutate({ userId: suspendUserId, reason: suspendReason, isPermanent: suspendPermanent }); }} disabled={!suspendUserId || !suspendReason || suspendUserMutation.isPending} data-testid="button-suspend-user">
+                      <Ban className="w-4 h-4 mr-2" /> Sospendi
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Sospensioni Attive</CardTitle></CardHeader>
+              <CardContent>
+                {(!suspensions || suspensions.length === 0) ? (
+                  <div className="text-center py-8 text-muted-foreground">Nessuna sospensione</div>
+                ) : (
+                  <div className="space-y-2">
+                    {suspensions.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-card border border-border flex-wrap" data-testid={`suspension-row-${s.id}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-foreground">{getUserEmail(s.userId)}</p>
+                            <Badge variant={s.isActive ? "destructive" : "secondary"}>{s.isActive ? "Attiva" : "Rimossa"}</Badge>
+                            {s.isPermanent && <Badge variant="destructive">Permanente</Badge>}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{s.reason}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(s.suspendedAt).toLocaleString("it-IT")}</p>
+                        </div>
+                        {s.isActive && (
+                          <Button size="sm" variant="outline" onClick={() => liftSuspensionMutation.mutate(s.id)} data-testid={`button-lift-suspension-${s.id}`}>
+                            Rimuovi
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* MESSAGGI TAB */}
+          <TabsContent value="messages">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><MessageCircle className="w-5 h-5" /> Messaggi nelle Stanze</CardTitle></CardHeader>
+              <CardContent>
+                {(!roomMessages || roomMessages.length === 0) ? (
+                  <div className="text-center py-8 text-muted-foreground">Nessun messaggio nelle stanze</div>
+                ) : (
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                    {roomMessages.slice(0, 100).map((msg) => (
+                      <div key={msg.id} className="flex items-start justify-between gap-3 p-3 rounded-lg bg-card border border-border" data-testid={`room-msg-${msg.id}`}>
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <Avatar className="w-8 h-8 flex-shrink-0">
+                            <AvatarImage src={msg.senderImage || undefined} />
+                            <AvatarFallback className="text-xs">{msg.senderName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm text-foreground">{msg.senderName}</span>
+                              <span className="text-xs text-muted-foreground">{new Date(msg.createdAt).toLocaleString("it-IT")}</span>
+                            </div>
+                            <p className="text-sm text-foreground break-words">{msg.content}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="text-destructive flex-shrink-0" onClick={() => { if (confirm("Eliminare questo messaggio?")) deleteRoomMessageMutation.mutate(msg.id); }} data-testid={`button-delete-msg-${msg.id}`}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* FOTO MODERAZIONE TAB */}
+          <TabsContent value="photos">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Eye className="w-5 h-5" /> Moderazione Foto Sfide</CardTitle></CardHeader>
+              <CardContent>
+                {(!submissions || submissions.length === 0) ? (
+                  <div className="text-center py-8 text-muted-foreground">Nessuna foto da moderare</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {submissions.map((sub) => (
+                      <div key={sub.id} className="rounded-lg bg-card border border-border overflow-hidden" data-testid={`submission-row-${sub.id}`}>
+                        <div className="aspect-video relative">
+                          <img src={sub.imageUrl} alt="Submission" className="w-full h-full object-cover" />
+                          <Badge className="absolute top-2 right-2" variant={sub.status === "pending" ? "destructive" : sub.status === "approved" ? "default" : "secondary"}>
+                            {sub.status === "pending" ? "In attesa" : sub.status === "approved" ? "Approvata" : "Rifiutata"}
+                          </Badge>
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm text-foreground"><strong>Profilo:</strong> {getProfileName(sub.profileId)}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(sub.createdAt).toLocaleString("it-IT")}</p>
+                          {sub.status === "pending" && (
+                            <div className="flex gap-2 mt-2">
+                              <Button size="sm" className="flex-1" onClick={() => reviewSubmissionMutation.mutate({ id: sub.id, status: "approved" })} data-testid={`button-approve-${sub.id}`}>
+                                <CheckCircle className="w-4 h-4 mr-1" /> Approva
+                              </Button>
+                              <Button size="sm" variant="destructive" className="flex-1" onClick={() => reviewSubmissionMutation.mutate({ id: sub.id, status: "rejected" })} data-testid={`button-reject-${sub.id}`}>
+                                <XCircle className="w-4 h-4 mr-1" /> Rifiuta
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* FILTRO PAROLE TAB */}
+          <TabsContent value="words">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Filter className="w-5 h-5" /> Filtro Parole Vietate</CardTitle></CardHeader>
+              <CardContent>
+                <div className="flex gap-2 mb-4">
+                  <Input placeholder="Aggiungi parola vietata..." value={newBannedWord} onChange={(e) => setNewBannedWord(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && newBannedWord.trim()) addBannedWordMutation.mutate(newBannedWord.trim()); }} data-testid="input-banned-word" />
+                  <Button onClick={() => { if (newBannedWord.trim()) addBannedWordMutation.mutate(newBannedWord.trim()); }} disabled={!newBannedWord.trim()} data-testid="button-add-banned-word">
+                    <Plus className="w-4 h-4 mr-1" /> Aggiungi
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {bannedWordsList?.map((bw) => (
+                    <Badge key={bw.id} variant="secondary" className="gap-1 pr-1" data-testid={`banned-word-${bw.id}`}>
+                      {bw.word}
+                      <button onClick={() => removeBannedWordMutation.mutate(bw.id)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20" data-testid={`button-remove-word-${bw.id}`}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {(!bannedWordsList || bannedWordsList.length === 0) && <p className="text-sm text-muted-foreground">Nessuna parola nella lista</p>}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

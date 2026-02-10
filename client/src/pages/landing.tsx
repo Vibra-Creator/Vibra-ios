@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight } from "lucide-react";
+import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -119,7 +119,7 @@ export default function Landing() {
               </Link>
             </div>
 
-            <div className="mt-8 flex items-center justify-center gap-8 text-base text-white/70">
+            <div className="mt-8 flex items-center justify-center gap-8 text-base text-white/70 flex-wrap">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-green-500" />
                 <span>Free per un periodo di 30 giorni</span>
@@ -128,6 +128,15 @@ export default function Landing() {
                 <Heart className="w-5 h-5 text-pink-500" />
                 <span>Nessun costo nascosto</span>
               </div>
+            </div>
+
+            <div className="mt-6">
+              <Link href="/login?admin=true">
+                <Button variant="outline" className="gap-2 text-white/70 border-white/20 backdrop-blur-sm" data-testid="button-admin-access">
+                  <Shield className="w-4 h-4" />
+                  Accesso Admin
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </section>

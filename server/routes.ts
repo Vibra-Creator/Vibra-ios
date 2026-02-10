@@ -604,6 +604,159 @@ export async function registerRoutes(
     }
   });
 
+  // === ADMIN MODERATION ROUTES ===
+
+  // Reports
+  app.get("/api/admin/reports", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const reps = await storage.getReports();
+      res.json(reps);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch reports" });
+    }
+  });
+
+  app.patch("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { status } = req.body;
+      if (!["resolved", "dismissed", "pending"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      const report = await storage.updateReportStatus(req.params.id, status);
+      res.json(report);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update report" });
+    }
+  });
+
+  // User report from any authenticated user
+  app.post("/api/reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const { reportedId, reason, description } = req.body;
+      if (!reportedId || !reason) return res.status(400).json({ error: "reportedId and reason are required" });
+
+      const report = await storage.createReport({ reporterId: profile.id, reportedId, reason, description });
+      res.json(report);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create report" });
+    }
+  });
+
+  // Suspensions
+  app.get("/api/admin/suspensions", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const suspensions = await storage.getUserSuspensions();
+      res.json(suspensions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch suspensions" });
+    }
+  });
+
+  app.post("/api/admin/suspensions", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId, reason, expiresAt, isPermanent } = req.body;
+      if (!userId || !reason) return res.status(400).json({ error: "userId and reason are required" });
+      const suspension = await storage.suspendUser({ userId, reason, expiresAt: expiresAt ? new Date(expiresAt) : undefined, isPermanent });
+      res.json(suspension);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to suspend user" });
+    }
+  });
+
+  app.delete("/api/admin/suspensions/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.liftSuspension(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to lift suspension" });
+    }
+  });
+
+  // Banned words
+  app.get("/api/admin/banned-words", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const words = await storage.getBannedWords();
+      res.json(words);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch banned words" });
+    }
+  });
+
+  app.post("/api/admin/banned-words", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { word } = req.body;
+      if (!word) return res.status(400).json({ error: "word is required" });
+      const bw = await storage.addBannedWord(word);
+      res.json(bw);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add banned word" });
+    }
+  });
+
+  app.delete("/api/admin/banned-words/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.removeBannedWord(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove banned word" });
+    }
+  });
+
+  // Message moderation
+  app.get("/api/admin/room-messages", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const msgs = await storage.getAllRoomMessages();
+      res.json(msgs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.delete("/api/admin/room-messages/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.deleteRoomMessage(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  app.delete("/api/admin/private-room-messages/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.deletePrivateRoomMessage(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  // Check user suspension status (used by frontend)
+  app.get("/api/suspension-status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const suspension = await storage.getActiveSuspension(userId);
+      res.json({ suspended: !!suspension, suspension: suspension || null });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check suspension" });
+    }
+  });
+
+  // Banned words check endpoint (used by frontend before sending messages)
+  app.get("/api/banned-words", isAuthenticated, async (req: any, res) => {
+    try {
+      const words = await storage.getBannedWords();
+      res.json(words.map(w => w.word));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch banned words" });
+    }
+  });
+
   app.post("/api/messages", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;

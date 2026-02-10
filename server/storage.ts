@@ -7,10 +7,12 @@ import {
   type Room, type RoomMessage, type PrivateRoom, type PrivateRoomRequest, type PrivateRoomMessage,
   type DailyChallenge, type ChallengeSubmission,
   type VirtualGift, type SentGift,
+  type Report, type UserSuspension, type BannedWord,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
-  virtualGifts, sentGifts
+  virtualGifts, sentGifts,
+  reports, userSuspensions, bannedWords
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -81,6 +83,27 @@ export interface IStorage {
   addPoints(profileId: string, points: number): Promise<Profile | undefined>;
   deductPoints(profileId: string, points: number): Promise<Profile | undefined>;
   getProfilePoints(profileId: string): Promise<number>;
+  
+  // Reports
+  createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string }): Promise<Report>;
+  getReports(): Promise<Report[]>;
+  updateReportStatus(id: string, status: string): Promise<Report | undefined>;
+  
+  // Suspensions
+  suspendUser(data: { userId: string; reason: string; expiresAt?: Date; isPermanent?: boolean }): Promise<UserSuspension>;
+  getUserSuspensions(): Promise<UserSuspension[]>;
+  getActiveSuspension(userId: string): Promise<UserSuspension | undefined>;
+  liftSuspension(id: string): Promise<void>;
+  
+  // Banned words
+  getBannedWords(): Promise<BannedWord[]>;
+  addBannedWord(word: string): Promise<BannedWord>;
+  removeBannedWord(id: string): Promise<void>;
+  
+  // Message moderation
+  deleteRoomMessage(messageId: string): Promise<void>;
+  deletePrivateRoomMessage(messageId: string): Promise<void>;
+  getAllRoomMessages(): Promise<RoomMessage[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -497,6 +520,71 @@ export class DatabaseStorage implements IStorage {
   async getProfilePoints(profileId: string): Promise<number> {
     const profile = await this.getProfile(profileId);
     return profile?.points ?? 0;
+  }
+
+  // Reports
+  async createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string }): Promise<Report> {
+    const [report] = await db.insert(reports).values(data).returning();
+    return report;
+  }
+
+  async getReports(): Promise<Report[]> {
+    return db.select().from(reports).orderBy(desc(reports.createdAt));
+  }
+
+  async updateReportStatus(id: string, status: string): Promise<Report | undefined> {
+    const [report] = await db.update(reports)
+      .set({ status, resolvedAt: status !== "pending" ? new Date() : null })
+      .where(eq(reports.id, id))
+      .returning();
+    return report;
+  }
+
+  // Suspensions
+  async suspendUser(data: { userId: string; reason: string; expiresAt?: Date; isPermanent?: boolean }): Promise<UserSuspension> {
+    const [suspension] = await db.insert(userSuspensions).values(data).returning();
+    return suspension;
+  }
+
+  async getUserSuspensions(): Promise<UserSuspension[]> {
+    return db.select().from(userSuspensions).orderBy(desc(userSuspensions.suspendedAt));
+  }
+
+  async getActiveSuspension(userId: string): Promise<UserSuspension | undefined> {
+    const [suspension] = await db.select().from(userSuspensions)
+      .where(and(eq(userSuspensions.userId, userId), eq(userSuspensions.isActive, true)));
+    return suspension;
+  }
+
+  async liftSuspension(id: string): Promise<void> {
+    await db.update(userSuspensions).set({ isActive: false }).where(eq(userSuspensions.id, id));
+  }
+
+  // Banned words
+  async getBannedWords(): Promise<BannedWord[]> {
+    return db.select().from(bannedWords).orderBy(bannedWords.word);
+  }
+
+  async addBannedWord(word: string): Promise<BannedWord> {
+    const [bw] = await db.insert(bannedWords).values({ word: word.toLowerCase() }).returning();
+    return bw;
+  }
+
+  async removeBannedWord(id: string): Promise<void> {
+    await db.delete(bannedWords).where(eq(bannedWords.id, id));
+  }
+
+  // Message moderation
+  async deleteRoomMessage(messageId: string): Promise<void> {
+    await db.delete(roomMessages).where(eq(roomMessages.id, messageId));
+  }
+
+  async deletePrivateRoomMessage(messageId: string): Promise<void> {
+    await db.delete(privateRoomMessages).where(eq(privateRoomMessages.id, messageId));
+  }
+
+  async getAllRoomMessages(): Promise<RoomMessage[]> {
+    return db.select().from(roomMessages).orderBy(desc(roomMessages.createdAt));
   }
 }
 
