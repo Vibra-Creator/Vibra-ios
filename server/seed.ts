@@ -233,6 +233,22 @@ async function ensureAdminAccount() {
   }
 }
 
+async function promoteUserToAdmin(email: string) {
+  try {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    if (user && !user.isAdmin) {
+      await db.update(users).set({ isAdmin: true }).where(eq(users.id, user.id));
+      console.log(`User ${email} promoted to admin.`);
+    } else if (user && user.isAdmin) {
+      console.log(`User ${email} is already admin.`);
+    } else {
+      console.log(`User ${email} not found yet, will be promoted on next restart after registration.`);
+    }
+  } catch (error) {
+    console.error(`Error promoting ${email} to admin:`, error);
+  }
+}
+
 async function ensureTestAccounts() {
   const testAccounts = [
     {
@@ -410,6 +426,7 @@ export async function seedDatabase() {
     }
 
     await ensureAdminAccount();
+    await promoteUserToAdmin("famax61@yahoo.com");
     await cleanupTestData();
   } catch (error) {
     console.error("Error seeding database:", error);
