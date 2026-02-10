@@ -856,6 +856,58 @@ async function ensureTestAccounts() {
 }
 
 
+const botAccountCredentials = [
+  { profileId: "16", email: "giulia@vibra.app", password: "Vibra2024!", firstName: "Giulia", lastName: "Romani" },
+  { profileId: "17", email: "martina@vibra.app", password: "Vibra2024!", firstName: "Martina", lastName: "Bianchi" },
+  { profileId: "18", email: "valentina@vibra.app", password: "Vibra2024!", firstName: "Valentina", lastName: "Esposito" },
+  { profileId: "19", email: "sofia@vibra.app", password: "Vibra2024!", firstName: "Sofia", lastName: "Moretti" },
+  { profileId: "20", email: "alessia@vibra.app", password: "Vibra2024!", firstName: "Alessia", lastName: "Colombo" },
+  { profileId: "21", email: "chiara@vibra.app", password: "Vibra2024!", firstName: "Chiara", lastName: "Ricci" },
+  { profileId: "22", email: "francesca@vibra.app", password: "Vibra2024!", firstName: "Francesca", lastName: "Marino" },
+  { profileId: "23", email: "elena@vibra.app", password: "Vibra2024!", firstName: "Elena", lastName: "Greco" },
+  { profileId: "24", email: "aurora.r@vibra.app", password: "Vibra2024!", firstName: "Aurora", lastName: "Rossi" },
+  { profileId: "25", email: "serena@vibra.app", password: "Vibra2024!", firstName: "Serena", lastName: "Conti" },
+  { profileId: "26", email: "isabella@vibra.app", password: "Vibra2024!", firstName: "Isabella", lastName: "Galli" },
+  { profileId: "27", email: "daniela@vibra.app", password: "Vibra2024!", firstName: "Daniela", lastName: "Ferrari" },
+  { profileId: "28", email: "sara@vibra.app", password: "Vibra2024!", firstName: "Sara", lastName: "Mura" },
+  { profileId: "29", email: "federica@vibra.app", password: "Vibra2024!", firstName: "Federica", lastName: "Zanetti" },
+  { profileId: "30", email: "beatrice@vibra.app", password: "Vibra2024!", firstName: "Beatrice", lastName: "Pellegrini" },
+  { profileId: "31", email: "marco@vibra.app", password: "Vibra2024!", firstName: "Marco", lastName: "De Luca" },
+  { profileId: "32", email: "luca@vibra.app", password: "Vibra2024!", firstName: "Luca", lastName: "Barbieri" },
+  { profileId: "33", email: "alessandro@vibra.app", password: "Vibra2024!", firstName: "Alessandro", lastName: "Vitale" },
+  { profileId: "34", email: "andrea@vibra.app", password: "Vibra2024!", firstName: "Andrea", lastName: "Marchetti" },
+  { profileId: "35", email: "tommaso@vibra.app", password: "Vibra2024!", firstName: "Tommaso", lastName: "Ferrara" },
+];
+
+async function createBotUserAccounts() {
+  for (const bot of botAccountCredentials) {
+    try {
+      const [existingUser] = await db.select().from(users).where(eq(users.email, bot.email));
+      if (existingUser) {
+        const [profile] = await db.select().from(profiles).where(eq(profiles.id, bot.profileId));
+        if (profile && !profile.userId) {
+          await db.update(profiles).set({ userId: existingUser.id }).where(eq(profiles.id, bot.profileId));
+        }
+        continue;
+      }
+      const userId = `bot-user-${bot.profileId}`;
+      const hashedPassword = await bcrypt.hash(bot.password, 12);
+      await db.insert(users).values({
+        id: userId,
+        email: bot.email,
+        password: hashedPassword,
+        firstName: bot.firstName,
+        lastName: bot.lastName,
+        isAdmin: false,
+      });
+      await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.profileId));
+      console.log(`Bot account created: ${bot.email} (profile ${bot.profileId})`);
+    } catch (error) {
+      console.error(`Error creating bot account ${bot.email}:`, error);
+    }
+  }
+}
+
 async function cleanupTestData() {
   try {
     const testEmails = await db.select().from(users).where(
@@ -945,6 +997,7 @@ export async function seedDatabase() {
       console.log(`Seeded ${defaultBannedWords.length} banned words.`);
     }
 
+    await createBotUserAccounts();
     await ensureAdminAccount();
     await promoteUserToAdmin("famax61@yahoo.com");
     await cleanupTestData();
