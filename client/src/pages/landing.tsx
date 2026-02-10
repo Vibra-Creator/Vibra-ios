@@ -8,6 +8,7 @@ import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_177048012
 
 export default function Landing() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -16,14 +17,17 @@ export default function Landing() {
     video.setAttribute("muted", "");
     video.setAttribute("playsinline", "");
     video.setAttribute("webkit-playsinline", "");
+    const onPlaying = () => setVideoPlaying(true);
+    video.addEventListener("playing", onPlaying);
     const tryPlay = () => {
-      video.play().catch(() => {});
+      video.play().then(() => setVideoPlaying(true)).catch(() => {});
     };
     tryPlay();
     const handleClick = () => { tryPlay(); };
     document.addEventListener("touchstart", handleClick, { once: true });
     document.addEventListener("click", handleClick, { once: true });
     return () => {
+      video.removeEventListener("playing", onPlaying);
       document.removeEventListener("touchstart", handleClick);
       document.removeEventListener("click", handleClick);
     };
@@ -52,6 +56,21 @@ export default function Landing() {
   return (
     <div className="relative h-full overflow-y-auto">
       <div className="fixed inset-0 z-0">
+        {!videoPlaying && (
+          <div className="absolute inset-0">
+            <img src="/backgrounds/vibra-hero.jpg" alt="" className="w-full h-full object-cover" />
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                background: "radial-gradient(ellipse at 30% 20%, rgba(147,51,234,0.3) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(236,72,153,0.25) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.2) 0%, transparent 60%)"
+              }}
+              animate={{
+                opacity: [0.6, 1, 0.6],
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+        )}
         <video
           ref={videoRef}
           autoPlay
@@ -60,8 +79,8 @@ export default function Landing() {
           playsInline
           webkit-playsinline=""
           preload="auto"
-          poster="/backgrounds/vibra-hero.jpg"
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${videoPlaying ? 'opacity-100' : 'opacity-0'}`}
+          style={{ transition: 'opacity 0.5s ease-in' }}
           data-testid="video-landing-background"
           src="/backgrounds/vibra-landing.mp4"
         />
