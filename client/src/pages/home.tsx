@@ -128,9 +128,9 @@ export default function Home() {
 
   if (profileLoading || isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
-        <div className="w-full max-w-sm">
+        <div className="relative z-10 w-full max-w-sm">
           <ProfileCardSkeleton />
         </div>
       </div>
@@ -139,43 +139,45 @@ export default function Home() {
 
   if (!myProfile) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
-        <EmptyState type="no-profiles" onRetry={() => window.location.href = "/profile/edit"} />
+        <div className="relative z-10"><EmptyState type="no-profiles" onRetry={() => window.location.href = "/profile/edit"} /></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
-        <EmptyState type="error" onRetry={() => refetch()} />
+        <div className="relative z-10"><EmptyState type="error" onRetry={() => refetch()} /></div>
       </div>
     );
   }
 
   if (!availableProfiles.length) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
-        <EmptyState 
-          type="no-profiles" 
-          onRetry={() => {
-            setSwipedProfiles(new Set());
-            refetch();
-          }}
-          onResetDislikes={() => resetDislikesMutation.mutate()}
-          isResetting={resetDislikesMutation.isPending}
-        />
+        <div className="relative z-10">
+          <EmptyState 
+            type="no-profiles" 
+            onRetry={() => {
+              setSwipedProfiles(new Set());
+              refetch();
+            }}
+            onResetDislikes={() => resetDislikesMutation.mutate()}
+            isResetting={resetDislikesMutation.isPending}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4">
+    <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
       {bgLayer}
-      <div className="w-full max-w-sm relative h-[500px] sm:h-[550px]">
+      <div className="w-full max-w-sm relative z-10 h-[500px] sm:h-[550px]">
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}
@@ -196,11 +198,13 @@ export default function Home() {
         )}
       </div>
 
-      <ActionButtons
-        onSwipeLeft={handleSwipeLeft}
-        onSwipeRight={handleSwipeRight}
-        disabled={!currentProfile || swipeMutation.isPending}
-      />
+      <div className="relative z-10">
+        <ActionButtons
+          onSwipeLeft={handleSwipeLeft}
+          onSwipeRight={handleSwipeRight}
+          disabled={!currentProfile || swipeMutation.isPending}
+        />
+      </div>
 
       <MatchModal
         isOpen={showMatch}
