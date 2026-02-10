@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  const isAdminLogin = new URLSearchParams(window.location.search).get("admin") === "true";
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,17 +37,34 @@ export default function Login() {
         throw new Error(data.message || "Credenziali non valide");
       }
 
+      const userData = await res.json();
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Benvenuto!",
-        description: "Accesso effettuato con successo",
-      });
-      setLocation("/");
+
+      if (isAdminLogin && userData.user?.isAdmin) {
+        toast({
+          title: "Benvenuto Admin!",
+          description: "Accesso alla dashboard di controllo",
+        });
+        setLocation("/admin");
+      } else if (isAdminLogin && !userData.user?.isAdmin) {
+        toast({
+          title: "Accesso negato",
+          description: "Questo account non ha i permessi di amministratore.",
+          variant: "destructive",
+        });
+        setLocation("/");
+      } else {
+        toast({
+          title: "Benvenuto!",
+          description: "Accesso effettuato con successo",
+        });
+        setLocation("/");
+      }
     } catch (error: any) {
       console.error("[LOGIN] Failed:", error.message, "| email:", email, "| pass length:", password.length);
       toast({
         title: "Errore",
-        description: `${error.message || "Credenziali non valide"} (email: ${email.trim()}, pwd len: ${password.length})`,
+        description: error.message || "Credenziali non valide",
         variant: "destructive",
       });
     } finally {
@@ -76,7 +95,14 @@ export default function Login() {
       >
         <div className="flex flex-col items-center mb-6">
           <img src={vibraLogo} alt="Vibra" className="w-28 h-28 object-contain" data-testid="vibra-logo-login" />
-          <p className="text-white/70 mt-1">Accedi al tuo account</p>
+          {isAdminLogin ? (
+            <div className="flex items-center gap-2 mt-1">
+              <Shield className="w-4 h-4 text-yellow-400" />
+              <p className="text-yellow-400 font-medium">Accesso Amministratore</p>
+            </div>
+          ) : (
+            <p className="text-white/70 mt-1">Accedi al tuo account</p>
+          )}
         </div>
 
         <Card className="bg-white/10 backdrop-blur-xl border-white/10">
