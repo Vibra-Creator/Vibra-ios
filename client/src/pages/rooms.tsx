@@ -16,6 +16,7 @@ const ROOM_BANNERS: Record<string, string> = {
   "5": "/images/room-banner-5.jpg",
   "6": "/images/room-banner-6.jpg",
   "7": "/images/room-amanti-gatti-banner.png",
+  "8": "/images/room-caffe-amicizia-banner.png",
 };
 
 function RoomSkeleton() {
@@ -45,6 +46,7 @@ export default function Rooms() {
     { id: "5", name: "Viaggi Dimensionali", interest: "Viaggi Dimensionali", description: "Avventure e viaggi cosmici", memberCount: 56 },
     { id: "6", name: "Meditazione Cosmica", interest: "Meditazione Cosmica", description: "Pace interiore e benessere", memberCount: 19 },
     { id: "7", name: "Amanti dei Gatti", interest: "Amanti dei Gatti", description: "Per chi ama i gatti cosmici e le loro avventure", memberCount: 33 },
+    { id: "8", name: "Ti va un caffè in amicizia", interest: "Caffè in Amicizia", description: "Un caffè cosmico tra amici, senza impegno", memberCount: 27 },
   ];
 
   const displayRooms = rooms?.length ? rooms : defaultRooms;

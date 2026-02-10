@@ -17,6 +17,7 @@ const ROOM_BACKGROUNDS: Record<string, { type: "image"; src: string } | { type: 
   "5": { type: "image", src: "/images/room-viaggi-dimensionali.png" },
   "6": { type: "image", src: "/images/room-meditazione-cosmica.png" },
   "7": { type: "image", src: "/images/room-amanti-gatti.png" },
+  "8": { type: "image", src: "/images/room-caffe-amicizia.png" },
 };
 
 const DEFAULT_BG = { type: "video" as const, src: "/backgrounds/6ae793b4126a4617a0c715db39223f26.mp4_1770326642075.MP4" };
