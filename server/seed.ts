@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords } from "@shared/schema";
+import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts } from "@shared/schema";
 import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -995,6 +995,31 @@ export async function seedDatabase() {
         await db.insert(bannedWords).values({ word }).onConflictDoNothing();
       }
       console.log(`Seeded ${defaultBannedWords.length} banned words.`);
+    }
+
+    const existingGifts = await db.select().from(virtualGifts);
+    if (existingGifts.length === 0) {
+      console.log("Seeding virtual gifts...");
+      const defaultGifts = [
+        { name: "Stella Cadente", description: "Una stella luminosa per illuminare la giornata", cost: 10, animationType: "shooting_star", icon: "star", color: "#FFD700", sortOrder: 1 },
+        { name: "Rosa Cosmica", description: "Un fiore nato tra le stelle per chi ami", cost: 25, animationType: "cosmic_rose", icon: "flower", color: "#FF69B4", sortOrder: 2 },
+        { name: "Cuore Nebulosa", description: "Un cuore che pulsa come una nebulosa", cost: 50, animationType: "nebula_heart", icon: "heart", color: "#FF1493", sortOrder: 3 },
+        { name: "Anello di Saturno", description: "Un anello prezioso come quelli di Saturno", cost: 100, animationType: "saturn_ring", icon: "ring", color: "#9370DB", sortOrder: 4 },
+        { name: "Supernova", description: "Un'esplosione di energia e passione", cost: 200, animationType: "supernova", icon: "explosion", color: "#FF4500", sortOrder: 5 },
+        { name: "Galassia d'Amore", description: "Un'intera galassia dedicata a te", cost: 500, animationType: "galaxy_love", icon: "galaxy", color: "#8A2BE2", sortOrder: 6 },
+      ];
+      for (const gift of defaultGifts) {
+        await db.insert(virtualGifts).values(gift);
+      }
+      console.log(`Seeded ${defaultGifts.length} virtual gifts.`);
+    }
+
+    const lowPointProfiles = await db.select().from(profiles).where(sql`${profiles.isBot} = false AND COALESCE(${profiles.points}, 0) < 50`);
+    for (const p of lowPointProfiles) {
+      await db.update(profiles).set({ points: 50 }).where(eq(profiles.id, p.id));
+    }
+    if (lowPointProfiles.length > 0) {
+      console.log(`Gave 50 starting points to ${lowPointProfiles.length} profiles.`);
     }
 
     await createBotUserAccounts();

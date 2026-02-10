@@ -85,9 +85,31 @@ export default function Chat() {
         content,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
+    onMutate: async (content: string) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/messages", matchId] });
+      const previousMessages = queryClient.getQueryData<Message[]>(["/api/messages", matchId]);
+      const optimisticMessage: Message = {
+        id: `temp-${Date.now()}`,
+        matchId: matchId!,
+        senderId: myProfile!.id,
+        content,
+        read: false,
+        createdAt: new Date(),
+      };
+      queryClient.setQueryData<Message[]>(["/api/messages", matchId], (old) => [
+        ...(old || []),
+        optimisticMessage,
+      ]);
       setMessageText("");
+      return { previousMessages };
+    },
+    onError: (_err, _content, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(["/api/messages", matchId], context.previousMessages);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
     },
   });
 

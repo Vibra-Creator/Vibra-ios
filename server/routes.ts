@@ -211,7 +211,7 @@ export async function registerRoutes(
         ...validatedData,
         userId,
         isBot: false,
-        points: 0,
+        points: 50,
       });
       res.status(201).json(profile);
     } catch (error) {
