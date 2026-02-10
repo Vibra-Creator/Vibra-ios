@@ -93,7 +93,7 @@ export default function RoomDetail() {
         {(() => {
           const bg = ROOM_BACKGROUNDS[roomId || ""] || DEFAULT_BG;
           return bg.type === "image" ? (
-            <img src={bg.src} alt="" className="w-full h-full object-cover" />
+            <img src={bg.src} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
           ) : (
             <video autoPlay loop muted playsInline className="w-full h-full object-cover">
               <source src={bg.src} type="video/mp4" />

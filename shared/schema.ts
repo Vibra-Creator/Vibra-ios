@@ -209,6 +209,36 @@ export const sentGifts = pgTable("sent_gifts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Segnalazioni utenti
+export const reports = pgTable("reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reporterId: varchar("reporter_id").notNull(),
+  reportedId: varchar("reported_id").notNull(),
+  reason: text("reason").notNull(),
+  description: text("description"),
+  status: text("status").default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+// Utenti bloccati/sospesi
+export const userSuspensions = pgTable("user_suspensions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  reason: text("reason").notNull(),
+  suspendedAt: timestamp("suspended_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+  isPermanent: boolean("is_permanent").default(false),
+  isActive: boolean("is_active").default(true),
+});
+
+// Parole vietate
+export const bannedWords = pgTable("banned_words", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  word: text("word").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Tipi e schemi per le nuove tabelle
 export type RoomMessage = typeof roomMessages.$inferSelect;
 export type Room = typeof rooms.$inferSelect;
@@ -219,6 +249,13 @@ export type DailyChallenge = typeof dailyChallenges.$inferSelect;
 export type ChallengeSubmission = typeof challengeSubmissions.$inferSelect;
 export type VirtualGift = typeof virtualGifts.$inferSelect;
 export type SentGift = typeof sentGifts.$inferSelect;
+
+export type Report = typeof reports.$inferSelect;
+export type UserSuspension = typeof userSuspensions.$inferSelect;
+export type BannedWord = typeof bannedWords.$inferSelect;
+
+export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, resolvedAt: true, status: true });
+export type InsertReport = z.infer<typeof insertReportSchema>;
 
 export const insertRoomSchema = createInsertSchema(rooms).omit({ id: true, createdAt: true });
 export const insertPrivateRoomSchema = createInsertSchema(privateRooms).omit({ id: true, createdAt: true });
