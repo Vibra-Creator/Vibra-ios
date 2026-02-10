@@ -56,7 +56,7 @@ export default function Login() {
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center p-6">
       <div className="fixed inset-0 -z-10">
-        <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
+        <img src="/images/vibra-alien-hero.gif" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
       <motion.div
