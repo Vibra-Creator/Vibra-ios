@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users } from "@shared/schema";
+import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords } from "@shared/schema";
 import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -275,6 +275,35 @@ export async function seedDatabase() {
         isActive: true,
       });
       console.log("Default private room seeded.");
+    }
+
+    const existingBannedWords = await db.select().from(bannedWords);
+    if (existingBannedWords.length === 0) {
+      console.log("Seeding banned words filter...");
+      const defaultBannedWords = [
+        "cazzo","merda","stronzo","vaffanculo","puttana","troia","minchia","coglione","bastardo","idiota",
+        "fuck","shit","bitch","asshole","dick","pussy","whore","nigger","faggot","retard",
+        "bullo","bullismo","sfigato","perdente","fallito","nessuno ti vuole","fai schifo","sei inutile",
+        "ammazzati","sei un peso","non vali niente","fatti del male","ti odio","sparisci","nessuno ti ama",
+        "molestia","ti vengo a prendere","so dove abiti","ti seguo","ti trovo","stalking","ti perseguito",
+        "non ti lascio in pace","ti rovino","ti distruggo",
+        "negro","frocio","finocchio","handicappato","mongolo","zingaro","terrone","extracomunitario",
+        "ritardato","anormale","diverso di merda","lesbicaccia","trans di merda","razza inferiore","tornatene al tuo paese",
+        "mandami foto nuda","foto nuda","foto nudo","nudes","sesso orale","scopiamo","ti scopo","pompino",
+        "trombata","ti penetro","voglio scoparti","sextape","sexting","inculare","masturbazione",
+        "ti ammazzo","ti uccido","ti spacco la faccia","ti meno","ti picchio","ti accoltelto","ti sparo",
+        "violenza","ti faccio del male","ti spezzo le ossa","prendi le botte","ti massacro","sangue",
+        "ti faccio a pezzi","ti squarto",
+        "se mi lasci mi ammazzo","senza di me muori","nessuno ti amerà","sei niente senza di me",
+        "mi devi tutto","ti controllo","dammi la password","fammi vedere il telefono","non puoi uscire",
+        "non parlare con nessuno","sei solo mia","sei solo mio","ti tengo d'occhio","ti ricatto","ricatto",
+        "ti pubblico le foto","revenge porn","diffondo le tue foto","ho i tuoi dati","so il tuo indirizzo",
+        "pubblico tutto","ti espongo","doxing","doxxing","ho le tue foto intime","mando tutto ai tuoi amici","ti smaschero",
+      ];
+      for (const word of defaultBannedWords) {
+        await db.insert(bannedWords).values({ word }).onConflictDoNothing();
+      }
+      console.log(`Seeded ${defaultBannedWords.length} banned words.`);
     }
 
     await ensureAdminAccount();
