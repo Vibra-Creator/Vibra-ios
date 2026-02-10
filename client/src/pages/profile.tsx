@@ -121,29 +121,33 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <>
+      <div className="relative">
         <ProfileBackground />
-        <ProfileSkeleton />
-      </>
+        <div className="relative z-10">
+          <ProfileSkeleton />
+        </div>
+      </div>
     );
   }
 
   if (!profile) {
     return (
-      <>
+      <div className="relative">
         <ProfileBackground />
-        <CreateProfilePrompt />
-      </>
+        <div className="relative z-10">
+          <CreateProfilePrompt />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="flex-1 p-4 max-w-lg mx-auto overflow-y-auto">
+    <div className="flex-1 p-4 max-w-lg mx-auto overflow-y-auto relative">
       <ProfileBackground />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
+        className="relative z-10 space-y-6"
       >
         <div className="relative">
           <div className="aspect-[4/3] rounded-2xl overflow-hidden">
