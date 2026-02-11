@@ -1472,6 +1472,14 @@ export async function registerRoutes(
         await storage.markRatingMatchCreated(ratingId);
       }
 
+      if (matchData) {
+        await storage.createMessage({
+          matchId: matchData.id,
+          senderId: profile.id,
+          content: reply.trim(),
+        });
+      }
+
       res.json({ rating: updated, match: matchData });
     } catch (error) {
       console.error("Error replying to rating:", error);
