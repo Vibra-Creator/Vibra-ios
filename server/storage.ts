@@ -8,11 +8,13 @@ import {
   type DailyChallenge, type ChallengeSubmission,
   type VirtualGift, type SentGift,
   type Report, type UserSuspension, type BannedWord,
+  type ProfileRating,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
   virtualGifts, sentGifts,
-  reports, userSuspensions, bannedWords
+  reports, userSuspensions, bannedWords,
+  profileRatings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -104,6 +106,14 @@ export interface IStorage {
   deleteRoomMessage(messageId: string): Promise<void>;
   deletePrivateRoomMessage(messageId: string): Promise<void>;
   getAllRoomMessages(): Promise<RoomMessage[]>;
+  
+  // Profile Ratings (Prima Impressione)
+  createProfileRating(data: { raterId: string; ratedId: string; rating: number }): Promise<ProfileRating>;
+  getReceivedRatings(profileId: string): Promise<(ProfileRating & { rater: Profile })[]>;
+  getProfileRating(id: string): Promise<ProfileRating | undefined>;
+  getExistingRating(raterId: string, ratedId: string): Promise<ProfileRating | undefined>;
+  replyToRating(ratingId: string, reply: string): Promise<ProfileRating | undefined>;
+  markRatingMatchCreated(ratingId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -585,6 +595,51 @@ export class DatabaseStorage implements IStorage {
 
   async getAllRoomMessages(): Promise<RoomMessage[]> {
     return db.select().from(roomMessages).orderBy(desc(roomMessages.createdAt));
+  }
+
+  async createProfileRating(data: { raterId: string; ratedId: string; rating: number }): Promise<ProfileRating> {
+    const [rating] = await db.insert(profileRatings).values(data).returning();
+    return rating;
+  }
+
+  async getReceivedRatings(profileId: string): Promise<(ProfileRating & { rater: Profile })[]> {
+    const ratings = await db.select().from(profileRatings)
+      .where(eq(profileRatings.ratedId, profileId))
+      .orderBy(desc(profileRatings.createdAt));
+    
+    const result: (ProfileRating & { rater: Profile })[] = [];
+    for (const r of ratings) {
+      const [rater] = await db.select().from(profiles).where(eq(profiles.id, r.raterId));
+      if (rater) {
+        result.push({ ...r, rater });
+      }
+    }
+    return result;
+  }
+
+  async getProfileRating(id: string): Promise<ProfileRating | undefined> {
+    const [rating] = await db.select().from(profileRatings).where(eq(profileRatings.id, id));
+    return rating;
+  }
+
+  async getExistingRating(raterId: string, ratedId: string): Promise<ProfileRating | undefined> {
+    const [rating] = await db.select().from(profileRatings)
+      .where(and(eq(profileRatings.raterId, raterId), eq(profileRatings.ratedId, ratedId)));
+    return rating;
+  }
+
+  async replyToRating(ratingId: string, reply: string): Promise<ProfileRating | undefined> {
+    const [updated] = await db.update(profileRatings)
+      .set({ ratedReply: reply, repliedAt: new Date() })
+      .where(eq(profileRatings.id, ratingId))
+      .returning();
+    return updated;
+  }
+
+  async markRatingMatchCreated(ratingId: string): Promise<void> {
+    await db.update(profileRatings)
+      .set({ matchCreated: true })
+      .where(eq(profileRatings.id, ratingId));
   }
 }
 
