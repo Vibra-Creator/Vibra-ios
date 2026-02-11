@@ -29,17 +29,23 @@ export default function RoomDetail() {
   const { user } = useAuth();
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [sendingCount, setSendingCount] = useState(0);
+  const [optimisticMessages, setOptimisticMessages] = useState<RoomMessage[]>([]);
 
   const { data: room } = useQuery<Room>({
     queryKey: ["/api/rooms", roomId],
     enabled: !!roomId,
   });
 
-  const { data: messages, isLoading } = useQuery<RoomMessage[]>({
+  const { data: serverMessages, isLoading } = useQuery<RoomMessage[]>({
     queryKey: ["/api/rooms", roomId, "messages"],
     enabled: !!roomId,
-    refetchInterval: 3000,
+    refetchInterval: sendingCount > 0 ? false : 3000,
   });
+
+  const messages = sendingCount > 0
+    ? [...(serverMessages || []), ...optimisticMessages]
+    : (serverMessages || []);
 
   const { data: myProfile } = useQuery<any>({
     queryKey: ["/api/profiles/me"],
@@ -51,11 +57,32 @@ export default function RoomDetail() {
   });
 
   const sendMessage = useMutation({
-    mutationFn: (content: string) =>
+    mutationFn: async ({ content, tempId }: { content: string; tempId: string }) =>
       apiRequest("POST", `/api/rooms/${roomId}/messages`, { content }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId, "messages"] });
+    onMutate: async ({ content, tempId }) => {
+      if (!myProfile) return;
+      setSendingCount(c => c + 1);
+      const optimisticMsg: RoomMessage = {
+        id: tempId,
+        roomId: roomId!,
+        senderId: myProfile.id,
+        senderName: myProfile.name,
+        senderImage: myProfile.imageUrl || null,
+        content,
+        createdAt: new Date(),
+      };
+      setOptimisticMessages(prev => [...prev, optimisticMsg]);
       setMessageText("");
+    },
+    onError: (_err, { tempId }) => {
+      setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+    },
+    onSettled: (_data, _error, { tempId }) => {
+      setTimeout(() => {
+        setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+        queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId, "messages"] });
+        setSendingCount(c => Math.max(0, c - 1));
+      }, 1500);
     },
   });
 
@@ -70,8 +97,9 @@ export default function RoomDetail() {
   }, [messages]);
 
   const handleSend = () => {
-    if (messageText.trim()) {
-      sendMessage.mutate(messageText.trim());
+    if (messageText.trim() && myProfile) {
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      sendMessage.mutate({ content: messageText.trim(), tempId });
     }
   };
 

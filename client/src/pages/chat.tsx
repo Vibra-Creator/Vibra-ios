@@ -35,10 +35,8 @@ export default function Chat() {
   const [giftAnimation, setGiftAnimation] = useState<{ gift: VirtualGift; senderName: string; message?: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const pendingSendCount = useRef(0);
   const [sendingCount, setSendingCount] = useState(0);
-  const optimisticMessagesRef = useRef<Map<string, Message>>(new Map());
-  const [optimisticVersion, setOptimisticVersion] = useState(0);
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -51,12 +49,9 @@ export default function Chat() {
     refetchInterval: sendingCount > 0 ? false : 3000,
   });
 
-  const messages = (() => {
-    const server = serverMessages || [];
-    const pending = Array.from(optimisticMessagesRef.current.values());
-    if (pending.length === 0) return server;
-    return [...server, ...pending];
-  })();
+  const messages = sendingCount > 0
+    ? [...(serverMessages || []), ...optimisticMessages]
+    : (serverMessages || []);
 
   const { data: matches } = useQuery<(Match & { profile: Profile })[]>({
     queryKey: ["/api/matches", myProfile?.id],
@@ -97,31 +92,27 @@ export default function Chat() {
       });
     },
     onMutate: async ({ content, tempId }) => {
-      pendingSendCount.current += 1;
-      setSendingCount(pendingSendCount.current);
+      if (!myProfile) return;
+      setSendingCount(c => c + 1);
       const optimisticMessage: Message = {
         id: tempId,
         matchId: matchId!,
-        senderId: myProfile!.id,
+        senderId: myProfile.id,
         content,
         read: false,
         createdAt: new Date(),
       };
-      optimisticMessagesRef.current.set(tempId, optimisticMessage);
-      setOptimisticVersion(v => v + 1);
+      setOptimisticMessages(prev => [...prev, optimisticMessage]);
       setMessageText("");
     },
     onError: (_err, { tempId }) => {
-      optimisticMessagesRef.current.delete(tempId);
-      setOptimisticVersion(v => v + 1);
+      setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
     onSettled: (_data, _error, { tempId }) => {
-      pendingSendCount.current -= 1;
       setTimeout(() => {
-        optimisticMessagesRef.current.delete(tempId);
-        setOptimisticVersion(v => v + 1);
+        setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
         queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
-        setSendingCount(pendingSendCount.current);
+        setSendingCount(c => Math.max(0, c - 1));
       }, 1500);
     },
   });

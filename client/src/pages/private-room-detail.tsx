@@ -28,6 +28,8 @@ export default function PrivateRoomDetail() {
   const [showRequests, setShowRequests] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [sendingCount, setSendingCount] = useState(0);
+  const [optimisticMessages, setOptimisticMessages] = useState<PrivateRoomMessage[]>([]);
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -45,7 +47,7 @@ export default function PrivateRoomDetail() {
 
   const isOwner = myProfile?.id === room?.ownerId;
 
-  const { data: messages, isLoading: messagesLoading } = useQuery<PrivateRoomMessage[]>({
+  const { data: serverMessages, isLoading: messagesLoading } = useQuery<PrivateRoomMessage[]>({
     queryKey: ["/api/private-rooms", roomId, "messages"],
     queryFn: async () => {
       const res = await fetch(`/api/private-rooms/${roomId}/messages`, { credentials: "include" });
@@ -53,8 +55,12 @@ export default function PrivateRoomDetail() {
       return res.json();
     },
     enabled: !!roomId && !!myProfile,
-    refetchInterval: 3000,
+    refetchInterval: sendingCount > 0 ? false : 3000,
   });
+
+  const messages = sendingCount > 0
+    ? [...(serverMessages || []), ...optimisticMessages]
+    : (serverMessages || []);
 
   const { data: members } = useQuery<Profile[]>({
     queryKey: ["/api/private-rooms", roomId, "members"],
@@ -77,12 +83,33 @@ export default function PrivateRoomDetail() {
   });
 
   const sendMessage = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, tempId }: { content: string; tempId: string }) => {
       return await apiRequest("POST", `/api/private-rooms/${roomId}/messages`, { content });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/private-rooms", roomId, "messages"] });
+    onMutate: async ({ content, tempId }) => {
+      if (!myProfile) return;
+      setSendingCount(c => c + 1);
+      const optimisticMsg: PrivateRoomMessage = {
+        id: tempId,
+        roomId: roomId!,
+        senderId: myProfile.id,
+        senderName: myProfile.name,
+        senderImage: myProfile.imageUrl || null,
+        content,
+        createdAt: new Date(),
+      };
+      setOptimisticMessages(prev => [...prev, optimisticMsg]);
       setMessageText("");
+    },
+    onError: (_err, { tempId }) => {
+      setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+    },
+    onSettled: (_data, _error, { tempId }) => {
+      setTimeout(() => {
+        setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+        queryClient.invalidateQueries({ queryKey: ["/api/private-rooms", roomId, "messages"] });
+        setSendingCount(c => Math.max(0, c - 1));
+      }, 1500);
     },
   });
 
@@ -102,8 +129,9 @@ export default function PrivateRoomDetail() {
   }, [messages]);
 
   const handleSend = () => {
-    if (messageText.trim()) {
-      sendMessage.mutate(messageText.trim());
+    if (messageText.trim() && myProfile) {
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      sendMessage.mutate({ content: messageText.trim(), tempId });
     }
   };
 
