@@ -523,12 +523,13 @@ export async function registerRoutes(
         storage.getAllMessages(),
       ]);
       
+      const sanitizedUsers = users.map(({ password, ...u }) => u);
       res.json({
         totalUsers: users.length,
         totalProfiles: profiles.length,
         totalMatches: matches.length,
         totalMessages: messages.length,
-        recentUsers: users.slice(0, 10),
+        recentUsers: sanitizedUsers.slice(0, 10),
         recentMatches: matches.slice(0, 10),
       });
     } catch (error) {
@@ -540,7 +541,8 @@ export async function registerRoutes(
   app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
-      res.json(users);
+      const sanitizedUsers = users.map(({ password, ...u }) => u);
+      res.json(sanitizedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ error: "Failed to fetch users" });
