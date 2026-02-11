@@ -1,4 +1,4 @@
-import { User, Heart, Home, Shield, Users, Trophy, Lock } from "lucide-react";
+import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,6 +30,7 @@ export function BottomNav() {
     { path: "/rooms", icon: Users, label: "Stanze" },
     { path: "/challenges", icon: Trophy, label: "Sfide" },
     { path: "/private-rooms", icon: Lock, label: "Private" },
+    { path: "/prima-impressione", icon: Eye, label: "Vota" },
     { path: "/profile", icon: User, label: "Profilo" },
     ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin" }] : []),
   ];

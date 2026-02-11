@@ -21,6 +21,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Daily Challenges**: Complete photo challenges to earn points (Sfide Giornaliere)
 - **Virtual Gifts**: Spend earned points to send animated gifts to other users (Regali Virtuali)
 - **Private Rooms**: Create exclusive private rooms with access approval system (Stanze Private) - limit 1 per user, categorized view (La Mia Stanza, Stanze dei Match, Popolari), "Stanza VIP" badge on swipe cards
+- **Prima Impressione**: Rating system where users can opt-in to receive 1-10 ratings from others on their swipe card. Rated users see ratings in dedicated page, can reply with one message which auto-creates a match and opens chat
 
 ## Tech Stack
 - **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion
@@ -53,7 +54,8 @@ client/
 │   │   ├── profile-edit.tsx   # Profile creation/edit form
 │   │   ├── rooms.tsx          # Interest-based chat rooms
 │   │   ├── challenges.tsx     # Daily photo challenges
-│   │   └── private-rooms.tsx  # Private rooms with access control
+│   │   ├── private-rooms.tsx  # Private rooms with access control
+│   │   └── prima-impressione.tsx # Rating system page
 │   └── App.tsx               # Main app with routing
 server/
 ├── db.ts                     # Database connection
@@ -81,11 +83,15 @@ shared/
 - `PATCH /api/admin/profiles/:id/verify` - Verify/unverify a profile (admin required)
 - `GET /api/rooms` - Get all active rooms (auth required)
 - `GET /api/challenges` - Get all active challenges (auth required)
+- `POST /api/ratings` - Rate a profile (1-10)
+- `GET /api/ratings/received` - Get ratings received by current user
+- `POST /api/ratings/:id/reply` - Reply to a rating (creates match + opens chat)
+- `GET /api/ratings/count` - Get count of unreplied ratings
 - `GET /api/private-rooms` - Get all private rooms (auth required)
 
 ## Database Schema
 - **users**: id, email, firstName, lastName, profileImageUrl, isAdmin, createdAt, updatedAt
-- **profiles**: id, userId, name, age, bio, imageUrl, location, interests[], alienType, isBot, isVerified + 20 new fields (gender, hairColor, eyeColor, bodyType, height, education, languages[], relationshipType, zodiacSign, loveLanguage, etc.)
+- **profiles**: id, userId, name, age, bio, imageUrl, location, interests[], alienType, isBot, isVerified, ratingEnabled + 20 new fields (gender, hairColor, eyeColor, bodyType, height, education, languages[], relationshipType, zodiacSign, loveLanguage, etc.)
 - **swipes**: id, swiperId, swipedId, liked, createdAt
 - **matches**: id, profile1Id, profile2Id, createdAt
 - **messages**: id, matchId, senderId, content, read, createdAt
@@ -96,6 +102,7 @@ shared/
 - **daily_challenges**: id, title, description, imageExample, points, isActive
 - **challenge_submissions**: id, challengeId, profileId, imageUrl, status, createdAt, reviewedAt
 - **virtual_gifts**: id, name, description, cost, animationType, icon, color, sortOrder
+- **profile_ratings**: id, raterId, ratedId, rating, ratedReply, matchCreated, createdAt, repliedAt
 - **sent_gifts**: id, giftId, senderId, receiverId, message, seen, createdAt
 
 ## Color Theme

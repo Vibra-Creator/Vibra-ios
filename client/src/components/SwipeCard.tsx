@@ -1,10 +1,10 @@
 import { useState, forwardRef, useRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@shared/schema";
 
@@ -241,7 +241,31 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
   function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false }, ref) {
     const [exitX, setExitX] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
+    const [showRating, setShowRating] = useState(false);
+    const [selectedRating, setSelectedRating] = useState<number | null>(null);
+    const [ratingSubmitted, setRatingSubmitted] = useState(false);
     const dragDistanceRef = useRef(0);
+    const { toast } = useToast();
+
+    const ratingMutation = useMutation({
+      mutationFn: async (rating: number) => {
+        return apiRequest("POST", "/api/ratings", { ratedId: profile.id, rating });
+      },
+      onSuccess: () => {
+        setRatingSubmitted(true);
+        toast({ title: "Voto inviato!", description: `Hai dato ${selectedRating}/10 a ${profile.name}` });
+        queryClient.invalidateQueries({ queryKey: ["/api/ratings/received"] });
+        setTimeout(() => setShowRating(false), 1500);
+      },
+      onError: (error: Error) => {
+        if (error.message.includes("Already rated")) {
+          toast({ title: "Già votato", description: "Hai già dato un voto a questo profilo.", variant: "destructive" });
+        } else {
+          toast({ title: "Errore", description: "Non è stato possibile inviare il voto.", variant: "destructive" });
+        }
+        setShowRating(false);
+      },
+    });
     const x = useMotionValue(0);
     const rotate = useTransform(x, [-200, 200], [-25, 25]);
     const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
@@ -257,9 +281,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       dragDistanceRef.current = Math.abs(info.offset.x) + Math.abs(info.offset.y);
       if (info.offset.x > 100) {
         setExitX(300);
+        setShowRating(false);
+        setSelectedRating(null);
         onSwipe("right");
       } else if (info.offset.x < -100) {
         setExitX(-300);
+        setShowRating(false);
+        setSelectedRating(null);
         onSwipe("left");
       }
     };
@@ -361,6 +389,65 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 </div>
               </div>
             </div>
+
+            {profile.ratingEnabled && isTop && (
+              <div className="absolute top-4 left-4 z-10">
+                {!showRating ? (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => { e.stopPropagation(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/80 backdrop-blur-sm text-white text-xs font-medium shadow-lg"
+                    data-testid={`button-rate-${profile.id}`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    Vota
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 border border-white/20 shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid="rating-selector"
+                  >
+                    <p className="text-white/70 text-[10px] mb-2 text-center font-medium">Che voto dai?</p>
+                    <div className="grid grid-cols-5 gap-1">
+                      {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => setSelectedRating(n)}
+                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                            selectedRating === n
+                              ? "bg-primary text-white scale-110"
+                              : "bg-white/10 text-white/80 hover:bg-white/20"
+                          }`}
+                          data-testid={`rating-${n}`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5 mt-2">
+                      <button
+                        onClick={() => { setShowRating(false); setSelectedRating(null); }}
+                        className="flex-1 py-1.5 rounded-lg bg-white/10 text-white/60 text-[10px] font-medium"
+                        data-testid="button-cancel-rating"
+                      >
+                        Annulla
+                      </button>
+                      <button
+                        onClick={() => { if (selectedRating) ratingMutation.mutate(selectedRating); }}
+                        disabled={!selectedRating || ratingMutation.isPending || ratingSubmitted}
+                        className="flex-1 py-1.5 rounded-lg bg-primary text-white text-[10px] font-medium disabled:opacity-50"
+                        data-testid="button-submit-rating"
+                      >
+                        {ratingSubmitted ? "Inviato!" : ratingMutation.isPending ? "..." : "Invia"}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
           </div>
         </motion.div>
 

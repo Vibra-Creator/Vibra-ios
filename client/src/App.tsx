@@ -24,6 +24,7 @@ import Challenges from "@/pages/challenges";
 import PrivateRooms from "@/pages/private-rooms";
 import PrivateRoomDetail from "@/pages/private-room-detail";
 import RoomDetail from "@/pages/room-detail";
+import PrimaImpressione from "@/pages/prima-impressione";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "lucide-react";
@@ -99,6 +100,7 @@ function AuthenticatedRouter() {
       <Route path="/challenges" component={Challenges} />
       <Route path="/private-rooms" component={PrivateRooms} />
       <Route path="/private-room/:roomId" component={PrivateRoomDetail} />
+      <Route path="/prima-impressione" component={PrimaImpressione} />
       <Route component={NotFound} />
     </Switch>
   );

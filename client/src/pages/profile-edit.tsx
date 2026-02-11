@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2, UserCircle } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2, UserCircle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -163,6 +163,7 @@ export default function ProfileEdit() {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [ratingEnabled, setRatingEnabled] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
@@ -239,6 +240,7 @@ export default function ProfileEdit() {
       setCommunicationStyles(existingProfile.communicationStyle ? existingProfile.communicationStyle.split(",").filter(Boolean) : []);
       setCitySearch(existingProfile.location || "");
       setUploadedPhotos(existingProfile.photos || []);
+      setRatingEnabled(existingProfile.ratingEnabled || false);
     }
   }, [existingProfile, form]);
 
@@ -294,7 +296,7 @@ export default function ProfileEdit() {
       toast({ title: "Aggiungi Interessi", description: "Aggiungi almeno un interesse al tuo profilo.", variant: "destructive" });
       return;
     }
-    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(",") };
+    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled };
     if (existingProfile) {
       updateMutation.mutate(profileData);
     } else {
@@ -878,6 +880,37 @@ export default function ProfileEdit() {
                     <SelectField control={form.control} name="relationshipType" label="Tipo di Relazione" options={relationshipTypeOptions} testId="select-relationship" />
                     <SelectField control={form.control} name="wantsChildren" label="Figli" options={wantsChildrenOptions} testId="select-children" />
                     <SelectField control={form.control} name="accessMotivation" label="Perché Sei Qui" options={accessMotivationOptions} testId="select-motivation" />
+
+                    <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10 border border-white/10">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                          <Eye className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium text-sm mb-1">Scopri cosa pensano gli altri di te</p>
+                          <p className="text-white/50 text-xs mb-3">
+                            Attiva questa opzione e gli altri utenti potranno darti un voto da 1 a 10 direttamente dalla tua card. Riceverai le valutazioni nella sezione "Prima Impressione".
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setRatingEnabled(!ratingEnabled)}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                              ratingEnabled ? "bg-primary" : "bg-white/20"
+                            }`}
+                            data-testid="toggle-rating-enabled"
+                          >
+                            <span
+                              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                                ratingEnabled ? "translate-x-6" : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                          {ratingEnabled && (
+                            <span className="ml-3 text-xs text-primary font-medium">Attivo</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                 </div>
               )}
 
