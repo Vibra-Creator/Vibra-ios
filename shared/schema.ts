@@ -42,8 +42,9 @@ export const profiles = pgTable("profiles", {
   accessMotivation: text("access_motivation"), // Motivi di accesso
   phonePrefix: text("phone_prefix"), // Prefisso internazionale
   phoneNumber: text("phone_number"), // Numero di telefono
-  photos: text("photos").array(), // Foto caricate dall'utente (max 6)
+  photos: text("photos").array(),
   points: integer("points").default(0),
+  ratingEnabled: boolean("rating_enabled").default(false),
 });
 
 export const swipes = pgTable("swipes", {
@@ -239,6 +240,18 @@ export const bannedWords = pgTable("banned_words", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Prima Impressione - valutazioni profilo
+export const profileRatings = pgTable("profile_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  raterId: varchar("rater_id").notNull(),
+  ratedId: varchar("rated_id").notNull(),
+  rating: integer("rating").notNull(),
+  ratedReply: text("rated_reply"),
+  matchCreated: boolean("match_created").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  repliedAt: timestamp("replied_at"),
+});
+
 // Tipi e schemi per le nuove tabelle
 export type RoomMessage = typeof roomMessages.$inferSelect;
 export type Room = typeof rooms.$inferSelect;
@@ -253,6 +266,10 @@ export type SentGift = typeof sentGifts.$inferSelect;
 export type Report = typeof reports.$inferSelect;
 export type UserSuspension = typeof userSuspensions.$inferSelect;
 export type BannedWord = typeof bannedWords.$inferSelect;
+
+export type ProfileRating = typeof profileRatings.$inferSelect;
+export const insertProfileRatingSchema = createInsertSchema(profileRatings).omit({ id: true, createdAt: true, repliedAt: true, ratedReply: true, matchCreated: true });
+export type InsertProfileRating = z.infer<typeof insertProfileRatingSchema>;
 
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, resolvedAt: true, status: true });
 export type InsertReport = z.infer<typeof insertReportSchema>;
