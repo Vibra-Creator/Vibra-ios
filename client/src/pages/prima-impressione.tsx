@@ -64,10 +64,10 @@ export default function PrimaImpressione() {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Prima Impressione</h2>
           <p className="text-white/60 text-sm mb-4">
-            Attiva la funzione di valutazione nel tuo profilo per scoprire cosa pensano gli altri di te.
+            Attiva la funzione di valutazione nel tuo profilo per scoprire cosa pensano gli altri di te. Gli altri potranno darti un voto da 1 a 5 sulla tua card.
           </p>
-          <Button onClick={() => setLocation("/profile/edit")} data-testid="button-enable-rating">
-            Vai alle Impostazioni
+          <Button onClick={() => setLocation("/profile")} data-testid="button-enable-rating">
+            Vai al Profilo per Attivare
           </Button>
         </div>
       </div>
@@ -161,8 +161,9 @@ function RatingCard({ rating, myProfileId, isReplied = false }: { rating: Rating
     }
   };
 
-  const ratingColor = rating.rating >= 8 ? "text-green-400" : rating.rating >= 5 ? "text-yellow-400" : "text-orange-400";
-  const ratingBg = rating.rating >= 8 ? "bg-green-500/20 border-green-500/30" : rating.rating >= 5 ? "bg-yellow-500/20 border-yellow-500/30" : "bg-orange-500/20 border-orange-500/30";
+  const ratingLabels: Record<number, string> = { 1: "Preferisco non pronunciarmi", 2: "Non sei il mio tipo", 3: "Qualcosa in te mi attrae", 4: "Sei il mio tipo ideale", 5: "Sei fantastico/a!" };
+  const ratingColor = rating.rating >= 4 ? "text-green-400" : rating.rating >= 3 ? "text-yellow-400" : "text-orange-400";
+  const ratingBg = rating.rating >= 4 ? "bg-green-500/20 border-green-500/30" : rating.rating >= 3 ? "bg-yellow-500/20 border-yellow-500/30" : "bg-orange-500/20 border-orange-500/30";
 
   return (
     <motion.div
@@ -187,10 +188,13 @@ function RatingCard({ rating, myProfileId, isReplied = false }: { rating: Rating
           <p className="text-white/40 text-xs truncate">{rating.rater.location}</p>
         </div>
 
-        <div className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border ${ratingBg}`} data-testid={`rating-score-${rating.id}`}>
-          <Star className={`w-4 h-4 ${ratingColor}`} />
-          <span className={`text-lg font-bold ${ratingColor}`}>{rating.rating}</span>
-          <span className="text-white/40 text-xs">/10</span>
+        <div className={`flex flex-col items-end gap-0.5 px-3 py-1.5 rounded-lg border ${ratingBg}`} data-testid={`rating-score-${rating.id}`}>
+          <div className="flex items-center gap-1">
+            <Star className={`w-4 h-4 ${ratingColor}`} />
+            <span className={`text-lg font-bold ${ratingColor}`}>{rating.rating}</span>
+            <span className="text-white/40 text-xs">/5</span>
+          </div>
+          <span className="text-white/50 text-[9px] leading-tight max-w-[120px] text-right">{ratingLabels[rating.rating] || ""}</span>
         </div>
       </div>
 

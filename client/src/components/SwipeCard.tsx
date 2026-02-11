@@ -253,7 +253,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       },
       onSuccess: () => {
         setRatingSubmitted(true);
-        toast({ title: "Voto inviato!", description: `Hai dato ${selectedRating}/10 a ${profile.name}` });
+        const ratingLabels: Record<number, string> = { 1: "Preferisco non pronunciarmi", 2: "Non sei il mio tipo", 3: "Qualcosa in te mi attrae", 4: "Sei il mio tipo ideale", 5: "Sei fantastico/a!" };
+        toast({ title: "Voto inviato!", description: `${ratingLabels[selectedRating!] || ""} - ${profile.name}` });
         queryClient.invalidateQueries({ queryKey: ["/api/ratings/received"] });
         setTimeout(() => setShowRating(false), 1500);
       },
@@ -410,20 +411,27 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     onClick={(e) => e.stopPropagation()}
                     data-testid="rating-selector"
                   >
-                    <p className="text-white/70 text-[10px] mb-2 text-center font-medium">Che voto dai?</p>
-                    <div className="grid grid-cols-5 gap-1">
-                      {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                    <p className="text-white/70 text-[10px] mb-2 text-center font-medium">Che impressione ti fa?</p>
+                    <div className="flex flex-col gap-1">
+                      {[
+                        { value: 1, label: "Preferisco non pronunciarmi" },
+                        { value: 2, label: "Non sei il mio tipo" },
+                        { value: 3, label: "Qualcosa in te mi attrae" },
+                        { value: 4, label: "Sei il mio tipo ideale" },
+                        { value: 5, label: "Sei fantastico/a!" },
+                      ].map((opt) => (
                         <button
-                          key={n}
-                          onClick={() => setSelectedRating(n)}
-                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
-                            selectedRating === n
-                              ? "bg-primary text-white scale-110"
+                          key={opt.value}
+                          onClick={() => setSelectedRating(opt.value)}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left ${
+                            selectedRating === opt.value
+                              ? "bg-primary text-white"
                               : "bg-white/10 text-white/80 hover:bg-white/20"
                           }`}
-                          data-testid={`rating-${n}`}
+                          data-testid={`rating-${opt.value}`}
                         >
-                          {n}
+                          <span className="w-4 h-4 rounded-full border border-current flex items-center justify-center shrink-0 text-[9px]">{opt.value}</span>
+                          <span className="leading-tight">{opt.label}</span>
                         </button>
                       ))}
                     </div>

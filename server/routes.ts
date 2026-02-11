@@ -1398,7 +1398,7 @@ export async function registerRoutes(
       if (!raterProfile) return res.status(400).json({ error: "Profile required" });
 
       const { ratedId, rating } = req.body;
-      if (!ratedId || !rating || rating < 1 || rating > 10) {
+      if (!ratedId || !rating || rating < 1 || rating > 5) {
         return res.status(400).json({ error: "Invalid rating data" });
       }
 

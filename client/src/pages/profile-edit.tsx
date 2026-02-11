@@ -617,7 +617,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white/90 text-base">Età</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="25" {...field} data-testid="input-age" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -766,7 +766,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white/90 text-base">Altezza (cm)</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="175" {...field} data-testid="input-height" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -788,9 +788,9 @@ export default function ProfileEdit() {
                         name="preferredAgeMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Età Min</FormLabel>
+                            <FormLabel className="text-white/90 text-base">Età Minima Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="18" {...field} data-testid="input-age-min" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -801,9 +801,9 @@ export default function ProfileEdit() {
                         name="preferredAgeMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Età Max</FormLabel>
+                            <FormLabel className="text-white/90 text-base">Età Massima Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="40" {...field} data-testid="input-age-max" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -816,9 +816,9 @@ export default function ProfileEdit() {
                         name="preferredHeightMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Altezza Min (cm)</FormLabel>
+                            <FormLabel className="text-white/90 text-base">Altezza Min Partner (cm)</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="150" {...field} data-testid="input-height-min" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -829,9 +829,9 @@ export default function ProfileEdit() {
                         name="preferredHeightMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Altezza Max (cm)</FormLabel>
+                            <FormLabel className="text-white/90 text-base">Altezza Max Partner (cm)</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="190" {...field} data-testid="input-height-max" />
+                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -902,7 +902,7 @@ export default function ProfileEdit() {
                             Prima Impressione
                           </p>
                           <p className="text-white/50 text-xs leading-relaxed">
-                            Gli altri potranno votarti da 1 a 10 sulla tua card. Vedrai i voti ricevuti nella sezione dedicata.
+                            Gli altri potranno votarti da 1 a 5 sulla tua card. Vedrai i voti ricevuti nella sezione dedicata.
                           </p>
                         </div>
                         <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${

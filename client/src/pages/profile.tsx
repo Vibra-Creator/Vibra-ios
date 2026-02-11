@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,6 +74,75 @@ const ProfileBackground = () => (
     <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
   </div>
 );
+
+function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
+  const { toast } = useToast();
+  
+  const toggleMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PUT", `/api/profiles/${profile.id}`, {
+        ratingEnabled: !profile.ratingEnabled,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      toast({
+        title: profile.ratingEnabled ? "Prima Impressione disattivata" : "Prima Impressione attivata!",
+        description: profile.ratingEnabled
+          ? "Il pulsante 'Vota' non apparirà più sulla tua card."
+          : "Ora gli altri potranno votarti sulla tua card!",
+      });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Non è stato possibile aggiornare l'impostazione.", variant: "destructive" });
+    },
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => toggleMutation.mutate()}
+      disabled={toggleMutation.isPending}
+      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+        profile.ratingEnabled
+          ? "bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 border-primary shadow-lg shadow-primary/20"
+          : "bg-white/5 border-white/10"
+      }`}
+      data-testid="toggle-prima-impressione-profile"
+    >
+      <div className="flex items-center gap-3">
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all ${
+          profile.ratingEnabled ? "bg-primary/30" : "bg-white/10"
+        }`}>
+          <Eye className={`w-6 h-6 transition-colors ${profile.ratingEnabled ? "text-primary" : "text-white/40"}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`font-bold text-sm mb-0.5 transition-colors ${profile.ratingEnabled ? "text-white" : "text-white/70"}`}>
+            Prima Impressione
+          </p>
+          <p className="text-white/50 text-xs leading-relaxed">
+            {profile.ratingEnabled
+              ? "Attivo - Gli altri vedono il pulsante \"Vota\" sulla tua card"
+              : "Attiva per ricevere valutazioni da 1 a 5 sulla tua card"}
+          </p>
+        </div>
+        <div className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 ${
+          profile.ratingEnabled ? "bg-primary" : "bg-white/20"
+        }`}>
+          <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${
+            profile.ratingEnabled ? "translate-x-6" : "translate-x-1"
+          }`} />
+        </div>
+      </div>
+      {profile.ratingEnabled && (
+        <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-xs text-green-400 font-medium">Attivo</span>
+        </div>
+      )}
+    </button>
+  );
+}
 
 export default function Profile() {
   const [, setLocation] = useLocation();
@@ -247,6 +316,8 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        <PrimaImpressioneToggle profile={profile} />
 
         <div className="space-y-2">
           <Button 
