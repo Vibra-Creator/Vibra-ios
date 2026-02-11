@@ -940,7 +940,7 @@ export async function seedDatabase() {
     if (missingProfiles.length > 0) {
       console.log(`Seeding ${missingProfiles.length} new bot profiles...`);
       for (const profile of missingProfiles) {
-        await db.insert(profiles).values({ ...profile, isBot: true, points: 50 });
+        await db.insert(profiles).values({ ...profile, isBot: true, points: 50, ratingEnabled: true });
       }
       console.log("Bot profiles seeded successfully!");
     } else {

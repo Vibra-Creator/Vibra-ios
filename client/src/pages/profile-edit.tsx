@@ -626,8 +626,8 @@ export default function ProfileEdit() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <SelectField control={form.control} name="gender" label="Genere" options={genderOptions} testId="select-gender" />
-                      <SelectField control={form.control} name="preferredGender" label="Cerco" options={genderOptions} testId="select-preferred-gender" />
+                      <SelectField control={form.control} name="gender" label="Genere" options={genderOptions} placeholder="Il tuo genere" testId="select-gender" />
+                      <SelectField control={form.control} name="preferredGender" label="Cerco" options={genderOptions} placeholder="Chi ti attrae" testId="select-preferred-gender" />
                     </div>
 
                     <FormField
@@ -743,7 +743,7 @@ export default function ProfileEdit() {
                       </div>
                     </div>
 
-                    <SelectField control={form.control} name="alienType" label="Tipo Cosmico" options={alienTypes} testId="select-alien-type" placeholder="Seleziona il tuo tipo" />
+                    <SelectField control={form.control} name="alienType" label="Tipo Cosmico" options={alienTypes} testId="select-alien-type" placeholder="La tua specie cosmica" />
                 </div>
               )}
 
@@ -754,11 +754,11 @@ export default function ProfileEdit() {
                     Aspetto Fisico
                   </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <SelectField control={form.control} name="hairColor" label="Colore Capelli" options={hairColorOptions} testId="select-hair-color" />
-                      <SelectField control={form.control} name="eyeColor" label="Colore Occhi" options={eyeColorOptions} testId="select-eye-color" />
+                      <SelectField control={form.control} name="hairColor" label="Colore Capelli" options={hairColorOptions} placeholder="Es. Castano, Biondo..." testId="select-hair-color" />
+                      <SelectField control={form.control} name="eyeColor" label="Colore Occhi" options={eyeColorOptions} placeholder="Es. Marroni, Azzurri..." testId="select-eye-color" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <SelectField control={form.control} name="bodyType" label="Corporatura" options={bodyTypeOptions} testId="select-body-type" />
+                      <SelectField control={form.control} name="bodyType" label="Corporatura" options={bodyTypeOptions} placeholder="Il tuo fisico" testId="select-body-type" />
                       <FormField
                         control={form.control}
                         name="height"
@@ -838,8 +838,8 @@ export default function ProfileEdit() {
                         )}
                       />
                     </div>
-                    <SelectField control={form.control} name="education" label="Istruzione" options={educationOptions} testId="select-education" />
-                    <SelectField control={form.control} name="preferredEducation" label="Istruzione Preferita" options={educationOptions} testId="select-preferred-education" />
+                    <SelectField control={form.control} name="education" label="Istruzione" options={educationOptions} placeholder="Il tuo livello di studi" testId="select-education" />
+                    <SelectField control={form.control} name="preferredEducation" label="Istruzione Preferita" options={educationOptions} placeholder="Studi del partner ideale" testId="select-preferred-education" />
                 </div>
               )}
 
@@ -849,8 +849,8 @@ export default function ProfileEdit() {
                     <Star className="w-5 h-5 text-accent" />
                     Personalità e Stile
                   </div>
-                    <SelectField control={form.control} name="zodiacSign" label="Segno Zodiacale" options={zodiacSignOptions} testId="select-zodiac" />
-                    <SelectField control={form.control} name="loveLanguage" label="Come Esprimi il Tuo Amore" options={loveLanguageOptions} testId="select-love-language" />
+                    <SelectField control={form.control} name="zodiacSign" label="Segno Zodiacale" options={zodiacSignOptions} placeholder="Il tuo segno" testId="select-zodiac" />
+                    <SelectField control={form.control} name="loveLanguage" label="Come Esprimi il Tuo Amore" options={loveLanguageOptions} placeholder="Il tuo linguaggio d'amore" testId="select-love-language" />
                     <div>
                       <FormLabel className="mb-3 block text-white/90 text-base">Come Preferisci Comunicare</FormLabel>
                       <div className="flex flex-wrap gap-2">
@@ -867,7 +867,7 @@ export default function ProfileEdit() {
                         ))}
                       </div>
                     </div>
-                    <SelectField control={form.control} name="lifestyle" label="Stile di Vita" options={lifestyleOptions} testId="select-lifestyle" />
+                    <SelectField control={form.control} name="lifestyle" label="Stile di Vita" options={lifestyleOptions} placeholder="Come vivi la vita" testId="select-lifestyle" />
                 </div>
               )}
 
@@ -877,40 +877,49 @@ export default function ProfileEdit() {
                     <Search className="w-5 h-5 text-primary" />
                     Cosa Cerchi
                   </div>
-                    <SelectField control={form.control} name="relationshipType" label="Tipo di Relazione" options={relationshipTypeOptions} testId="select-relationship" />
-                    <SelectField control={form.control} name="wantsChildren" label="Figli" options={wantsChildrenOptions} testId="select-children" />
-                    <SelectField control={form.control} name="accessMotivation" label="Perché Sei Qui" options={accessMotivationOptions} testId="select-motivation" />
+                    <SelectField control={form.control} name="relationshipType" label="Tipo di Relazione" options={relationshipTypeOptions} placeholder="Cosa stai cercando" testId="select-relationship" />
+                    <SelectField control={form.control} name="wantsChildren" label="Figli" options={wantsChildrenOptions} placeholder="Il tuo desiderio" testId="select-children" />
+                    <SelectField control={form.control} name="accessMotivation" label="Perché Sei Qui" options={accessMotivationOptions} placeholder="La tua motivazione" testId="select-motivation" />
 
-                    <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10 border border-white/10">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                          <Eye className="w-5 h-5 text-primary" />
+                    <button
+                      type="button"
+                      onClick={() => setRatingEnabled(!ratingEnabled)}
+                      className={`mt-4 w-full p-5 rounded-xl border-2 transition-all ${
+                        ratingEnabled
+                          ? "bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 border-primary shadow-lg shadow-primary/20"
+                          : "bg-white/5 border-white/10"
+                      }`}
+                      data-testid="toggle-rating-enabled"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                          ratingEnabled ? "bg-primary/30" : "bg-white/10"
+                        }`}>
+                          <Eye className={`w-7 h-7 transition-colors ${ratingEnabled ? "text-primary" : "text-white/40"}`} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium text-sm mb-1">Scopri cosa pensano gli altri di te</p>
-                          <p className="text-white/50 text-xs mb-3">
-                            Attiva questa opzione e gli altri utenti potranno darti un voto da 1 a 10 direttamente dalla tua card. Riceverai le valutazioni nella sezione "Prima Impressione".
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className={`font-bold text-base mb-0.5 transition-colors ${ratingEnabled ? "text-white" : "text-white/70"}`}>
+                            Prima Impressione
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => setRatingEnabled(!ratingEnabled)}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                              ratingEnabled ? "bg-primary" : "bg-white/20"
-                            }`}
-                            data-testid="toggle-rating-enabled"
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                                ratingEnabled ? "translate-x-6" : "translate-x-1"
-                              }`}
-                            />
-                          </button>
-                          {ratingEnabled && (
-                            <span className="ml-3 text-xs text-primary font-medium">Attivo</span>
-                          )}
+                          <p className="text-white/50 text-xs leading-relaxed">
+                            Gli altri potranno votarti da 1 a 10 sulla tua card. Vedrai i voti ricevuti nella sezione dedicata.
+                          </p>
+                        </div>
+                        <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${
+                          ratingEnabled ? "bg-primary" : "bg-white/20"
+                        }`}>
+                          <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm ${
+                            ratingEnabled ? "translate-x-7" : "translate-x-1"
+                          }`} />
                         </div>
                       </div>
-                    </div>
+                      {ratingEnabled && (
+                        <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                          <span className="text-xs text-green-400 font-medium">Attivo - Gli altri vedranno il pulsante "Vota" sulla tua card</span>
+                        </div>
+                      )}
+                    </button>
                 </div>
               )}
 
