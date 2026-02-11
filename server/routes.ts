@@ -1117,6 +1117,22 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/private-rooms/pending-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json({ count: 0 });
+      const myRoom = await storage.getPrivateRoomByOwner(userProfile.id);
+      if (!myRoom) return res.json({ count: 0 });
+      const requests = await storage.getPrivateRoomRequests(myRoom.id);
+      const pendingCount = requests.filter(r => r.status === "pending").length;
+      res.json({ count: pendingCount });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch pending count" });
+    }
+  });
+
   app.get("/api/private-rooms/:id", isAuthenticated, async (req: any, res) => {
     try {
       const room = await storage.getPrivateRoom(req.params.id as string);
