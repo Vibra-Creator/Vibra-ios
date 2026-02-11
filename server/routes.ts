@@ -1387,5 +1387,109 @@ export async function registerRoutes(
     }
   });
 
+  // Prima Impressione - Profile Ratings
+  app.post("/api/ratings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const raterProfile = await storage.getProfileByUserId(userId);
+      if (!raterProfile) return res.status(400).json({ error: "Profile required" });
+
+      const { ratedId, rating } = req.body;
+      if (!ratedId || !rating || rating < 1 || rating > 10) {
+        return res.status(400).json({ error: "Invalid rating data" });
+      }
+
+      if (raterProfile.id === ratedId) {
+        return res.status(400).json({ error: "Cannot rate yourself" });
+      }
+
+      const ratedProfile = await storage.getProfile(ratedId);
+      if (!ratedProfile || !ratedProfile.ratingEnabled) {
+        return res.status(400).json({ error: "This profile does not accept ratings" });
+      }
+
+      const existing = await storage.getExistingRating(raterProfile.id, ratedId);
+      if (existing) {
+        return res.status(400).json({ error: "Already rated this profile" });
+      }
+
+      const created = await storage.createProfileRating({
+        raterId: raterProfile.id,
+        ratedId,
+        rating,
+      });
+      res.json(created);
+    } catch (error) {
+      console.error("Error creating rating:", error);
+      res.status(500).json({ error: "Failed to create rating" });
+    }
+  });
+
+  app.get("/api/ratings/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json([]);
+      const ratings = await storage.getReceivedRatings(profile.id);
+      res.json(ratings);
+    } catch (error) {
+      console.error("Error fetching ratings:", error);
+      res.status(500).json({ error: "Failed to fetch ratings" });
+    }
+  });
+
+  app.post("/api/ratings/:id/reply", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(400).json({ error: "Profile required" });
+
+      const ratingId = req.params.id;
+      const { reply } = req.body;
+      if (!reply || !reply.trim()) {
+        return res.status(400).json({ error: "Reply message required" });
+      }
+
+      const rating = await storage.getProfileRating(ratingId);
+      if (!rating) return res.status(404).json({ error: "Rating not found" });
+      if (rating.ratedId !== profile.id) return res.status(403).json({ error: "Not authorized" });
+      if (rating.ratedReply) return res.status(400).json({ error: "Already replied" });
+
+      const updated = await storage.replyToRating(ratingId, reply.trim());
+
+      const existingMatch = await storage.getMatch(profile.id, rating.raterId);
+      let matchData = existingMatch;
+      if (!existingMatch) {
+        matchData = await storage.createMatch({
+          profile1Id: rating.raterId,
+          profile2Id: profile.id,
+        });
+        await storage.markRatingMatchCreated(ratingId);
+      }
+
+      res.json({ rating: updated, match: matchData });
+    } catch (error) {
+      console.error("Error replying to rating:", error);
+      res.status(500).json({ error: "Failed to reply to rating" });
+    }
+  });
+
+  app.get("/api/ratings/count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json({ count: 0 });
+      const ratings = await storage.getReceivedRatings(profile.id);
+      const unreplied = ratings.filter(r => !r.ratedReply).length;
+      res.json({ count: unreplied });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch count" });
+    }
+  });
+
   return httpServer;
 }
