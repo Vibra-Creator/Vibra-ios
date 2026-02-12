@@ -110,7 +110,7 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-white/90 text-base">{label}</FormLabel>
+          <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{label}</FormLabel>
           <Select onValueChange={field.onChange} value={field.value}>
             <FormControl>
               <SelectTrigger className="bg-white/10 backdrop-blur-sm border-white/20 text-white" data-testid={testId}>
@@ -505,7 +505,7 @@ export default function ProfileEdit() {
                       name="imageUrl"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center gap-2 text-white/90 text-base">
+                          <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                             <Camera className="w-4 h-4" />
                             Foto Profilo
                           </FormLabel>
@@ -534,7 +534,7 @@ export default function ProfileEdit() {
                     />
 
                     <div>
-                      <FormLabel className="flex items-center gap-2 text-white/90 text-base mb-3">
+                      <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase mb-3">
                         <ImagePlus className="w-4 h-4" />
                         Le Tue Foto ({uploadedPhotos.length}/6)
                       </FormLabel>
@@ -604,7 +604,7 @@ export default function ProfileEdit() {
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Nome</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Nome</FormLabel>
                             <FormControl>
                               <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" placeholder="Il tuo nome" {...field} data-testid="input-name" />
                             </FormControl>
@@ -617,7 +617,7 @@ export default function ProfileEdit() {
                         name="age"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Età</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età</FormLabel>
                             <FormControl>
                               <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
                             </FormControl>
@@ -645,7 +645,7 @@ export default function ProfileEdit() {
                           : italianCities;
                         return (
                           <FormItem className="relative">
-                            <FormLabel className="flex items-center gap-2 text-white/90 text-base">
+                            <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                               <MapPin className="w-4 h-4" />
                               Citta
                             </FormLabel>
@@ -696,7 +696,7 @@ export default function ProfileEdit() {
                     />
 
                     <div className="space-y-2">
-                      <FormLabel className="flex items-center gap-2 text-white/90 text-base">
+                      <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                         <Phone className="w-4 h-4" />
                         Telefono
                       </FormLabel>
@@ -766,7 +766,7 @@ export default function ProfileEdit() {
                         name="height"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Altezza (cm)</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Altezza (cm)</FormLabel>
                             <FormControl>
                               <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
                             </FormControl>
@@ -790,7 +790,7 @@ export default function ProfileEdit() {
                         name="preferredAgeMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Età Minima Partner</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Min. Partner</FormLabel>
                             <FormControl>
                               <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
                             </FormControl>
@@ -803,7 +803,7 @@ export default function ProfileEdit() {
                         name="preferredAgeMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Età Massima Partner</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Max. Partner</FormLabel>
                             <FormControl>
                               <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
                             </FormControl>
@@ -818,7 +818,7 @@ export default function ProfileEdit() {
                         name="preferredHeightMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Altezza Min Partner (cm)</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Min. Partner</FormLabel>
                             <FormControl>
                               <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
                             </FormControl>
@@ -831,7 +831,7 @@ export default function ProfileEdit() {
                         name="preferredHeightMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white/90 text-base">Altezza Max Partner (cm)</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Max. Partner</FormLabel>
                             <FormControl>
                               <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
                             </FormControl>
@@ -854,7 +854,7 @@ export default function ProfileEdit() {
                     <SelectField control={form.control} name="zodiacSign" label="Segno Zodiacale" options={zodiacSignOptions} placeholder="Il tuo segno" testId="select-zodiac" />
                     <SelectField control={form.control} name="loveLanguage" label="Come Esprimi il Tuo Amore" options={loveLanguageOptions} placeholder="Il tuo linguaggio d'amore" testId="select-love-language" />
                     <div>
-                      <FormLabel className="mb-3 block text-white/90 text-base">Come Preferisci Comunicare</FormLabel>
+                      <FormLabel className="mb-3 block text-white font-semibold text-sm tracking-wide uppercase">Come Preferisci Comunicare</FormLabel>
                       <div className="flex flex-wrap gap-2">
                         {communicationStyleOptions.map((style) => (
                           <Badge
@@ -982,7 +982,7 @@ export default function ProfileEdit() {
                     Lingue e Bio
                   </div>
                     <div>
-                      <FormLabel className="mb-3 block text-white/90 text-base">Lingue Parlate</FormLabel>
+                      <FormLabel className="mb-3 block text-white font-semibold text-sm tracking-wide uppercase">Lingue Parlate</FormLabel>
                       <div className="flex flex-wrap gap-2">
                         {languageOptions.map((lang) => (
                           <Badge
@@ -1003,7 +1003,7 @@ export default function ProfileEdit() {
                       name="bio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white/90 text-base">La Tua Bio</FormLabel>
+                          <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">La Tua Bio</FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="Racconta qualcosa di te..."
