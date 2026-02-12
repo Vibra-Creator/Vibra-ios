@@ -46,7 +46,7 @@ export function BottomNav() {
     { path: "/rooms", icon: Users, label: "Stanze", badge: 0 },
     { path: "/challenges", icon: Trophy, label: "Sfide", badge: 0 },
     { path: "/private-rooms", icon: Lock, label: "Private", badge: pendingRoomCount },
-    { path: "/prima-impressione", icon: Eye, label: "Vota", badge: unrepliedRatingCount },
+    { path: "/prima-impressione", icon: Eye, label: "Impression", badge: unrepliedRatingCount },
     { path: "/profile", icon: User, label: "Profilo", badge: 0 },
     ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin", badge: 0 }] : []),
   ];

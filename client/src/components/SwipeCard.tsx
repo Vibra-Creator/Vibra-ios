@@ -392,87 +392,103 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               </div>
             </div>
 
-            {profile.ratingEnabled && isTop && (
-              <div className="absolute top-4 left-4 z-10">
-                {!showRating ? (
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-                    onClick={(e) => { e.stopPropagation(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold shadow-lg border border-white/20"
-                    data-testid={`button-rate-${profile.id}`}
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span className="flex flex-col items-start leading-tight">
-                      <span>Prima Impressione</span>
-                      <span className="text-[9px] font-normal text-white/70">Digli cosa pensi!</span>
-                    </span>
-                  </motion.button>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 border border-white/20 shadow-2xl min-w-[200px]"
-                    onClick={(e) => e.stopPropagation()}
-                    data-testid="rating-selector"
-                  >
-                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
-                      <Avatar className="w-7 h-7 border border-white/20">
-                        <AvatarImage src={profile.imageUrl || undefined} alt={profile.name} />
-                        <AvatarFallback className="bg-primary/30 text-white text-[9px]">{profile.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-white text-[11px] font-semibold leading-tight">{profile.name}, {profile.age}</span>
-                        <span className="text-white/50 text-[9px] leading-tight">Che impressione ti fa?</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      {[
-                        { value: 1, label: "Preferisco non pronunciarmi" },
-                        { value: 2, label: "Non sei il mio tipo" },
-                        { value: 3, label: "Qualcosa in te mi attrae" },
-                        { value: 4, label: "Sei il mio tipo ideale" },
-                        { value: 5, label: "Sei fantastico/a!" },
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => setSelectedRating(opt.value)}
-                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left ${
-                            selectedRating === opt.value
-                              ? "bg-primary text-white"
-                              : "bg-white/10 text-white/80 hover:bg-white/20"
-                          }`}
-                          data-testid={`rating-${opt.value}`}
-                        >
-                          <span className="w-4 h-4 rounded-full border border-current flex items-center justify-center shrink-0 text-[9px]">{opt.value}</span>
-                          <span className="leading-tight">{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-1.5 mt-2">
-                      <button
-                        onClick={() => { setShowRating(false); setSelectedRating(null); }}
-                        className="flex-1 py-1.5 rounded-lg bg-white/10 text-white/60 text-[10px] font-medium"
-                        data-testid="button-cancel-rating"
-                      >
-                        Annulla
-                      </button>
-                      <button
-                        onClick={() => { if (selectedRating) ratingMutation.mutate(selectedRating); }}
-                        disabled={!selectedRating || ratingMutation.isPending || ratingSubmitted}
-                        className="flex-1 py-1.5 rounded-lg bg-primary text-white text-[10px] font-medium disabled:opacity-50"
-                        data-testid="button-submit-rating"
-                      >
-                        {ratingSubmitted ? "Inviato!" : ratingMutation.isPending ? "..." : "Invia"}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
+            {profile.ratingEnabled && isTop && !showRating && (
+              <div
+                className="absolute top-4 left-4 z-10"
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+              >
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold shadow-lg border border-white/20"
+                  data-testid={`button-rate-${profile.id}`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span>Prima Impressione</span>
+                    <span className="text-[9px] font-normal text-white/70">Digli cosa pensi!</span>
+                  </span>
+                </motion.button>
               </div>
             )}
           </div>
         </motion.div>
+
+        <AnimatePresence>
+          {showRating && profile.ratingEnabled && isTop && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-start justify-start p-4"
+              onClick={() => { setShowRating(false); setSelectedRating(null); }}
+              data-testid="rating-overlay"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="bg-black/90 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl min-w-[220px]"
+                onClick={(e) => e.stopPropagation()}
+                data-testid="rating-selector"
+              >
+                <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-white/10">
+                  <Avatar className="w-9 h-9 border border-white/20">
+                    <AvatarImage src={profile.imageUrl || undefined} alt={profile.name} />
+                    <AvatarFallback className="bg-primary/30 text-white text-xs">{profile.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="text-white text-sm font-semibold leading-tight">{profile.name}, {profile.age}</span>
+                    <span className="text-white/50 text-[10px] leading-tight">Che impressione ti fa?</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { value: 1, label: "Preferisco non pronunciarmi" },
+                    { value: 2, label: "Non sei il mio tipo" },
+                    { value: 3, label: "Qualcosa in te mi attrae" },
+                    { value: 4, label: "Sei il mio tipo ideale" },
+                    { value: 5, label: "Sei fantastico/a!" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSelectedRating(opt.value)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all text-left ${
+                        selectedRating === opt.value
+                          ? "bg-primary text-white"
+                          : "bg-white/10 text-white/80 active:bg-white/30"
+                      }`}
+                      data-testid={`rating-${opt.value}`}
+                    >
+                      <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center shrink-0 text-[10px]">{opt.value}</span>
+                      <span className="leading-tight">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => { setShowRating(false); setSelectedRating(null); }}
+                    className="flex-1 py-2 rounded-lg bg-white/10 text-white/60 text-xs font-medium active:bg-white/20"
+                    data-testid="button-cancel-rating"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={() => { if (selectedRating) ratingMutation.mutate(selectedRating); }}
+                    disabled={!selectedRating || ratingMutation.isPending || ratingSubmitted}
+                    className="flex-1 py-2 rounded-lg bg-primary text-white text-xs font-medium disabled:opacity-50 active:bg-primary/80"
+                    data-testid="button-submit-rating"
+                  >
+                    {ratingSubmitted ? "Inviato!" : ratingMutation.isPending ? "..." : "Invia"}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <ProfileDetailModal
           profile={profile}
