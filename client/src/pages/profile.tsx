@@ -106,41 +106,41 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
       type="button"
       onClick={() => toggleMutation.mutate()}
       disabled={toggleMutation.isPending}
-      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+      className={`w-full p-5 rounded-xl border-2 transition-all text-left ${
         profile.ratingEnabled
-          ? "bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 border-primary shadow-lg shadow-primary/20"
-          : "bg-white/5 border-white/10"
+          ? "bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-cyan-500/30 border-primary shadow-lg shadow-primary/30 backdrop-blur-md"
+          : "bg-black/40 border-white/20 backdrop-blur-md"
       }`}
       data-testid="toggle-prima-impressione-profile"
     >
       <div className="flex items-center gap-3">
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all ${
-          profile.ratingEnabled ? "bg-primary/30" : "bg-white/10"
+        <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-all ${
+          profile.ratingEnabled ? "bg-primary/40" : "bg-white/15"
         }`}>
-          <Eye className={`w-6 h-6 transition-colors ${profile.ratingEnabled ? "text-primary" : "text-white/40"}`} />
+          <Eye className={`w-7 h-7 transition-colors ${profile.ratingEnabled ? "text-primary" : "text-white/50"}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`font-bold text-sm mb-0.5 transition-colors ${profile.ratingEnabled ? "text-white" : "text-white/70"}`}>
+          <p className={`font-extrabold text-lg tracking-wide mb-1 transition-colors drop-shadow-lg ${profile.ratingEnabled ? "text-white" : "text-white/90"}`}>
             Prima Impressione
           </p>
-          <p className="text-white/50 text-xs leading-relaxed">
+          <p className={`text-sm leading-relaxed font-medium ${profile.ratingEnabled ? "text-white/80" : "text-white/60"}`}>
             {profile.ratingEnabled
               ? "Sei in gioco! Gli altri possono votarti e iniziare a chattare con te"
               : "Mettiti in gioco! Attiva e scopri cosa pensano gli altri di te. Chi ti vota potrà scriverti"}
           </p>
         </div>
-        <div className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 ${
+        <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${
           profile.ratingEnabled ? "bg-primary" : "bg-white/20"
         }`}>
-          <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${
-            profile.ratingEnabled ? "translate-x-6" : "translate-x-1"
+          <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm ${
+            profile.ratingEnabled ? "translate-x-7" : "translate-x-1"
           }`} />
         </div>
       </div>
       {profile.ratingEnabled && (
-        <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-xs text-green-400 font-medium">Attivo</span>
+        <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-sm text-green-400 font-semibold">Attivo</span>
         </div>
       )}
     </button>
