@@ -396,12 +396,17 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 {!showRating ? (
                   <motion.button
                     whileTap={{ scale: 0.9 }}
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
                     onClick={(e) => { e.stopPropagation(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/80 backdrop-blur-sm text-white text-xs font-medium shadow-lg"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold shadow-lg border border-white/20"
                     data-testid={`button-rate-${profile.id}`}
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    Vota
+                    <span className="flex flex-col items-start leading-tight">
+                      <span>Prima Impressione</span>
+                      <span className="text-[9px] font-normal text-white/70">Digli cosa pensi!</span>
+                    </span>
                   </motion.button>
                 ) : (
                   <motion.div

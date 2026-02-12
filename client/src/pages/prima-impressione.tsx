@@ -90,12 +90,15 @@ export default function PrimaImpressione() {
           <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
             <Eye className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Prima Impressione</h2>
-          <p className="text-white/60 text-sm mb-4">
-            Attiva la funzione di valutazione nel tuo profilo per scoprire cosa pensano gli altri di te. Gli altri potranno darti un voto da 1 a 5 sulla tua card.
+          <h2 className="text-xl font-bold text-white mb-2">Mettiti in Gioco!</h2>
+          <p className="text-white/60 text-sm mb-2">
+            Attiva Prima Impressione e scopri cosa pensano gli altri di te.
+          </p>
+          <p className="text-white/40 text-xs mb-4">
+            Sulla tua card apparirà il pulsante che permette agli altri di votarti da 1 a 5. Chi ti vota potrà anche scriverti un messaggio e aprire una conversazione con te!
           </p>
           <Button onClick={() => setLocation("/profile")} data-testid="button-enable-rating">
-            Vai al Profilo per Attivare
+            Attiva dal Profilo
           </Button>
         </div>
       </div>

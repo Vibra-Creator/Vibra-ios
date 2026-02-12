@@ -87,10 +87,10 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({
-        title: profile.ratingEnabled ? "Prima Impressione disattivata" : "Prima Impressione attivata!",
+        title: profile.ratingEnabled ? "Prima Impressione disattivata" : "Sei in gioco!",
         description: profile.ratingEnabled
-          ? "Il pulsante 'Vota' non apparirà più sulla tua card."
-          : "Ora gli altri potranno votarti sulla tua card!",
+          ? "Non riceverai più voti sulla tua card."
+          : "Ora gli altri potranno votarti e scriverti il primo messaggio!",
       });
     },
     onError: () => {
@@ -122,8 +122,8 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
           </p>
           <p className="text-white/50 text-xs leading-relaxed">
             {profile.ratingEnabled
-              ? "Attivo - Gli altri vedono il pulsante \"Vota\" sulla tua card"
-              : "Attiva per ricevere valutazioni da 1 a 5 sulla tua card"}
+              ? "Sei in gioco! Gli altri possono votarti e iniziare a chattare con te"
+              : "Mettiti in gioco! Attiva e scopri cosa pensano gli altri di te. Chi ti vota potrà scriverti"}
           </p>
         </div>
         <div className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 ${
