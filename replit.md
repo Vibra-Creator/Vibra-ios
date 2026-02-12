@@ -22,6 +22,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Virtual Gifts**: Spend earned points to send animated gifts to other users (Regali Virtuali)
 - **Private Rooms**: Create exclusive private rooms with access approval system (Stanze Private) - limit 1 per user, categorized view (La Mia Stanza, Stanze dei Match, Popolari), "Stanza VIP" badge on swipe cards
 - **Prima Impressione**: Rating system where users can opt-in to receive 1-10 ratings from others on their swipe card. Rated users see ratings in dedicated page, can reply with one message which auto-creates a match and opens chat
+- **Sto Vibing Ora**: Live presence mode - activate for 30 minutes to see only nearby active users (1-10 km radius) who are also vibing. Uses browser geolocation, Haversine distance calculation, countdown timer, auto-expires
 
 ## Tech Stack
 - **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion
@@ -55,7 +56,8 @@ client/
 │   │   ├── rooms.tsx          # Interest-based chat rooms
 │   │   ├── challenges.tsx     # Daily photo challenges
 │   │   ├── private-rooms.tsx  # Private rooms with access control
-│   │   └── prima-impressione.tsx # Rating system page
+│   │   ├── prima-impressione.tsx # Rating system page
+│   │   └── vibing.tsx          # Live presence mode page
 │   └── App.tsx               # Main app with routing
 server/
 ├── db.ts                     # Database connection
@@ -88,6 +90,10 @@ shared/
 - `POST /api/ratings/:id/reply` - Reply to a rating (creates match + opens chat)
 - `GET /api/ratings/count` - Get count of unreplied ratings
 - `GET /api/private-rooms` - Get all private rooms (auth required)
+- `POST /api/vibe/activate` - Activate vibing session with location (auth required)
+- `POST /api/vibe/deactivate` - Deactivate vibing session (auth required)
+- `GET /api/vibe/status` - Get current vibing status (auth required)
+- `GET /api/vibe/nearby` - Get nearby vibing users (auth required)
 
 ## Database Schema
 - **users**: id, email, firstName, lastName, profileImageUrl, isAdmin, createdAt, updatedAt
@@ -104,6 +110,7 @@ shared/
 - **virtual_gifts**: id, name, description, cost, animationType, icon, color, sortOrder
 - **profile_ratings**: id, raterId, ratedId, rating, ratedReply, matchCreated, createdAt, repliedAt
 - **sent_gifts**: id, giftId, senderId, receiverId, message, seen, createdAt
+- **vibing_sessions**: id, profileId, latitude, longitude, radiusKm, active, activatedAt, expiresAt
 
 ## Color Theme
 The app uses a cosmic color palette:

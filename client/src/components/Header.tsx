@@ -1,4 +1,4 @@
-import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye } from "lucide-react";
+import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -45,6 +45,7 @@ export function BottomNav() {
     { path: "/matches", icon: Heart, label: "Match", badge: 0 },
     { path: "/rooms", icon: Users, label: "Stanze", badge: 0 },
     { path: "/challenges", icon: Trophy, label: "Sfide", badge: 0 },
+    { path: "/vibing", icon: Zap, label: "Vibing", badge: 0 },
     { path: "/private-rooms", icon: Lock, label: "Private", badge: pendingRoomCount },
     { path: "/prima-impressione", icon: Eye, label: "Impression", badge: unrepliedRatingCount },
     { path: "/profile", icon: User, label: "Profilo", badge: 0 },

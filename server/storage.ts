@@ -9,12 +9,14 @@ import {
   type VirtualGift, type SentGift,
   type Report, type UserSuspension, type BannedWord,
   type ProfileRating,
+  type VibingSession,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
   virtualGifts, sentGifts,
   reports, userSuspensions, bannedWords,
-  profileRatings
+  profileRatings,
+  vibingSessions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -115,6 +117,12 @@ export interface IStorage {
   getRatingBetweenProfiles(profileAId: string, profileBId: string): Promise<ProfileRating | undefined>;
   replyToRating(ratingId: string, reply: string): Promise<ProfileRating | undefined>;
   markRatingMatchCreated(ratingId: string): Promise<void>;
+
+  // Vibing Sessions ("Sto vibing ora")
+  activateVibing(data: { profileId: string; latitude: number; longitude: number; radiusKm: number }): Promise<VibingSession>;
+  deactivateVibing(profileId: string): Promise<void>;
+  getActiveVibingSession(profileId: string): Promise<VibingSession | undefined>;
+  getNearbyVibers(lat: number, lng: number, radiusKm: number, excludeProfileId: string): Promise<(VibingSession & { profile: Profile })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -652,6 +660,70 @@ export class DatabaseStorage implements IStorage {
     await db.update(profileRatings)
       .set({ matchCreated: true })
       .where(eq(profileRatings.id, ratingId));
+  }
+
+  async activateVibing(data: { profileId: string; latitude: number; longitude: number; radiusKm: number }): Promise<VibingSession> {
+    await db.delete(vibingSessions).where(eq(vibingSessions.profileId, data.profileId));
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const [session] = await db.insert(vibingSessions).values({
+      profileId: data.profileId,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      radiusKm: data.radiusKm,
+      expiresAt,
+      active: true,
+    }).returning();
+    return session;
+  }
+
+  async deactivateVibing(profileId: string): Promise<void> {
+    await db.update(vibingSessions)
+      .set({ active: false, expiresAt: new Date() })
+      .where(and(eq(vibingSessions.profileId, profileId), eq(vibingSessions.active, true)));
+  }
+
+  async getActiveVibingSession(profileId: string): Promise<VibingSession | undefined> {
+    const [session] = await db.select().from(vibingSessions)
+      .where(and(
+        eq(vibingSessions.profileId, profileId),
+        eq(vibingSessions.active, true),
+      ));
+    if (session && new Date(session.expiresAt) <= new Date()) {
+      await this.deactivateVibing(profileId);
+      return undefined;
+    }
+    return session;
+  }
+
+  async getNearbyVibers(lat: number, lng: number, radiusKm: number, excludeProfileId: string): Promise<(VibingSession & { profile: Profile })[]> {
+    const now = new Date();
+    const activeSessions = await db.select().from(vibingSessions)
+      .where(and(
+        eq(vibingSessions.active, true),
+        sql`${vibingSessions.expiresAt} > ${now}`,
+      ));
+
+    const validSessions = activeSessions.filter(s => s.profileId !== excludeProfileId);
+
+    const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    const nearbySessions = validSessions.filter(s => haversineDistance(lat, lng, s.latitude, s.longitude) <= radiusKm);
+    if (nearbySessions.length === 0) return [];
+
+    const profileIds = nearbySessions.map(s => s.profileId);
+    const nearbyProfiles = await db.select().from(profiles)
+      .where(sql`${profiles.id} IN (${sql.join(profileIds.map(id => sql`${id}`), sql`, `)})`);
+    const profileMap = new Map(nearbyProfiles.map(p => [p.id, p]));
+
+    return nearbySessions
+      .filter(s => profileMap.has(s.profileId))
+      .map(s => ({ ...s, profile: profileMap.get(s.profileId)! }));
   }
 }
 

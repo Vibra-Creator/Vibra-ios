@@ -1539,5 +1539,105 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== VIBING SESSIONS ====================
+
+  app.post("/api/vibe/activate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const { latitude, longitude, radiusKm } = req.body;
+      if (typeof latitude !== "number" || typeof longitude !== "number") {
+        return res.status(400).json({ error: "Latitude and longitude required" });
+      }
+      const radius = Math.min(Math.max(radiusKm || 5, 1), 10);
+
+      const session = await storage.activateVibing({
+        profileId: profile.id,
+        latitude,
+        longitude,
+        radiusKm: radius,
+      });
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to activate vibing" });
+    }
+  });
+
+  app.post("/api/vibe/deactivate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      await storage.deactivateVibing(profile.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to deactivate vibing" });
+    }
+  });
+
+  app.get("/api/vibe/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json({ active: false });
+
+      const session = await storage.getActiveVibingSession(profile.id);
+      if (!session) return res.json({ active: false });
+
+      res.json({
+        active: true,
+        session,
+        remainingMs: Math.max(0, new Date(session.expiresAt).getTime() - Date.now()),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get vibing status" });
+    }
+  });
+
+  app.get("/api/vibe/nearby", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const session = await storage.getActiveVibingSession(profile.id);
+      if (!session) return res.json([]);
+
+      const nearby = await storage.getNearbyVibers(
+        session.latitude,
+        session.longitude,
+        session.radiusKm,
+        profile.id
+      );
+      res.json(nearby);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get nearby vibers" });
+    }
+  });
+
+  app.get("/api/vibe/count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json({ count: 0 });
+
+      const session = await storage.getActiveVibingSession(profile.id);
+      if (!session) return res.json({ count: 0 });
+
+      const nearby = await storage.getNearbyVibers(session.latitude, session.longitude, session.radiusKm, profile.id);
+      res.json({ count: nearby.length });
+    } catch (error) {
+      res.json({ count: 0 });
+    }
+  });
+
   return httpServer;
 }

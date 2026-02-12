@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -279,3 +279,18 @@ export const insertPrivateRoomSchema = createInsertSchema(privateRooms).omit({ i
 export const insertChallengeSchema = createInsertSchema(dailyChallenges).omit({ id: true });
 export const insertChallengeSubmissionSchema = createInsertSchema(challengeSubmissions).omit({ id: true, createdAt: true, reviewedAt: true });
 export const insertSentGiftSchema = createInsertSchema(sentGifts).omit({ id: true, createdAt: true, seen: true });
+
+export const vibingSessions = pgTable("vibing_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+  radiusKm: integer("radius_km").notNull().default(5),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  active: boolean("active").default(true).notNull(),
+});
+
+export type VibingSession = typeof vibingSessions.$inferSelect;
+export const insertVibingSessionSchema = createInsertSchema(vibingSessions).omit({ id: true, startedAt: true, active: true });
+export type InsertVibingSession = z.infer<typeof insertVibingSessionSchema>;
