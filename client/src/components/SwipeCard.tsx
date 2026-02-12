@@ -77,7 +77,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
-                className="w-full aspect-[4/3] object-cover"
+                className="w-full aspect-[3/2.8] object-cover"
                 data-testid="detail-profile-image"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
