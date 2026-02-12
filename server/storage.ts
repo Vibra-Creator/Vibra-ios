@@ -352,7 +352,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPrivateRooms(): Promise<PrivateRoom[]> {
-    return db.select().from(privateRooms).where(eq(privateRooms.isActive, true));
+    const now = new Date();
+    const rooms = await db.select().from(privateRooms).where(eq(privateRooms.isActive, true));
+    return rooms.filter(r => !r.expiresAt || new Date(r.expiresAt) > now);
   }
 
   async getPrivateRoom(id: string): Promise<PrivateRoom | undefined> {
@@ -361,17 +363,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPrivateRoomByOwner(ownerId: string): Promise<PrivateRoom | undefined> {
-    const [room] = await db.select().from(privateRooms)
+    const now = new Date();
+    const rooms = await db.select().from(privateRooms)
       .where(and(eq(privateRooms.ownerId, ownerId), eq(privateRooms.isActive, true)));
-    return room;
+    return rooms.find(r => !r.expiresAt || new Date(r.expiresAt) > now);
   }
 
   async createPrivateRoom(data: { ownerId: string; name: string; description?: string; imageUrl?: string }): Promise<PrivateRoom> {
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const [room] = await db.insert(privateRooms).values({
       ownerId: data.ownerId,
       name: data.name,
       description: data.description || null,
       imageUrl: data.imageUrl || null,
+      expiresAt,
       isActive: true,
     }).returning();
     return room;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -538,6 +538,21 @@ function RoomCard({
 }) {
   const isOwner = myProfile?.id === room.ownerId;
 
+  const [timeLeft, setTimeLeft] = useState("");
+  useEffect(() => {
+    if (!room.expiresAt) return;
+    const update = () => {
+      const diff = new Date(room.expiresAt!).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Scaduta"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setTimeLeft(`${h}h ${m}m`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [room.expiresAt]);
+
   const { data: myRequest } = useQuery<any>({
     queryKey: ["/api/private-rooms", room.id, "my-request"],
     queryFn: async () => {
@@ -580,6 +595,11 @@ function RoomCard({
             </div>
             <p className="text-xs text-white/50">
               di {ownerName || "Utente"} · {memberCount} membri
+              {timeLeft && (
+                <span className={`ml-1 ${timeLeft === "Scaduta" ? "text-red-400" : "text-amber-400"}`}>
+                  · {timeLeft}
+                </span>
+              )}
             </p>
           </div>
 

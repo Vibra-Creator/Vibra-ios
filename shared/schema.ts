@@ -132,11 +132,12 @@ export const roomMembers = pgTable("room_members", {
 // Stanze private
 export const privateRooms = pgTable("private_rooms", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  ownerId: varchar("owner_id").notNull(), // Chi ha creato la stanza
+  ownerId: varchar("owner_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
   imageUrl: text("image_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
   isActive: boolean("is_active").default(true),
 });
 
