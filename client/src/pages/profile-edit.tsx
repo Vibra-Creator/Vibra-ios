@@ -441,7 +441,7 @@ export default function ProfileEdit() {
   }
 
   return (
-    <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto text-[16px]">
+    <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto text-[16px] relative z-10">
       <div className="fixed inset-0 z-0">
         {step === 1 ? (
           <img src="/backgrounds/vibra-alien-soldier.gif" alt="" className="w-full h-full object-cover" />

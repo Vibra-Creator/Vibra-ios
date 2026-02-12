@@ -159,7 +159,7 @@ export default function PrivateRoomDetail() {
   const pendingOnly = pendingRequests?.filter((r: any) => r.status === "pending") || [];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative z-10">
       <div className="fixed inset-0 z-0">
         <img src="/images/private-rooms-bg.gif" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />

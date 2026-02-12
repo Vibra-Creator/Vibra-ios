@@ -125,7 +125,7 @@ export default function RoomDetail() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative z-10">
       <div className="fixed inset-0 z-0">
         {(() => {
           const bg = ROOM_BACKGROUNDS[roomId || ""] || DEFAULT_BG;

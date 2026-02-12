@@ -232,7 +232,7 @@ export default function Chat() {
   const giftsFromThisUser = receivedGifts.filter(g => g.senderId === otherProfile?.id && g.seen);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative z-10">
       <div className="fixed inset-0 z-0">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src="/backgrounds/5e8d7f392f6b41939b06e7f70a2114dd.mp4_1770326642074.MP4" type="video/mp4" />
