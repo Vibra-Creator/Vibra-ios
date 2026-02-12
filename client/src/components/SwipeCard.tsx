@@ -69,7 +69,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl"
+            className="relative w-full max-w-lg max-h-[95vh] overflow-y-auto rounded-t-2xl pb-8"
             onClick={(e) => e.stopPropagation()}
             data-testid="profile-detail-modal"
           >
