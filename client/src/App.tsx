@@ -1,4 +1,4 @@
-import { useState, useCallback, Component, type ReactNode } from "react";
+import { useState, useCallback, useEffect, Component, type ReactNode } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -81,7 +81,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
 function RedirectHome() {
   const [, setLocation] = useLocation();
-  setLocation("/");
+  useEffect(() => { setLocation("/"); }, []);
   return null;
 }
 
@@ -113,19 +113,19 @@ function AuthenticatedRouter() {
 
 function GuestRedirectHome() {
   const [, setLocation] = useLocation();
-  setLocation("/");
+  useEffect(() => { setLocation("/"); }, []);
   return null;
 }
 
 function GuestRedirectRooms() {
   const [, setLocation] = useLocation();
-  setLocation("/rooms");
+  useEffect(() => { setLocation("/rooms"); }, []);
   return null;
 }
 
 function GuestRedirectPrivateRooms() {
   const [, setLocation] = useLocation();
-  setLocation("/private-rooms");
+  useEffect(() => { setLocation("/private-rooms"); }, []);
   return null;
 }
 
@@ -266,9 +266,14 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <GuestProvider>
-            {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-            <AppContent />
-            <Toaster />
+            {showSplash ? (
+              <SplashScreen onComplete={handleSplashComplete} />
+            ) : (
+              <>
+                <AppContent />
+                <Toaster />
+              </>
+            )}
           </GuestProvider>
         </TooltipProvider>
       </QueryClientProvider>
