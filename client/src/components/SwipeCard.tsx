@@ -3,6 +3,7 @@ import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "
 import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -412,11 +413,20 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 border border-white/20 shadow-2xl"
+                    className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 border border-white/20 shadow-2xl min-w-[200px]"
                     onClick={(e) => e.stopPropagation()}
                     data-testid="rating-selector"
                   >
-                    <p className="text-white/70 text-[10px] mb-2 text-center font-medium">Che impressione ti fa?</p>
+                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
+                      <Avatar className="w-7 h-7 border border-white/20">
+                        <AvatarImage src={profile.imageUrl || undefined} alt={profile.name} />
+                        <AvatarFallback className="bg-primary/30 text-white text-[9px]">{profile.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-white text-[11px] font-semibold leading-tight">{profile.name}, {profile.age}</span>
+                        <span className="text-white/50 text-[9px] leading-tight">Che impressione ti fa?</span>
+                      </div>
+                    </div>
                     <div className="flex flex-col gap-1">
                       {[
                         { value: 1, label: "Preferisco non pronunciarmi" },
