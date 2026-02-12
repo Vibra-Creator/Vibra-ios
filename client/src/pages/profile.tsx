@@ -261,9 +261,11 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 space-y-6"
       >
-        <Button variant="ghost" size="icon" className="text-white bg-black/30 backdrop-blur-sm" onClick={() => setLocation("/")} data-testid="button-back">
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+        <div className="flex justify-start">
+          <Button variant="ghost" size="icon" className="text-white bg-black/30 backdrop-blur-sm" onClick={() => setLocation("/")} data-testid="button-back">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </div>
         <div className="relative">
           <div className="aspect-[4/3] rounded-2xl overflow-hidden">
             <img
