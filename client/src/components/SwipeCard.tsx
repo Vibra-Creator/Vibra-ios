@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -85,11 +85,11 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute top-4 right-4 text-white bg-black/30 backdrop-blur-sm"
+                className="absolute top-4 left-4 text-white bg-black/60 backdrop-blur-md border border-white/20"
                 onClick={onClose}
                 data-testid="button-close-profile-detail"
               >
-                <ChevronDown className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
               </Button>
 
               <div className="absolute bottom-4 left-4 right-4">
@@ -275,12 +275,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const likeOpacity = useTransform(x, [0, 100], [0, 1]);
     const nopeOpacity = useTransform(x, [-100, 0], [1, 0]);
 
+    const isDraggingRef = useRef(false);
+
     const handleDragStart = () => {
+      isDraggingRef.current = true;
       dragDistanceRef.current = 0;
     };
 
     const handleDragEnd = (_: any, info: PanInfo) => {
       dragDistanceRef.current = Math.abs(info.offset.x) + Math.abs(info.offset.y);
+      setTimeout(() => { isDraggingRef.current = false; }, 50);
       if (info.offset.x > 100) {
         setExitX(300);
         setShowRating(false);
@@ -295,7 +299,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     };
 
     const handleImageTap = () => {
-      if (dragDistanceRef.current < 10 && isTop) {
+      if (!isDraggingRef.current && isTop) {
         setShowDetail(true);
       }
     };

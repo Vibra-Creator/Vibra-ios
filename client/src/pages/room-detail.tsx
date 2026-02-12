@@ -29,7 +29,6 @@ export default function RoomDetail() {
   const { user } = useAuth();
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [sendingCount, setSendingCount] = useState(0);
   const [optimisticMessages, setOptimisticMessages] = useState<RoomMessage[]>([]);
 
   const { data: room } = useQuery<Room>({
@@ -40,12 +39,16 @@ export default function RoomDetail() {
   const { data: serverMessages, isLoading } = useQuery<RoomMessage[]>({
     queryKey: ["/api/rooms", roomId, "messages"],
     enabled: !!roomId,
-    refetchInterval: sendingCount > 0 ? false : 3000,
+    refetchInterval: 3000,
   });
 
-  const messages = sendingCount > 0
-    ? [...(serverMessages || []), ...optimisticMessages]
-    : (serverMessages || []);
+  const messages = (() => {
+    const server = serverMessages || [];
+    if (optimisticMessages.length === 0) return server;
+    const serverIds = new Set(server.map(m => m.id));
+    const pending = optimisticMessages.filter(m => !serverIds.has(m.id));
+    return [...server, ...pending];
+  })();
 
   const { data: myProfile } = useQuery<any>({
     queryKey: ["/api/profiles/me"],
@@ -61,7 +64,6 @@ export default function RoomDetail() {
       apiRequest("POST", `/api/rooms/${roomId}/messages`, { content }),
     onMutate: async ({ content, tempId }) => {
       if (!myProfile) return;
-      setSendingCount(c => c + 1);
       const optimisticMsg: RoomMessage = {
         id: tempId,
         roomId: roomId!,
@@ -77,12 +79,9 @@ export default function RoomDetail() {
     onError: (_err, { tempId }) => {
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
-    onSettled: (_data, _error, { tempId }) => {
-      setTimeout(() => {
-        setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
-        queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId, "messages"] });
-        setSendingCount(c => Math.max(0, c - 1));
-      }, 1500);
+    onSuccess: async (_data, { tempId }) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId, "messages"] });
+      setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
   });
 

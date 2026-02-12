@@ -35,7 +35,6 @@ export default function Chat() {
   const [giftAnimation, setGiftAnimation] = useState<{ gift: VirtualGift; senderName: string; message?: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [sendingCount, setSendingCount] = useState(0);
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
 
   const { data: myProfile } = useQuery<Profile | null>({
@@ -46,12 +45,16 @@ export default function Chat() {
   const { data: serverMessages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", matchId],
     enabled: !!matchId && !!myProfile,
-    refetchInterval: sendingCount > 0 ? false : 3000,
+    refetchInterval: 3000,
   });
 
-  const messages = sendingCount > 0
-    ? [...(serverMessages || []), ...optimisticMessages]
-    : (serverMessages || []);
+  const messages = (() => {
+    const server = serverMessages || [];
+    if (optimisticMessages.length === 0) return server;
+    const serverIds = new Set(server.map(m => m.id));
+    const pending = optimisticMessages.filter(m => !serverIds.has(m.id));
+    return [...server, ...pending];
+  })();
 
   const { data: matches, isLoading: matchesLoading } = useQuery<(Match & { profile: Profile })[]>({
     queryKey: ["/api/matches", myProfile?.id],
@@ -103,7 +106,6 @@ export default function Chat() {
     },
     onMutate: async ({ content, tempId }) => {
       if (!myProfile) return;
-      setSendingCount(c => c + 1);
       const optimisticMessage: Message = {
         id: tempId,
         matchId: matchId!,
@@ -118,12 +120,9 @@ export default function Chat() {
     onError: (_err, { tempId }) => {
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
-    onSettled: (_data, _error, { tempId }) => {
-      setTimeout(() => {
-        setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
-        queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
-        setSendingCount(c => Math.max(0, c - 1));
-      }, 1500);
+    onSuccess: async (_data, { tempId }) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
+      setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
   });
 
