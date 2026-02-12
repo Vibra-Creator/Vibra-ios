@@ -5,6 +5,8 @@ import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
+import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile, Match } from "@shared/schema";
 
@@ -14,11 +16,18 @@ export default function Home() {
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  const { isGuest } = useGuest();
+  const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
 
   const { data: myProfile, isLoading: profileLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
+  });
+
+  const { data: guestProfiles, isLoading: guestLoading } = useQuery<Profile[]>({
+    queryKey: ["/api/profiles"],
+    enabled: isGuest,
   });
 
   const { data: profiles, isLoading, error, refetch } = useQuery<Profile[]>({
@@ -30,7 +39,7 @@ export default function Home() {
       if (!res.ok) throw new Error("Failed to fetch profiles");
       return res.json();
     },
-    enabled: !!myProfile,
+    enabled: !!myProfile && !isGuest,
   });
 
   const profileIds = profiles?.map(p => p.id).join(",") || "";
@@ -81,14 +90,19 @@ export default function Home() {
     },
   });
 
-  const availableProfiles = profiles?.filter(p => 
+  const allProfiles = isGuest ? (guestProfiles || []) : (profiles || []);
+  const availableProfiles = allProfiles.filter(p => 
     !swipedProfiles.has(p.id)
-  ) || [];
+  );
   const currentProfile = availableProfiles[0];
   const nextProfile = availableProfiles[1];
 
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
+    if (isGuest) {
+      blockIfGuest(direction === "right" ? "mettere like" : "scartare un profilo");
+      return;
+    }
     
     setSwipedProfiles(prev => {
       const newSet = new Set(prev);
@@ -99,7 +113,7 @@ export default function Home() {
       profileId: currentProfile.id,
       liked: direction === "right",
     });
-  }, [currentProfile, swipeMutation]);
+  }, [currentProfile, swipeMutation, isGuest, blockIfGuest]);
 
   const resetDislikesMutation = useMutation({
     mutationFn: async () => {
@@ -126,7 +140,9 @@ export default function Home() {
     </div>
   );
 
-  if (profileLoading || isLoading) {
+  const loadingState = isGuest ? guestLoading : (profileLoading || isLoading);
+
+  if (loadingState) {
     return (
       <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
@@ -137,7 +153,7 @@ export default function Home() {
     );
   }
 
-  if (!myProfile) {
+  if (!isGuest && !myProfile) {
     return (
       <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
@@ -206,13 +222,17 @@ export default function Home() {
         />
       </div>
 
-      <MatchModal
-        isOpen={showMatch}
-        onClose={() => setShowMatch(false)}
-        matchedProfile={matchedProfile}
-        currentProfile={myProfile}
-        matchId={currentMatchId}
-      />
+      {!isGuest && (
+        <MatchModal
+          isOpen={showMatch}
+          onClose={() => setShowMatch(false)}
+          matchedProfile={matchedProfile}
+          currentProfile={myProfile}
+          matchId={currentMatchId}
+        />
+      )}
+
+      <GuestBlockerModal />
     </div>
   );
 }

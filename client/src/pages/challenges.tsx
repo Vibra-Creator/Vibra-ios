@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
+import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
@@ -23,6 +25,8 @@ function ChallengeSkeleton() {
 
 export default function Challenges() {
   const { user } = useAuth();
+  const { isGuest } = useGuest();
+  const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [uploadingChallengeId, setUploadingChallengeId] = useState<string | null>(null);
@@ -32,19 +36,24 @@ export default function Challenges() {
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
     staleTime: 0,
     refetchOnMount: "always",
   });
 
   const { data: challenges, isLoading } = useQuery<DailyChallenge[]>({
     queryKey: ["/api/challenges"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
+  });
+
+  const { data: guestChallenges, isLoading: guestLoading } = useQuery<DailyChallenge[]>({
+    queryKey: ["/api/guest/challenges"],
+    enabled: isGuest,
   });
 
   const { data: submissions } = useQuery<ChallengeSubmission[]>({
     queryKey: ["/api/challenges/submissions/me"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
   });
 
   const submitMutation = useMutation({
@@ -96,7 +105,9 @@ export default function Challenges() {
     { id: "12", title: "Caffeina Check", description: "Mostraci la tua tazza piu' originale dove bevi il caffe'!", points: 10, isActive: true, imageExample: null },
   ];
 
-  const displayChallenges = challenges?.length ? challenges : defaultChallenges;
+  const activeChallenges = isGuest ? guestChallenges : challenges;
+  const displayChallenges = activeChallenges?.length ? activeChallenges : defaultChallenges;
+  const activeLoading = isGuest ? guestLoading : isLoading;
 
   const challengeBannerConfig: Record<string, { icon: any; gradient: string }> = {
     "Angolo Relax": { icon: Sofa, gradient: "from-teal-200 to-cyan-100" },
@@ -110,6 +121,7 @@ export default function Challenges() {
   };
 
   const handleSelectPhoto = (challengeId: string) => {
+    if (blockIfGuest("partecipare alle sfide")) return;
     setUploadingChallengeId(challengeId);
     fileInputRef.current?.click();
   };
@@ -273,7 +285,7 @@ export default function Challenges() {
         </motion.div>
       )}
 
-      {isLoading ? (
+      {activeLoading ? (
         <ChallengeSkeleton />
       ) : (
         <div className="space-y-4">
@@ -360,6 +372,7 @@ export default function Challenges() {
         </div>
       )}
       </div>
+      <GuestBlockerModal />
     </div>
   );
 }

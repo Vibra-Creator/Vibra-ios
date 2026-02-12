@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield } from "lucide-react";
+import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye } from "lucide-react";
+import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Landing() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  const { enterGuestMode } = useGuest();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -136,6 +139,20 @@ export default function Landing() {
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 px-8 text-lg text-white/90 border-white/30 backdrop-blur-sm"
+                onClick={() => {
+                  enterGuestMode();
+                  setLocation("/");
+                  window.location.reload();
+                }}
+                data-testid="button-guest-explore"
+              >
+                <Eye className="w-5 h-5 mr-2" />
+                Esplora senza account
+              </Button>
             </div>
 
             <div className="mt-8 flex items-center justify-center gap-8 text-base text-white/70 flex-wrap">

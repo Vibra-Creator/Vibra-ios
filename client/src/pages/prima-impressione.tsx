@@ -2,13 +2,16 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Eye, Send, MessageCircle, Star, Sparkles, ChevronRight, Heart } from "lucide-react";
+import { Eye, Send, MessageCircle, Star, Sparkles, ChevronRight, Heart, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
+import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
 import type { Profile, ProfileRating, Match } from "@shared/schema";
 
 type RatingWithRater = ProfileRating & { rater: Profile };
@@ -31,23 +34,25 @@ const ratingEmoji: Record<number, typeof Star> = {
 
 export default function PrimaImpressione() {
   const { user } = useAuth();
+  const { isGuest } = useGuest();
+  const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   const { data: ratings, isLoading } = useQuery<RatingWithRater[]>({
     queryKey: ["/api/ratings/received"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
     refetchInterval: 10000,
   });
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
   });
 
   const { data: myMatches } = useQuery<(Match & { profile: Profile })[]>({
     queryKey: ["/api/matches", myProfile?.id],
-    enabled: !!myProfile,
+    enabled: !!myProfile && !isGuest,
   });
 
   const unreplied = ratings?.filter(r => !r.ratedReply) || [];
@@ -60,6 +65,48 @@ export default function PrimaImpressione() {
     );
     return match?.id || null;
   };
+
+  if (isGuest) {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-4 pt-4 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+              <Eye className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-white" data-testid="text-page-title">Prima Impressione</h1>
+              <p className="text-white/50 text-xs">Scopri cosa pensano gli altri di te</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center max-w-xs">
+            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+              <Eye className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2" data-testid="text-guest-prima-title">Mettiti in Gioco!</h2>
+            <p className="text-white/60 text-sm mb-2" data-testid="text-guest-prima-description">
+              Attiva Prima Impressione e scopri cosa pensano gli altri di te. Chi ti vota potrà anche scriverti un messaggio!
+            </p>
+            <p className="text-white/40 text-xs mb-4">
+              Registrati per attivare questa funzione e iniziare a ricevere voti e messaggi.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link href="/register">
+                <Button className="w-full bg-gradient-to-r from-primary to-accent" data-testid="button-guest-register-prima"
+                  onClick={() => blockIfGuest("votare i profili")}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Registrati Gratis
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+        <GuestBlockerModal />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -17,6 +17,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
+import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PrivateRoom, Profile } from "@shared/schema";
@@ -41,6 +43,8 @@ function PrivateRoomSkeleton() {
 
 export default function PrivateRooms() {
   const { user } = useAuth();
+  const { isGuest } = useGuest();
+  const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -50,7 +54,7 @@ export default function PrivateRooms() {
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
     staleTime: 0,
     refetchOnMount: "always",
   });
@@ -66,7 +70,12 @@ export default function PrivateRooms() {
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
-    enabled: !!user,
+    enabled: !!user && !isGuest,
+  });
+
+  const { data: guestPrivateRooms, isLoading: guestLoading } = useQuery<PrivateRoom[]>({
+    queryKey: ["/api/guest/private-rooms"],
+    enabled: isGuest,
   });
 
   const createRoomMutation = useMutation({
@@ -108,6 +117,7 @@ export default function PrivateRooms() {
   });
 
   const handleCreateRoom = () => {
+    if (blockIfGuest("creare o accedere alle stanze private")) return;
     if (!newRoomName.trim()) {
       toast({ title: "Errore", description: "Inserisci un nome per la stanza", variant: "destructive" });
       return;
@@ -172,8 +182,55 @@ export default function PrivateRooms() {
         </div>
       </motion.div>
 
-      {isLoading ? (
+      {(isGuest ? guestLoading : isLoading) ? (
         <PrivateRoomSkeleton />
+      ) : isGuest ? (
+        <div className="space-y-6">
+          <div className="space-y-3">
+            {(guestPrivateRooms || []).map((room, index) => (
+              <motion.div
+                key={room.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <div
+                  className="rounded-xl backdrop-blur-md bg-white/5 border border-white/10 p-4 cursor-pointer"
+                  onClick={() => blockIfGuest("creare o accedere alle stanze private")}
+                  data-testid={`card-private-room-${room.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10 border border-primary/30">
+                      <AvatarImage src={room.imageUrl || "/images/profile-1.png"} />
+                      <AvatarFallback>{room.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-white truncate">{room.name}</h3>
+                      <p className="text-xs text-white/50">{room.description || "Stanza privata"}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        blockIfGuest("creare o accedere alle stanze private");
+                      }}
+                      data-testid={`button-request-access-guest-${room.id}`}
+                    >
+                      Richiedi
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+            {(!guestPrivateRooms || guestPrivateRooms.length === 0) && (
+              <div className="text-center py-12">
+                <Lock className="w-12 h-12 text-white/30 mx-auto mb-3" />
+                <p className="text-white/50 text-lg">Nessuna stanza privata ancora</p>
+              </div>
+            )}
+          </div>
+        </div>
       ) : searchQuery.trim() ? (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-white/80 flex items-center gap-2">
@@ -287,6 +344,7 @@ export default function PrivateRooms() {
           )}
         </div>
       )}
+      <GuestBlockerModal />
     </div>
   );
 }

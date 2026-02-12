@@ -150,6 +150,42 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/guest/rooms", async (_req, res) => {
+    try {
+      const rooms = await storage.getRooms();
+      res.json(rooms);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rooms" });
+    }
+  });
+
+  app.get("/api/guest/challenges", async (_req, res) => {
+    try {
+      const challenges = await storage.getChallenges();
+      res.json(challenges);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch challenges" });
+    }
+  });
+
+  app.get("/api/guest/private-rooms", async (_req, res) => {
+    try {
+      const rooms = await storage.getPrivateRooms();
+      res.json(rooms);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch private rooms" });
+    }
+  });
+
+  app.get("/api/guest/gifts", async (_req, res) => {
+    try {
+      const gifts = await storage.getVirtualGifts();
+      res.json(gifts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch gifts" });
+    }
+  });
+
   app.delete("/api/swipes/disliked", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;

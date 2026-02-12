@@ -27,6 +27,7 @@ import RoomDetail from "@/pages/room-detail";
 import PrimaImpressione from "@/pages/prima-impressione";
 import Vibing from "@/pages/vibing";
 import { useAuth } from "@/hooks/use-auth";
+import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
@@ -108,6 +109,47 @@ function AuthenticatedRouter() {
   );
 }
 
+function GuestRedirectHome() {
+  const [, setLocation] = useLocation();
+  setLocation("/");
+  return null;
+}
+
+function GuestRedirectRooms() {
+  const [, setLocation] = useLocation();
+  setLocation("/rooms");
+  return null;
+}
+
+function GuestRedirectPrivateRooms() {
+  const [, setLocation] = useLocation();
+  setLocation("/private-rooms");
+  return null;
+}
+
+function GuestRouter() {
+  return (
+    <Switch>
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/" component={Home} />
+      <Route path="/matches" component={Matches} />
+      <Route path="/chat/:matchId" component={GuestRedirectHome} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/rooms" component={Rooms} />
+      <Route path="/room/:roomId" component={GuestRedirectRooms} />
+      <Route path="/challenges" component={Challenges} />
+      <Route path="/private-rooms" component={PrivateRooms} />
+      <Route path="/private-room/:roomId" component={GuestRedirectPrivateRooms} />
+      <Route path="/prima-impressione" component={PrimaImpressione} />
+      <Route path="/vibing" component={Vibing} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
 function UnauthenticatedRouter() {
   return (
     <Switch>
@@ -123,17 +165,66 @@ function UnauthenticatedRouter() {
 
 const pagesWithOwnBackground = ["/login", "/register", "/", "/privacy", "/terms"];
 
+function GuestBanner() {
+  const { exitGuestMode } = useGuest();
+  const [, setLocation] = useLocation();
+
+  return (
+    <div className="sticky top-0 z-50 w-full bg-gradient-to-r from-primary/90 to-accent/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between gap-2" data-testid="guest-banner">
+      <span className="text-xs text-white font-medium truncate">
+        Modalità Ospite — solo visualizzazione
+      </span>
+      <Button
+        size="sm"
+        variant="outline"
+        className="text-xs text-white border-white/40 shrink-0"
+        onClick={() => {
+          exitGuestMode();
+          setLocation("/register");
+          window.location.reload();
+        }}
+        data-testid="button-guest-register-banner"
+      >
+        Registrati
+      </Button>
+    </div>
+  );
+}
+
 function AppContent() {
   const [location] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { isGuest } = useGuest();
   const isPublicPage = publicPages.includes(location);
-  const hideVideoBackground = pagesWithOwnBackground.includes(location) || !isAuthenticated;
+  const guestPublicPages = ["/login", "/register", "/privacy", "/terms"];
+  const isGuestPublicPage = guestPublicPages.includes(location);
+  const hideVideoBackground = pagesWithOwnBackground.includes(location) || (!isAuthenticated && !isGuest);
 
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
       </div>
+    );
+  }
+
+  if (isGuest && !isAuthenticated) {
+    if (isGuestPublicPage) {
+      return <UnauthenticatedRouter />;
+    }
+
+    return (
+      <>
+        <VideoBackground fallbackGradient={true} />
+        <div className="h-full flex flex-col overflow-hidden">
+          <GuestBanner />
+          <Header />
+          <main className="flex-1 flex flex-col overflow-hidden">
+            <GuestRouter />
+          </main>
+          <BottomNav />
+        </div>
+      </>
     );
   }
 
@@ -172,9 +263,11 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-          <AppContent />
-          <Toaster />
+          <GuestProvider>
+            {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+            <AppContent />
+            <Toaster />
+          </GuestProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

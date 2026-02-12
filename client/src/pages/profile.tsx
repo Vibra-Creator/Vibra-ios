@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,8 +18,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
+import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
 import type { Profile, Match, SentGift, VirtualGift } from "@shared/schema";
 
 function ProfileSkeleton() {
@@ -144,11 +147,51 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
   );
 }
 
-export default function Profile() {
+export default function ProfilePage() {
   const [, setLocation] = useLocation();
   const { user, logout, isLoggingOut } = useAuth();
+  const { isGuest } = useGuest();
+  const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  if (isGuest) {
+    return (
+      <div className="relative">
+        <ProfileBackground />
+        <div className="relative z-10 flex-1 flex items-center justify-center p-4 min-h-[60vh]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center max-w-sm"
+          >
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center"
+                 style={{ boxShadow: "var(--glow-primary)" }}>
+              <User className="w-12 h-12 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2" data-testid="text-guest-profile-title">Crea il Tuo Profilo</h2>
+            <p className="text-white/60 mb-6" data-testid="text-guest-profile-description">
+              Crea il tuo profilo per personalizzare la tua esperienza. Mostra chi sei, i tuoi interessi e trova le tue connessioni cosmiche!
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link href="/register">
+                <Button className="w-full bg-gradient-to-r from-primary to-accent" data-testid="button-guest-register-profile">
+                  <UserPlus className="w-5 h-5 mr-2" />
+                  Registrati Gratis
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button variant="outline" className="w-full" data-testid="button-guest-login-profile">
+                  Ho già un account
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+        <GuestBlockerModal />
+      </div>
+    );
+  }
 
   const deleteProfileMutation = useMutation({
     mutationFn: async () => {

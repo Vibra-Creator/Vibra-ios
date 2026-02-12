@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, Shield } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, Shield, Binoculars } from "lucide-react";
+import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { enterGuestMode } = useGuest();
 
   const isAdminLogin = new URLSearchParams(window.location.search).get("admin") === "true";
 
@@ -165,6 +167,26 @@ export default function Login() {
                 Registrati
               </Link>
             </p>
+
+            <div className="relative flex items-center gap-3 pt-2">
+              <div className="flex-1 h-px bg-white/20" />
+              <span className="text-xs text-white/40">oppure</span>
+              <div className="flex-1 h-px bg-white/20" />
+            </div>
+
+            <Button
+              variant="ghost"
+              className="w-full text-white/70 border border-white/15"
+              onClick={() => {
+                enterGuestMode();
+                setLocation("/");
+                window.location.reload();
+              }}
+              data-testid="button-guest-explore-login"
+            >
+              <Binoculars className="w-4 h-4 mr-2" />
+              Esplora senza registrarti
+            </Button>
           </CardContent>
         </Card>
 

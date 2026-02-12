@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
+import { useGuestBlocker } from "@/components/GuestBlocker";
 import type { Room } from "@shared/schema";
 
 const ROOM_BANNERS: Record<string, string> = {
@@ -32,10 +34,17 @@ function RoomSkeleton() {
 export default function Rooms() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { isGuest } = useGuest();
+  const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
 
   const { data: rooms, isLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
+  });
+
+  const { data: guestRooms, isLoading: guestLoading } = useQuery<Room[]>({
+    queryKey: ["/api/guest/rooms"],
+    enabled: isGuest,
   });
 
   const defaultRooms = [
@@ -49,7 +58,9 @@ export default function Rooms() {
     { id: "8", name: "Ti va un caffè in amicizia", interest: "Caffè in Amicizia", description: "Un caffè cosmico tra amici, senza impegno", memberCount: 27 },
   ];
 
-  const displayRooms = rooms?.length ? rooms : defaultRooms;
+  const activeRooms = isGuest ? guestRooms : rooms;
+  const displayRooms = activeRooms?.length ? activeRooms : defaultRooms;
+  const activeLoading = isGuest ? guestLoading : isLoading;
 
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto">
@@ -76,7 +87,7 @@ export default function Rooms() {
         </div>
       </motion.div>
 
-      {isLoading ? (
+      {activeLoading ? (
         <RoomSkeleton />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -91,7 +102,10 @@ export default function Rooms() {
               >
                 <div
                   className="rounded-xl overflow-hidden cursor-pointer group shadow-md hover-elevate backdrop-blur-md bg-white/5 border border-white/10"
-                  onClick={() => setLocation(`/room/${room.id}`)}
+                  onClick={() => {
+                    if (blockIfGuest("entrare nelle stanze")) return;
+                    setLocation(`/room/${room.id}`);
+                  }}
                   data-testid={`card-room-${room.id}`}
                 >
                   <div className="relative h-36">
@@ -127,6 +141,7 @@ export default function Rooms() {
           })}
         </div>
       )}
+      <GuestBlockerModal />
     </div>
   );
 }

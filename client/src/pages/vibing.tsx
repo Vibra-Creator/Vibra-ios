@@ -8,6 +8,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
+import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Profile, VibingSession } from "@shared/schema";
@@ -22,6 +24,8 @@ type NearbyVber = VibingSession & { profile: Profile };
 
 export default function Vibing() {
   const { user } = useAuth();
+  const { isGuest } = useGuest();
+  const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [radiusKm, setRadiusKm] = useState(5);
@@ -31,12 +35,12 @@ export default function Vibing() {
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
   });
 
   const { data: vibeStatus, isLoading: statusLoading } = useQuery<VibeStatus>({
     queryKey: ["/api/vibe/status"],
-    enabled: !!user,
+    enabled: !!user && !isGuest,
     refetchInterval: 10000,
   });
 
@@ -46,10 +50,10 @@ export default function Vibing() {
     refetchInterval: 8000,
   });
 
-  const isActive = vibeStatus?.active === true;
+  const isActiveStatus = vibeStatus?.active === true;
 
   useEffect(() => {
-    if (!isActive || !vibeStatus?.remainingMs) return;
+    if (!isActiveStatus || !vibeStatus?.remainingMs) return;
 
     const targetEnd = Date.now() + vibeStatus.remainingMs;
 
@@ -67,7 +71,7 @@ export default function Vibing() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isActive, vibeStatus?.remainingMs]);
+  }, [isActiveStatus, vibeStatus?.remainingMs]);
 
   const activateMutation = useMutation({
     mutationFn: async (coords: { latitude: number; longitude: number }) => {
@@ -97,6 +101,7 @@ export default function Vibing() {
   });
 
   const handleActivate = useCallback(() => {
+    if (blockIfGuest("attivare il vibing")) return;
     setGeoError(null);
     setLocating(true);
 
@@ -131,7 +136,7 @@ export default function Vibing() {
     );
   }, [radiusKm, activateMutation]);
 
-  if (statusLoading) {
+  if (statusLoading && !isGuest) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-12 h-12 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin" />
@@ -139,7 +144,7 @@ export default function Vibing() {
     );
   }
 
-  if (!myProfile) {
+  if (!myProfile && !isGuest) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center">
@@ -152,6 +157,8 @@ export default function Vibing() {
       </div>
     );
   }
+
+  const isActive = isGuest ? false : vibeStatus?.active === true;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -376,6 +383,7 @@ export default function Vibing() {
           </motion.div>
         )}
       </AnimatePresence>
+      <GuestBlockerModal />
     </div>
   );
 }
