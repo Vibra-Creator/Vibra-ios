@@ -391,31 +391,31 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 </div>
               </div>
             </div>
-
-            {profile.ratingEnabled && isTop && !showRating && (
-              <div
-                className="absolute top-4 left-4 z-10"
-                onPointerDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-              >
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold shadow-lg border border-white/20"
-                  data-testid={`button-rate-${profile.id}`}
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span className="flex flex-col items-start leading-tight">
-                    <span>Prima Impressione</span>
-                    <span className="text-[9px] font-normal text-white/70">Digli cosa pensi!</span>
-                  </span>
-                </motion.button>
-              </div>
-            )}
           </div>
         </motion.div>
+
+        {profile.ratingEnabled && isTop && !showRating && (
+          <motion.div
+            className="absolute top-4 left-4 z-30 pointer-events-auto"
+            style={{ x, rotate, opacity }}
+          >
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold shadow-lg border border-white/20"
+              style={{ touchAction: "none" }}
+              data-testid={`button-rate-${profile.id}`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="flex flex-col items-start leading-tight">
+                <span>Prima Impressione</span>
+                <span className="text-[9px] font-normal text-white/70">Digli cosa pensi!</span>
+              </span>
+            </motion.button>
+          </motion.div>
+        )}
 
         <AnimatePresence>
           {showRating && profile.ratingEnabled && isTop && (
@@ -423,29 +423,30 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 flex items-start justify-start p-4"
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4"
               onClick={() => { setShowRating(false); setSelectedRating(null); }}
               data-testid="rating-overlay"
             >
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
               <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="bg-black/90 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl min-w-[220px]"
+                className="relative bg-black/95 backdrop-blur-xl rounded-2xl p-5 border border-white/20 shadow-2xl w-full max-w-[320px]"
                 onClick={(e) => e.stopPropagation()}
                 data-testid="rating-selector"
               >
-                <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-white/10">
-                  <Avatar className="w-9 h-9 border border-white/20">
+                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
+                  <Avatar className="w-12 h-12 border-2 border-primary/50">
                     <AvatarImage src={profile.imageUrl || undefined} alt={profile.name} />
-                    <AvatarFallback className="bg-primary/30 text-white text-xs">{profile.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="bg-primary/30 text-white text-sm">{profile.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <span className="text-white text-sm font-semibold leading-tight">{profile.name}, {profile.age}</span>
-                    <span className="text-white/50 text-[10px] leading-tight">Che impressione ti fa?</span>
+                    <span className="text-white text-base font-semibold leading-tight">{profile.name}, {profile.age}</span>
+                    <span className="text-white/50 text-xs leading-tight mt-0.5">Che impressione ti fa?</span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   {[
                     { value: 1, label: "Preferisco non pronunciarmi" },
                     { value: 2, label: "Non sei il mio tipo" },
@@ -456,22 +457,22 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <button
                       key={opt.value}
                       onClick={() => setSelectedRating(opt.value)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all text-left ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left ${
                         selectedRating === opt.value
-                          ? "bg-primary text-white"
-                          : "bg-white/10 text-white/80 active:bg-white/30"
+                          ? "bg-primary text-white ring-2 ring-primary/50"
+                          : "bg-white/10 text-white/80 active:bg-white/20"
                       }`}
                       data-testid={`rating-${opt.value}`}
                     >
-                      <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center shrink-0 text-[10px]">{opt.value}</span>
+                      <span className="w-7 h-7 rounded-full border-2 border-current flex items-center justify-center shrink-0 text-xs font-bold">{opt.value}</span>
                       <span className="leading-tight">{opt.label}</span>
                     </button>
                   ))}
                 </div>
-                <div className="flex gap-2 mt-3">
+                <div className="flex gap-3 mt-4">
                   <button
                     onClick={() => { setShowRating(false); setSelectedRating(null); }}
-                    className="flex-1 py-2 rounded-lg bg-white/10 text-white/60 text-xs font-medium active:bg-white/20"
+                    className="flex-1 py-3 rounded-xl bg-white/10 text-white/60 text-sm font-medium active:bg-white/20"
                     data-testid="button-cancel-rating"
                   >
                     Annulla
@@ -479,10 +480,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   <button
                     onClick={() => { if (selectedRating) ratingMutation.mutate(selectedRating); }}
                     disabled={!selectedRating || ratingMutation.isPending || ratingSubmitted}
-                    className="flex-1 py-2 rounded-lg bg-primary text-white text-xs font-medium disabled:opacity-50 active:bg-primary/80"
+                    className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-50 active:bg-primary/80"
                     data-testid="button-submit-rating"
                   >
-                    {ratingSubmitted ? "Inviato!" : ratingMutation.isPending ? "..." : "Invia"}
+                    {ratingSubmitted ? "Inviato!" : ratingMutation.isPending ? "..." : "Invia Voto"}
                   </button>
                 </div>
               </motion.div>
