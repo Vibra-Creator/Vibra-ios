@@ -41,16 +41,16 @@ export function BottomNav() {
   const unrepliedRatingCount = ratingCount?.count || 0;
 
   const navItems = [
-    { path: "/", icon: Home, label: "Scopri", badge: 0 },
-    { path: "/matches", icon: Heart, label: "Match", badge: 0 },
-    { path: "/rooms", icon: Users, label: "Stanze", badge: 0 },
-    { path: "/challenges", icon: Trophy, label: "Sfide", badge: 0 },
-    { path: "/vibing", icon: Zap, label: "Vibing", badge: 0 },
-    { path: "/dove-sei", icon: MapPin, label: "Dove Sei", badge: 0 },
-    { path: "/private-rooms", icon: Lock, label: "Private", badge: pendingRoomCount },
-    { path: "/prima-impressione", icon: Eye, label: "Impression", badge: unrepliedRatingCount },
-    { path: "/profile", icon: User, label: "Profilo", badge: 0 },
-    ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin", badge: 0 }] : []),
+    { path: "/", icon: Home, label: "Scopri", badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
+    { path: "/matches", icon: Heart, label: "Match", badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
+    { path: "/rooms", icon: Users, label: "Stanze", badge: 0, color: "text-cyan-400", activeBg: "bg-cyan-600" },
+    { path: "/challenges", icon: Trophy, label: "Sfide", badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
+    { path: "/vibing", icon: Zap, label: "Vibing", badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
+    { path: "/dove-sei", icon: MapPin, label: "Dove Sei", badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
+    { path: "/private-rooms", icon: Lock, label: "Private", badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
+    { path: "/prima-impressione", icon: Eye, label: "Impression", badge: unrepliedRatingCount, color: "text-rose-400", activeBg: "bg-rose-500" },
+    { path: "/profile", icon: User, label: "Profilo", badge: 0, color: "text-emerald-400", activeBg: "bg-emerald-500" },
+    ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin", badge: 0, color: "text-red-400", activeBg: "bg-red-500" }] : []),
   ];
 
   const topRow = navItems.slice(0, 5);
@@ -67,10 +67,10 @@ export function BottomNav() {
         >
           <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
             isActive
-              ? "bg-primary text-white"
-              : "text-white/60"
+              ? `${item.activeBg} text-white shadow-lg`
+              : ""
           }`}>
-            <item.icon className="w-5 h-5" />
+            <item.icon className={`w-5 h-5 ${isActive ? "text-white" : item.color}`} />
             {item.badge > 0 && (
               <span
                 className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1"
@@ -80,7 +80,7 @@ export function BottomNav() {
               </span>
             )}
           </div>
-          <span className={`text-[10px] leading-tight ${isActive ? "text-white font-medium" : "text-white/50"}`}>
+          <span className={`text-[10px] leading-tight ${isActive ? "text-white font-semibold" : "text-white/60"}`}>
             {item.label}
           </span>
         </motion.div>
