@@ -40,6 +40,7 @@ export default function Login() {
       }
 
       const userData = await res.json();
+      sessionStorage.removeItem("vibra-guest-mode");
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
 
       if (isAdminLogin && userData.user?.isAdmin) {

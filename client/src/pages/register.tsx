@@ -58,6 +58,7 @@ export default function Register() {
         throw new Error(data.message || "Impossibile creare l'account");
       }
 
+      sessionStorage.removeItem("vibra-guest-mode");
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Benvenuto su Vibra!",

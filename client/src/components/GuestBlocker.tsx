@@ -4,6 +4,7 @@ import { Lock, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useGuest } from "@/hooks/use-guest";
+import { useAuth } from "@/hooks/use-auth";
 
 interface GuestBlockerProps {
   show: boolean;
@@ -82,11 +83,12 @@ export function GuestBlocker({ show, onClose, action }: GuestBlockerProps) {
 
 export function useGuestBlocker() {
   const { isGuest } = useGuest();
+  const { isAuthenticated } = useAuth();
   const [showBlocker, setShowBlocker] = useState(false);
   const [blockerAction, setBlockerAction] = useState<string | undefined>();
 
   const blockIfGuest = (action?: string): boolean => {
-    if (isGuest) {
+    if (isGuest && !isAuthenticated) {
       setBlockerAction(action);
       setShowBlocker(true);
       return true;
