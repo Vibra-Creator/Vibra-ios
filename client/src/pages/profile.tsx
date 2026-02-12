@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +18,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
@@ -120,10 +130,10 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
           <Eye className={`w-7 h-7 transition-colors ${profile.ratingEnabled ? "text-primary" : "text-white/50"}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`font-extrabold text-lg tracking-wide mb-1 transition-colors drop-shadow-lg ${profile.ratingEnabled ? "text-white" : "text-white/90"}`}>
+          <p className={`font-extrabold text-xl tracking-wide mb-1 transition-colors drop-shadow-lg ${profile.ratingEnabled ? "text-white" : "text-white/90"}`}>
             Prima Impressione
           </p>
-          <p className={`text-sm leading-relaxed font-medium ${profile.ratingEnabled ? "text-white/80" : "text-white/60"}`}>
+          <p className={`text-sm leading-relaxed font-semibold ${profile.ratingEnabled ? "text-white/90" : "text-white/70"}`}>
             {profile.ratingEnabled
               ? "Sei in gioco! Gli altri possono votarti e iniziare a chattare con te"
               : "Mettiti in gioco! Attiva e scopri cosa pensano gli altri di te. Chi ti vota potrà scriverti"}
@@ -144,6 +154,139 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
         </div>
       )}
     </button>
+  );
+}
+
+function ChangePasswordDialog() {
+  const [open, setOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const { toast } = useToast();
+
+  const changeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/auth/change-password", {
+        currentPassword,
+        newPassword,
+      });
+      return (res as Response).json();
+    },
+    onSuccess: () => {
+      toast({ title: "Password aggiornata!", description: "La tua password è stata cambiata con successo." });
+      setOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: any) => {
+      toast({ title: "Errore", description: err.message || "Non è stato possibile cambiare la password.", variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({ title: "Campi mancanti", description: "Compila tutti i campi.", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({ title: "Password troppo corta", description: "La nuova password deve avere almeno 8 caratteri.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Le password non corrispondono", description: "Controlla che le due password siano uguali.", variant: "destructive" });
+      return;
+    }
+    changeMutation.mutate();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); } }}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-3"
+          data-testid="button-change-password"
+        >
+          <Lock className="w-5 h-5" />
+          Cambia Password
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-card border-border">
+        <DialogHeader>
+          <DialogTitle>Cambia Password</DialogTitle>
+          <DialogDescription>
+            Inserisci la tua password attuale e scegli una nuova password.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Password Attuale</label>
+            <div className="relative">
+              <Input
+                type={showCurrent ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="La tua password attuale"
+                data-testid="input-current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                data-testid="button-toggle-current-password"
+              >
+                {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Nuova Password</label>
+            <div className="relative">
+              <Input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimo 8 caratteri"
+                data-testid="input-new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                data-testid="button-toggle-new-password"
+              >
+                {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Conferma Nuova Password</label>
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ripeti la nuova password"
+              data-testid="input-confirm-password"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel-password">
+            Annulla
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={changeMutation.isPending}
+            data-testid="button-submit-password"
+          >
+            {changeMutation.isPending ? "Aggiornamento..." : "Cambia Password"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -383,6 +526,7 @@ export default function ProfilePage() {
             <Settings className="w-5 h-5" />
             Impostazioni
           </Button>
+          <ChangePasswordDialog />
           <Button 
             variant="outline" 
             className="w-full justify-start gap-3 text-red-400 border-red-400/30 hover:text-red-300"

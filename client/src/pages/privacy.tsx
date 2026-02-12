@@ -103,7 +103,7 @@ export default function Privacy() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">8. Contatti</h2>
               <p>
-                Per domande sulla privacy, contattaci a: privacy@vibra.app
+                Per domande sulla privacy, contattaci a: privacyvibra@gmail.com
               </p>
             </section>
 

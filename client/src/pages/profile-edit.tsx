@@ -113,7 +113,7 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
           <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{label}</FormLabel>
           <Select onValueChange={field.onChange} value={field.value}>
             <FormControl>
-              <SelectTrigger className="bg-white/10 backdrop-blur-sm border-white/20 text-white" data-testid={testId}>
+              <SelectTrigger className="bg-white/15 backdrop-blur-md border-white/25 text-white" data-testid={testId}>
                 <SelectValue placeholder={placeholder || "Seleziona"} />
               </SelectTrigger>
             </FormControl>
@@ -606,7 +606,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Nome</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" placeholder="Il tuo nome" {...field} data-testid="input-name" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" placeholder="Il tuo nome" {...field} data-testid="input-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -619,7 +619,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -652,7 +652,7 @@ export default function ProfileEdit() {
                             <FormControl>
                               <div className="relative">
                                 <Input
-                                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
                                   placeholder="Cerca la tua citta..."
                                   value={citySearch}
                                   onChange={(e) => {
@@ -708,7 +708,7 @@ export default function ProfileEdit() {
                             <FormItem className="w-[140px]">
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="bg-white/10 backdrop-blur-sm border-white/20 text-white" data-testid="select-phone-prefix">
+                                  <SelectTrigger className="bg-white/15 backdrop-blur-md border-white/25 text-white" data-testid="select-phone-prefix">
                                     <SelectValue placeholder="+39" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -731,7 +731,7 @@ export default function ProfileEdit() {
                             <FormItem className="flex-1">
                               <FormControl>
                                 <Input
-                                  className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
                                   type="tel"
                                   placeholder="Numero di telefono"
                                   {...field}
@@ -768,7 +768,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Altezza (cm)</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -792,7 +792,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Min. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -805,7 +805,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Max. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -820,7 +820,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Min. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -833,7 +833,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Max. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1007,7 +1007,7 @@ export default function ProfileEdit() {
                           <FormControl>
                             <Textarea
                               placeholder="Racconta qualcosa di te..."
-                              className="resize-none min-h-[120px] bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+                              className="resize-none min-h-[120px] bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
                               {...field}
                               data-testid="input-bio"
                             />
@@ -1055,7 +1055,7 @@ export default function ProfileEdit() {
                         placeholder="Cerca interessi..."
                         value={interestSearch}
                         onChange={(e) => setInterestSearch(e.target.value)}
-                        className="pl-9 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+                        className="pl-9 bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
                         data-testid="input-search-interests"
                       />
                     </div>

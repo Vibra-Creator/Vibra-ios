@@ -90,23 +90,60 @@ export async function setupAuth(app: Express) {
       const user = await authStorage.getUserByEmail(trimmedEmail);
       
       if (!user) {
-        return res.status(401).json({ message: "Nessun account trovato con questa email", debug: { emailSent: trimmedEmail } });
+        return res.status(401).json({ message: "Email o password non corretti" });
       }
       
       if (!user.password) {
-        return res.status(401).json({ message: "Account senza password. Usa 'Registrati' per impostarne una.", debug: { emailFound: user.email, hasPassword: false } });
+        return res.status(401).json({ message: "Email o password non corretti" });
       }
 
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
-        return res.status(401).json({ message: `Password non corretta (lunghezza ricevuta: ${password.length})`, debug: { emailFound: user.email, passwordLength: password.length } });
+        return res.status(401).json({ message: "Email o password non corretti" });
       }
 
       (req.session as any).userId = user.id;
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
     } catch (error: any) {
       console.error("Login error:", error);
-      res.status(500).json({ message: "Errore server durante l'accesso", debug: { error: error.message } });
+      res.status(500).json({ message: "Errore server durante l'accesso" });
+    }
+  });
+
+  app.post("/api/auth/change-password", async (req, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Non autenticato" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Password attuale e nuova password sono obbligatorie" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "La nuova password deve avere almeno 8 caratteri" });
+      }
+
+      const user = await authStorage.getUser(userId);
+      if (!user || !user.password) {
+        return res.status(400).json({ message: "Account non trovato o senza password" });
+      }
+
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ message: "La password attuale non è corretta" });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await authStorage.updateUserPassword(userId, hashedPassword);
+
+      res.json({ message: "Password aggiornata con successo" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({ message: "Errore durante il cambio password" });
     }
   });
 

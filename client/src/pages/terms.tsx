@@ -123,7 +123,7 @@ export default function Terms() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">10. Contatti</h2>
               <p>
-                Per domande sui Termini di Servizio, contattaci a: legal@vibra.app
+                Per domande sui Termini di Servizio, contattaci a: privacyvibra@gmail.com
               </p>
             </section>
 
