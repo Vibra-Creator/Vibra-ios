@@ -186,14 +186,17 @@ function VoterBanner({ rating, myProfileId, index }: { rating: RatingWithRater; 
     mutationFn: async (reply: string) => {
       return apiRequest("POST", `/api/ratings/${rating.id}/reply`, { reply });
     },
-    onSuccess: (data: any) => {
-      toast({ title: "Chat aperta!", description: `Conversazione con ${rating.rater.name} avviata.` });
-      queryClient.invalidateQueries({ queryKey: ["/api/ratings/received"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/ratings/count"] });
+    onSuccess: async (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfileId] });
+      await new Promise(resolve => setTimeout(resolve, 200));
       if (data.match?.id) {
-        setTimeout(() => setLocation(`/chat/${data.match.id}`), 800);
+        setLocation(`/chat/${data.match.id}`);
       }
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/ratings/received"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/ratings/count"] });
+      }, 500);
+      toast({ title: "Chat aperta!", description: `Conversazione con ${rating.rater.name} avviata.` });
     },
     onError: () => {
       toast({ title: "Errore", description: "Non è stato possibile inviare il messaggio.", variant: "destructive" });

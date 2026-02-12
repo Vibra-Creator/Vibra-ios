@@ -53,7 +53,7 @@ export default function Chat() {
     ? [...(serverMessages || []), ...optimisticMessages]
     : (serverMessages || []);
 
-  const { data: matches } = useQuery<(Match & { profile: Profile })[]>({
+  const { data: matches, isLoading: matchesLoading } = useQuery<(Match & { profile: Profile })[]>({
     queryKey: ["/api/matches", myProfile?.id],
     enabled: !!myProfile,
   });
@@ -164,10 +164,18 @@ export default function Chat() {
     return groups;
   };
 
-  if (!otherProfile && !messagesLoading) {
+  if (!otherProfile && !messagesLoading && !matchesLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <p className="text-white/60">Chat non trovata</p>
+      </div>
+    );
+  }
+
+  if (!otherProfile && (messagesLoading || matchesLoading)) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
   }
