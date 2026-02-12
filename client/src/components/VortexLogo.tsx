@@ -33,6 +33,8 @@ export function VortexLogo({ size = "sm", className = "" }: VortexLogoProps) {
           height: "100%",
           objectFit: "contain",
           display: "block",
+          mixBlendMode: "screen",
+          borderRadius: "50%",
         }}
       />
     </div>

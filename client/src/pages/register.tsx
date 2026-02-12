@@ -97,7 +97,7 @@ export default function Register() {
         className="relative z-10 w-full max-w-md"
       >
         <div className="flex flex-col items-center mb-6">
-          <img src={vibraLogo} alt="Vibra" className="w-28 h-28 object-contain" data-testid="vibra-logo-register" />
+          <img src={vibraLogo} alt="Vibra" className="w-28 h-28 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-register" />
           <p className="text-white/70 mt-1">Crea il tuo account</p>
         </div>
 

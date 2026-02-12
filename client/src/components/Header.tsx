@@ -11,7 +11,7 @@ export function Header() {
       <div className="flex items-center justify-center px-4 py-3 bg-black/30 backdrop-blur-xl border-b border-white/10">
         <Link href="/" data-testid="link-home">
           <div className="flex items-center gap-2">
-            <img src={vibraLogo} alt="Vibra" className="w-10 h-10 object-contain" data-testid="vibra-logo-header" />
+            <img src={vibraLogo} alt="Vibra" className="w-10 h-10 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
           </div>
         </Link>
       </div>

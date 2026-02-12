@@ -32,8 +32,8 @@ export default function Consent() {
           <img
             src="/images/logo-vibra.png"
             alt="Vibra"
-            className="w-28 mx-auto mb-4"
-            style={{ filter: "drop-shadow(0 0 30px rgba(139, 92, 246, 0.5))" }}
+            className="w-28 mx-auto mb-4 rounded-full"
+            style={{ filter: "drop-shadow(0 0 30px rgba(139, 92, 246, 0.5))", mixBlendMode: "screen" }}
           />
           <h1 className="text-2xl font-bold text-white mb-1" data-testid="text-consent-title">
             Vibra

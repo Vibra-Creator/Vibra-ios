@@ -92,7 +92,7 @@ export default function Landing() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={vibraLogo} alt="Vibra" className="w-10 h-10 object-contain" data-testid="vibra-logo-header" />
+            <img src={vibraLogo} alt="Vibra" className="w-10 h-10 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
           </div>
           
           <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
@@ -117,7 +117,7 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
           >
             <div className="mx-auto mb-6 flex justify-center">
-              <img src={vibraLogo} alt="Vibra" className="w-36 h-36 object-contain" data-testid="vibra-logo-hero" />
+              <img src={vibraLogo} alt="Vibra" className="w-36 h-36 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-hero" />
             </div>
             
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">

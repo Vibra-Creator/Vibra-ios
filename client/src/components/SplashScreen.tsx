@@ -198,6 +198,8 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               width: "200px",
               height: "200px",
               objectFit: "contain",
+              borderRadius: "50%",
+              mixBlendMode: "screen" as const,
               opacity: stage === "logo" && logoPhase >= 1 ? 1 : 0,
               transform: stage === "logo" && logoPhase >= 1 ? "scale(1)" : "scale(0.3)",
               transition: "all 1s cubic-bezier(0.34, 1.56, 0.64, 1)",
