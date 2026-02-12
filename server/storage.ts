@@ -10,13 +10,17 @@ import {
   type Report, type UserSuspension, type BannedWord,
   type ProfileRating,
   type VibingSession,
+  type BlockedUser,
+  type LocationShare,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
   virtualGifts, sentGifts,
   reports, userSuspensions, bannedWords,
   profileRatings,
-  vibingSessions
+  vibingSessions,
+  blockedUsers,
+  locationShares
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql } from "drizzle-orm";
@@ -123,6 +127,19 @@ export interface IStorage {
   deactivateVibing(profileId: string): Promise<void>;
   getActiveVibingSession(profileId: string): Promise<VibingSession | undefined>;
   getNearbyVibers(lat: number, lng: number, radiusKm: number, excludeProfileId: string): Promise<(VibingSession & { profile: Profile })[]>;
+
+  // Blocked users
+  blockUser(blockerId: string, blockedId: string): Promise<BlockedUser>;
+  unblockUser(blockerId: string, blockedId: string): Promise<void>;
+  getBlockedUsers(blockerId: string): Promise<BlockedUser[]>;
+  isBlocked(blockerId: string, blockedId: string): Promise<boolean>;
+  getBlockedIds(profileId: string): Promise<string[]>;
+
+  // Location sharing
+  updateLocationShare(profileId: string, lat: number, lng: number): Promise<LocationShare>;
+  deactivateLocationShare(profileId: string): Promise<void>;
+  getLocationShare(profileId: string): Promise<LocationShare | undefined>;
+  getMatchLocationShares(profileId: string): Promise<(LocationShare & { profile: Profile })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -722,6 +739,91 @@ export class DatabaseStorage implements IStorage {
     const profileMap = new Map(nearbyProfiles.map(p => [p.id, p]));
 
     return nearbySessions
+      .filter(s => profileMap.has(s.profileId))
+      .map(s => ({ ...s, profile: profileMap.get(s.profileId)! }));
+  }
+  async blockUser(blockerId: string, blockedId: string): Promise<BlockedUser> {
+    const existing = await db.select().from(blockedUsers)
+      .where(and(eq(blockedUsers.blockerId, blockerId), eq(blockedUsers.blockedId, blockedId)));
+    if (existing.length > 0) return existing[0];
+    const [block] = await db.insert(blockedUsers).values({ blockerId, blockedId }).returning();
+    return block;
+  }
+
+  async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+    await db.delete(blockedUsers)
+      .where(and(eq(blockedUsers.blockerId, blockerId), eq(blockedUsers.blockedId, blockedId)));
+  }
+
+  async getBlockedUsers(blockerId: string): Promise<BlockedUser[]> {
+    return db.select().from(blockedUsers).where(eq(blockedUsers.blockerId, blockerId));
+  }
+
+  async isBlocked(blockerId: string, blockedId: string): Promise<boolean> {
+    const [block] = await db.select().from(blockedUsers)
+      .where(and(eq(blockedUsers.blockerId, blockerId), eq(blockedUsers.blockedId, blockedId)));
+    return !!block;
+  }
+
+  async getBlockedIds(profileId: string): Promise<string[]> {
+    const blocks = await db.select().from(blockedUsers)
+      .where(or(eq(blockedUsers.blockerId, profileId), eq(blockedUsers.blockedId, profileId)));
+    const ids = new Set<string>();
+    blocks.forEach(b => {
+      if (b.blockerId === profileId) ids.add(b.blockedId);
+      else ids.add(b.blockerId);
+    });
+    return Array.from(ids);
+  }
+
+  async updateLocationShare(profileId: string, lat: number, lng: number): Promise<LocationShare> {
+    const existing = await db.select().from(locationShares).where(eq(locationShares.profileId, profileId));
+    if (existing.length > 0) {
+      const [updated] = await db.update(locationShares)
+        .set({ latitude: lat, longitude: lng, active: true, updatedAt: new Date() })
+        .where(eq(locationShares.profileId, profileId))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(locationShares)
+      .values({ profileId, latitude: lat, longitude: lng, active: true })
+      .returning();
+    return created;
+  }
+
+  async deactivateLocationShare(profileId: string): Promise<void> {
+    await db.update(locationShares)
+      .set({ active: false })
+      .where(eq(locationShares.profileId, profileId));
+  }
+
+  async getLocationShare(profileId: string): Promise<LocationShare | undefined> {
+    const [share] = await db.select().from(locationShares)
+      .where(and(eq(locationShares.profileId, profileId), eq(locationShares.active, true)));
+    return share;
+  }
+
+  async getMatchLocationShares(profileId: string): Promise<(LocationShare & { profile: Profile })[]> {
+    const userMatches = await db.select().from(matches)
+      .where(or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId)));
+    const matchedIds = userMatches.map(m => m.profile1Id === profileId ? m.profile2Id : m.profile1Id);
+    if (matchedIds.length === 0) return [];
+
+    const activeShares = await db.select().from(locationShares)
+      .where(and(
+        eq(locationShares.active, true),
+        sql`${locationShares.profileId} IN (${sql.join(matchedIds.map(id => sql`${id}`), sql`, `)})`
+      ));
+
+    if (activeShares.length === 0) return [];
+
+    const shareProfileIds = activeShares.map(s => s.profileId);
+    const shareProfiles = await db.select().from(profiles)
+      .where(sql`${profiles.id} IN (${sql.join(shareProfileIds.map(id => sql`${id}`), sql`, `)})`);
+
+    const profileMap = new Map(shareProfiles.filter(p => p.locationSharingEnabled).map(p => [p.id, p]));
+
+    return activeShares
       .filter(s => profileMap.has(s.profileId))
       .map(s => ({ ...s, profile: profileMap.get(s.profileId)! }));
   }

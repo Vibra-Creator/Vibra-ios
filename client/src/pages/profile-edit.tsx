@@ -164,6 +164,7 @@ export default function ProfileEdit() {
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [ratingEnabled, setRatingEnabled] = useState(false);
+  const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
@@ -241,6 +242,7 @@ export default function ProfileEdit() {
       setCitySearch(existingProfile.location || "");
       setUploadedPhotos(existingProfile.photos || []);
       setRatingEnabled(existingProfile.ratingEnabled || false);
+      setLocationSharingEnabled(existingProfile.locationSharingEnabled || false);
     }
   }, [existingProfile, form]);
 
@@ -296,7 +298,7 @@ export default function ProfileEdit() {
       toast({ title: "Aggiungi Interessi", description: "Aggiungi almeno un interesse al tuo profilo.", variant: "destructive" });
       return;
     }
-    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled };
+    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled, locationSharingEnabled };
     if (existingProfile) {
       updateMutation.mutate(profileData);
     } else {
@@ -917,6 +919,56 @@ export default function ProfileEdit() {
                         <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                           <span className="text-xs text-green-400 font-medium">Attivo - Gli altri vedranno il pulsante "Vota" sulla tua card</span>
+                        </div>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setLocationSharingEnabled(!locationSharingEnabled)}
+                      className={`mt-4 w-full p-5 rounded-xl border-2 transition-all ${
+                        locationSharingEnabled
+                          ? "bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border-secondary shadow-lg shadow-secondary/20"
+                          : "bg-white/5 border-white/10"
+                      }`}
+                      data-testid="toggle-location-sharing"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                          locationSharingEnabled ? "bg-secondary/30" : "bg-white/10"
+                        }`}>
+                          <MapPin className={`w-7 h-7 transition-colors ${locationSharingEnabled ? "text-secondary" : "text-white/40"}`} />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className={`font-bold text-base mb-0.5 transition-colors ${locationSharingEnabled ? "text-white" : "text-white/70"}`}>
+                            Mostra Dove Sei
+                          </p>
+                          <p className="text-white/50 text-xs leading-relaxed">
+                            Condividi la tua posizione con i tuoi Match. Solo chi ha un match con te e ha attivato questa opzione potrà vedere dove ti trovi su una mappa.
+                          </p>
+                        </div>
+                        <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${
+                          locationSharingEnabled ? "bg-secondary" : "bg-white/20"
+                        }`}>
+                          <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow-sm ${
+                            locationSharingEnabled ? "translate-x-7" : "translate-x-1"
+                          }`} />
+                        </div>
+                      </div>
+                      {locationSharingEnabled && (
+                        <div className="mt-3 pt-3 border-t border-white/10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                            <span className="text-xs text-cyan-400 font-medium">Attivo - I tuoi match potranno vederti sulla mappa</span>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-3 space-y-1">
+                            <p className="text-white/70 text-xs font-medium">Come funziona:</p>
+                            <p className="text-white/40 text-[11px]">1. Attiva questa opzione nel tuo profilo</p>
+                            <p className="text-white/40 text-[11px]">2. Vai nella sezione "Dove Sei" dal menu</p>
+                            <p className="text-white/40 text-[11px]">3. Tocca "Condividi Posizione" per iniziare</p>
+                            <p className="text-white/40 text-[11px]">4. Solo i tuoi match con questa opzione attiva vedranno la tua posizione</p>
+                            <p className="text-white/40 text-[11px]">5. Puoi interrompere la condivisione in qualsiasi momento</p>
+                          </div>
                         </div>
                       )}
                     </button>

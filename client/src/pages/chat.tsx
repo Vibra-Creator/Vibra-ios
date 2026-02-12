@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Check, CheckCheck, Gift, Star, Heart, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, Gift, Star, Heart, Sparkles, Ban, MoreVertical, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import GiftPicker from "@/components/GiftPicker";
 import GiftAnimation from "@/components/GiftAnimation";
 import type { Message, Profile, Match, VirtualGift, SentGift, ProfileRating } from "@shared/schema";
@@ -30,8 +31,10 @@ export default function Chat() {
   const matchId = params.matchId;
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [messageText, setMessageText] = useState("");
   const [showGiftPicker, setShowGiftPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<{ gift: VirtualGift; senderName: string; message?: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -140,6 +143,31 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const blockUser = useMutation({
+    mutationFn: async () => {
+      if (!otherProfile) return;
+      await apiRequest("POST", "/api/block", { blockedId: otherProfile.id });
+    },
+    onSuccess: () => {
+      toast({ title: "Utente bloccato", description: "Non vedrai più questo profilo" });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
+      if (myProfile) {
+        queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile.id] });
+      }
+      setLocation("/matches");
+    },
+  });
+
+  const reportUser = useMutation({
+    mutationFn: async () => {
+      if (!otherProfile) return;
+      await apiRequest("POST", "/api/reports", { reportedId: otherProfile.id, reason: "Segnalato dalla chat" });
+    },
+    onSuccess: () => {
+      toast({ title: "Segnalazione inviata", description: "Grazie per la tua segnalazione" });
+    },
+  });
+
   const handleSend = () => {
     if (messageText.trim() && myProfile) {
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -234,6 +262,37 @@ export default function Chat() {
             </div>
           </div>
         )}
+
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowMenu(!showMenu)}
+            data-testid="button-chat-menu"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </Button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-black/90 backdrop-blur-xl border border-white/10 rounded-md shadow-lg overflow-hidden z-50">
+              <button
+                className="flex items-center gap-2 w-full px-4 py-3 text-sm text-white/80 hover-elevate text-left"
+                onClick={() => { reportUser.mutate(); setShowMenu(false); }}
+                data-testid="button-report-user"
+              >
+                <Flag className="w-4 h-4" />
+                Segnala utente
+              </button>
+              <button
+                className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-400 hover-elevate text-left"
+                onClick={() => { if (confirm("Sei sicuro di voler bloccare questo utente?")) { blockUser.mutate(); } setShowMenu(false); }}
+                data-testid="button-block-user"
+              >
+                <Ban className="w-4 h-4" />
+                Blocca utente
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

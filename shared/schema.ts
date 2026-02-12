@@ -45,6 +45,7 @@ export const profiles = pgTable("profiles", {
   photos: text("photos").array(),
   points: integer("points").default(0),
   ratingEnabled: boolean("rating_enabled").default(false),
+  locationSharingEnabled: boolean("location_sharing_enabled").default(false),
 });
 
 export const swipes = pgTable("swipes", {
@@ -294,3 +295,23 @@ export const vibingSessions = pgTable("vibing_sessions", {
 export type VibingSession = typeof vibingSessions.$inferSelect;
 export const insertVibingSessionSchema = createInsertSchema(vibingSessions).omit({ id: true, startedAt: true, active: true });
 export type InsertVibingSession = z.infer<typeof insertVibingSessionSchema>;
+
+export const blockedUsers = pgTable("blocked_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  blockerId: varchar("blocker_id").notNull(),
+  blockedId: varchar("blocked_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type BlockedUser = typeof blockedUsers.$inferSelect;
+
+export const locationShares = pgTable("location_shares", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  active: boolean("active").default(false).notNull(),
+});
+
+export type LocationShare = typeof locationShares.$inferSelect;

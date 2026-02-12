@@ -142,7 +142,9 @@ export async function registerRoutes(
       const allProfiles = await storage.getProfiles();
       const swipedIds = await storage.getSwipedProfileIds(profileId);
       const swipedSet = new Set(swipedIds);
-      const swipable = allProfiles.filter(p => p.id !== profileId && !swipedSet.has(p.id));
+      const blockedIds = await storage.getBlockedIds(profileId);
+      const blockedSet = new Set(blockedIds);
+      const swipable = allProfiles.filter(p => p.id !== profileId && !swipedSet.has(p.id) && !blockedSet.has(p.id));
       res.json(swipable);
     } catch (error) {
       console.error("Error fetching swipable profiles:", error);
@@ -493,7 +495,13 @@ export async function registerRoutes(
       }
       
       const matches = await storage.getMatchesForUser(req.params.userId);
-      res.json(matches);
+      const blockedIds = await storage.getBlockedIds(userProfile.id);
+      const blockedSet = new Set(blockedIds);
+      const filteredMatches = matches.filter(m => {
+        const otherId = m.profile1Id === userProfile.id ? m.profile2Id : m.profile1Id;
+        return !blockedSet.has(otherId);
+      });
+      res.json(filteredMatches);
     } catch (error) {
       console.error("Error fetching matches:", error);
       res.status(500).json({ error: "Failed to fetch matches" });
@@ -1672,6 +1680,125 @@ export async function registerRoutes(
       res.json({ count: nearby.length });
     } catch (error) {
       res.json({ count: 0 });
+    }
+  });
+
+  // === BLOCKED USERS ===
+  app.post("/api/block", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const { blockedId } = req.body;
+      if (!blockedId) return res.status(400).json({ error: "blockedId required" });
+      if (blockedId === profile.id) return res.status(400).json({ error: "Cannot block yourself" });
+
+      const block = await storage.blockUser(profile.id, blockedId);
+      res.json(block);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to block user" });
+    }
+  });
+
+  app.delete("/api/block/:blockedId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      await storage.unblockUser(profile.id, req.params.blockedId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to unblock user" });
+    }
+  });
+
+  app.get("/api/blocked", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json([]);
+
+      const blocked = await storage.getBlockedUsers(profile.id);
+      const blockedProfiles = [];
+      for (const b of blocked) {
+        const p = await storage.getProfile(b.blockedId);
+        if (p) blockedProfiles.push({ ...b, profile: p });
+      }
+      res.json(blockedProfiles);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch blocked users" });
+    }
+  });
+
+  // === LOCATION SHARING ("Mostra dove sei") ===
+  app.post("/api/location/share", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      if (!profile.locationSharingEnabled) return res.status(403).json({ error: "Location sharing not enabled in profile" });
+
+      const { latitude, longitude } = req.body;
+      if (latitude == null || longitude == null) return res.status(400).json({ error: "latitude and longitude required" });
+
+      const share = await storage.updateLocationShare(profile.id, latitude, longitude);
+      res.json(share);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to share location" });
+    }
+  });
+
+  app.post("/api/location/stop", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      await storage.deactivateLocationShare(profile.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to stop sharing" });
+    }
+  });
+
+  app.get("/api/location/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json({ sharing: false });
+
+      const share = await storage.getLocationShare(profile.id);
+      res.json({ sharing: !!share, share: share || null });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get location status" });
+    }
+  });
+
+  app.get("/api/location/matches", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json([]);
+      if (!profile.locationSharingEnabled) return res.json([]);
+
+      const myShare = await storage.getLocationShare(profile.id);
+      if (!myShare) return res.json([]);
+
+      const blockedIds = await storage.getBlockedIds(profile.id);
+      const matchShares = await storage.getMatchLocationShares(profile.id);
+      const filtered = matchShares.filter(s => !blockedIds.includes(s.profileId));
+      res.json(filtered);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get match locations" });
     }
   });
 
