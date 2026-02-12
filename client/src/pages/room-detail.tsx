@@ -79,9 +79,19 @@ export default function RoomDetail() {
     onError: (_err, { tempId }) => {
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
-    onSuccess: async (_data, { tempId }) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId, "messages"] });
+    onSuccess: (data, { tempId }) => {
+      const serverMsg = data as RoomMessage;
+      queryClient.setQueryData(
+        ["/api/rooms", roomId, "messages"],
+        (old: RoomMessage[] | undefined) => {
+          if (!old) return [serverMsg];
+          const exists = old.some(m => m.id === serverMsg.id);
+          if (exists) return old;
+          return [...old, serverMsg];
+        }
+      );
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomId, "messages"] });
     },
   });
 

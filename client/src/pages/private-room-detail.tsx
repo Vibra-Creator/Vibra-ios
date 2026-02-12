@@ -106,9 +106,19 @@ export default function PrivateRoomDetail() {
     onError: (_err, { tempId }) => {
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
-    onSuccess: async (_data, { tempId }) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/private-rooms", roomId, "messages"] });
+    onSuccess: (data, { tempId }) => {
+      const serverMsg = data as PrivateRoomMessage;
+      queryClient.setQueryData(
+        ["/api/private-rooms", roomId, "messages"],
+        (old: PrivateRoomMessage[] | undefined) => {
+          if (!old) return [serverMsg];
+          const exists = old.some(m => m.id === serverMsg.id);
+          if (exists) return old;
+          return [...old, serverMsg];
+        }
+      );
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+      queryClient.invalidateQueries({ queryKey: ["/api/private-rooms", roomId, "messages"] });
     },
   });
 

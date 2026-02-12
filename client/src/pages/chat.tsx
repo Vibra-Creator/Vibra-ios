@@ -120,9 +120,19 @@ export default function Chat() {
     onError: (_err, { tempId }) => {
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
     },
-    onSuccess: async (_data, { tempId }) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
+    onSuccess: (data, { tempId }) => {
+      const serverMsg = data as Message;
+      queryClient.setQueryData(
+        ["/api/messages", matchId],
+        (old: Message[] | undefined) => {
+          if (!old) return [serverMsg];
+          const exists = old.some(m => m.id === serverMsg.id);
+          if (exists) return old;
+          return [...old, serverMsg];
+        }
+      );
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+      queryClient.invalidateQueries({ queryKey: ["/api/messages", matchId] });
     },
   });
 
