@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import GiftPicker from "@/components/GiftPicker";
 import GiftAnimation from "@/components/GiftAnimation";
-import type { Message, Profile, Match, VirtualGift, SentGift } from "@shared/schema";
+import type { Message, Profile, Match, VirtualGift, SentGift, ProfileRating } from "@shared/schema";
 
 interface ChatPageParams {
   matchId: string;
@@ -64,8 +64,18 @@ export default function Chat() {
     refetchInterval: 5000,
   });
 
+  const { data: ratingData } = useQuery<{ rating: ProfileRating | null }>({
+    queryKey: ["/api/ratings/for-match", matchId],
+    enabled: !!matchId && !!myProfile,
+  });
+
   const currentMatch = matches?.find(m => m.id === matchId);
   const otherProfile = currentMatch?.profile;
+
+  const isRatingMatch = !!ratingData?.rating?.matchCreated;
+  const otherHasReplied = messages.some(m => m.senderId === otherProfile?.id);
+  const myMessageCount = messages.filter(m => m.senderId === myProfile?.id).length;
+  const sendingBlocked = isRatingMatch && !otherHasReplied && myMessageCount >= 1;
 
   const unseenGifts = receivedGifts.filter(
     g => !g.seen && g.senderId === otherProfile?.id
@@ -301,38 +311,47 @@ export default function Chat() {
       </div>
 
       <div className="p-4 bg-black/40 backdrop-blur-xl border-t border-white/10">
-        <div className="flex items-center gap-2">
-          {otherProfile && (
+        {sendingBlocked ? (
+          <div className="flex items-center justify-center gap-2 py-2" data-testid="sending-blocked-notice">
+            <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+            <p className="text-white/50 text-sm text-center">
+              In attesa della risposta di {otherProfile?.name}...
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            {otherProfile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowGiftPicker(true)}
+                className="text-yellow-400"
+                data-testid="button-open-gifts"
+              >
+                <Gift className="w-5 h-5" />
+              </Button>
+            )}
+            <Input
+              ref={inputRef}
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Scrivi un messaggio..."
+              className="flex-1 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+              disabled={sendMessage.isPending}
+              data-testid="input-message"
+            />
             <Button
-              variant="ghost"
+              onClick={handleSend}
+              disabled={!messageText.trim() || sendMessage.isPending}
+              className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
               size="icon"
-              onClick={() => setShowGiftPicker(true)}
-              className="text-yellow-400"
-              data-testid="button-open-gifts"
+              data-testid="button-send"
             >
-              <Gift className="w-5 h-5" />
+              <Send className="w-4 h-4" />
             </Button>
-          )}
-          <Input
-            ref={inputRef}
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Scrivi un messaggio..."
-            className="flex-1 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
-            disabled={sendMessage.isPending}
-            data-testid="input-message"
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!messageText.trim() || sendMessage.isPending}
-            className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
-            size="icon"
-            data-testid="button-send"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>

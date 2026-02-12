@@ -24,6 +24,7 @@ export default function Matches() {
   const { data: matches, isLoading, error, refetch } = useQuery<MatchWithProfile[]>({
     queryKey: ["/api/matches", myProfile?.id],
     enabled: !!myProfile,
+    refetchInterval: 10000,
   });
 
   return (

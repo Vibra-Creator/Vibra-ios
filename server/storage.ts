@@ -112,6 +112,7 @@ export interface IStorage {
   getReceivedRatings(profileId: string): Promise<(ProfileRating & { rater: Profile })[]>;
   getProfileRating(id: string): Promise<ProfileRating | undefined>;
   getExistingRating(raterId: string, ratedId: string): Promise<ProfileRating | undefined>;
+  getRatingBetweenProfiles(profileAId: string, profileBId: string): Promise<ProfileRating | undefined>;
   replyToRating(ratingId: string, reply: string): Promise<ProfileRating | undefined>;
   markRatingMatchCreated(ratingId: string): Promise<void>;
 }
@@ -625,6 +626,17 @@ export class DatabaseStorage implements IStorage {
   async getExistingRating(raterId: string, ratedId: string): Promise<ProfileRating | undefined> {
     const [rating] = await db.select().from(profileRatings)
       .where(and(eq(profileRatings.raterId, raterId), eq(profileRatings.ratedId, ratedId)));
+    return rating;
+  }
+
+  async getRatingBetweenProfiles(profileAId: string, profileBId: string): Promise<ProfileRating | undefined> {
+    const [rating] = await db.select().from(profileRatings)
+      .where(
+        or(
+          and(eq(profileRatings.raterId, profileAId), eq(profileRatings.ratedId, profileBId)),
+          and(eq(profileRatings.raterId, profileBId), eq(profileRatings.ratedId, profileAId))
+        )
+      );
     return rating;
   }
 

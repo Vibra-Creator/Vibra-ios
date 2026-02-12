@@ -1458,6 +1458,28 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/ratings/for-match/:matchId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.json({ rating: null });
+
+      const match = await storage.getMatchById(req.params.matchId);
+      if (!match) return res.json({ rating: null });
+
+      if (match.profile1Id !== profile.id && match.profile2Id !== profile.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      const otherProfileId = match.profile1Id === profile.id ? match.profile2Id : match.profile1Id;
+      const rating = await storage.getRatingBetweenProfiles(profile.id, otherProfileId);
+      res.json({ rating: rating || null });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check rating" });
+    }
+  });
+
   app.post("/api/ratings/:id/reply", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
