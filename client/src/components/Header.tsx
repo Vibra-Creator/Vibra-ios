@@ -53,41 +53,51 @@ export function BottomNav() {
     ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin", badge: 0 }] : []),
   ];
 
-  return (
-    <nav className="sticky bottom-0 z-40 w-full bg-black/40 backdrop-blur-xl border-t border-white/10" data-testid="bottom-nav">
-      <div className="flex items-center justify-around px-2 py-2">
-        {navItems.map((item) => {
-          const isActive = location === item.path;
-          return (
-            <Link key={item.path} href={item.path}>
-              <motion.div
-                whileTap={{ scale: 0.9 }}
-                className="flex flex-col items-center gap-1"
-                data-testid={`nav-${item.label.toLowerCase()}`}
+  const topRow = navItems.slice(0, 5);
+  const bottomRow = navItems.slice(5);
+
+  const renderItem = (item: typeof navItems[0]) => {
+    const isActive = location === item.path;
+    return (
+      <Link key={item.path} href={item.path}>
+        <motion.div
+          whileTap={{ scale: 0.9 }}
+          className="flex flex-col items-center gap-0.5 min-w-[56px]"
+          data-testid={`nav-${item.label.toLowerCase()}`}
+        >
+          <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
+            isActive
+              ? "bg-primary text-white"
+              : "text-white/60"
+          }`}>
+            <item.icon className="w-5 h-5" />
+            {item.badge > 0 && (
+              <span
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1"
+                data-testid={`badge-${item.label.toLowerCase()}`}
               >
-                <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
-                  isActive
-                    ? "bg-primary text-white"
-                    : "text-white/60"
-                }`}>
-                  <item.icon className="w-5 h-5" />
-                  {item.badge > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1"
-                      data-testid={`badge-${item.label.toLowerCase()}`}
-                    >
-                      {item.badge > 99 ? "99+" : item.badge}
-                    </span>
-                  )}
-                </div>
-                <span className={`text-[10px] ${isActive ? "text-white font-medium" : "text-white/50"}`}>
-                  {item.label}
-                </span>
-              </motion.div>
-            </Link>
-          );
-        })}
+                {item.badge > 99 ? "99+" : item.badge}
+              </span>
+            )}
+          </div>
+          <span className={`text-[10px] leading-tight ${isActive ? "text-white font-medium" : "text-white/50"}`}>
+            {item.label}
+          </span>
+        </motion.div>
+      </Link>
+    );
+  };
+
+  return (
+    <nav className="sticky bottom-0 z-40 w-full bg-black/50 backdrop-blur-xl border-t border-white/10" data-testid="bottom-nav">
+      <div className="flex items-center justify-around px-3 pt-2 pb-1">
+        {topRow.map(renderItem)}
       </div>
+      {bottomRow.length > 0 && (
+        <div className="flex items-center justify-around px-3 pb-2 pt-0.5">
+          {bottomRow.map(renderItem)}
+        </div>
+      )}
     </nav>
   );
 }
