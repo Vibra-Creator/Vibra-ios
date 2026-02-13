@@ -92,8 +92,8 @@ const profileFormSchema = z.object({
   communicationStyle: z.string().optional(),
   lifestyle: z.string().optional(),
   accessMotivation: z.string().optional(),
-  phonePrefix: z.string().optional(),
-  phoneNumber: z.string().optional(),
+  phonePrefix: z.string().min(1, "Seleziona un prefisso"),
+  phoneNumber: z.string().min(6, "Inserisci un numero di telefono valido (minimo 6 cifre)").max(15, "Numero troppo lungo"),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -269,8 +269,13 @@ export default function ProfileEdit() {
       toast({ title: "Profilo Creato!", description: "Il tuo profilo è pronto per essere scoperto." });
       setLocation("/");
     },
-    onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile creare il profilo.", variant: "destructive" });
+    onError: (error: any) => {
+      let msg = "Non è stato possibile creare il profilo.";
+      try {
+        const parsed = JSON.parse(error?.message?.split(": ").slice(1).join(": ") || "{}");
+        if (parsed.error) msg = parsed.error;
+      } catch {}
+      toast({ title: "Errore", description: msg, variant: "destructive" });
     },
   });
 
@@ -292,8 +297,13 @@ export default function ProfileEdit() {
       toast({ title: "Profilo Aggiornato!", description: "Le tue modifiche sono state salvate." });
       setLocation("/profile");
     },
-    onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile aggiornare il profilo.", variant: "destructive" });
+    onError: (error: any) => {
+      let msg = "Non è stato possibile aggiornare il profilo.";
+      try {
+        const parsed = JSON.parse(error?.message?.split(": ").slice(1).join(": ") || "{}");
+        if (parsed.error) msg = parsed.error;
+      } catch {}
+      toast({ title: "Errore", description: msg, variant: "destructive" });
     },
   });
 
@@ -338,7 +348,7 @@ export default function ProfileEdit() {
 
   const nextStep = async () => {
     if (step === 0) {
-      const valid = await form.trigger(["name", "age", "location", "gender", "preferredGender", "alienType", "imageUrl"]);
+      const valid = await form.trigger(["name", "age", "location", "gender", "preferredGender", "alienType", "imageUrl", "phonePrefix", "phoneNumber"]);
       if (!valid) return;
     }
     if (step < TOTAL_STEPS - 1) setStep(step + 1);

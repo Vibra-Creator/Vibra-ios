@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests } from "@shared/schema";
 import { db } from "./db";
-import { eq, or } from "drizzle-orm";
+import { eq, or, and, ne } from "drizzle-orm";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import multer from "multer";
@@ -234,9 +234,25 @@ export async function registerRoutes(
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const validatedData = insertProfileSchema.parse(req.body);
+
+      if (validatedData.phoneNumber && validatedData.phonePrefix) {
+        const fullPhone = `${validatedData.phonePrefix}${validatedData.phoneNumber}`;
+        const [duplicate] = await db.select().from(profiles).where(
+          and(
+            eq(profiles.phonePrefix, validatedData.phonePrefix),
+            eq(profiles.phoneNumber, validatedData.phoneNumber)
+          )
+        );
+        const existingProfile = await storage.getProfileByUserId(userId);
+        if (duplicate && (!existingProfile || duplicate.id !== existingProfile.id)) {
+          return res.status(409).json({ error: "Questo numero di telefono è già associato a un altro account" });
+        }
+      }
+
       const existingProfile = await storage.getProfileByUserId(userId);
       if (existingProfile) {
-        const validatedData = insertProfileSchema.parse(req.body);
         const updated = await storage.updateProfile(existingProfile.id, {
           ...validatedData,
           userId,
@@ -244,7 +260,6 @@ export async function registerRoutes(
         });
         return res.json(updated);
       }
-      const validatedData = insertProfileSchema.parse(req.body);
       const profile = await storage.createProfile({
         ...validatedData,
         userId,
@@ -305,6 +320,20 @@ export async function registerRoutes(
       }
       
       const validatedData = updateProfileSchema.parse(req.body);
+
+      if (validatedData.phoneNumber && validatedData.phonePrefix) {
+        const [duplicate] = await db.select().from(profiles).where(
+          and(
+            eq(profiles.phonePrefix, validatedData.phonePrefix),
+            eq(profiles.phoneNumber, validatedData.phoneNumber),
+            ne(profiles.id, req.params.id)
+          )
+        );
+        if (duplicate) {
+          return res.status(409).json({ error: "Questo numero di telefono è già associato a un altro account" });
+        }
+      }
+
       const profile = await storage.updateProfile(req.params.id, validatedData);
       res.json(profile);
     } catch (error) {
