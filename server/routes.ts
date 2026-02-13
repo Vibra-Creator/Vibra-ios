@@ -1126,7 +1126,7 @@ export async function registerRoutes(
       const userMatches = await storage.getMatchesForUser(userProfile.id);
       const matchProfileIds = new Set(userMatches.map(m => m.profile.id));
 
-      const myRoom = allRooms.find(r => r.ownerId === userProfile.id) || null;
+      const myRooms = allRooms.filter(r => r.ownerId === userProfile.id);
       const matchRooms = allRooms.filter(r => matchProfileIds.has(r.ownerId) && r.ownerId !== userProfile.id);
 
       const memberCounts: Record<string, number> = {};
@@ -1149,7 +1149,7 @@ export async function registerRoutes(
       }
 
       res.json({
-        myRoom,
+        myRooms,
         matchRooms,
         popularRooms,
         memberCounts,
@@ -1167,11 +1167,15 @@ export async function registerRoutes(
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const userProfile = await storage.getProfileByUserId(userId);
       if (!userProfile) return res.json({ count: 0 });
-      const myRoom = await storage.getPrivateRoomByOwner(userProfile.id);
-      if (!myRoom) return res.json({ count: 0 });
-      const requests = await storage.getPrivateRoomRequests(myRoom.id);
-      const pendingCount = requests.filter(r => r.status === "pending").length;
-      res.json({ count: pendingCount });
+      const allRooms = await storage.getPrivateRooms();
+      const myRooms = allRooms.filter(r => r.ownerId === userProfile.id);
+      if (myRooms.length === 0) return res.json({ count: 0 });
+      let totalPending = 0;
+      for (const room of myRooms) {
+        const requests = await storage.getPrivateRoomRequests(room.id);
+        totalPending += requests.filter(r => r.status === "pending").length;
+      }
+      res.json({ count: totalPending });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch pending count" });
     }
@@ -1204,10 +1208,6 @@ export async function registerRoutes(
           requiredPoints,
           currentPoints,
         });
-      }
-      const existingRoom = await storage.getPrivateRoomByOwner(userProfile.id);
-      if (existingRoom) {
-        return res.status(400).json({ error: "Puoi avere solo una stanza privata. Hai già creato la stanza: " + existingRoom.name });
       }
       const { name, description, imageUrl } = req.body;
       if (!name) return res.status(400).json({ error: "Room name is required" });

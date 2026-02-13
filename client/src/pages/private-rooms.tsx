@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft } from "lucide-react";
+import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PrivateRoom, Profile } from "@shared/schema";
 
 interface CategorizedRooms {
-  myRoom: PrivateRoom | null;
+  myRooms: PrivateRoom[];
   matchRooms: PrivateRoom[];
   popularRooms: PrivateRoom[];
   memberCounts: Record<string, number>;
@@ -148,7 +148,7 @@ export default function PrivateRooms() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
+        className="mb-6 relative z-10"
       >
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-3">
@@ -182,335 +182,352 @@ export default function PrivateRooms() {
         </div>
       </motion.div>
 
-      {(isGuest ? guestLoading : isLoading) ? (
-        <PrivateRoomSkeleton />
-      ) : isGuest ? (
-        <div className="space-y-6">
-          <div className="space-y-3">
-            {(guestPrivateRooms || []).map((room, index) => (
-              <motion.div
-                key={room.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <div
-                  className="rounded-xl backdrop-blur-md bg-white/5 border border-white/10 p-4 cursor-pointer"
-                  onClick={() => blockIfGuest("creare o accedere alle stanze private")}
-                  data-testid={`card-private-room-${room.id}`}
+      <div className="relative z-10">
+        {!isGuest && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <div className="rounded-xl backdrop-blur-md bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 p-4" data-testid="banner-create-room">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <Info className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-white text-sm mb-1">Crea la tua Stanza Privata</h3>
+                  <p className="text-white/60 text-xs leading-relaxed mb-3">
+                    Crea uno spazio esclusivo dove invitare chi vuoi! Ogni stanza costa {requiredPoints} punti, dura 12 ore e poi viene cancellata automaticamente. Puoi creare quante stanze vuoi!
+                  </p>
+                  <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="gap-1.5" data-testid="button-create-room">
+                        <Plus className="w-4 h-4" />
+                        Crea Stanza ({requiredPoints} punti)
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Crea una Stanza Privata</DialogTitle>
+                      </DialogHeader>
+                      {!canCreateRoom ? (
+                        <div className="space-y-4 pt-4 text-center">
+                          <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
+                            <Star className="w-8 h-8 text-yellow-400" />
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Servono almeno <strong>{requiredPoints} punti</strong> per creare una stanza privata.
+                            <br />Hai <strong>{userPoints} punti</strong>.
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Completa le sfide giornaliere per guadagnare punti!
+                          </p>
+                          <Button variant="outline" className="w-full" onClick={() => setIsCreateOpen(false)} data-testid="button-close-dialog">
+                            Ho capito
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4 pt-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
+                            <Input
+                              value={newRoomName}
+                              onChange={(e) => setNewRoomName(e.target.value)}
+                              placeholder="Es. Il Mio Angolo Cosmico"
+                              data-testid="input-room-name"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Descrizione</label>
+                            <Textarea
+                              value={newRoomDescription}
+                              onChange={(e) => setNewRoomDescription(e.target.value)}
+                              placeholder="Descrivi la tua stanza..."
+                              className="resize-none"
+                              data-testid="input-room-description"
+                            />
+                          </div>
+                          <Button
+                            className="w-full"
+                            onClick={handleCreateRoom}
+                            disabled={createRoomMutation.isPending}
+                            data-testid="button-confirm-create-room"
+                          >
+                            {createRoomMutation.isPending ? "Creazione..." : `Crea Stanza (${requiredPoints} punti)`}
+                          </Button>
+                        </div>
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {(isGuest ? guestLoading : isLoading) ? (
+          <PrivateRoomSkeleton />
+        ) : isGuest ? (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              {(guestPrivateRooms || []).map((room, index) => (
+                <motion.div
+                  key={room.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
                 >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10 border border-primary/30">
-                      <AvatarImage src={room.imageUrl || "/images/profile-1.png"} />
-                      <AvatarFallback>{room.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white truncate">{room.name}</h3>
-                      <p className="text-xs text-white/50">{room.description || "Stanza privata"}</p>
+                  <div
+                    className="rounded-xl backdrop-blur-md bg-white/5 border border-white/10 p-4 cursor-pointer"
+                    onClick={() => blockIfGuest("creare o accedere alle stanze private")}
+                    data-testid={`card-private-room-${room.id}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10 border border-primary/30">
+                        <AvatarImage src={room.imageUrl || "/images/profile-16.png"} />
+                        <AvatarFallback>{room.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-white truncate">{room.name}</h3>
+                        <p className="text-xs text-white/50">{room.description || "Stanza privata"}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          blockIfGuest("creare o accedere alle stanze private");
+                        }}
+                        data-testid={`button-request-access-guest-${room.id}`}
+                      >
+                        Richiedi
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        blockIfGuest("creare o accedere alle stanze private");
-                      }}
-                      data-testid={`button-request-access-guest-${room.id}`}
-                    >
-                      Richiedi
-                    </Button>
                   </div>
+                </motion.div>
+              ))}
+              {(!guestPrivateRooms || guestPrivateRooms.length === 0) && (
+                <div className="text-center py-12">
+                  <Lock className="w-12 h-12 text-white/30 mx-auto mb-3" />
+                  <p className="text-white/50 text-lg">Nessuna stanza privata ancora</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : searchQuery.trim() ? (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-white/80 flex items-center gap-2">
+              <Search className="w-4 h-4" />
+              Risultati ricerca
+            </h2>
+            {filteredRooms && filteredRooms.length > 0 ? (
+              filteredRooms.map((room, index) => (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  myProfile={myProfile}
+                  index={index}
+                  memberCount={categorized?.memberCounts[room.id] || 0}
+                  ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
+                  ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
+                  onRequestAccess={() => requestAccessMutation.mutate(room.id)}
+                  onNavigate={() => setLocation(`/private-room/${room.id}`)}
+                  isRequesting={requestAccessMutation.isPending}
+                />
+              ))
+            ) : (
+              <p className="text-white/40 text-center py-8">Nessuna stanza trovata</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {(categorized?.myRooms?.length || 0) > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-amber-400" />
+                  Le Mie Stanze
+                </h2>
+                <div className="space-y-3">
+                  {categorized!.myRooms.map((room, index) => (
+                    <MyRoomCard
+                      key={room.id}
+                      room={room}
+                      myProfile={myProfile}
+                      index={index}
+                      memberCount={categorized?.memberCounts[room.id] || 0}
+                      onNavigate={() => setLocation(`/private-room/${room.id}`)}
+                    />
+                  ))}
                 </div>
               </motion.div>
-            ))}
-            {(!guestPrivateRooms || guestPrivateRooms.length === 0) && (
+            )}
+
+            {(categorized?.matchRooms?.length || 0) > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-pink-400" />
+                  Stanze dei tuoi Match
+                </h2>
+                <div className="space-y-3">
+                  {categorized!.matchRooms.map((room, index) => (
+                    <RoomCard
+                      key={room.id}
+                      room={room}
+                      myProfile={myProfile}
+                      index={index}
+                      memberCount={categorized?.memberCounts[room.id] || 0}
+                      ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
+                      ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
+                      onRequestAccess={() => requestAccessMutation.mutate(room.id)}
+                      onNavigate={() => setLocation(`/private-room/${room.id}`)}
+                      isRequesting={requestAccessMutation.isPending}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {(categorized?.popularRooms?.length || 0) > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-yellow-400" />
+                  Stanze Popolari
+                </h2>
+                <div className="space-y-3">
+                  {categorized!.popularRooms.map((room, index) => (
+                    <RoomCard
+                      key={room.id}
+                      room={room}
+                      myProfile={myProfile}
+                      index={index}
+                      memberCount={categorized?.memberCounts[room.id] || 0}
+                      ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
+                      ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
+                      onRequestAccess={() => requestAccessMutation.mutate(room.id)}
+                      onNavigate={() => setLocation(`/private-room/${room.id}`)}
+                      isRequesting={requestAccessMutation.isPending}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {!categorized?.myRooms?.length && !categorized?.matchRooms?.length && !categorized?.popularRooms?.length && (
               <div className="text-center py-12">
                 <Lock className="w-12 h-12 text-white/30 mx-auto mb-3" />
                 <p className="text-white/50 text-lg">Nessuna stanza privata ancora</p>
+                <p className="text-white/30 text-sm mt-1">Usa il bottone sopra per creare la prima!</p>
               </div>
             )}
           </div>
-        </div>
-      ) : searchQuery.trim() ? (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-white/80 flex items-center gap-2">
-            <Search className="w-4 h-4" />
-            Risultati ricerca
-          </h2>
-          {filteredRooms && filteredRooms.length > 0 ? (
-            filteredRooms.map((room, index) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                myProfile={myProfile}
-                index={index}
-                memberCount={categorized?.memberCounts[room.id] || 0}
-                ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
-                ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
-                onRequestAccess={() => requestAccessMutation.mutate(room.id)}
-                onNavigate={() => setLocation(`/private-room/${room.id}`)}
-                isRequesting={requestAccessMutation.isPending}
-              />
-            ))
-          ) : (
-            <p className="text-white/40 text-center py-8">Nessuna stanza trovata</p>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <MyRoomSection
-            myRoom={categorized?.myRoom || null}
-            myProfile={myProfile}
-            canCreateRoom={canCreateRoom}
-            userPoints={userPoints}
-            requiredPoints={requiredPoints}
-            isCreateOpen={isCreateOpen}
-            setIsCreateOpen={setIsCreateOpen}
-            newRoomName={newRoomName}
-            setNewRoomName={setNewRoomName}
-            newRoomDescription={newRoomDescription}
-            setNewRoomDescription={setNewRoomDescription}
-            handleCreateRoom={handleCreateRoom}
-            isCreating={createRoomMutation.isPending}
-            memberCount={categorized?.myRoom ? (categorized.memberCounts[categorized.myRoom.id] || 0) : 0}
-            onNavigate={(id) => setLocation(`/private-room/${id}`)}
-            toast={toast}
-          />
-
-          {(categorized?.matchRooms?.length || 0) > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
-                <Heart className="w-4 h-4 text-pink-400" />
-                Stanze dei tuoi Match
-              </h2>
-              <div className="space-y-3">
-                {categorized!.matchRooms.map((room, index) => (
-                  <RoomCard
-                    key={room.id}
-                    room={room}
-                    myProfile={myProfile}
-                    index={index}
-                    memberCount={categorized?.memberCounts[room.id] || 0}
-                    ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
-                    ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
-                    onRequestAccess={() => requestAccessMutation.mutate(room.id)}
-                    onNavigate={() => setLocation(`/private-room/${room.id}`)}
-                    isRequesting={requestAccessMutation.isPending}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {(categorized?.popularRooms?.length || 0) > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-400" />
-                Stanze Popolari
-              </h2>
-              <div className="space-y-3">
-                {categorized!.popularRooms.map((room, index) => (
-                  <RoomCard
-                    key={room.id}
-                    room={room}
-                    myProfile={myProfile}
-                    index={index}
-                    memberCount={categorized?.memberCounts[room.id] || 0}
-                    ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
-                    ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
-                    onRequestAccess={() => requestAccessMutation.mutate(room.id)}
-                    onNavigate={() => setLocation(`/private-room/${room.id}`)}
-                    isRequesting={requestAccessMutation.isPending}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {!categorized?.myRoom && !categorized?.matchRooms?.length && !categorized?.popularRooms?.length && (
-            <div className="text-center py-12">
-              <Lock className="w-12 h-12 text-white/30 mx-auto mb-3" />
-              <p className="text-white/50 text-lg">Nessuna stanza privata ancora</p>
-              <p className="text-white/30 text-sm mt-1">Crea la prima stanza privata!</p>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
       <GuestBlockerModal />
     </div>
   );
 }
 
-function MyRoomSection({
-  myRoom,
+function MyRoomCard({
+  room,
   myProfile,
-  canCreateRoom,
-  userPoints,
-  requiredPoints,
-  isCreateOpen,
-  setIsCreateOpen,
-  newRoomName,
-  setNewRoomName,
-  newRoomDescription,
-  setNewRoomDescription,
-  handleCreateRoom,
-  isCreating,
+  index,
   memberCount,
   onNavigate,
-  toast,
 }: {
-  myRoom: PrivateRoom | null;
+  room: PrivateRoom;
   myProfile: Profile | null | undefined;
-  canCreateRoom: boolean;
-  userPoints: number;
-  requiredPoints: number;
-  isCreateOpen: boolean;
-  setIsCreateOpen: (v: boolean) => void;
-  newRoomName: string;
-  setNewRoomName: (v: string) => void;
-  newRoomDescription: string;
-  setNewRoomDescription: (v: string) => void;
-  handleCreateRoom: () => void;
-  isCreating: boolean;
+  index: number;
   memberCount: number;
-  onNavigate: (id: string) => void;
-  toast: any;
+  onNavigate: () => void;
 }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    if (!room.expiresAt) return;
+    const update = () => {
+      const diff = new Date(room.expiresAt!).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Scaduta"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setTimeLeft(`${h}h ${m}m`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [room.expiresAt]);
+
   const { data: pendingRequests } = useQuery<any[]>({
-    queryKey: ["/api/private-rooms", myRoom?.id, "requests"],
+    queryKey: ["/api/private-rooms", room.id, "requests"],
     queryFn: async () => {
-      const res = await fetch(`/api/private-rooms/${myRoom!.id}/requests`, { credentials: "include" });
+      const res = await fetch(`/api/private-rooms/${room.id}/requests`, { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
     },
-    enabled: !!myRoom,
   });
 
   const pendingCount = pendingRequests?.filter((r: any) => r.status === "pending")?.length || 0;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
     >
-      <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
-        <Crown className="w-4 h-4 text-amber-400" />
-        La Mia Stanza
-      </h2>
-
-      {myRoom ? (
-        <div
-          className="rounded-xl backdrop-blur-md bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 p-4 cursor-pointer"
-          onClick={() => onNavigate(myRoom.id)}
-          data-testid="card-my-private-room"
-        >
-          <div className="flex items-start gap-4">
-            <Avatar className="w-14 h-14 border-2 border-primary/50">
-              <AvatarImage src={myRoom.imageUrl || myProfile?.imageUrl || "/images/profile-1.png"} />
-              <AvatarFallback>{myRoom.name[0]}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="font-bold text-lg text-white truncate">{myRoom.name}</h3>
-                <Badge variant="secondary" className="bg-accent/20 text-accent shrink-0">
-                  <Crown className="w-3 h-3 mr-1" />
-                  Proprietario
-                </Badge>
-              </div>
-              <p className="text-sm text-white/70 mb-2 line-clamp-1">{myRoom.description || "La tua stanza privata"}</p>
-              <div className="flex items-center gap-4 text-sm text-purple-300/80 flex-wrap">
-                <span className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  {memberCount} membri
-                </span>
-                {pendingCount > 0 && (
-                  <span className="flex items-center gap-1 text-accent">
-                    <Bell className="w-4 h-4" />
-                    {pendingCount} richieste
-                  </span>
-                )}
-              </div>
+      <div
+        className="rounded-xl backdrop-blur-md bg-gradient-to-r from-primary/15 to-accent/15 border border-primary/30 p-4 cursor-pointer"
+        onClick={onNavigate}
+        data-testid={`card-my-room-${room.id}`}
+      >
+        <div className="flex items-start gap-3">
+          <Avatar className="w-12 h-12 border-2 border-primary/50">
+            <AvatarImage src={room.imageUrl || myProfile?.imageUrl || "/images/profile-16.png"} />
+            <AvatarFallback>{room.name[0]}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h3 className="font-bold text-white truncate">{room.name}</h3>
+              <Badge variant="secondary" className="bg-accent/20 text-accent shrink-0">
+                <Crown className="w-3 h-3 mr-1" />
+                Proprietario
+              </Badge>
             </div>
-            <Button size="sm" variant="outline" data-testid="button-enter-my-room">
-              <MessageCircle className="w-4 h-4 mr-1" />
-              Entra
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl backdrop-blur-md bg-white/5 border border-white/10 p-6 text-center">
-          <Lock className="w-8 h-8 text-white/30 mx-auto mb-2" />
-          <p className="text-white/50 text-sm mb-3">Non hai ancora una stanza privata</p>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1" data-testid="button-create-room">
-                <Plus className="w-4 h-4" />
-                Crea la tua Stanza ({requiredPoints} punti)
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Crea la tua Stanza Privata</DialogTitle>
-              </DialogHeader>
-              {!canCreateRoom ? (
-                <div className="space-y-4 pt-4 text-center">
-                  <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
-                    <Star className="w-8 h-8 text-yellow-400" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Servono almeno <strong>{requiredPoints} punti</strong> per creare una stanza privata.
-                    <br />Hai <strong>{userPoints} punti</strong>.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Completa le sfide giornaliere per guadagnare punti!
-                  </p>
-                  <Button variant="outline" className="w-full" onClick={() => setIsCreateOpen(false)} data-testid="button-close-dialog">
-                    Ho capito
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4 pt-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
-                    <Input
-                      value={newRoomName}
-                      onChange={(e) => setNewRoomName(e.target.value)}
-                      placeholder="Es. Il Mio Angolo Cosmico"
-                      data-testid="input-room-name"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Descrizione</label>
-                    <Textarea
-                      value={newRoomDescription}
-                      onChange={(e) => setNewRoomDescription(e.target.value)}
-                      placeholder="Descrivi la tua stanza..."
-                      className="resize-none"
-                      data-testid="input-room-description"
-                    />
-                  </div>
-                  <Button
-                    className="w-full"
-                    onClick={handleCreateRoom}
-                    disabled={isCreating}
-                    data-testid="button-confirm-create-room"
-                  >
-                    {isCreating ? "Creazione..." : `Crea Stanza (${requiredPoints} punti)`}
-                  </Button>
-                </div>
+            <p className="text-sm text-white/70 mb-2 line-clamp-1">{room.description || "La tua stanza privata"}</p>
+            <div className="flex items-center gap-4 text-sm text-purple-300/80 flex-wrap">
+              <span className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                {memberCount} membri
+              </span>
+              {pendingCount > 0 && (
+                <span className="flex items-center gap-1 text-accent">
+                  <Bell className="w-4 h-4" />
+                  {pendingCount} richieste
+                </span>
               )}
-            </DialogContent>
-          </Dialog>
+              {timeLeft && (
+                <span className="flex items-center gap-1 text-yellow-300/80">
+                  <Clock className="w-3.5 h-3.5" />
+                  {timeLeft}
+                </span>
+              )}
+            </div>
+          </div>
+          <Button size="sm" variant="outline" data-testid={`button-enter-my-room-${room.id}`}>
+            <MessageCircle className="w-4 h-4 mr-1" />
+            Entra
+          </Button>
         </div>
-      )}
+      </div>
     </motion.div>
   );
 }
@@ -577,26 +594,20 @@ function RoomCard({
         onClick={() => { if (isMember) onNavigate(); }}
         data-testid={`card-private-room-${room.id}`}
       >
-        <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10 border border-primary/30">
-            <AvatarImage src={ownerImage || room.imageUrl || "/images/profile-1.png"} />
+        <div className="flex items-start gap-3">
+          <Avatar className="w-10 h-10 border border-white/20">
+            <AvatarImage src={ownerImage || room.imageUrl || "/images/profile-16.png"} />
             <AvatarFallback>{room.name[0]}</AvatarFallback>
           </Avatar>
-
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <h3 className="font-semibold text-white truncate">{room.name}</h3>
-              {isMember && !isOwner && (
-                <Badge variant="secondary" className="bg-green-500/20 text-green-400 shrink-0">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Membro
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-white/50">
-              di {ownerName || "Utente"} · {memberCount} membri
+            <h3 className="font-semibold text-white truncate">{room.name}</h3>
+            <p className="text-xs text-white/50 flex items-center gap-1 flex-wrap">
+              <span>{ownerName || "Sconosciuto"}</span>
+              <span className="text-white/30">·</span>
+              <Users className="w-3 h-3" />
+              <span>{memberCount}</span>
               {timeLeft && (
-                <span className={`ml-1 ${timeLeft === "Scaduta" ? "text-red-400" : "text-amber-400"}`}>
+                <span className="flex items-center gap-0.5 text-yellow-300/60">
                   · {timeLeft}
                 </span>
               )}
@@ -605,17 +616,17 @@ function RoomCard({
 
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
             {isMember ? (
-              <Button size="sm" variant="default" onClick={onNavigate} data-testid={`button-enter-room-${room.id}`}>
+              <Button size="sm" variant="outline" onClick={onNavigate} data-testid={`button-enter-room-${room.id}`}>
                 <MessageCircle className="w-4 h-4 mr-1" />
                 Entra
               </Button>
             ) : isPending ? (
-              <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-400">
+              <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-300">
                 <Clock className="w-3 h-3 mr-1" />
                 In attesa
               </Badge>
             ) : isRejected ? (
-              <Badge variant="secondary" className="bg-red-500/20 text-red-400">
+              <Badge variant="secondary" className="bg-red-500/20 text-red-300">
                 <XCircle className="w-3 h-3 mr-1" />
                 Rifiutato
               </Badge>
