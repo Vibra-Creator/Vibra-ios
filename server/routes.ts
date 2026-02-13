@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests } from "@shared/schema";
 import { db } from "./db";
 import { eq, or } from "drizzle-orm";
 import { z } from "zod";
@@ -1816,6 +1816,19 @@ export async function registerRoutes(
       }
     } catch (error) {
       console.error("Error cleaning up expired private rooms:", error);
+    }
+    try {
+      const now = new Date();
+      const activeChallenges = await db.select().from(dailyChallenges).where(eq(dailyChallenges.isActive, true));
+      for (const challenge of activeChallenges) {
+        if (challenge.expiresAt && new Date(challenge.expiresAt) <= now) {
+          await db.delete(challengeSubmissions).where(eq(challengeSubmissions.challengeId, challenge.id));
+          await db.delete(dailyChallenges).where(eq(dailyChallenges.id, challenge.id));
+          console.log(`Expired challenge "${challenge.title}" (${challenge.id}) deleted.`);
+        }
+      }
+    } catch (error) {
+      console.error("Error cleaning up expired challenges:", error);
     }
   }, 5 * 60 * 1000);
 

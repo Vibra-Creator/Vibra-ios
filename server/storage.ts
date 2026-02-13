@@ -348,7 +348,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChallenges(): Promise<DailyChallenge[]> {
-    return db.select().from(dailyChallenges).where(eq(dailyChallenges.isActive, true));
+    const now = new Date();
+    const challenges = await db.select().from(dailyChallenges).where(eq(dailyChallenges.isActive, true));
+    return challenges.filter(c => !c.expiresAt || new Date(c.expiresAt) > now);
   }
 
   async getPrivateRooms(): Promise<PrivateRoom[]> {

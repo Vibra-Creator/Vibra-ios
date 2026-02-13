@@ -165,9 +165,11 @@ export const dailyChallenges = pgTable("daily_challenges", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  imageExample: text("image_example"), // Esempio della sfida
+  imageExample: text("image_example"),
   points: integer("points").default(10),
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
 });
 
 export const challengeSubmissions = pgTable("challenge_submissions", {
