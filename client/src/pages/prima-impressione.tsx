@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Eye, Send, MessageCircle, Star, Sparkles, ChevronRight, Heart, UserPlus } from "lucide-react";
+import { Eye, Send, MessageCircle, Star, Sparkles, Heart, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -24,7 +24,7 @@ const ratingLabels: Record<number, string> = {
   5: "Sei fantastico/a!",
 };
 
-const ratingEmoji: Record<number, typeof Star> = {
+const ratingIcons: Record<number, typeof Star> = {
   1: Star,
   2: Star,
   3: Heart,
@@ -49,22 +49,6 @@ export default function PrimaImpressione() {
     queryKey: ["/api/profiles/me"],
     enabled: !!user && !isGuest,
   });
-
-  const { data: myMatches } = useQuery<(Match & { profile: Profile })[]>({
-    queryKey: ["/api/matches", myProfile?.id],
-    enabled: !!myProfile && !isGuest,
-  });
-
-  const unreplied = ratings?.filter(r => !r.ratedReply) || [];
-  const replied = ratings?.filter(r => !!r.ratedReply) || [];
-
-  const findMatchForRater = (raterId: string): string | null => {
-    if (!myMatches || !myProfile) return null;
-    const match = myMatches.find(m =>
-      m.profile1Id === raterId || m.profile2Id === raterId
-    );
-    return match?.id || null;
-  };
 
   if (isGuest) {
     return (
@@ -160,11 +144,11 @@ export default function PrimaImpressione() {
             <Eye className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-white" data-testid="text-page-title">Prima Impressione</h1>
+            <h1 className="text-xl font-bold text-white" data-testid="text-page-title">Impressioni Ricevute</h1>
             <p className="text-white/50 text-xs">
-              {unreplied.length > 0
-                ? `${unreplied.length} ${unreplied.length === 1 ? "persona ti ha votato" : "persone ti hanno votato"}`
-                : "Nessun nuovo voto"}
+              {ratings && ratings.length > 0
+                ? `${ratings.length} ${ratings.length === 1 ? "impressione ricevuta" : "impressioni ricevute"}`
+                : "Nessuna impressione ancora"}
             </p>
           </div>
         </div>
@@ -175,47 +159,15 @@ export default function PrimaImpressione() {
           <div className="flex-1 flex items-center justify-center py-16">
             <div className="text-center px-4">
               <Sparkles className="w-12 h-12 text-white/20 mx-auto mb-3" />
-              <p className="text-white/50 text-sm">Nessun voto ricevuto ancora</p>
-              <p className="text-white/30 text-xs mt-1">Quando qualcuno ti voterà, apparirà qui come una notifica</p>
+              <p className="text-white/50 text-sm">Nessuna impressione ricevuta ancora</p>
+              <p className="text-white/30 text-xs mt-1">Quando qualcuno ti voterà, apparirà qui</p>
             </div>
           </div>
         ) : (
           <div>
-            {unreplied.length > 0 && (
-              <div className="mb-2">
-                <div className="px-4 py-2 bg-primary/10 border-y border-primary/20">
-                  <p className="text-primary text-xs font-medium flex items-center gap-2">
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    Nuovi voti - rispondi per aprire la chat
-                  </p>
-                </div>
-                <div>
-                  {unreplied.map((rating, i) => (
-                    <VoterBanner key={rating.id} rating={rating} myProfileId={myProfile.id} index={i} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {replied.length > 0 && (
-              <div>
-                <div className="px-4 py-2 bg-white/5 border-y border-white/10">
-                  <p className="text-white/50 text-xs font-medium flex items-center gap-2">
-                    <Star className="w-3.5 h-3.5" />
-                    Conversazioni avviate ({replied.length})
-                  </p>
-                </div>
-                <div>
-                  {replied.map((rating) => (
-                    <RepliedBanner
-                      key={rating.id}
-                      rating={rating}
-                      matchId={findMatchForRater(rating.raterId)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {ratings.map((rating, i) => (
+              <RatingItem key={rating.id} rating={rating} myProfileId={myProfile.id} index={i} />
+            ))}
           </div>
         )}
       </div>
@@ -223,7 +175,7 @@ export default function PrimaImpressione() {
   );
 }
 
-function VoterBanner({ rating, myProfileId, index }: { rating: RatingWithRater; myProfileId: string; index: number }) {
+function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; myProfileId: string; index: number }) {
   const [replyText, setReplyText] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [, setLocation] = useLocation();
@@ -258,9 +210,9 @@ function VoterBanner({ rating, myProfileId, index }: { rating: RatingWithRater; 
 
   const ratingColor = rating.rating >= 4 ? "text-green-400" : rating.rating >= 3 ? "text-yellow-400" : "text-orange-400";
   const ratingBgColor = rating.rating >= 4 ? "bg-green-500/20" : rating.rating >= 3 ? "bg-yellow-500/20" : "bg-orange-500/20";
-  const IconComponent = ratingEmoji[rating.rating] || Star;
-
+  const IconComponent = ratingIcons[rating.rating] || Star;
   const timeAgo = getTimeAgo(new Date(rating.createdAt));
+  const hasReplied = !!rating.ratedReply;
 
   return (
     <motion.div
@@ -271,8 +223,11 @@ function VoterBanner({ rating, myProfileId, index }: { rating: RatingWithRater; 
       data-testid={`rating-card-${rating.id}`}
     >
       <div
-        className="flex items-center gap-3 px-4 py-3 hover-elevate cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
+        className={`flex items-center gap-3 px-4 py-3 hover-elevate cursor-pointer ${hasReplied ? "opacity-70" : ""}`}
+        onClick={() => {
+          if (hasReplied) return;
+          setIsExpanded(!isExpanded);
+        }}
         data-testid={`voter-banner-${rating.id}`}
       >
         <div className="relative">
@@ -296,15 +251,21 @@ function VoterBanner({ rating, myProfileId, index }: { rating: RatingWithRater; 
             <IconComponent className={`w-3 h-3 ${ratingColor}`} />
             <span className="text-white/50 text-xs truncate">{ratingLabels[rating.rating]}</span>
           </div>
+          {hasReplied && (
+            <p className="text-white/40 text-xs truncate mt-0.5">
+              Hai risposto: {rating.ratedReply}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col items-end gap-1">
           <span className="text-white/30 text-[10px]">{timeAgo}</span>
-          <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+          {!hasReplied && <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />}
+          {hasReplied && <MessageCircle className="w-3.5 h-3.5 text-white/30" />}
         </div>
       </div>
 
-      {isExpanded && (
+      {isExpanded && !hasReplied && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
@@ -339,40 +300,6 @@ function VoterBanner({ rating, myProfileId, index }: { rating: RatingWithRater; 
         </motion.div>
       )}
     </motion.div>
-  );
-}
-
-function RepliedBanner({ rating, matchId }: { rating: RatingWithRater; matchId: string | null }) {
-  const [, setLocation] = useLocation();
-  const ratingColor = rating.rating >= 4 ? "text-green-400" : rating.rating >= 3 ? "text-yellow-400" : "text-orange-400";
-  const IconComponent = ratingEmoji[rating.rating] || Star;
-
-  return (
-    <div
-      className="flex items-center gap-3 px-4 py-3 border-b border-white/5 hover-elevate cursor-pointer"
-      onClick={() => {
-        if (matchId) setLocation(`/chat/${matchId}`);
-        else setLocation("/matches");
-      }}
-      data-testid={`replied-banner-${rating.id}`}
-    >
-      <Avatar className="w-12 h-12 border-2 border-white/10">
-        <AvatarImage src={rating.rater.imageUrl} alt={rating.rater.name} />
-        <AvatarFallback className="bg-primary/20 text-primary">{rating.rater.name[0]}</AvatarFallback>
-      </Avatar>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-white/80 font-medium text-sm">{rating.rater.name}</span>
-          <IconComponent className={`w-3 h-3 ${ratingColor}`} />
-        </div>
-        <p className="text-white/40 text-xs truncate mt-0.5">
-          Tu: {rating.ratedReply}
-        </p>
-      </div>
-
-      <ChevronRight className="w-4 h-4 text-white/20 flex-shrink-0" />
-    </div>
   );
 }
 
