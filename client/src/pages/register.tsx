@@ -64,7 +64,7 @@ export default function Register() {
         title: "Benvenuto su Vibra!",
         description: "Account creato con successo",
       });
-      setLocation("/profile/edit");
+      setLocation("/onboarding");
     } catch (error: any) {
       toast({
         title: "Errore",

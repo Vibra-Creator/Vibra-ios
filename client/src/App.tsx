@@ -27,12 +27,13 @@ import RoomDetail from "@/pages/room-detail";
 import PrimaImpressione from "@/pages/prima-impressione";
 import Vibing from "@/pages/vibing";
 import LocationMap from "@/pages/location-map";
+import Onboarding from "@/pages/onboarding";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
-const publicPages = ["/privacy", "/terms", "/login", "/register"];
+const publicPages = ["/privacy", "/terms", "/login", "/register", "/onboarding"];
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -96,6 +97,7 @@ function AuthenticatedRouter() {
       <Route path="/matches" component={Matches} />
       <Route path="/chat/:matchId" component={Chat} />
       <Route path="/profile" component={Profile} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/profile/edit" component={ProfileEdit} />
       <Route path="/admin" component={Admin} />
       <Route path="/rooms" component={Rooms} />
@@ -165,7 +167,7 @@ function UnauthenticatedRouter() {
   );
 }
 
-const pagesWithOwnBackground = ["/login", "/register", "/", "/privacy", "/terms"];
+const pagesWithOwnBackground = ["/login", "/register", "/", "/privacy", "/terms", "/onboarding"];
 
 function GuestBanner() {
   const { exitGuestMode } = useGuest();
