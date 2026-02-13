@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts } from "@shared/schema";
+import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges } from "@shared/schema";
 import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -771,6 +771,31 @@ export async function seedDatabase() {
         await db.insert(virtualGifts).values(gift);
       }
       console.log(`Seeded ${defaultGifts.length} virtual gifts.`);
+    }
+
+    const existingChallenges = await db.select().from(dailyChallenges).where(eq(dailyChallenges.isActive, true));
+    const nonExpiredChallenges = existingChallenges.filter(c => !c.expiresAt || new Date(c.expiresAt) > new Date());
+    if (nonExpiredChallenges.length === 0) {
+      console.log("Seeding daily challenges with 12h expiration...");
+      const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+      const defaultChallenges = [
+        { title: "Truccato/a da Donna", description: "Scatta una foto di te stesso truccato da donna - mostra il tuo lato divertente!", points: 20 },
+        { title: "Pulizia Bagno", description: "Fotografati mentre pulisci il bagno - dimostra che sai essere responsabile!", points: 15 },
+        { title: "Chef per un Giorno", description: "Prepara un piatto e fotografalo - mostra le tue abilita' culinarie!", points: 15 },
+        { title: "Animale Domestico", description: "Scatta un selfie con un animale - mostra il tuo lato dolce!", points: 10 },
+        { title: "Tramonto Romantico", description: "Fotografa un tramonto dalla tua posizione - condividi la bellezza!", points: 10 },
+        { title: "Talento Nascosto", description: "Mostra un tuo talento nascosto in foto - sorprendici!", points: 25 },
+        { title: "Look del Mattino", description: "Selfie appena sveglio/a senza filtri - sii autentico/a!", points: 20 },
+        { title: "Outfit Creativo", description: "Indossa qualcosa di creativo o divertente e fotografati!", points: 15 },
+        { title: "Angolo Relax", description: "Quale e' il posto dove ti senti a casa? Mostraci il tuo angolo di pace!", points: 15 },
+        { title: "Outfit del \"Ma Anche No\"", description: "Indossa l'abbinamento piu' assurdo che hai e sfoggialo con orgoglio!", points: 20 },
+        { title: "Healthy Snack", description: "Mostraci il tuo spuntino o colazione salutare di oggi!", points: 10 },
+        { title: "Caffeina Check", description: "Mostraci la tua tazza piu' originale dove bevi il caffe'!", points: 10 },
+      ];
+      for (const c of defaultChallenges) {
+        await db.insert(dailyChallenges).values({ ...c, isActive: true, expiresAt });
+      }
+      console.log(`Seeded ${defaultChallenges.length} challenges (expire in 12h).`);
     }
 
     const lowPointProfiles = await db.select().from(profiles).where(sql`${profiles.isBot} = false AND COALESCE(${profiles.points}, 0) < 50`);

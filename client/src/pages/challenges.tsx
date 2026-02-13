@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins, Sofa, Shirt, Apple, Coffee, ArrowLeft } from "lucide-react";
@@ -21,6 +21,42 @@ function ChallengeSkeleton() {
       ))}
     </div>
   );
+}
+
+function ChallengeCountdownBadge({ expiresAt }: { expiresAt?: string | Date | null }) {
+  const timeLeft = useCountdown(expiresAt);
+  if (!timeLeft || timeLeft === "Scaduta") {
+    return (
+      <Badge variant="outline" className="text-xs text-red-400 border-red-400/30">
+        <Clock className="w-3 h-3 mr-1" />
+        Scaduta
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="text-xs">
+      <Clock className="w-3 h-3 mr-1" />
+      {timeLeft}
+    </Badge>
+  );
+}
+
+function useCountdown(expiresAt: string | Date | null | undefined) {
+  const [timeLeft, setTimeLeft] = useState("");
+  useEffect(() => {
+    if (!expiresAt) { setTimeLeft(""); return; }
+    const update = () => {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Scaduta"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setTimeLeft(`${h}h ${m}m`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+  return timeLeft;
 }
 
 export default function Challenges() {
@@ -82,11 +118,13 @@ export default function Challenges() {
       resetUpload();
     },
     onError: (error: Error) => {
+      const isAiRejection = error.message?.includes("non approvata") || error.message?.includes("non sembra");
       toast({
-        title: "Errore",
+        title: isAiRejection ? "Foto non valida" : "Errore",
         description: error.message || "Impossibile caricare la foto",
         variant: "destructive",
       });
+      resetUpload();
     },
   });
 
@@ -333,10 +371,7 @@ export default function Challenges() {
                           Completata
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Oggi
-                        </Badge>
+                        <ChallengeCountdownBadge expiresAt={(challenge as any).expiresAt} />
                       )}
                     </div>
                     <p className="text-sm text-white/70 mb-3">{challenge.description}</p>

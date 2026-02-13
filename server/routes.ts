@@ -711,6 +711,35 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/admin/challenge-submissions/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await db.delete(challengeSubmissions).where(eq(challengeSubmissions.id, req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting submission:", error);
+      res.status(500).json({ error: "Failed to delete submission" });
+    }
+  });
+
+  app.post("/api/admin/challenges", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { title, description, points } = req.body;
+      if (!title || !description) return res.status(400).json({ error: "Titolo e descrizione richiesti" });
+      const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+      const [challenge] = await db.insert(dailyChallenges).values({
+        title,
+        description,
+        points: points || 10,
+        isActive: true,
+        expiresAt,
+      }).returning();
+      res.status(201).json(challenge);
+    } catch (error) {
+      console.error("Error creating challenge:", error);
+      res.status(500).json({ error: "Failed to create challenge" });
+    }
+  });
+
   app.post("/api/admin/reset-test-data", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const testEmails = ["luna@test.com", "nova@test.com", "orion@test.com"];
@@ -1075,6 +1104,50 @@ export async function registerRoutes(
 
       if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
 
+      const allChallenges = await storage.getChallenges();
+      const challenge = allChallenges.find(c => c.id === req.params.id);
+      if (!challenge) return res.status(404).json({ error: "Sfida non trovata" });
+
+      let aiApproved = true;
+      let aiReason = "";
+      try {
+        const base64Image = req.file.buffer.toString("base64");
+        const mimeType = req.file.mimetype || "image/jpeg";
+        const aiResponse = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          max_completion_tokens: 200,
+          messages: [
+            {
+              role: "system",
+              content: `Sei un moderatore di una app di incontri. Devi verificare se una foto caricata da un utente è attinente al tema di una sfida giornaliera. Rispondi SOLO con un JSON: {"approved": true/false, "reason": "motivo breve in italiano"}. Approva se la foto è ragionevolmente collegata al tema. Rifiuta solo se è chiaramente non pertinente, offensiva, o inappropriata.`
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: `La sfida è: "${challenge.title}" - "${challenge.description}". Questa foto è attinente al tema della sfida?` },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+              ]
+            }
+          ]
+        });
+        const aiText = aiResponse.choices[0]?.message?.content || "";
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          aiApproved = parsed.approved !== false;
+          aiReason = parsed.reason || "";
+        }
+      } catch (aiErr: any) {
+        console.error("AI verification failed, defaulting to approved:", aiErr?.message);
+      }
+
+      if (!aiApproved) {
+        return res.status(400).json({
+          error: `Foto non approvata: ${aiReason || "La foto non sembra attinente al tema della sfida. Prova con un'altra foto."}`,
+          aiRejected: true
+        });
+      }
+
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
@@ -1102,8 +1175,6 @@ export async function registerRoutes(
 
       await storage.updateChallengeSubmissionStatus(submission.id, "approved");
 
-      const allChallenges = await storage.getChallenges();
-      const challenge = allChallenges.find(c => c.id === req.params.id);
       const pointsToAward = challenge?.points ?? 10;
       await storage.addPoints(userProfile.id, pointsToAward);
 
