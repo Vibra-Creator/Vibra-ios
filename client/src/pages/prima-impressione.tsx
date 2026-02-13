@@ -38,9 +38,7 @@ export default function PrimaImpressione() {
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [showInfoBanner, setShowInfoBanner] = useState(() => {
-    return sessionStorage.getItem("prima-impressione-banner-dismissed") !== "true";
-  });
+  const [showInfoBanner, setShowInfoBanner] = useState(false);
 
   const { data: ratings, isLoading } = useQuery<RatingWithRater[]>({
     queryKey: ["/api/ratings/received"],
