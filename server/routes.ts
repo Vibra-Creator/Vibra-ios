@@ -1802,5 +1802,22 @@ export async function registerRoutes(
     }
   });
 
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      const expiredRooms = await db.select().from(privateRooms).where(eq(privateRooms.isActive, true));
+      for (const room of expiredRooms) {
+        if (room.expiresAt && new Date(room.expiresAt) <= now) {
+          await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, room.id));
+          await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, room.id));
+          await db.delete(privateRooms).where(eq(privateRooms.id, room.id));
+          console.log(`Expired private room "${room.name}" (${room.id}) deleted.`);
+        }
+      }
+    } catch (error) {
+      console.error("Error cleaning up expired private rooms:", error);
+    }
+  }, 5 * 60 * 1000);
+
   return httpServer;
 }

@@ -370,7 +370,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPrivateRoom(data: { ownerId: string; name: string; description?: string; imageUrl?: string }): Promise<PrivateRoom> {
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
     const [room] = await db.insert(privateRooms).values({
       ownerId: data.ownerId,
       name: data.name,

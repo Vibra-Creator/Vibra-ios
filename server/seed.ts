@@ -803,20 +803,6 @@ export async function seedDatabase() {
       }
     }
 
-    const defaultRoomId = "default-room-entra-chi-dico-io";
-    const existingDefaultRoom = await db.select().from(privateRooms).where(eq(privateRooms.id, defaultRoomId));
-    if (existingDefaultRoom.length === 0) {
-      console.log("Seeding default private room 'Entra chi dico io'...");
-      await db.insert(privateRooms).values({
-        id: defaultRoomId,
-        ownerId: "16",
-        name: "Entra chi dico io",
-        description: "Stanza soggetta ad accettazione",
-        imageUrl: "/images/profile-16.png",
-        isActive: true,
-      });
-      console.log("Default private room seeded.");
-    }
 
     const existingBannedWords = await db.select().from(bannedWords);
     if (existingBannedWords.length === 0) {
