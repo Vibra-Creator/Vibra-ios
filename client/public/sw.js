@@ -1,4 +1,4 @@
-const CACHE_VERSION = 9;
+const CACHE_VERSION = 10;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -35,13 +35,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       fetch(event.request).then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+        }
         return response;
-      }).catch(() => caches.match(event.request))
+      }).catch(() => caches.match('/'))
     );
     return;
   }
@@ -51,8 +57,10 @@ self.addEventListener('fetch', (event) => {
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
         return fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
           return response;
         });
       })
@@ -62,6 +70,9 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     fetch(event.request).catch(() => {
+      if (event.request.mode === 'navigate') {
+        return caches.match('/');
+      }
       return caches.match(event.request);
     })
   );

@@ -579,9 +579,12 @@ async function cleanupUserByEmail(email: string) {
 async function ensureAdminAccount() {
   try {
     const adminEmail = "admin@vibra.com";
-    const [existing] = await db.select().from(users).where(eq(users.email, adminEmail));
-    if (existing) {
-      if (!existing.isAdmin) {
+    const adminId = "admin-vibra-001";
+    const [existingByEmail] = await db.select().from(users).where(eq(users.email, adminEmail));
+    const [existingById] = await db.select().from(users).where(eq(users.id, adminId));
+    if (existingByEmail || existingById) {
+      const existing = existingByEmail || existingById;
+      if (existing && !existing.isAdmin) {
         await db.update(users).set({ isAdmin: true }).where(eq(users.id, existing.id));
         console.log("Admin account updated with admin privileges.");
       }
@@ -590,7 +593,7 @@ async function ensureAdminAccount() {
     }
     const hashedPassword = await bcrypt.hash("VAdmin2024!", 12);
     await db.insert(users).values({
-      id: "admin-vibra-001",
+      id: adminId,
       email: adminEmail,
       password: hashedPassword,
       firstName: "Admin",
