@@ -111,7 +111,7 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
       render={({ field }) => (
         <FormItem>
           <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{label}</FormLabel>
-          <Select onValueChange={field.onChange} value={field.value}>
+          <Select onValueChange={field.onChange} value={field.value || undefined}>
             <FormControl>
               <SelectTrigger className="bg-white/15 backdrop-blur-md border-white/25 text-white" data-testid={testId}>
                 <SelectValue placeholder={placeholder || "Seleziona"} />
@@ -166,6 +166,7 @@ export default function ProfileEdit() {
   const [ratingEnabled, setRatingEnabled] = useState(false);
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const hasInitialized = useRef(false);
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -206,7 +207,8 @@ export default function ProfileEdit() {
   });
 
   useEffect(() => {
-    if (existingProfile) {
+    if (existingProfile && !hasInitialized.current) {
+      hasInitialized.current = true;
       form.reset({
         name: existingProfile.name,
         age: existingProfile.age,
@@ -244,7 +246,7 @@ export default function ProfileEdit() {
       setRatingEnabled(existingProfile.ratingEnabled || false);
       setLocationSharingEnabled(existingProfile.locationSharingEnabled || false);
     }
-  }, [existingProfile, form]);
+  }, [existingProfile]);
 
   const createMutation = useMutation({
     mutationFn: async (data: ProfileFormValues & { interests: string[]; languages: string[] }) => {
@@ -706,7 +708,7 @@ export default function ProfileEdit() {
                           name="phonePrefix"
                           render={({ field }) => (
                             <FormItem className="w-[140px]">
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value || undefined}>
                                 <FormControl>
                                   <SelectTrigger className="bg-white/15 backdrop-blur-md border-white/25 text-white" data-testid="select-phone-prefix">
                                     <SelectValue placeholder="+39" />
