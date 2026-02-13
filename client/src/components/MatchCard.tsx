@@ -1,8 +1,12 @@
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Sparkles, MapPin } from "lucide-react";
+import { Heart, MessageCircle, Sparkles, MapPin, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import type { Profile } from "@shared/schema";
 
 interface MatchCardProps {
@@ -14,6 +18,32 @@ interface MatchCardProps {
 
 export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardProps) {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const unmatchMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/matches/${matchId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === "string" && key.startsWith("/api/matches");
+      }});
+      toast({
+        title: "Match rimosso",
+        description: `Hai rimosso il match con ${profile.name}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Errore",
+        description: "Impossibile rimuovere il match",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -36,6 +66,21 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
               <Sparkles className="w-3 h-3 mr-1" />
               {profile.alienType}
             </Badge>
+          </div>
+
+          <div className="absolute top-2 right-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="bg-black/40 backdrop-blur-sm text-white/70 rounded-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowConfirm(true);
+              }}
+              data-testid={`button-unmatch-${profile.id}`}
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
           
           <div className="absolute bottom-3 left-3 right-3">
@@ -77,6 +122,32 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
           )}
         </div>
       </div>
+
+      {showConfirm && (
+        <div className="absolute inset-0 z-20 rounded-2xl bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 gap-3">
+          <p className="text-white text-sm text-center font-medium">
+            Rimuovere il match con {profile.name}?
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="text-white border-white/30"
+              onClick={() => setShowConfirm(false)}
+              data-testid={`button-cancel-unmatch-${profile.id}`}
+            >
+              Annulla
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => unmatchMutation.mutate()}
+              disabled={unmatchMutation.isPending}
+              data-testid={`button-confirm-unmatch-${profile.id}`}
+            >
+              {unmatchMutation.isPending ? "..." : "Rimuovi"}
+            </Button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

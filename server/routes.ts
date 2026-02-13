@@ -508,6 +508,30 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/matches/:matchId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) {
+        return res.status(403).json({ error: "Profile not found" });
+      }
+      const matchId = req.params.matchId;
+      const [match] = await db.select().from(matches).where(eq(matches.id, matchId));
+      if (!match) {
+        return res.status(404).json({ error: "Match not found" });
+      }
+      if (match.profile1Id !== userProfile.id && match.profile2Id !== userProfile.id) {
+        return res.status(403).json({ error: "Not authorized to delete this match" });
+      }
+      await db.delete(messages).where(eq(messages.matchId, matchId));
+      await db.delete(matches).where(eq(matches.id, matchId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting match:", error);
+      res.status(500).json({ error: "Failed to delete match" });
+    }
+  });
+
   app.get("/api/messages/:matchId", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;

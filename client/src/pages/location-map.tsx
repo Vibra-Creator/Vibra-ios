@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Navigation, X, AlertTriangle, Share2, Info } from "lucide-react";
+import { MapPin, Navigation, X, AlertTriangle, Share2, Info, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import "leaflet/dist/leaflet.css";
 
 export default function LocationMap() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
@@ -172,6 +174,9 @@ export default function LocationMap() {
       <div ref={mapRef} className="flex-1 z-0" style={{ minHeight: "300px" }} />
 
       <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="bg-black/60 backdrop-blur-md text-white border border-white/10 rounded-xl" onClick={() => setLocation("/")} data-testid="button-back">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <div className="flex-1 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-secondary" />

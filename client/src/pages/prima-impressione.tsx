@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, Send, MessageCircle, Star, Sparkles, Heart, UserPlus, X, Info } from "lucide-react";
+import { Eye, Send, MessageCircle, Star, Sparkles, Heart, UserPlus, X, Info, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -38,6 +38,9 @@ export default function PrimaImpressione() {
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [showInfoBanner, setShowInfoBanner] = useState(() => {
+    return sessionStorage.getItem("prima-impressione-banner-dismissed") !== "true";
+  });
 
   const { data: ratings, isLoading } = useQuery<RatingWithRater[]>({
     queryKey: ["/api/ratings/received"],
@@ -50,11 +53,19 @@ export default function PrimaImpressione() {
     enabled: !!user && !isGuest,
   });
 
+  const dismissBanner = () => {
+    setShowInfoBanner(false);
+    sessionStorage.setItem("prima-impressione-banner-dismissed", "true");
+  };
+
   if (isGuest) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="px-4 pt-4 pb-3">
           <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="text-white" onClick={() => setLocation("/")} data-testid="button-back">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
               <Eye className="w-5 h-5 text-white" />
             </div>
@@ -114,15 +125,6 @@ export default function PrimaImpressione() {
     );
   }
 
-  const [showInfoBanner, setShowInfoBanner] = useState(() => {
-    return sessionStorage.getItem("prima-impressione-banner-dismissed") !== "true";
-  });
-
-  const dismissBanner = () => {
-    setShowInfoBanner(false);
-    sessionStorage.setItem("prima-impressione-banner-dismissed", "true");
-  };
-
   if (!myProfile.ratingEnabled) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
@@ -149,6 +151,9 @@ export default function PrimaImpressione() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="text-white" onClick={() => setLocation("/")} data-testid="button-back">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
             <Eye className="w-5 h-5 text-white" />
           </div>

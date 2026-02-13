@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, MapPin, Clock, Radio, X, Heart, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { Zap, MapPin, Clock, Radio, X, Heart, ChevronRight, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -171,6 +171,12 @@ export default function Vibing() {
             exit={{ opacity: 0, y: -20 }}
             className="flex-1 flex flex-col items-center justify-center p-6 gap-6"
           >
+            <div className="w-full flex items-center px-4 pt-2">
+              <Button variant="ghost" size="icon" className="text-white" onClick={() => setLocation("/")} data-testid="button-back">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </div>
+
             <motion.div
               animate={{ scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }}
               transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
@@ -271,6 +277,9 @@ export default function Vibing() {
           >
             <div className="bg-gradient-to-r from-green-500/20 via-cyan-500/20 to-purple-600/20 border-b border-cyan-500/20 px-4 py-3">
               <div className="flex items-center justify-between gap-2">
+                <Button variant="ghost" size="icon" className="text-white shrink-0" onClick={() => setLocation("/")} data-testid="button-back-active">
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
                 <div className="flex items-center gap-3">
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
