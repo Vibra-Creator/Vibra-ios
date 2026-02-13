@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
-import { Eye, Send, MessageCircle, Star, Sparkles, Heart, UserPlus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Eye, Send, MessageCircle, Star, Sparkles, Heart, UserPlus, X, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -114,6 +114,15 @@ export default function PrimaImpressione() {
     );
   }
 
+  const [showInfoBanner, setShowInfoBanner] = useState(() => {
+    return sessionStorage.getItem("prima-impressione-banner-dismissed") !== "true";
+  });
+
+  const dismissBanner = () => {
+    setShowInfoBanner(false);
+    sessionStorage.setItem("prima-impressione-banner-dismissed", "true");
+  };
+
   if (!myProfile.ratingEnabled) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
@@ -153,6 +162,35 @@ export default function PrimaImpressione() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showInfoBanner && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="px-4 pb-2"
+          >
+            <div className="rounded-xl bg-gradient-to-r from-pink-500/15 to-purple-600/15 border border-pink-500/20 p-3" data-testid="banner-prima-info">
+              <div className="flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-pink-400 mt-0.5 shrink-0" />
+                <p className="text-white/60 text-xs leading-relaxed flex-1">
+                  Qui trovi le impressioni che gli altri utenti ti hanno lasciato. Puoi rispondere con un messaggio per aprire una chat!
+                </p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 w-6 h-6 text-white/40"
+                  onClick={dismissBanner}
+                  data-testid="button-close-prima-banner"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto">
         {(!ratings || ratings.length === 0) ? (

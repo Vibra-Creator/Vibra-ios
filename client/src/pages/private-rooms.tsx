@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft, Info } from "lucide-react";
+import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft, Info, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,14 @@ export default function PrivateRooms() {
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomDescription, setNewRoomDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showBanner, setShowBanner] = useState(() => {
+    return sessionStorage.getItem("private-rooms-banner-dismissed") !== "true";
+  });
+
+  const dismissBanner = () => {
+    setShowBanner(false);
+    sessionStorage.setItem("private-rooms-banner-dismissed", "true");
+  };
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -183,10 +191,11 @@ export default function PrivateRooms() {
       </motion.div>
 
       <div className="relative z-10">
-        {!isGuest && !isLoading && (
+        {!isGuest && !isLoading && showBanner && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, height: 0 }}
             className="mb-6"
           >
             <div className="rounded-xl backdrop-blur-md bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 p-4" data-testid="banner-create-room">
@@ -195,7 +204,18 @@ export default function PrivateRooms() {
                   <Lock className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-white text-base mb-0.5">Entra chi dico io!</h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-white text-base mb-0.5">Entra chi dico io!</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 w-6 h-6 text-white/40 -mt-1 -mr-1"
+                      onClick={dismissBanner}
+                      data-testid="button-close-rooms-banner"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                   <p className="text-white/60 text-xs leading-relaxed mb-3">
                     Crea la tua stanza privata e decidi tu chi far entrare! Costa {requiredPoints} punti, dura 12 ore e poi viene cancellata automaticamente. Puoi crearne quante ne vuoi!
                   </p>
