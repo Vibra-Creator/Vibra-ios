@@ -30,10 +30,12 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import {
   genderOptions,
+  preferredGenderOptions,
   hairColorOptions,
   eyeColorOptions,
   bodyTypeOptions,
   educationOptions,
+  preferredEducationOptions,
   relationshipTypeOptions,
   wantsChildrenOptions,
   zodiacSignOptions,
@@ -631,7 +633,7 @@ export default function ProfileEdit() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <SelectField control={form.control} name="gender" label="Genere" options={genderOptions} placeholder="Il tuo genere" testId="select-gender" />
-                      <SelectField control={form.control} name="preferredGender" label="Cerco" options={genderOptions} placeholder="Chi ti attrae" testId="select-preferred-gender" />
+                      <SelectField control={form.control} name="preferredGender" label="Cerco" options={preferredGenderOptions} placeholder="Chi ti attrae" testId="select-preferred-gender" />
                     </div>
 
                     <FormField
@@ -843,7 +845,7 @@ export default function ProfileEdit() {
                       />
                     </div>
                     <SelectField control={form.control} name="education" label="Istruzione" options={educationOptions} placeholder="Il tuo livello di studi" testId="select-education" />
-                    <SelectField control={form.control} name="preferredEducation" label="Istruzione Preferita" options={educationOptions} placeholder="Studi del partner ideale" testId="select-preferred-education" />
+                    <SelectField control={form.control} name="preferredEducation" label="Istruzione Preferita" options={preferredEducationOptions} placeholder="Studi del partner ideale" testId="select-preferred-education" />
                 </div>
               )}
 

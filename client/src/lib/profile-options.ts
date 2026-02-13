@@ -3,6 +3,15 @@ export const genderOptions = [
   "Donna",
   "Non-binario",
   "Altro",
+  "Preferisco non rispondere",
+];
+
+export const preferredGenderOptions = [
+  "Uomo",
+  "Donna",
+  "Non-binario",
+  "Entrambi",
+  "Indifferente",
 ];
 
 export const hairColorOptions = [
@@ -14,6 +23,7 @@ export const hairColorOptions = [
   "Bianco",
   "Colorato",
   "Calvo",
+  "Preferisco non rispondere",
 ];
 
 export const eyeColorOptions = [
@@ -23,6 +33,7 @@ export const eyeColorOptions = [
   "Grigi",
   "Nocciola",
   "Neri",
+  "Preferisco non rispondere",
 ];
 
 export const bodyTypeOptions = [
@@ -31,6 +42,7 @@ export const bodyTypeOptions = [
   "Medio",
   "Robusto",
   "Curvy",
+  "Preferisco non rispondere",
 ];
 
 export const educationOptions = [
@@ -40,6 +52,16 @@ export const educationOptions = [
   "Laurea magistrale",
   "Dottorato",
   "Altro",
+  "Preferisco non rispondere",
+];
+
+export const preferredEducationOptions = [
+  "Licenza media",
+  "Diploma",
+  "Laurea triennale",
+  "Laurea magistrale",
+  "Dottorato",
+  "Indifferente",
 ];
 
 export const relationshipTypeOptions = [
@@ -47,6 +69,7 @@ export const relationshipTypeOptions = [
   "Amicizia",
   "Qualcosa di casual",
   "Non lo so ancora",
+  "Preferisco non rispondere",
 ];
 
 export const wantsChildrenOptions = [
@@ -70,6 +93,7 @@ export const zodiacSignOptions = [
   "Capricorno",
   "Acquario",
   "Pesci",
+  "Preferisco non rispondere",
 ];
 
 export const loveLanguageOptions = [
@@ -78,6 +102,7 @@ export const loveLanguageOptions = [
   "Ricevere regali",
   "Atti di servizio",
   "Contatto fisico",
+  "Preferisco non rispondere",
 ];
 
 export const communicationStyleOptions = [
@@ -86,6 +111,7 @@ export const communicationStyleOptions = [
   "Chiamate",
   "Videochiamate",
   "Di persona",
+  "Preferisco non rispondere",
 ];
 
 export const lifestyleOptions = [
@@ -95,6 +121,7 @@ export const lifestyleOptions = [
   "Avventuroso",
   "Tranquillo",
   "Workaholic",
+  "Preferisco non rispondere",
 ];
 
 export const accessMotivationOptions = [
