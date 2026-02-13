@@ -647,15 +647,23 @@ const botAccountCredentials = [
 async function createBotUserAccounts() {
   for (const bot of botAccountCredentials) {
     try {
-      const [existingUser] = await db.select().from(users).where(eq(users.email, bot.email));
-      if (existingUser) {
+      const userId = `bot-user-${bot.profileId}`;
+      const [existingById] = await db.select().from(users).where(eq(users.id, userId));
+      if (existingById) {
         const [profile] = await db.select().from(profiles).where(eq(profiles.id, bot.profileId));
         if (profile && !profile.userId) {
-          await db.update(profiles).set({ userId: existingUser.id }).where(eq(profiles.id, bot.profileId));
+          await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.profileId));
         }
         continue;
       }
-      const userId = `bot-user-${bot.profileId}`;
+      const [existingByEmail] = await db.select().from(users).where(eq(users.email, bot.email));
+      if (existingByEmail) {
+        const [profile] = await db.select().from(profiles).where(eq(profiles.id, bot.profileId));
+        if (profile && !profile.userId) {
+          await db.update(profiles).set({ userId: existingByEmail.id }).where(eq(profiles.id, bot.profileId));
+        }
+        continue;
+      }
       const hashedPassword = await bcrypt.hash(bot.password, 12);
       await db.insert(users).values({
         id: userId,
