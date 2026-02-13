@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Heart,
@@ -16,6 +17,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Rocket,
+  ArrowLeft,
 } from "lucide-react";
 
 const features = [
@@ -98,6 +100,11 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [page, setPage] = useState(0);
 
+  const { data: existingProfile } = useQuery<any>({
+    queryKey: ["/api/profiles/me"],
+  });
+  const hasProfile = !!existingProfile;
+
   const currentFeatures = features.slice(
     page * ITEMS_PER_PAGE,
     (page + 1) * ITEMS_PER_PAGE
@@ -117,6 +124,17 @@ export default function Onboarding() {
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col p-5 pb-8 overflow-y-auto">
+        {hasProfile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocation("/profile")}
+            className="absolute top-4 left-4 z-20 text-white"
+            data-testid="button-back-from-onboarding"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        )}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -199,12 +217,12 @@ export default function Onboarding() {
 
           {isLastPage ? (
             <Button
-              onClick={() => setLocation("/profile/edit")}
+              onClick={() => setLocation(hasProfile ? "/profile" : "/profile/edit")}
               className="bg-gradient-to-r from-primary to-accent text-white px-6"
               data-testid="button-onboarding-start"
             >
               <Rocket className="w-4 h-4 mr-2" />
-              Crea il tuo Profilo
+              {hasProfile ? "Torna al Profilo" : "Crea il tuo Profilo"}
             </Button>
           ) : (
             <Button

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -516,6 +516,15 @@ export default function ProfilePage() {
           >
             <Edit2 className="w-5 h-5" />
             Modifica Profilo
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-3"
+            onClick={() => setLocation("/onboarding")}
+            data-testid="button-guide"
+          >
+            <HelpCircle className="w-5 h-5" />
+            Guida alle Funzioni
           </Button>
           <Button 
             variant="outline" 
