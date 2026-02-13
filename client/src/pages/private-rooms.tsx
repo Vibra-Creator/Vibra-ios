@@ -191,13 +191,13 @@ export default function PrivateRooms() {
           >
             <div className="rounded-xl backdrop-blur-md bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 p-4" data-testid="banner-create-room">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center shrink-0 mt-0.5">
-                  <Info className="w-5 h-5 text-primary" />
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center shrink-0 mt-0.5">
+                  <Lock className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-white text-sm mb-1">Crea la tua Stanza Privata</h3>
+                  <h3 className="font-bold text-white text-base mb-0.5">Entra chi dico io!</h3>
                   <p className="text-white/60 text-xs leading-relaxed mb-3">
-                    Crea uno spazio esclusivo dove invitare chi vuoi! Ogni stanza costa {requiredPoints} punti, dura 12 ore e poi viene cancellata automaticamente. Puoi creare quante stanze vuoi!
+                    Crea la tua stanza privata e decidi tu chi far entrare! Costa {requiredPoints} punti, dura 12 ore e poi viene cancellata automaticamente. Puoi crearne quante ne vuoi!
                   </p>
                   <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
