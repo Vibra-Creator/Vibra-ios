@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Sparkles } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
+import { Button } from "@/components/ui/button";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
@@ -15,7 +17,7 @@ export default function Home() {
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
-  const { user } = useAuth();
+  const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
@@ -157,7 +159,32 @@ export default function Home() {
     return (
       <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
-        <div className="relative z-10"><EmptyState type="no-profiles" onRetry={() => window.location.href = "/profile/edit"} /></div>
+        <div className="relative z-10 text-center max-w-sm mx-auto">
+          <div className="backdrop-blur-md bg-white/10 rounded-2xl p-8 border border-white/20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
+              <Sparkles className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Benvenuto su Vibra!</h2>
+            <p className="text-white/70 text-sm mb-6">
+              Per iniziare a scoprire profili e fare match, devi prima creare il tuo profilo.
+            </p>
+            <Button
+              className="w-full mb-3"
+              onClick={() => window.location.href = "/profile/edit"}
+              data-testid="button-create-profile"
+            >
+              Crea il Tuo Profilo
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-white/60"
+              onClick={() => logoutFn()}
+              data-testid="button-logout-home"
+            >
+              Torna al Login
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
