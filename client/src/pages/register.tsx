@@ -18,6 +18,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [confirmAge, setConfirmAge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -38,6 +39,15 @@ export default function Register() {
       toast({
         title: "Errore",
         description: "Devi accettare i termini di servizio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!confirmAge) {
+      toast({
+        title: "Errore",
+        description: "Devi confermare di avere almeno 18 anni",
         variant: "destructive",
       });
       return;
@@ -183,6 +193,18 @@ export default function Register() {
 
               <div className="flex items-start space-x-2">
                 <Checkbox
+                  id="age"
+                  checked={confirmAge}
+                  onCheckedChange={(checked) => setConfirmAge(checked as boolean)}
+                  data-testid="checkbox-age"
+                />
+                <label htmlFor="age" className="text-sm text-white/60 leading-tight">
+                  Confermo di avere almeno 18 anni
+                </label>
+              </div>
+
+              <div className="flex items-start space-x-2">
+                <Checkbox
                   id="terms"
                   checked={acceptTerms}
                   onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
@@ -203,7 +225,7 @@ export default function Register() {
               <Button
                 type="submit"
                 className="w-full h-12 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90"
-                disabled={isLoading || !acceptTerms}
+                disabled={isLoading || !acceptTerms || !confirmAge}
                 data-testid="button-register"
               >
                 {isLoading ? "Creazione account..." : "Crea Account"}

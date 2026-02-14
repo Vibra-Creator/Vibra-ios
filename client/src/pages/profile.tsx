@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -351,6 +351,40 @@ export default function ProfilePage() {
     },
   });
 
+  const [isAccountDeleteOpen, setIsAccountDeleteOpen] = useState(false);
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("DELETE", "/api/profiles/me?deleteAccount=true");
+    },
+    onSuccess: () => {
+      toast({ title: "Account eliminato", description: "Il tuo account e tutti i dati sono stati eliminati." });
+      window.location.href = "/login";
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Non è stato possibile eliminare l'account.", variant: "destructive" });
+    },
+  });
+
+  const handleExportData = async () => {
+    try {
+      const res = await fetch("/api/gdpr/export", { credentials: "include" });
+      if (!res.ok) throw new Error("Export failed");
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "vibra-dati-personali.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Download completato", description: "I tuoi dati sono stati scaricati." });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile scaricare i dati.", variant: "destructive" });
+    }
+  };
+
   const { data: profile, isLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
     enabled: !!user,
@@ -547,6 +581,16 @@ export default function ProfilePage() {
             {isLoggingOut ? "Uscita..." : "Esci"}
           </Button>
 
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-3"
+            onClick={handleExportData}
+            data-testid="button-export-data"
+          >
+            <Download className="w-5 h-5" />
+            Scarica i Miei Dati (GDPR)
+          </Button>
+
           <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <AlertDialogTrigger asChild>
               <Button 
@@ -574,6 +618,38 @@ export default function ProfilePage() {
                   data-testid="button-confirm-delete"
                 >
                   {deleteProfileMutation.isPending ? "Eliminazione..." : "Elimina Profilo"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={isAccountDeleteOpen} onOpenChange={setIsAccountDeleteOpen}>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-3 text-red-600 border-red-600/30"
+                data-testid="button-delete-account"
+              >
+                <X className="w-5 h-5" />
+                Elimina Account Completo
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminare l'account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Questa azione eliminerà PERMANENTEMENTE il tuo account, profilo, tutti i match, messaggi, stanze, e ogni dato associato. Non potrai più accedere con queste credenziali.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-account-delete">Annulla</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => deleteAccountMutation.mutate()}
+                  disabled={deleteAccountMutation.isPending}
+                  data-testid="button-confirm-account-delete"
+                >
+                  {deleteAccountMutation.isPending ? "Eliminazione..." : "Elimina Account"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

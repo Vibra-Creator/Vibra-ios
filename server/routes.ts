@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -13,6 +13,25 @@ import fs from "fs";
 import { randomUUID } from "crypto";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import OpenAI from "openai";
+
+const OFFENSIVE_WORDS = [
+  "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
+  "bastardo", "bastarda", "coglione", "cogliona", "merda", "fanculo", "porco",
+  "negro", "negra", "frocio", "finocchio", "ritardato", "ritardata",
+  "mongoloide", "handicappato", "deficiente", "idiota",
+  "ti ammazzo", "ti uccido", "crepa", "muori", "suicidati",
+  "fuck", "shit", "bitch", "asshole", "nigger", "faggot", "retard",
+  "dick pic", "nudes", "sesso orale",
+];
+
+function filterOffensiveContent(text: string): string {
+  let filtered = text;
+  for (const word of OFFENSIVE_WORDS) {
+    const regex = new RegExp(word.replace(/\s+/g, "\\s+"), "gi");
+    filtered = filtered.replace(regex, (match) => "*".repeat(match.length));
+  }
+  return filtered;
+}
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -297,6 +316,11 @@ export async function registerRoutes(
       }
       await db.delete(privateRooms).where(eq(privateRooms.ownerId, profileId));
       await db.delete(privateRoomRequests).where(eq(privateRoomRequests.requesterId, profileId));
+      await db.delete(profileRatings).where(or(eq(profileRatings.raterId, profileId), eq(profileRatings.ratedId, profileId)));
+      await db.delete(blockedUsers).where(or(eq(blockedUsers.blockerId, profileId), eq(blockedUsers.blockedId, profileId)));
+      await db.delete(reports).where(or(eq(reports.reporterId, profileId), eq(reports.reportedId, profileId)));
+      await db.delete(vibingSessions).where(eq(vibingSessions.profileId, profileId));
+      await db.delete(locationShares).where(eq(locationShares.profileId, profileId));
       const userMatches = await db.select().from(matches).where(or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId)));
       for (const m of userMatches) {
         await db.delete(messages).where(eq(messages.matchId, m.id));
@@ -304,6 +328,11 @@ export async function registerRoutes(
       await db.delete(matches).where(or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId)));
       await db.delete(swipes).where(or(eq(swipes.swiperId, profileId), eq(swipes.swipedId, profileId)));
       await db.delete(profiles).where(eq(profiles.id, profileId));
+
+      const deleteAccount = req.query.deleteAccount === "true";
+      if (deleteAccount) {
+        await db.delete(users).where(eq(users.id, userId));
+      }
 
       res.json({ success: true });
     } catch (error) {
@@ -970,10 +999,12 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Not authorized to send messages in this chat" });
       }
       
+      const filteredContent = filterOffensiveContent(content);
+      
       const message = await storage.createMessage({
         matchId,
         senderId: userProfile.id,
-        content,
+        content: filteredContent,
       });
       res.status(201).json(message);
 
@@ -1927,6 +1958,47 @@ export async function registerRoutes(
       res.json(filtered);
     } catch (error) {
       res.status(500).json({ error: "Failed to get match locations" });
+    }
+  });
+
+  // === GDPR DATA EXPORT ===
+  app.get("/api/gdpr/export", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const user = await storage.getUser(userId);
+      const profile = await storage.getProfileByUserId(userId);
+      
+      const exportData: any = {
+        exportDate: new Date().toISOString(),
+        account: user ? { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, createdAt: user.createdAt } : null,
+        profile: profile || null,
+      };
+
+      if (profile) {
+        const userMatches = await storage.getMatchesForUser(profile.id);
+        exportData.matches = userMatches.map(m => ({ id: m.id, matchedWith: m.profile.name, createdAt: m.createdAt }));
+        
+        const allMessages: any[] = [];
+        for (const m of userMatches) {
+          const msgs = await storage.getMessagesForMatch(m.id);
+          allMessages.push(...msgs.filter(msg => msg.senderId === profile.id).map(msg => ({ matchId: m.id, content: msg.content, createdAt: msg.createdAt })));
+        }
+        exportData.messagesSent = allMessages;
+        
+        const blocked = await storage.getBlockedUsers(profile.id);
+        exportData.blockedUsers = blocked;
+        
+        const swipedIds = await storage.getSwipedProfileIds(profile.id);
+        exportData.swipeCount = swipedIds.length;
+      }
+
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", "attachment; filename=vibra-data-export.json");
+      res.json(exportData);
+    } catch (error) {
+      console.error("Error exporting GDPR data:", error);
+      res.status(500).json({ error: "Failed to export data" });
     }
   });
 

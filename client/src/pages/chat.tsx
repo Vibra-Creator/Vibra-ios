@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Check, CheckCheck, Gift, Star, Heart, Sparkles, Ban, MoreVertical, Flag } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, Gift, Star, Heart, Sparkles, Ban, MoreVertical, Flag, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -35,6 +35,7 @@ export default function Chat() {
   const [messageText, setMessageText] = useState("");
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showReportMenu, setShowReportMenu] = useState(false);
   const [giftAnimation, setGiftAnimation] = useState<{ gift: VirtualGift; senderName: string; message?: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -159,14 +160,41 @@ export default function Chat() {
   });
 
   const reportUser = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (reason: string) => {
       if (!otherProfile) return;
-      await apiRequest("POST", "/api/reports", { reportedId: otherProfile.id, reason: "Segnalato dalla chat" });
+      await apiRequest("POST", "/api/reports", { reportedId: otherProfile.id, reason });
     },
     onSuccess: () => {
-      toast({ title: "Segnalazione inviata", description: "Grazie per la tua segnalazione" });
+      toast({ title: "Segnalazione inviata", description: "Grazie, il nostro team esaminerà la segnalazione." });
+      setShowReportMenu(false);
     },
   });
+
+  const unmatchUser = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/matches/${matchId}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Match rimosso", description: `Hai rimosso il match con ${otherProfile?.name || "questo utente"}` });
+      queryClient.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === "string" && key.startsWith("/api/matches");
+      }});
+      setLocation("/matches");
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile rimuovere il match", variant: "destructive" });
+    },
+  });
+
+  const reportReasons = [
+    "Contenuto inappropriato",
+    "Profilo falso",
+    "Comportamento molesto",
+    "Spam",
+    "Minacce o violenza",
+    "Altro",
+  ];
 
   const handleSend = () => {
     if (messageText.trim() && myProfile) {
@@ -267,20 +295,28 @@ export default function Chat() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={() => { setShowMenu(!showMenu); setShowReportMenu(false); }}
             data-testid="button-chat-menu"
           >
             <MoreVertical className="w-5 h-5" />
           </Button>
-          {showMenu && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-black/90 backdrop-blur-xl border border-white/10 rounded-md shadow-lg overflow-hidden z-50">
+          {showMenu && !showReportMenu && (
+            <div className="absolute right-0 top-full mt-1 w-52 bg-black/90 backdrop-blur-xl border border-white/10 rounded-md shadow-lg overflow-hidden z-50">
               <button
                 className="flex items-center gap-2 w-full px-4 py-3 text-sm text-white/80 hover-elevate text-left"
-                onClick={() => { reportUser.mutate(); setShowMenu(false); }}
+                onClick={() => setShowReportMenu(true)}
                 data-testid="button-report-user"
               >
                 <Flag className="w-4 h-4" />
                 Segnala utente
+              </button>
+              <button
+                className="flex items-center gap-2 w-full px-4 py-3 text-sm text-orange-400 hover-elevate text-left"
+                onClick={() => { if (confirm("Sei sicuro di voler rimuovere il match?")) { unmatchUser.mutate(); } setShowMenu(false); }}
+                data-testid="button-unmatch-user"
+              >
+                <UserX className="w-4 h-4" />
+                Rimuovi match
               </button>
               <button
                 className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-400 hover-elevate text-left"
@@ -289,6 +325,29 @@ export default function Chat() {
               >
                 <Ban className="w-4 h-4" />
                 Blocca utente
+              </button>
+            </div>
+          )}
+          {showMenu && showReportMenu && (
+            <div className="absolute right-0 top-full mt-1 w-56 bg-black/90 backdrop-blur-xl border border-white/10 rounded-md shadow-lg overflow-hidden z-50">
+              <div className="px-4 py-2 text-xs text-white/50 font-semibold uppercase tracking-wider border-b border-white/10">
+                Motivo segnalazione
+              </div>
+              {reportReasons.map((reason) => (
+                <button
+                  key={reason}
+                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-white/80 hover-elevate text-left"
+                  onClick={() => { reportUser.mutate(reason); setShowMenu(false); }}
+                  data-testid={`button-report-reason-${reason.toLowerCase().replace(/\s+/g, "-")}`}
+                >
+                  {reason}
+                </button>
+              ))}
+              <button
+                className="flex items-center gap-2 w-full px-4 py-2 text-xs text-white/40 hover-elevate text-left border-t border-white/10"
+                onClick={() => setShowReportMenu(false)}
+              >
+                Indietro
               </button>
             </div>
           )}
