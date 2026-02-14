@@ -456,7 +456,7 @@ export default function ProfileEdit() {
   }
 
   return (
-    <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto text-[16px] relative z-10">
+    <div className="flex-1 p-4 max-w-lg mx-auto pb-8 overflow-y-auto text-[16px] relative">
       <div className="fixed inset-0 z-0">
         {step === 1 ? (
           <img src="/backgrounds/vibra-alien-soldier.gif" alt="" className="w-full h-full object-cover" />
@@ -475,6 +475,7 @@ export default function ProfileEdit() {
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
+      <div className="relative z-10">
       <div className="flex items-center gap-4 mb-4">
         <Button
           variant="ghost"
@@ -1164,6 +1165,7 @@ export default function ProfileEdit() {
           </div>
         </form>
       </Form>
+      </div>
     </div>
   );
 }

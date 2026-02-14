@@ -156,15 +156,17 @@ export async function registerRoutes(
       const profileId = req.query.profileId as string;
       if (!profileId) {
         const allProfiles = await storage.getProfiles();
-        return res.json(allProfiles);
+        return res.json({ profiles: allProfiles, likedIds: [] });
       }
       const allProfiles = await storage.getProfiles();
       const swipedIds = await storage.getSwipedProfileIds(profileId);
-      const swipedSet = new Set(swipedIds);
+      const likedIds = await storage.getLikedProfileIds(profileId);
+      const likedSet = new Set(likedIds);
+      const dislikedSet = new Set(swipedIds.filter(id => !likedSet.has(id)));
       const blockedIds = await storage.getBlockedIds(profileId);
       const blockedSet = new Set(blockedIds);
-      const swipable = allProfiles.filter(p => p.id !== profileId && !swipedSet.has(p.id) && !blockedSet.has(p.id));
-      res.json(swipable);
+      const swipable = allProfiles.filter(p => p.id !== profileId && !dislikedSet.has(p.id) && !blockedSet.has(p.id));
+      res.json({ profiles: swipable, likedIds });
     } catch (error) {
       console.error("Error fetching swipable profiles:", error);
       res.status(500).json({ error: "Failed to fetch profiles" });

@@ -41,6 +41,22 @@ function ChallengeCountdownBadge({ expiresAt }: { expiresAt?: string | Date | nu
   );
 }
 
+const STATIC_DATE = new Date("2026-01-01T00:00:00Z");
+const DEFAULT_CHALLENGES: DailyChallenge[] = [
+  { id: "1", title: "Truccato/a da Donna", description: "Scatta una foto di te stesso truccato da donna - mostra il tuo lato divertente!", points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "2", title: "Pulizia Bagno", description: "Fotografati mentre pulisci il bagno - dimostra che sai essere responsabile!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "3", title: "Chef per un Giorno", description: "Prepara un piatto e fotografalo - mostra le tue abilita' culinarie!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "4", title: "Animale Domestico", description: "Scatta un selfie con un animale - mostra il tuo lato dolce!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "5", title: "Tramonto Romantico", description: "Fotografa un tramonto dalla tua posizione - condividi la bellezza!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "6", title: "Talento Nascosto", description: "Mostra un tuo talento nascosto in foto - sorprendici!", points: 25, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "7", title: "Look del Mattino", description: "Selfie appena sveglio/a senza filtri - sii autentico/a!", points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "8", title: "Outfit Creativo", description: "Indossa qualcosa di creativo o divertente e fotografati!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "9", title: "Angolo Relax", description: "Quale e' il posto dove ti senti a casa? Mostraci il tuo angolo di pace!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "10", title: "Outfit del \"Ma Anche No\"", description: "Indossa l'abbinamento piu' assurdo che hai e sfoggialo con orgoglio!", points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "11", title: "Healthy Snack", description: "Mostraci il tuo spuntino o colazione salutare di oggi!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  { id: "12", title: "Caffeina Check", description: "Mostraci la tua tazza piu' originale dove bevi il caffe'!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+];
+
 function useCountdown(expiresAt: string | Date | null | undefined) {
   const [timeLeft, setTimeLeft] = useState("");
   useEffect(() => {
@@ -128,20 +144,7 @@ export default function Challenges() {
     },
   });
 
-  const defaultChallenges: DailyChallenge[] = [
-    { id: "1", title: "Truccato/a da Donna", description: "Scatta una foto di te stesso truccato da donna - mostra il tuo lato divertente!", points: 20, isActive: true, imageExample: null },
-    { id: "2", title: "Pulizia Bagno", description: "Fotografati mentre pulisci il bagno - dimostra che sai essere responsabile!", points: 15, isActive: true, imageExample: null },
-    { id: "3", title: "Chef per un Giorno", description: "Prepara un piatto e fotografalo - mostra le tue abilita' culinarie!", points: 15, isActive: true, imageExample: null },
-    { id: "4", title: "Animale Domestico", description: "Scatta un selfie con un animale - mostra il tuo lato dolce!", points: 10, isActive: true, imageExample: null },
-    { id: "5", title: "Tramonto Romantico", description: "Fotografa un tramonto dalla tua posizione - condividi la bellezza!", points: 10, isActive: true, imageExample: null },
-    { id: "6", title: "Talento Nascosto", description: "Mostra un tuo talento nascosto in foto - sorprendici!", points: 25, isActive: true, imageExample: null },
-    { id: "7", title: "Look del Mattino", description: "Selfie appena sveglio/a senza filtri - sii autentico/a!", points: 20, isActive: true, imageExample: null },
-    { id: "8", title: "Outfit Creativo", description: "Indossa qualcosa di creativo o divertente e fotografati!", points: 15, isActive: true, imageExample: null },
-    { id: "9", title: "Angolo Relax", description: "Quale e' il posto dove ti senti a casa? Mostraci il tuo angolo di pace!", points: 15, isActive: true, imageExample: null },
-    { id: "10", title: "Outfit del \"Ma Anche No\"", description: "Indossa l'abbinamento piu' assurdo che hai e sfoggialo con orgoglio!", points: 20, isActive: true, imageExample: null },
-    { id: "11", title: "Healthy Snack", description: "Mostraci il tuo spuntino o colazione salutare di oggi!", points: 10, isActive: true, imageExample: null },
-    { id: "12", title: "Caffeina Check", description: "Mostraci la tua tazza piu' originale dove bevi il caffe'!", points: 10, isActive: true, imageExample: null },
-  ];
+  const defaultChallenges: DailyChallenge[] = DEFAULT_CHALLENGES;
 
   const activeChallenges = isGuest ? guestChallenges : challenges;
   const displayChallenges = activeChallenges?.length ? activeChallenges : defaultChallenges;

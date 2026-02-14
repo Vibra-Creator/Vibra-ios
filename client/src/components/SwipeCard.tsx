@@ -69,7 +69,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg max-h-[95vh] overflow-y-auto rounded-t-2xl pb-8"
+            className="relative w-full max-w-lg h-[95vh] overflow-y-auto rounded-t-2xl pb-8 overscroll-contain"
             onClick={(e) => e.stopPropagation()}
             data-testid="profile-detail-modal"
           >
@@ -77,7 +77,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
-                className="w-full aspect-[3/2.8] object-cover"
+                className="w-full aspect-[3/3.5] object-cover"
                 data-testid="detail-profile-image"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -236,10 +236,11 @@ interface SwipeCardProps {
   onSwipe: (direction: "left" | "right") => void;
   isTop?: boolean;
   hasPrivateRoom?: boolean;
+  alreadyLiked?: boolean;
 }
 
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
-  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false }, ref) {
+  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false }, ref) {
     const [exitX, setExitX] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
     const [showRating, setShowRating] = useState(false);
@@ -285,7 +286,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const handleDragEnd = (_: any, info: PanInfo) => {
       dragDistanceRef.current = Math.abs(info.offset.x) + Math.abs(info.offset.y);
       setTimeout(() => { isDraggingRef.current = false; }, 50);
-      if (info.offset.x > 100) {
+      if (info.offset.x > 100 && !alreadyLiked) {
         setExitX(300);
         setShowRating(false);
         setSelectedRating(null);
@@ -335,20 +336,33 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               />
               
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+
+              {alreadyLiked && (
+                <div className="absolute top-4 right-4 z-20 pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/90 backdrop-blur-sm shadow-lg">
+                    <Heart className="w-4 h-4 text-white fill-white" />
+                    <span className="text-white text-xs font-bold tracking-wide">LIKE DATO</span>
+                  </div>
+                </div>
+              )}
               
-              <motion.div 
-                className="absolute top-6 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm pointer-events-none"
-                style={{ opacity: likeOpacity }}
-              >
-                <span className="text-green-400 font-bold text-xl tracking-wider">LIKE</span>
-              </motion.div>
+              {!alreadyLiked && (
+                <motion.div 
+                  className="absolute top-6 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm pointer-events-none"
+                  style={{ opacity: likeOpacity }}
+                >
+                  <span className="text-green-400 font-bold text-xl tracking-wider">LIKE</span>
+                </motion.div>
+              )}
               
-              <motion.div 
-                className="absolute top-6 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm pointer-events-none"
-                style={{ opacity: nopeOpacity }}
-              >
-                <span className="text-red-400 font-bold text-xl tracking-wider">NOPE</span>
-              </motion.div>
+              {!alreadyLiked && (
+                <motion.div 
+                  className="absolute top-6 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm pointer-events-none"
+                  style={{ opacity: nopeOpacity }}
+                >
+                  <span className="text-red-400 font-bold text-xl tracking-wider">NOPE</span>
+                </motion.div>
+              )}
               
               <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -511,9 +525,10 @@ interface ActionButtonsProps {
   onSwipeRight: () => void;
   onSuperLike?: () => void;
   disabled?: boolean;
+  likeDisabled?: boolean;
 }
 
-export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled }: ActionButtonsProps) {
+export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled, likeDisabled }: ActionButtonsProps) {
   return (
     <div className="flex items-center justify-center gap-6 py-6">
       <motion.button
@@ -544,7 +559,7 @@ export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={onSwipeRight}
-        disabled={disabled}
+        disabled={disabled || likeDisabled}
         className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ boxShadow: "var(--glow-primary)" }}
         data-testid="button-swipe-right"

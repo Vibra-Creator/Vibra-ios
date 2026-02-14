@@ -12,6 +12,11 @@ import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile, Match } from "@shared/schema";
 
+interface SwipableResponse {
+  profiles: Profile[];
+  likedIds: string[];
+}
+
 export default function Home() {
   const [showMatch, setShowMatch] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
@@ -32,7 +37,7 @@ export default function Home() {
     enabled: isGuest,
   });
 
-  const { data: profiles, isLoading, error, refetch } = useQuery<Profile[]>({
+  const { data: swipableData, isLoading, error, refetch } = useQuery<SwipableResponse>({
     queryKey: ["/api/profiles/swipable", myProfile?.id],
     queryFn: async () => {
       const res = await fetch(`/api/profiles/swipable?profileId=${myProfile?.id}`, {
@@ -43,6 +48,9 @@ export default function Home() {
     },
     enabled: !!myProfile && !isGuest,
   });
+
+  const profiles = swipableData?.profiles;
+  const likedIdsSet = new Set(swipableData?.likedIds || []);
 
   const profileIds = profiles?.map(p => p.id).join(",") || "";
   const { data: roomOwners } = useQuery<Record<string, boolean>>({
@@ -105,6 +113,15 @@ export default function Home() {
       blockIfGuest(direction === "right" ? "mettere like" : "scartare un profilo");
       return;
     }
+
+    if (likedIdsSet.has(currentProfile.id)) {
+      setSwipedProfiles(prev => {
+        const newSet = new Set(prev);
+        newSet.add(currentProfile.id);
+        return newSet;
+      });
+      return;
+    }
     
     setSwipedProfiles(prev => {
       const newSet = new Set(prev);
@@ -115,7 +132,7 @@ export default function Home() {
       profileId: currentProfile.id,
       liked: direction === "right",
     });
-  }, [currentProfile, swipeMutation, isGuest, blockIfGuest]);
+  }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet]);
 
   const resetDislikesMutation = useMutation({
     mutationFn: async () => {
@@ -228,6 +245,7 @@ export default function Home() {
             onSwipe={() => {}}
             isTop={false}
             hasPrivateRoom={roomOwners?.[nextProfile.id] || false}
+            alreadyLiked={likedIdsSet.has(nextProfile.id)}
           />
         )}
         {currentProfile && (
@@ -237,6 +255,7 @@ export default function Home() {
             onSwipe={handleSwipe}
             isTop={true}
             hasPrivateRoom={roomOwners?.[currentProfile.id] || false}
+            alreadyLiked={likedIdsSet.has(currentProfile.id)}
           />
         )}
       </div>
@@ -246,6 +265,7 @@ export default function Home() {
           onSwipeLeft={handleSwipeLeft}
           onSwipeRight={handleSwipeRight}
           disabled={!currentProfile || swipeMutation.isPending}
+          likeDisabled={currentProfile ? likedIdsSet.has(currentProfile.id) : false}
         />
       </div>
 
