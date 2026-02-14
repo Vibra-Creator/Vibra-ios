@@ -69,17 +69,16 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg rounded-t-2xl overscroll-contain"
-            style={{ maxHeight: "95dvh", height: "95dvh", display: "flex", flexDirection: "column" }}
+            className="relative w-full max-w-lg rounded-t-2xl overflow-y-auto overscroll-contain"
+            style={{ maxHeight: "90dvh", WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
             onClick={(e) => e.stopPropagation()}
             data-testid="profile-detail-modal"
           >
-            <div className="flex-1 overflow-y-auto pb-20" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
-            <div className="relative">
+            <div className="relative shrink-0">
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
-                className="w-full aspect-[4/5] object-cover max-h-[40vh]"
+                className="w-full aspect-[3/4] object-cover"
                 data-testid="detail-profile-image"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -110,7 +109,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
               </div>
             </div>
 
-            <div className="bg-black/90 backdrop-blur-xl p-6 space-y-5">
+            <div className="bg-black/90 backdrop-blur-xl p-6 space-y-5 pb-24">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" className="bg-primary/80 text-primary-foreground">
                   <Sparkles className="w-3 h-3 mr-1" />
@@ -225,7 +224,6 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                   </div>
                 )}
               </div>
-            </div>
             </div>
           </motion.div>
         </motion.div>
