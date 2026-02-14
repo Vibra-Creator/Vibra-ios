@@ -870,40 +870,17 @@ export async function seedDatabase() {
       }
     } catch (e) {}
 
-    await ensureFeaturedRoom();
+    try {
+      const oldFeatured = await db.select().from(privateRooms).where(eq(privateRooms.id, "vuoi-conversare-con-me"));
+      if (oldFeatured.length > 0) {
+        await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, "vuoi-conversare-con-me"));
+        await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, "vuoi-conversare-con-me"));
+        await db.delete(privateRooms).where(eq(privateRooms.id, "vuoi-conversare-con-me"));
+        console.log("Removed legacy 'Vuoi conversare con me?' room.");
+      }
+    } catch (e) {}
 
   } catch (error) {
     console.error("Error seeding database:", error);
-  }
-}
-
-const FEATURED_ROOM_ID = "vuoi-conversare-con-me";
-
-async function ensureFeaturedRoom() {
-  try {
-    const existing = await db.select().from(privateRooms).where(eq(privateRooms.id, FEATURED_ROOM_ID));
-    if (existing.length > 0) {
-      if (!existing[0].isActive) {
-        await db.update(privateRooms).set({ isActive: true }).where(eq(privateRooms.id, FEATURED_ROOM_ID));
-        console.log("Re-activated featured room 'Vuoi conversare con me?'.");
-      }
-      return;
-    }
-
-    const adminProfile = await db.select().from(profiles).where(eq(profiles.userId, "admin-vibra-001"));
-    const ownerId = adminProfile.length > 0 ? adminProfile[0].id : "16";
-
-    await db.insert(privateRooms).values({
-      id: FEATURED_ROOM_ID,
-      ownerId,
-      name: "Vuoi conversare con me?",
-      description: "La stanza ufficiale di Vibra! Richiedi accesso e attendi l'approvazione per entrare. Soggetta ad approvazione.",
-      imageUrl: "/images/private-rooms-bg.gif",
-      isActive: true,
-      expiresAt: null,
-    });
-    console.log("Created featured room 'Vuoi conversare con me?'.");
-  } catch (error) {
-    console.error("Error ensuring featured room:", error);
   }
 }

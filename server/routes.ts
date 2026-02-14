@@ -1292,12 +1292,8 @@ REGOLE IMPORTANTI:
       const userMatches = await storage.getMatchesForUser(userProfile.id);
       const matchProfileIds = new Set(userMatches.map(m => m.profile.id));
 
-      const FEATURED_ROOM_ID = "vuoi-conversare-con-me";
-      const featuredRoom = allRooms.find(r => r.id === FEATURED_ROOM_ID) || null;
-      const nonFeaturedRooms = allRooms.filter(r => r.id !== FEATURED_ROOM_ID);
-
-      const myRooms = nonFeaturedRooms.filter(r => r.ownerId === userProfile.id);
-      const matchRooms = nonFeaturedRooms.filter(r => matchProfileIds.has(r.ownerId) && r.ownerId !== userProfile.id);
+      const myRooms = allRooms.filter(r => r.ownerId === userProfile.id);
+      const matchRooms = allRooms.filter(r => matchProfileIds.has(r.ownerId) && r.ownerId !== userProfile.id);
 
       const memberCounts: Record<string, number> = {};
       for (const room of allRooms) {
@@ -1305,7 +1301,7 @@ REGOLE IMPORTANTI:
         memberCounts[room.id] = members.length;
       }
 
-      const popularRooms = nonFeaturedRooms
+      const popularRooms = allRooms
         .filter(r => r.ownerId !== userProfile.id && !matchProfileIds.has(r.ownerId))
         .sort((a, b) => (memberCounts[b.id] || 0) - (memberCounts[a.id] || 0))
         .slice(0, 10);
@@ -1342,7 +1338,6 @@ REGOLE IMPORTANTI:
       }
 
       res.json({
-        featuredRoom,
         myRooms,
         matchRooms,
         popularRooms,
