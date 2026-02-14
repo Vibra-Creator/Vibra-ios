@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ interface ProfileDetailModalProps {
 function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }: ProfileDetailModalProps) {
   const { toast } = useToast();
   const [showReportMenu, setShowReportMenu] = useState(false);
+  const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
 
   const reportMutation = useMutation({
     mutationFn: (data: { reportedId: string; reason: string }) =>
@@ -42,6 +43,8 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
 
   if (!isOpen) return null;
 
+  const allPhotos = [profile.imageUrl, ...(profile.photos || [])].filter(Boolean) as string[];
+
   const detailItems = [
     { label: "Tipo Alieno", value: profile.alienType, icon: Sparkles },
     { label: "Genere", value: profile.gender, icon: User },
@@ -52,6 +55,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
   ].filter(item => item.value);
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -74,7 +78,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
             onClick={(e) => e.stopPropagation()}
             data-testid="profile-detail-modal"
           >
-            <div className="relative shrink-0">
+            <div className="relative shrink-0 cursor-pointer" onClick={() => setViewingPhotoIndex(0)}>
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
@@ -82,12 +86,16 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                 data-testid="detail-profile-image"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+              <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1.5 pointer-events-none">
+                <ZoomIn className="w-3.5 h-3.5 text-white/80" />
+                <span className="text-xs text-white/80">{allPhotos.length}</span>
+              </div>
 
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute top-4 left-4 text-white bg-black/60 backdrop-blur-md border border-white/20"
-                onClick={onClose}
+                className="absolute top-4 left-4 text-white bg-black/60 backdrop-blur-md border border-white/20 z-10"
+                onClick={(e) => { e.stopPropagation(); onClose(); }}
                 data-testid="button-close-profile-detail"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -166,8 +174,16 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                   <h3 className="text-sm font-semibold text-white/60 mb-2">Foto</h3>
                   <div className="grid grid-cols-3 gap-2">
                     {profile.photos.map((photo, idx) => (
-                      <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-white/10">
-                        <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`detail-photo-${idx}`} />
+                      <div
+                        key={idx}
+                        className="aspect-square rounded-lg overflow-hidden border border-white/10 relative cursor-pointer group"
+                        onClick={() => setViewingPhotoIndex(idx + 1)}
+                        data-testid={`detail-photo-${idx}`}
+                      >
+                        <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                          <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -229,6 +245,71 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
         </motion.div>
       )}
     </AnimatePresence>
+
+      <AnimatePresence>
+        {viewingPhotoIndex !== null && allPhotos.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95"
+            onClick={() => setViewingPhotoIndex(null)}
+            data-testid="photo-viewer-overlay"
+          >
+            <Button
+              size="icon"
+              variant="ghost"
+              className="absolute top-4 left-4 text-white bg-white/10 border border-white/20 z-10"
+              onClick={(e) => { e.stopPropagation(); setViewingPhotoIndex(null); }}
+              data-testid="button-close-photo-viewer"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+
+            <div className="absolute top-5 right-4 text-white/60 text-sm z-10" data-testid="photo-viewer-counter">
+              {viewingPhotoIndex + 1} / {allPhotos.length}
+            </div>
+
+            {viewingPhotoIndex > 0 && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-white/10 border border-white/20 z-10"
+                onClick={(e) => { e.stopPropagation(); setViewingPhotoIndex(viewingPhotoIndex - 1); }}
+                data-testid="button-photo-prev"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            )}
+
+            {viewingPhotoIndex < allPhotos.length - 1 && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-white/10 border border-white/20 z-10"
+                onClick={(e) => { e.stopPropagation(); setViewingPhotoIndex(viewingPhotoIndex + 1); }}
+                data-testid="button-photo-next"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            )}
+
+            <motion.img
+              key={viewingPhotoIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+              src={allPhotos[viewingPhotoIndex]}
+              alt={`Foto ${viewingPhotoIndex + 1}`}
+              className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+              data-testid="photo-viewer-image"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
