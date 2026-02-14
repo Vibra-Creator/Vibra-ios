@@ -870,7 +870,40 @@ export async function seedDatabase() {
       }
     } catch (e) {}
 
+    await ensureFeaturedRoom();
+
   } catch (error) {
     console.error("Error seeding database:", error);
+  }
+}
+
+const FEATURED_ROOM_ID = "vuoi-conversare-con-me";
+
+async function ensureFeaturedRoom() {
+  try {
+    const existing = await db.select().from(privateRooms).where(eq(privateRooms.id, FEATURED_ROOM_ID));
+    if (existing.length > 0) {
+      if (!existing[0].isActive) {
+        await db.update(privateRooms).set({ isActive: true }).where(eq(privateRooms.id, FEATURED_ROOM_ID));
+        console.log("Re-activated featured room 'Vuoi conversare con me?'.");
+      }
+      return;
+    }
+
+    const adminProfile = await db.select().from(profiles).where(eq(profiles.userId, "admin-vibra-001"));
+    const ownerId = adminProfile.length > 0 ? adminProfile[0].id : "16";
+
+    await db.insert(privateRooms).values({
+      id: FEATURED_ROOM_ID,
+      ownerId,
+      name: "Vuoi conversare con me?",
+      description: "La stanza ufficiale di Vibra! Richiedi accesso e attendi l'approvazione per entrare. Soggetta ad approvazione.",
+      imageUrl: "/images/private-rooms-bg.gif",
+      isActive: true,
+      expiresAt: null,
+    });
+    console.log("Created featured room 'Vuoi conversare con me?'.");
+  } catch (error) {
+    console.error("Error ensuring featured room:", error);
   }
 }

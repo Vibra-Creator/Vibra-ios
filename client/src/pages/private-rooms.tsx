@@ -24,6 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PrivateRoom, Profile } from "@shared/schema";
 
 interface CategorizedRooms {
+  featuredRoom: PrivateRoom | null;
   myRooms: PrivateRoom[];
   matchRooms: PrivateRoom[];
   popularRooms: PrivateRoom[];
@@ -109,6 +110,7 @@ export default function PrivateRooms() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/private-rooms/categorized"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/private-rooms", featuredRoomId, "my-request"] });
       toast({ title: "Richiesta inviata!", description: "Attendi l'approvazione del proprietario." });
     },
     onError: (error: any) => {
@@ -122,6 +124,22 @@ export default function PrivateRooms() {
     const roomName = newRoomName.trim() || "Vuoi conversare con me?";
     createRoomMutation.mutate({ name: roomName, description: newRoomDescription.trim() });
   };
+
+  const featuredRoomId = categorized?.featuredRoom?.id;
+  const isFeaturedOwner = myProfile?.id === categorized?.featuredRoom?.ownerId;
+
+  const { data: featuredRequest } = useQuery<any>({
+    queryKey: ["/api/private-rooms", featuredRoomId, "my-request"],
+    queryFn: async () => {
+      const res = await fetch(`/api/private-rooms/${featuredRoomId}/my-request`, { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!featuredRoomId && !!myProfile && !isFeaturedOwner && !isGuest,
+  });
+
+  const isFeaturedMember = isFeaturedOwner || featuredRequest?.status === "approved";
+  const isFeaturedPending = featuredRequest?.status === "pending";
 
   const allDisplayRooms = [
     ...(categorized?.matchRooms || []),
@@ -329,6 +347,102 @@ export default function PrivateRooms() {
           </div>
         ) : (
           <div className="space-y-6">
+            {categorized?.featuredRoom && (() => {
+              const fr = categorized.featuredRoom;
+              const frOwner = categorized.ownerProfiles[fr.ownerId];
+              const frMembers = categorized.recentRequesters[fr.id] || [];
+              const frPending = categorized.pendingCounts[fr.id] || 0;
+              const frMemberCount = categorized.memberCounts[fr.id] || 0;
+              return (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div
+                  className="rounded-xl backdrop-blur-md bg-gradient-to-r from-primary/20 via-purple-500/20 to-accent/20 border border-primary/30 p-4 cursor-pointer"
+                  onClick={() => { if (isFeaturedMember) setLocation(`/private-room/${fr.id}`); }}
+                  data-testid="card-featured-room"
+                >
+                  <div className="flex items-start gap-3">
+                    <Avatar className="w-12 h-12 border-2 border-primary/50 shrink-0">
+                      <AvatarImage src={frOwner?.imageUrl || "/images/avatar-1.png"} />
+                      <AvatarFallback><Lock className="w-5 h-5" /></AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-bold text-white">{fr.name}</h3>
+                        <Badge variant="secondary" className="bg-primary/20 text-primary shrink-0 text-[10px]">
+                          <Lock className="w-3 h-3 mr-0.5" />
+                          Approvazione
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-white/50 mb-1">di {frOwner?.name || "Vibra"}</p>
+                      <p className="text-sm text-white/70 mb-2 line-clamp-2">{fr.description}</p>
+
+                      {frMembers.length > 0 && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex -space-x-2">
+                            {frMembers.slice(0, 4).map((m, i) => (
+                              <Avatar key={i} className="w-7 h-7 border-2 border-purple-900/60">
+                                <AvatarImage src={m.imageUrl || "/images/avatar-1.png"} />
+                                <AvatarFallback className="text-[10px]">{m.name[0]}</AvatarFallback>
+                              </Avatar>
+                            ))}
+                            {frMembers.length > 4 && (
+                              <div className="w-7 h-7 rounded-full bg-primary/30 border-2 border-purple-900/60 flex items-center justify-center text-[10px] text-purple-200 font-bold">
+                                +{frMembers.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-xs text-purple-300/70">partecipano</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4 text-sm text-purple-300/80 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {frMemberCount} membri
+                        </span>
+                        {frPending > 0 && (
+                          <span className="flex items-center gap-1 text-pink-400">
+                            <Bell className="w-4 h-4" />
+                            {frPending} in attesa
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {isFeaturedMember ? (
+                        <Button size="sm" variant="outline" onClick={() => setLocation(`/private-room/${fr.id}`)} data-testid="button-enter-featured-room">
+                          <MessageCircle className="w-4 h-4 mr-1" />
+                          Entra
+                        </Button>
+                      ) : isFeaturedPending ? (
+                        <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-300">
+                          <Clock className="w-3 h-3 mr-1" />
+                          In attesa
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => {
+                            if (blockIfGuest("richiedere accesso alle stanze private")) return;
+                            requestAccessMutation.mutate(fr.id);
+                          }}
+                          disabled={requestAccessMutation.isPending}
+                          data-testid="button-request-featured-access"
+                        >
+                          Richiedi
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+              );
+            })()}
+
             {(categorized?.myRooms?.length || 0) > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
