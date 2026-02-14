@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { Profile } from "@shared/schema";
 
 interface MatchCardProps {
@@ -44,6 +44,12 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
     },
   });
 
+  const handleCardClick = useCallback(() => {
+    if (!showConfirm) {
+      setLocation(`/chat/${matchId}`);
+    }
+  }, [showConfirm, matchId, setLocation]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -52,12 +58,15 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
       className="group relative"
       data-testid={`match-card-${profile.id}`}
     >
-      <div className="rounded-2xl overflow-hidden bg-card border border-card-border shadow-lg hover-elevate">
+      <div
+        className="rounded-2xl overflow-hidden bg-card border border-card-border shadow-lg cursor-pointer"
+        onClick={handleCardClick}
+      >
         <div className="relative aspect-square overflow-hidden">
           <img
             src={profile.imageUrl}
             alt={profile.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
           
@@ -68,13 +77,14 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
             </Badge>
           </div>
 
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 z-10">
             <Button
               variant="ghost"
               size="icon"
-              className="bg-black/40 backdrop-blur-sm text-white/70 rounded-full"
+              className="bg-black/50 backdrop-blur-sm text-white rounded-full"
               onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 setShowConfirm(true);
               }}
               data-testid={`button-unmatch-${profile.id}`}
@@ -93,24 +103,14 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
             </div>
           </div>
           
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileHover={{ opacity: 1 }}
-            className="absolute inset-0 bg-black/50 flex items-center justify-center"
-          >
-            <Button 
-              size="lg"
-              className="bg-primary/90 backdrop-blur-sm"
-              onClick={() => setLocation(`/chat/${matchId}`)}
-              data-testid={`button-message-${profile.id}`}
-            >
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Messaggio
-            </Button>
-          </motion.div>
+          <div className="absolute bottom-2 right-2">
+            <div className="w-8 h-8 rounded-full bg-primary/80 backdrop-blur-sm flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-white" />
+            </div>
+          </div>
         </div>
         
-        <div className="p-3 flex items-center justify-between">
+        <div className="p-3 flex items-center justify-between gap-1 flex-wrap">
           <div className="flex items-center gap-2 text-muted-foreground text-xs">
             <Heart className="w-4 h-4 text-accent fill-accent" />
             <span>Match</span>
@@ -124,7 +124,10 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
       </div>
 
       {showConfirm && (
-        <div className="absolute inset-0 z-20 rounded-2xl bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 gap-3">
+        <div
+          className="absolute inset-0 z-20 rounded-2xl bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 gap-3"
+          onClick={(e) => e.stopPropagation()}
+        >
           <p className="text-white text-sm text-center font-medium">
             Rimuovere il match con {profile.name}?
           </p>
@@ -132,14 +135,20 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
             <Button
               variant="outline"
               className="text-white border-white/30"
-              onClick={() => setShowConfirm(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowConfirm(false);
+              }}
               data-testid={`button-cancel-unmatch-${profile.id}`}
             >
               Annulla
             </Button>
             <Button
               variant="destructive"
-              onClick={() => unmatchMutation.mutate()}
+              onClick={(e) => {
+                e.stopPropagation();
+                unmatchMutation.mutate();
+              }}
               disabled={unmatchMutation.isPending}
               data-testid={`button-confirm-unmatch-${profile.id}`}
             >
