@@ -33,7 +33,7 @@ export default function Matches() {
   });
 
   return (
-    <div className="relative h-full overflow-y-auto">
+    <div className="relative flex-1 min-h-0 h-full overflow-y-auto">
       <div className="fixed inset-0 z-0">
         <img src="/backgrounds/vibra-runners.jpg" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
