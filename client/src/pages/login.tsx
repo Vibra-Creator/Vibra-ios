@@ -97,7 +97,7 @@ export default function Login() {
         className="relative z-10 w-full max-w-md"
       >
         <div className="flex flex-col items-center mb-6">
-          <img src={vibraLogo} alt="Vibra" className="w-28 h-28 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-login" />
+          <img src={vibraLogo} alt="Vibra" className="w-28 h-28 aspect-square object-cover rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-login" />
           {isAdminLogin ? (
             <div className="flex items-center gap-2 mt-1">
               <Shield className="w-4 h-4 text-yellow-400" />

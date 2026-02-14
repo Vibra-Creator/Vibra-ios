@@ -801,13 +801,7 @@ export async function seedDatabase() {
       console.log(`Seeded ${defaultChallenges.length} challenges (expire in 12h).`);
     }
 
-    const lowPointProfiles = await db.select().from(profiles).where(sql`${profiles.isBot} = false AND COALESCE(${profiles.points}, 0) < 50`);
-    for (const p of lowPointProfiles) {
-      await db.update(profiles).set({ points: 50 }).where(eq(profiles.id, p.id));
-    }
-    if (lowPointProfiles.length > 0) {
-      console.log(`Gave 50 starting points to ${lowPointProfiles.length} profiles.`);
-    }
+    
 
     const botIds = (await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.isBot, true))).map(p => p.id);
     if (botIds.length > 0) {
