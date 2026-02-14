@@ -1250,8 +1250,11 @@ export async function registerRoutes(
       const userMatches = await storage.getMatchesForUser(userProfile.id);
       const matchProfileIds = new Set(userMatches.map(m => m.profile.id));
 
-      const myRooms = allRooms.filter(r => r.ownerId === userProfile.id);
-      const matchRooms = allRooms.filter(r => matchProfileIds.has(r.ownerId) && r.ownerId !== userProfile.id);
+      const featuredRoom = allRooms.find(r => r.id === "entra-chi-dico-io") || null;
+      const nonFeaturedRooms = allRooms.filter(r => r.id !== "entra-chi-dico-io");
+
+      const myRooms = nonFeaturedRooms.filter(r => r.ownerId === userProfile.id);
+      const matchRooms = nonFeaturedRooms.filter(r => matchProfileIds.has(r.ownerId) && r.ownerId !== userProfile.id);
 
       const memberCounts: Record<string, number> = {};
       for (const room of allRooms) {
@@ -1259,7 +1262,7 @@ export async function registerRoutes(
         memberCounts[room.id] = members.length;
       }
 
-      const popularRooms = allRooms
+      const popularRooms = nonFeaturedRooms
         .filter(r => r.ownerId !== userProfile.id && !matchProfileIds.has(r.ownerId))
         .sort((a, b) => (memberCounts[b.id] || 0) - (memberCounts[a.id] || 0))
         .slice(0, 10);
@@ -1273,6 +1276,7 @@ export async function registerRoutes(
       }
 
       res.json({
+        featuredRoom,
         myRooms,
         matchRooms,
         popularRooms,
@@ -1926,11 +1930,13 @@ export async function registerRoutes(
     }
   });
 
+  const PERMANENT_ROOM_ID = "entra-chi-dico-io";
+
   (async () => {
     try {
       const allRooms = await db.select().from(privateRooms);
       for (const room of allRooms) {
-        if (!room.expiresAt) {
+        if (!room.expiresAt && room.id !== PERMANENT_ROOM_ID) {
           await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, room.id));
           await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, room.id));
           await db.delete(privateRooms).where(eq(privateRooms.id, room.id));
@@ -1947,6 +1953,7 @@ export async function registerRoutes(
       const now = new Date();
       const expiredRooms = await db.select().from(privateRooms).where(eq(privateRooms.isActive, true));
       for (const room of expiredRooms) {
+        if (room.id === PERMANENT_ROOM_ID) continue;
         if (room.expiresAt && new Date(room.expiresAt) <= now) {
           await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, room.id));
           await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, room.id));

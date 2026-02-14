@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft, Info, X } from "lucide-react";
+import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft, Info, X, Shield, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PrivateRoom, Profile } from "@shared/schema";
 
 interface CategorizedRooms {
+  featuredRoom: PrivateRoom | null;
   myRooms: PrivateRoom[];
   matchRooms: PrivateRoom[];
   popularRooms: PrivateRoom[];
@@ -365,6 +366,49 @@ export default function PrivateRooms() {
           </div>
         ) : (
           <div className="space-y-6">
+            {categorized?.featuredRoom && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  Stanza in Evidenza
+                </h2>
+                <div
+                  className="rounded-xl backdrop-blur-md bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 border border-amber-400/40 p-4 cursor-pointer"
+                  onClick={() => setLocation(`/private-room/${categorized.featuredRoom!.id}`)}
+                  data-testid="card-featured-room"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shrink-0 border-2 border-amber-400/50">
+                      <Crown className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-bold text-white">{categorized.featuredRoom.name}</h3>
+                        <Badge variant="secondary" className="bg-amber-400/20 text-amber-300 shrink-0">
+                          VIP
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-white/70 mb-2 line-clamp-2">{categorized.featuredRoom.description}</p>
+                      <div className="flex items-center gap-4 text-sm text-amber-300/80">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {categorized.memberCounts[categorized.featuredRoom.id] || 0} membri
+                        </span>
+                        <span className="flex items-center gap-1 text-green-400/80">
+                          <Shield className="w-4 h-4" />
+                          Permanente
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-amber-400/60 shrink-0 mt-2" />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {(categorized?.myRooms?.length || 0) > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
