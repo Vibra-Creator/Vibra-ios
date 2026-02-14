@@ -115,7 +115,7 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
           <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{label}</FormLabel>
           <Select onValueChange={field.onChange} value={field.value || undefined}>
             <FormControl>
-              <SelectTrigger className="bg-white/15 backdrop-blur-md border-white/25 text-white" data-testid={testId}>
+              <SelectTrigger className="bg-white/15 backdrop-blur-md border-white/25 text-white [&>span[data-placeholder]]:text-white/70" data-testid={testId}>
                 <SelectValue placeholder={placeholder || "Seleziona"} />
               </SelectTrigger>
             </FormControl>
@@ -472,7 +472,7 @@ export default function ProfileEdit() {
             <source src="/backgrounds/vibra-video-2.mp4" type="video/mp4" />
           </video>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
       <div className="flex items-center gap-4 mb-4">
         <Button
@@ -596,7 +596,7 @@ export default function ProfileEdit() {
                             type="button"
                             onClick={() => photoInputRef.current?.click()}
                             disabled={isUploadingPhoto}
-                            className="aspect-square rounded-xl border-2 border-dashed border-white/30 flex flex-col items-center justify-center gap-1 text-white/50 hover:border-primary/50 hover:text-primary transition-colors"
+                            className="aspect-square rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/70 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors"
                             data-testid="button-add-photo"
                           >
                             {isUploadingPhoto ? (
@@ -604,7 +604,7 @@ export default function ProfileEdit() {
                             ) : (
                               <>
                                 <Camera className="w-6 h-6" />
-                                <span className="text-xs">Aggiungi</span>
+                                <span className="text-xs font-medium">Aggiungi</span>
                               </>
                             )}
                           </button>
@@ -620,7 +620,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Nome</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" placeholder="Il tuo nome" {...field} data-testid="input-name" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70 placeholder:text-sm" placeholder="Il tuo nome" {...field} data-testid="input-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -633,7 +633,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -666,7 +666,7 @@ export default function ProfileEdit() {
                             <FormControl>
                               <div className="relative">
                                 <Input
-                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
+                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
                                   placeholder="Cerca la tua citta..."
                                   value={citySearch}
                                   onChange={(e) => {
@@ -745,7 +745,7 @@ export default function ProfileEdit() {
                             <FormItem className="flex-1">
                               <FormControl>
                                 <Input
-                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
+                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
                                   type="tel"
                                   placeholder="Numero di telefono"
                                   {...field}
@@ -769,9 +769,10 @@ export default function ProfileEdit() {
                     <Ruler className="w-5 h-5 text-accent" />
                     Aspetto Fisico
                   </div>
+                  <p className="text-white/70 text-sm">Descrivi il tuo aspetto fisico per trovare la tua anima gemella</p>
                     <div className="grid grid-cols-2 gap-4">
-                      <SelectField control={form.control} name="hairColor" label="Colore Capelli" options={hairColorOptions} placeholder="Es. Castano, Biondo..." testId="select-hair-color" />
-                      <SelectField control={form.control} name="eyeColor" label="Colore Occhi" options={eyeColorOptions} placeholder="Es. Marroni, Azzurri..." testId="select-eye-color" />
+                      <SelectField control={form.control} name="hairColor" label="Capelli" options={hairColorOptions} placeholder="Colore capelli" testId="select-hair-color" />
+                      <SelectField control={form.control} name="eyeColor" label="Occhi" options={eyeColorOptions} placeholder="Colore occhi" testId="select-eye-color" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <SelectField control={form.control} name="bodyType" label="Corporatura" options={bodyTypeOptions} placeholder="Il tuo fisico" testId="select-body-type" />
@@ -782,7 +783,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Altezza (cm)</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -806,7 +807,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Min. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -819,7 +820,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Max. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -834,7 +835,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Min. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -847,7 +848,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Max. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
+                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -897,10 +898,15 @@ export default function ProfileEdit() {
                     <SelectField control={form.control} name="wantsChildren" label="Figli" options={wantsChildrenOptions} placeholder="Il tuo desiderio" testId="select-children" />
                     <SelectField control={form.control} name="accessMotivation" label="Perché Sei Qui" options={accessMotivationOptions} placeholder="La tua motivazione" testId="select-motivation" />
 
+                    <div className="mt-6 pt-4 border-t border-white/15">
+                      <p className="text-white font-semibold text-sm tracking-wide uppercase mb-3">Funzioni Extra</p>
+                      <p className="text-white/70 text-sm mb-4">Attiva o disattiva queste funzioni opzionali per personalizzare la tua esperienza</p>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => setRatingEnabled(!ratingEnabled)}
-                      className={`mt-4 w-full p-5 rounded-xl border-2 transition-all ${
+                      className={`w-full p-5 rounded-xl border-2 transition-all ${
                         ratingEnabled
                           ? "bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 border-primary shadow-lg shadow-primary/20"
                           : "bg-white/5 border-white/10"
@@ -914,11 +920,11 @@ export default function ProfileEdit() {
                           <Eye className={`w-7 h-7 transition-colors ${ratingEnabled ? "text-primary" : "text-white/40"}`} />
                         </div>
                         <div className="flex-1 min-w-0 text-left">
-                          <p className={`font-bold text-base mb-0.5 transition-colors ${ratingEnabled ? "text-white" : "text-white/70"}`}>
+                          <p className={`font-bold text-base mb-1 transition-colors ${ratingEnabled ? "text-white" : "text-white/80"}`}>
                             Prima Impressione
                           </p>
-                          <p className="text-white/50 text-xs leading-relaxed">
-                            Gli altri potranno votarti da 1 a 5 sulla tua card. Vedrai i voti ricevuti nella sezione dedicata.
+                          <p className="text-white/70 text-sm leading-relaxed">
+                            Attiva per permettere agli altri di votarti da 1 a 5 sulla tua card. Vedrai tutti i voti ricevuti nella sezione dedicata "Prima Impressione".
                           </p>
                         </div>
                         <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${
@@ -940,7 +946,7 @@ export default function ProfileEdit() {
                     <button
                       type="button"
                       onClick={() => setLocationSharingEnabled(!locationSharingEnabled)}
-                      className={`mt-4 w-full p-5 rounded-xl border-2 transition-all ${
+                      className={`mt-3 w-full p-5 rounded-xl border-2 transition-all ${
                         locationSharingEnabled
                           ? "bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border-secondary shadow-lg shadow-secondary/20"
                           : "bg-white/5 border-white/10"
@@ -954,10 +960,10 @@ export default function ProfileEdit() {
                           <MapPin className={`w-7 h-7 transition-colors ${locationSharingEnabled ? "text-secondary" : "text-white/40"}`} />
                         </div>
                         <div className="flex-1 min-w-0 text-left">
-                          <p className={`font-bold text-base mb-0.5 transition-colors ${locationSharingEnabled ? "text-white" : "text-white/70"}`}>
+                          <p className={`font-bold text-base mb-1 transition-colors ${locationSharingEnabled ? "text-white" : "text-white/80"}`}>
                             Mostra Dove Sei
                           </p>
-                          <p className="text-white/50 text-xs leading-relaxed">
+                          <p className="text-white/70 text-sm leading-relaxed">
                             Condividi la tua posizione con i tuoi Match. Solo chi ha un match con te e ha attivato questa opzione potrà vedere dove ti trovi su una mappa.
                           </p>
                         </div>
@@ -976,12 +982,12 @@ export default function ProfileEdit() {
                             <span className="text-xs text-cyan-400 font-medium">Attivo - I tuoi match potranno vederti sulla mappa</span>
                           </div>
                           <div className="bg-white/5 rounded-lg p-3 space-y-1">
-                            <p className="text-white/70 text-xs font-medium">Come funziona:</p>
-                            <p className="text-white/40 text-[11px]">1. Attiva questa opzione nel tuo profilo</p>
-                            <p className="text-white/40 text-[11px]">2. Vai nella sezione "Dove Sei" dal menu</p>
-                            <p className="text-white/40 text-[11px]">3. Tocca "Condividi Posizione" per iniziare</p>
-                            <p className="text-white/40 text-[11px]">4. Solo i tuoi match con questa opzione attiva vedranno la tua posizione</p>
-                            <p className="text-white/40 text-[11px]">5. Puoi interrompere la condivisione in qualsiasi momento</p>
+                            <p className="text-white/80 text-xs font-medium">Come funziona:</p>
+                            <p className="text-white/60 text-xs">1. Attiva questa opzione nel tuo profilo</p>
+                            <p className="text-white/60 text-xs">2. Vai nella sezione "Dove Sei" dal menu</p>
+                            <p className="text-white/60 text-xs">3. Tocca "Condividi Posizione" per iniziare</p>
+                            <p className="text-white/60 text-xs">4. Solo i tuoi match con questa opzione attiva vedranno la tua posizione</p>
+                            <p className="text-white/60 text-xs">5. Puoi interrompere la condivisione in qualsiasi momento</p>
                           </div>
                         </div>
                       )}
@@ -996,7 +1002,8 @@ export default function ProfileEdit() {
                     Lingue e Bio
                   </div>
                     <div>
-                      <FormLabel className="mb-3 block text-white font-semibold text-sm tracking-wide uppercase">Lingue Parlate</FormLabel>
+                      <FormLabel className="mb-1 block text-white font-semibold text-sm tracking-wide uppercase">Lingue Parlate</FormLabel>
+                      <p className="text-white/70 text-sm mb-3">Seleziona tutte le lingue che parli per trovare persone compatibili</p>
                       <div className="flex flex-wrap gap-2">
                         {languageOptions.map((lang) => (
                           <Badge
@@ -1021,7 +1028,7 @@ export default function ProfileEdit() {
                           <FormControl>
                             <Textarea
                               placeholder="Racconta qualcosa di te..."
-                              className="resize-none min-h-[120px] bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
+                              className="resize-none min-h-[120px] bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
                               {...field}
                               data-testid="input-bio"
                             />
@@ -1042,12 +1049,12 @@ export default function ProfileEdit() {
                     <Sparkles className="w-5 h-5 text-accent" />
                     Interessi
                   </div>
-                    <p className="text-sm text-white/60">
-                      Seleziona fino a 10 interessi ({interests.length}/10)
+                    <p className="text-sm text-white/70">
+                      Seleziona fino a 10 interessi che ti rappresentano ({interests.length}/10)
                     </p>
 
                     {interests.length > 0 && (
-                      <div className="flex flex-wrap gap-2 pb-2 border-b border-border">
+                      <div className="flex flex-wrap gap-2 pb-2 border-b border-white/20">
                         {interests.map((interest) => (
                           <Badge
                             key={interest}
@@ -1069,7 +1076,7 @@ export default function ProfileEdit() {
                         placeholder="Cerca interessi..."
                         value={interestSearch}
                         onChange={(e) => setInterestSearch(e.target.value)}
-                        className="pl-9 bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/50"
+                        className="pl-9 bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
                         data-testid="input-search-interests"
                       />
                     </div>
@@ -1082,10 +1089,10 @@ export default function ProfileEdit() {
                             key={item}
                             type="button"
                             onClick={() => toggleInterest(item)}
-                            className={`flex items-center gap-2 p-3 rounded-lg text-left text-sm transition-all border ${
+                            className={`flex items-center gap-2 p-3 rounded-lg text-left text-sm transition-all border backdrop-blur-md ${
                               isSelected
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border hover:border-muted-foreground/50"
+                                ? "border-primary bg-primary/20 text-white"
+                                : "border-white/20 bg-white/10 text-white/80 hover:border-white/40"
                             }`}
                             data-testid={`button-interest-${slugify(item)}`}
                           >
