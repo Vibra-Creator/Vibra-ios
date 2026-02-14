@@ -31,6 +31,7 @@ import Onboarding from "@/pages/onboarding";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
+import { ViewportSelector } from "@/components/ViewportSelector";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
 const publicPages = ["/privacy", "/terms", "/login", "/register", "/onboarding"];
@@ -271,10 +272,10 @@ function App() {
             {showSplash ? (
               <SplashScreen onComplete={handleSplashComplete} />
             ) : (
-              <>
+              <ViewportSelector>
                 <AppContent />
                 <Toaster />
-              </>
+              </ViewportSelector>
             )}
           </GuestProvider>
         </TooltipProvider>
