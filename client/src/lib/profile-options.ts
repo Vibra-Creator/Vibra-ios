@@ -216,11 +216,11 @@ export function slugify(str: string): string {
 }
 
 export const availableImages = [
-  "/images/profile-1.png",
-  "/images/profile-2.png",
-  "/images/profile-3.png",
-  "/images/profile-4.png",
-  "/images/profile-5.png",
+  "/images/avatar-1.png",
+  "/images/avatar-2.png",
+  "/images/avatar-3.png",
+  "/images/avatar-4.png",
+  "/images/avatar-5.png",
 ];
 
 export interface CityOption {

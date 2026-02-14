@@ -759,6 +759,8 @@ export async function seedDatabase() {
     } else {
       console.log("All bot profiles already exist, skipping seed.");
     }
+
+    await db.execute(sql`UPDATE profiles SET points = 0 WHERE is_bot = true AND points != 0`);
     
     if (existingProfiles.length === 0) {
       for (const swipe of seedSwipesToCreateMatch) {

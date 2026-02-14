@@ -1156,11 +1156,19 @@ export async function registerRoutes(
         const mimeType = req.file.mimetype || "image/jpeg";
         const aiResponse = await openai.chat.completions.create({
           model: "gpt-4o-mini",
-          max_completion_tokens: 200,
+          max_completion_tokens: 300,
           messages: [
             {
               role: "system",
-              content: `Sei un moderatore di una app di incontri. Devi verificare se una foto caricata da un utente è attinente al tema di una sfida giornaliera. Rispondi SOLO con un JSON: {"approved": true/false, "reason": "motivo breve in italiano"}. Approva se la foto è ragionevolmente collegata al tema. Rifiuta solo se è chiaramente non pertinente, offensiva, o inappropriata.`
+              content: `Sei un moderatore di una app di incontri. Devi verificare se una foto caricata da un utente è REALMENTE attinente al tema di una sfida giornaliera. Rispondi SOLO con un JSON: {"approved": true/false, "reason": "motivo breve in italiano"}.
+
+REGOLE IMPORTANTI:
+- La foto DEVE mostrare chiaramente qualcosa di collegato al tema della sfida
+- NON approvare foto generiche, selfie casuali, o immagini che non c'entrano con il tema
+- NON approvare screenshot, meme, o immagini scaricate da internet
+- Rifiuta foto offensive, inappropriata, con nudità o contenuti sessuali
+- Sii ragionevolmente severo: la foto deve dimostrare che l'utente ha davvero fatto lo sforzo di completare la sfida
+- Se la sfida chiede un selfie o una foto personale, deve essere una foto reale e non una foto trovata online`
             },
             {
               role: "user",
