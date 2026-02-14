@@ -117,7 +117,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
               </div>
             </div>
 
-            <div className="bg-black/90 backdrop-blur-xl p-6 space-y-5 pb-24">
+            <div className="bg-black/90 backdrop-blur-xl p-6 space-y-5 pb-44">
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" className="bg-primary/80 text-primary-foreground">
                   <Sparkles className="w-3 h-3 mr-1" />
