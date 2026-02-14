@@ -34,7 +34,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, name } = req.body;
+      const { email, password, name, lastName: reqLastName } = req.body;
 
       if (!email || !password || !name) {
         return res.status(400).json({ message: "Email, password e nome sono obbligatori" });
@@ -50,9 +50,8 @@ export async function setupAuth(app: Express) {
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
-      const nameParts = name.trim().split(" ");
-      const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(" ") || "";
+      const firstName = name.trim();
+      const lastName = reqLastName ? reqLastName.trim() : "";
 
       let user;
       if (existingUser) {

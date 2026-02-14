@@ -13,6 +13,7 @@ import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_177048012
 
 export default function Register() {
   const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -59,7 +60,7 @@ export default function Register() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, lastName }),
         credentials: "include",
       });
 
@@ -115,20 +116,38 @@ export default function Register() {
         <Card className="bg-white/10 backdrop-blur-xl border-white/10">
           <CardContent className="p-6 space-y-6">
             <form onSubmit={handleRegister} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-white/90">Nome</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Il tuo nome"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
-                    required
-                    data-testid="input-name"
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-white/90">Nome</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Nome"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+                      required
+                      data-testid="input-name"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName" className="text-white/90">Cognome</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Cognome"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+                      required
+                      data-testid="input-lastname"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -216,14 +216,19 @@ export default function Onboarding() {
           <div className="flex-1" />
 
           {isLastPage ? (
-            <Button
-              onClick={() => setLocation(hasProfile ? "/profile" : "/profile/edit")}
-              className="bg-gradient-to-r from-primary to-accent text-white px-6"
-              data-testid="button-onboarding-start"
-            >
-              <Rocket className="w-4 h-4 mr-2" />
-              {hasProfile ? "Torna al Profilo" : "Crea il tuo Profilo"}
-            </Button>
+            <div className="flex flex-col items-end gap-2">
+              <Button
+                onClick={() => setLocation(hasProfile ? "/profile" : "/profile/edit")}
+                className="bg-gradient-to-r from-primary to-accent text-white px-6"
+                data-testid="button-onboarding-start"
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                {hasProfile ? "Torna al Profilo" : "Crea il tuo Profilo"}
+              </Button>
+              <span className="text-white/40 text-[11px] italic" data-testid="text-created-by">
+                Created by Fabio Mattoni
+              </span>
+            </div>
           ) : (
             <Button
               onClick={() => setPage(page + 1)}
