@@ -124,10 +124,9 @@ export default function Challenges() {
       return response.json();
     },
     onSuccess: (data: any) => {
-      const awarded = data?.pointsAwarded;
       toast({
-        title: "Sfida completata!",
-        description: awarded ? `Hai guadagnato ${awarded} punti!` : "La tua foto e' stata inviata con successo.",
+        title: "Foto inviata!",
+        description: "La tua foto e' in attesa di approvazione dall'admin. Riceverai i punti dopo l'approvazione.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/challenges/submissions/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -209,6 +208,7 @@ export default function Challenges() {
   };
 
   const approvedSubmissions = submissions?.filter(s => s.status === "approved") || [];
+  const pendingSubmissions = submissions?.filter(s => s.status === "pending") || [];
   const totalPoints = myProfile?.points ?? 0;
 
   return (
@@ -265,7 +265,7 @@ export default function Challenges() {
           <div>
             <p className="font-bold text-lg text-white" data-testid="text-points-label">I tuoi punti</p>
             <p className="text-sm text-white/70">
-              {approvedSubmissions.length} sfide completate
+              {approvedSubmissions.length} approvate{pendingSubmissions.length > 0 ? ` - ${pendingSubmissions.length} in attesa` : ""}
             </p>
           </div>
         </div>
@@ -332,7 +332,8 @@ export default function Challenges() {
         <div className="space-y-4">
           {displayChallenges.map((challenge, index) => {
             const submission = getSubmissionForChallenge(challenge.id);
-            const isCompleted = !!submission;
+            const isCompleted = submission?.status === "approved";
+            const isPending = submission?.status === "pending";
 
             const bannerCfg = challengeBannerConfig[challenge.title];
 
@@ -373,6 +374,11 @@ export default function Challenges() {
                           <CheckCircle className="w-3 h-3 mr-1" />
                           Completata
                         </Badge>
+                      ) : isPending ? (
+                        <Badge variant="secondary" className="bg-amber-500/20 text-amber-400">
+                          <Clock className="w-3 h-3 mr-1" />
+                          In attesa di approvazione
+                        </Badge>
                       ) : (
                         <ChallengeCountdownBadge expiresAt={(challenge as any).expiresAt} />
                       )}
@@ -382,11 +388,23 @@ export default function Challenges() {
                       {isCompleted ? (
                         <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
                           <img
-                            src={submission.imageUrl}
+                            src={submission!.imageUrl}
                             alt="Submission"
                             className="w-full h-full object-cover"
                             data-testid={`img-submission-${challenge.id}`}
                           />
+                        </div>
+                      ) : isPending ? (
+                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 relative">
+                          <img
+                            src={submission!.imageUrl}
+                            alt="In attesa"
+                            className="w-full h-full object-cover opacity-60"
+                            data-testid={`img-pending-${challenge.id}`}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-amber-400" />
+                          </div>
                         </div>
                       ) : (
                         <Button

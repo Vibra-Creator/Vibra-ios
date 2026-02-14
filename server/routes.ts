@@ -735,6 +735,10 @@ export async function registerRoutes(
         await storage.addPoints(submission.profileId, pointsToAward);
       }
 
+      if (status === "rejected" && submission.imageUrl) {
+        await objectStorageService.deleteObject(submission.imageUrl);
+      }
+
       res.json(submission);
     } catch (error) {
       console.error("Error updating submission:", error);
@@ -744,6 +748,10 @@ export async function registerRoutes(
 
   app.delete("/api/admin/challenge-submissions/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
+      const [sub] = await db.select().from(challengeSubmissions).where(eq(challengeSubmissions.id, req.params.id));
+      if (sub?.imageUrl) {
+        await objectStorageService.deleteObject(sub.imageUrl);
+      }
       await db.delete(challengeSubmissions).where(eq(challengeSubmissions.id, req.params.id));
       res.json({ success: true });
     } catch (error) {
@@ -1206,14 +1214,7 @@ export async function registerRoutes(
         imageUrl: objectPath,
       });
 
-      await storage.updateChallengeSubmissionStatus(submission.id, "approved");
-
-      const pointsToAward = challenge?.points ?? 10;
-      await storage.addPoints(userProfile.id, pointsToAward);
-
-      const updatedProfile = await storage.getProfileByUserId(userId);
-
-      res.status(201).json({ ...submission, status: "approved", pointsAwarded: pointsToAward, totalPoints: updatedProfile?.points ?? 0 });
+      res.status(201).json({ ...submission, status: "pending", message: "Foto caricata! In attesa di approvazione dall'admin." });
     } catch (error: any) {
       console.error("Error submitting challenge:", error?.message || error);
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
@@ -2043,9 +2044,16 @@ export async function registerRoutes(
       const activeChallenges = await db.select().from(dailyChallenges).where(eq(dailyChallenges.isActive, true));
       for (const challenge of activeChallenges) {
         if (challenge.expiresAt && new Date(challenge.expiresAt) <= now) {
+          const subs = await db.select().from(challengeSubmissions).where(eq(challengeSubmissions.challengeId, challenge.id));
+          for (const sub of subs) {
+            if (sub.imageUrl) {
+              await objectStorageService.deleteObject(sub.imageUrl);
+              console.log(`Deleted challenge photo from storage: ${sub.imageUrl}`);
+            }
+          }
           await db.delete(challengeSubmissions).where(eq(challengeSubmissions.challengeId, challenge.id));
           await db.delete(dailyChallenges).where(eq(dailyChallenges.id, challenge.id));
-          console.log(`Expired challenge "${challenge.title}" (${challenge.id}) deleted.`);
+          console.log(`Expired challenge "${challenge.title}" (${challenge.id}) and its submissions deleted.`);
         }
       }
     } catch (error) {

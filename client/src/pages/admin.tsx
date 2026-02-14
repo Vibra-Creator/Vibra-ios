@@ -153,6 +153,15 @@ export default function Admin() {
     },
   });
 
+  const deleteSubmissionMutation = useMutation({
+    mutationFn: async (id: string) =>
+      apiRequest("DELETE", `/api/admin/challenge-submissions/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/challenge-submissions"] });
+      toast({ title: "Foto eliminata definitivamente" });
+    },
+  });
+
   if (statsError) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -466,7 +475,7 @@ export default function Admin() {
                         <div className="aspect-video relative">
                           <img src={sub.imageUrl} alt="Submission" className="w-full h-full object-cover" />
                           <Badge className="absolute top-2 right-2" variant={sub.status === "pending" ? "destructive" : sub.status === "approved" ? "default" : "secondary"}>
-                            {sub.status === "pending" ? "In attesa" : sub.status === "approved" ? "Approvata" : "Rifiutata"}
+                            {sub.status === "pending" ? "In attesa AI ok" : sub.status === "approved" ? "Approvata" : "Rifiutata"}
                           </Badge>
                         </div>
                         <div className="p-3">
@@ -482,6 +491,11 @@ export default function Admin() {
                               </Button>
                             </div>
                           )}
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" variant="destructive" className="flex-1" onClick={() => { if (confirm("Eliminare definitivamente questa foto e la submission?")) deleteSubmissionMutation.mutate(sub.id); }} data-testid={`button-delete-submission-${sub.id}`}>
+                              <Trash2 className="w-4 h-4 mr-1" /> Elimina
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
