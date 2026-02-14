@@ -30,6 +30,8 @@ interface CategorizedRooms {
   popularRooms: PrivateRoom[];
   memberCounts: Record<string, number>;
   ownerProfiles: Record<string, { name: string; imageUrl: string | null }>;
+  pendingCounts: Record<string, number>;
+  recentRequesters: Record<string, Array<{ name: string; imageUrl: string | null; status: string }>>;
 }
 
 function PrivateRoomSkeleton() {
@@ -280,7 +282,7 @@ export default function PrivateRooms() {
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="w-10 h-10 border border-primary/30">
-                        <AvatarImage src={room.imageUrl || "/images/profile-16.png"} />
+                        <AvatarImage src={room.imageUrl || "/images/avatar-1.png"} />
                         <AvatarFallback>{room.name[0]}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -326,6 +328,8 @@ export default function PrivateRooms() {
                   memberCount={categorized?.memberCounts[room.id] || 0}
                   ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
                   ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
+                  recentMembers={categorized?.recentRequesters[room.id] || []}
+                  pendingCount={categorized?.pendingCounts[room.id] || 0}
                   onRequestAccess={() => requestAccessMutation.mutate(room.id)}
                   onNavigate={() => setLocation(`/private-room/${room.id}`)}
                   isRequesting={requestAccessMutation.isPending}
@@ -337,7 +341,13 @@ export default function PrivateRooms() {
           </div>
         ) : (
           <div className="space-y-6">
-            {categorized?.featuredRoom && (
+            {categorized?.featuredRoom && (() => {
+              const fr = categorized.featuredRoom;
+              const frOwner = categorized.ownerProfiles[fr.ownerId];
+              const frMembers = categorized.recentRequesters[fr.id] || [];
+              const frPending = categorized.pendingCounts[fr.id] || 0;
+              const frMemberCount = categorized.memberCounts[fr.id] || 0;
+              return (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -348,26 +358,54 @@ export default function PrivateRooms() {
                 </h2>
                 <div
                   className="rounded-xl backdrop-blur-md bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 border border-amber-400/40 p-4 cursor-pointer"
-                  onClick={() => { if (isFeaturedMember) setLocation(`/private-room/${categorized.featuredRoom!.id}`); }}
+                  onClick={() => { if (isFeaturedMember) setLocation(`/private-room/${fr.id}`); }}
                   data-testid="card-featured-room"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shrink-0 border-2 border-amber-400/50">
-                      <Crown className="w-6 h-6 text-white" />
-                    </div>
+                    <Avatar className="w-12 h-12 border-2 border-amber-400/50 shrink-0">
+                      <AvatarImage src={frOwner?.imageUrl || "/images/avatar-1.png"} />
+                      <AvatarFallback><Crown className="w-5 h-5" /></AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-bold text-white">{categorized.featuredRoom.name}</h3>
+                        <h3 className="font-bold text-white">{fr.name}</h3>
                         <Badge variant="secondary" className="bg-amber-400/20 text-amber-300 shrink-0">
                           VIP
                         </Badge>
                       </div>
-                      <p className="text-sm text-white/70 mb-2 line-clamp-2">{categorized.featuredRoom.description}</p>
-                      <div className="flex items-center gap-4 text-sm text-amber-300/80">
+                      <p className="text-xs text-white/50 mb-1">di {frOwner?.name || "Admin"}</p>
+                      <p className="text-sm text-white/70 mb-2 line-clamp-2">{fr.description}</p>
+
+                      {frMembers.length > 0 && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex -space-x-2">
+                            {frMembers.slice(0, 4).map((m, i) => (
+                              <Avatar key={i} className="w-7 h-7 border-2 border-amber-900/60">
+                                <AvatarImage src={m.imageUrl || "/images/avatar-1.png"} />
+                                <AvatarFallback className="text-[10px]">{m.name[0]}</AvatarFallback>
+                              </Avatar>
+                            ))}
+                            {frMembers.length > 4 && (
+                              <div className="w-7 h-7 rounded-full bg-amber-500/30 border-2 border-amber-900/60 flex items-center justify-center text-[10px] text-amber-200 font-bold">
+                                +{frMembers.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-xs text-amber-300/70">partecipano</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4 text-sm text-amber-300/80 flex-wrap">
                         <span className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
-                          {categorized.memberCounts[categorized.featuredRoom.id] || 0} membri
+                          {frMemberCount} membri
                         </span>
+                        {frPending > 0 && (
+                          <span className="flex items-center gap-1 text-pink-400">
+                            <Bell className="w-4 h-4" />
+                            {frPending} in attesa
+                          </span>
+                        )}
                         <span className="flex items-center gap-1 text-green-400/80">
                           <Shield className="w-4 h-4" />
                           Permanente
@@ -376,7 +414,7 @@ export default function PrivateRooms() {
                     </div>
                     <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
                       {isFeaturedMember ? (
-                        <Button size="sm" variant="outline" onClick={() => setLocation(`/private-room/${categorized.featuredRoom!.id}`)} data-testid="button-enter-featured-room">
+                        <Button size="sm" variant="outline" onClick={() => setLocation(`/private-room/${fr.id}`)} data-testid="button-enter-featured-room">
                           <MessageCircle className="w-4 h-4 mr-1" />
                           Entra
                         </Button>
@@ -391,7 +429,7 @@ export default function PrivateRooms() {
                           variant="default"
                           onClick={() => {
                             if (blockIfGuest("richiedere accesso alle stanze private")) return;
-                            requestAccessMutation.mutate(categorized.featuredRoom!.id);
+                            requestAccessMutation.mutate(fr.id);
                           }}
                           disabled={requestAccessMutation.isPending}
                           data-testid="button-request-featured-access"
@@ -403,7 +441,8 @@ export default function PrivateRooms() {
                   </div>
                 </div>
               </motion.div>
-            )}
+              );
+            })()}
 
             {(categorized?.myRooms?.length || 0) > 0 && (
               <motion.div
@@ -422,6 +461,7 @@ export default function PrivateRooms() {
                       myProfile={myProfile}
                       index={index}
                       memberCount={categorized?.memberCounts[room.id] || 0}
+                      recentMembers={categorized?.recentRequesters[room.id] || []}
                       onNavigate={() => setLocation(`/private-room/${room.id}`)}
                     />
                   ))}
@@ -449,6 +489,8 @@ export default function PrivateRooms() {
                       memberCount={categorized?.memberCounts[room.id] || 0}
                       ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
                       ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
+                      recentMembers={categorized?.recentRequesters[room.id] || []}
+                      pendingCount={categorized?.pendingCounts[room.id] || 0}
                       onRequestAccess={() => requestAccessMutation.mutate(room.id)}
                       onNavigate={() => setLocation(`/private-room/${room.id}`)}
                       isRequesting={requestAccessMutation.isPending}
@@ -478,6 +520,8 @@ export default function PrivateRooms() {
                       memberCount={categorized?.memberCounts[room.id] || 0}
                       ownerName={categorized?.ownerProfiles[room.ownerId]?.name}
                       ownerImage={categorized?.ownerProfiles[room.ownerId]?.imageUrl}
+                      recentMembers={categorized?.recentRequesters[room.id] || []}
+                      pendingCount={categorized?.pendingCounts[room.id] || 0}
                       onRequestAccess={() => requestAccessMutation.mutate(room.id)}
                       onNavigate={() => setLocation(`/private-room/${room.id}`)}
                       isRequesting={requestAccessMutation.isPending}
@@ -507,12 +551,14 @@ function MyRoomCard({
   myProfile,
   index,
   memberCount,
+  recentMembers,
   onNavigate,
 }: {
   room: PrivateRoom;
   myProfile: Profile | null | undefined;
   index: number;
   memberCount: number;
+  recentMembers?: Array<{ name: string; imageUrl: string | null; status: string }>;
   onNavigate: () => void;
 }) {
   const [timeLeft, setTimeLeft] = useState("");
@@ -555,7 +601,7 @@ function MyRoomCard({
       >
         <div className="flex items-start gap-3">
           <Avatar className="w-12 h-12 border-2 border-primary/50">
-            <AvatarImage src={room.imageUrl || myProfile?.imageUrl || "/images/profile-16.png"} />
+            <AvatarImage src={myProfile?.imageUrl || "/images/avatar-1.png"} />
             <AvatarFallback>{room.name[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -567,6 +613,21 @@ function MyRoomCard({
               </Badge>
             </div>
             <p className="text-sm text-white/70 mb-2 line-clamp-1">{room.description || "La tua stanza privata"}</p>
+            {recentMembers && recentMembers.length > 0 && (
+              <div className="flex items-center gap-1.5 mb-2">
+                <div className="flex -space-x-1.5">
+                  {recentMembers.slice(0, 4).map((m, i) => (
+                    <Avatar key={i} className="w-6 h-6 border border-primary/30">
+                      <AvatarImage src={m.imageUrl || "/images/avatar-1.png"} />
+                      <AvatarFallback className="text-[8px]">{m.name[0]}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                <span className="text-[10px] text-white/40">
+                  {recentMembers.length > 4 ? `+${recentMembers.length - 4} altri` : "partecipano"}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-4 text-sm text-purple-300/80 flex-wrap">
               <span className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
@@ -603,6 +664,8 @@ function RoomCard({
   memberCount,
   ownerName,
   ownerImage,
+  recentMembers,
+  pendingCount,
   onRequestAccess,
   onNavigate,
   isRequesting,
@@ -613,6 +676,8 @@ function RoomCard({
   memberCount: number;
   ownerName?: string;
   ownerImage?: string | null;
+  recentMembers?: Array<{ name: string; imageUrl: string | null; status: string }>;
+  pendingCount?: number;
   onRequestAccess: () => void;
   onNavigate: () => void;
   isRequesting: boolean;
@@ -660,7 +725,7 @@ function RoomCard({
       >
         <div className="flex items-start gap-3">
           <Avatar className="w-10 h-10 border border-white/20">
-            <AvatarImage src={ownerImage || room.imageUrl || "/images/profile-16.png"} />
+            <AvatarImage src={ownerImage || room.imageUrl || "/images/avatar-1.png"} />
             <AvatarFallback>{room.name[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -670,12 +735,32 @@ function RoomCard({
               <span className="text-white/30">·</span>
               <Users className="w-3 h-3" />
               <span>{memberCount}</span>
+              {(pendingCount || 0) > 0 && (
+                <>
+                  <span className="text-white/30">·</span>
+                  <Bell className="w-3 h-3 text-pink-400" />
+                  <span className="text-pink-400">{pendingCount}</span>
+                </>
+              )}
               {timeLeft && (
                 <span className="flex items-center gap-0.5 text-yellow-300/60">
                   · {timeLeft}
                 </span>
               )}
             </p>
+            {recentMembers && recentMembers.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <div className="flex -space-x-1.5">
+                  {recentMembers.slice(0, 3).map((m, i) => (
+                    <Avatar key={i} className="w-5 h-5 border border-white/20">
+                      <AvatarImage src={m.imageUrl || "/images/avatar-1.png"} />
+                      <AvatarFallback className="text-[8px]">{m.name[0]}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                <span className="text-[10px] text-white/40">{recentMembers.length > 3 ? `+${recentMembers.length - 3} altri` : ""}</span>
+              </div>
+            )}
           </div>
 
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>

@@ -1317,6 +1317,29 @@ REGOLE IMPORTANTI:
         }
       }
 
+      const pendingCounts: Record<string, number> = {};
+      const recentRequesters: Record<string, Array<{ name: string; imageUrl: string | null }>> = {};
+      for (const room of allRooms) {
+        const requests = await storage.getPrivateRoomRequests(room.id);
+        const pending = requests.filter(r => r.status === "pending");
+        pendingCounts[room.id] = pending.length;
+        const approved = requests.filter(r => r.status === "approved");
+        const recentMembers: Array<{ name: string; imageUrl: string | null; status: string }> = [];
+        for (const req of approved.slice(0, 5)) {
+          const profile = await storage.getProfile(req.requesterId);
+          if (profile) {
+            recentMembers.push({ name: profile.name, imageUrl: profile.imageUrl, status: "approved" });
+          }
+        }
+        for (const req of pending.slice(0, 3)) {
+          const profile = await storage.getProfile(req.requesterId);
+          if (profile) {
+            recentMembers.push({ name: profile.name, imageUrl: profile.imageUrl, status: "pending" });
+          }
+        }
+        recentRequesters[room.id] = recentMembers;
+      }
+
       res.json({
         featuredRoom,
         myRooms,
@@ -1324,6 +1347,8 @@ REGOLE IMPORTANTI:
         popularRooms,
         memberCounts,
         ownerProfiles,
+        pendingCounts,
+        recentRequesters,
       });
     } catch (error) {
       console.error("Error fetching categorized rooms:", error);
