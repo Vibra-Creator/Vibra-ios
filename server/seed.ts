@@ -860,39 +860,17 @@ export async function seedDatabase() {
     await ensureAdminAccount();
     await promoteUserToAdmin("famax61@yahoo.com");
     await cleanupTestData();
-    await ensurePermanentRoom();
+    try {
+      const oldRoom = await db.select().from(privateRooms).where(eq(privateRooms.id, "entra-chi-dico-io"));
+      if (oldRoom.length > 0) {
+        await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, "entra-chi-dico-io"));
+        await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, "entra-chi-dico-io"));
+        await db.delete(privateRooms).where(eq(privateRooms.id, "entra-chi-dico-io"));
+        console.log("Removed legacy 'Entra chi dico io' room.");
+      }
+    } catch (e) {}
+
   } catch (error) {
     console.error("Error seeding database:", error);
-  }
-}
-
-const PERMANENT_ROOM_ID = "entra-chi-dico-io";
-
-async function ensurePermanentRoom() {
-  try {
-    const existing = await db.select().from(privateRooms).where(eq(privateRooms.id, PERMANENT_ROOM_ID));
-    if (existing.length > 0) {
-      if (!existing[0].isActive) {
-        await db.update(privateRooms).set({ isActive: true }).where(eq(privateRooms.id, PERMANENT_ROOM_ID));
-        console.log("Re-activated permanent room 'Entra chi dico io'.");
-      }
-      return;
-    }
-
-    const adminProfile = await db.select().from(profiles).where(eq(profiles.userId, "admin-vibra-001"));
-    const ownerId = adminProfile.length > 0 ? adminProfile[0].id : "16";
-
-    await db.insert(privateRooms).values({
-      id: PERMANENT_ROOM_ID,
-      ownerId,
-      name: "Entra chi dico io",
-      description: "La stanza esclusiva di Vibra! Richiedi accesso e attendi l'approvazione per entrare. Solo i migliori vengono accettati!",
-      imageUrl: "/images/private-rooms-bg.gif",
-      isActive: true,
-      expiresAt: null,
-    });
-    console.log("Created permanent room 'Entra chi dico io'.");
-  } catch (error) {
-    console.error("Error ensuring permanent room:", error);
   }
 }

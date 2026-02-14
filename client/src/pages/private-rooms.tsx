@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft, Shield } from "lucide-react";
+import { Lock, Plus, Users, Crown, Bell, MessageCircle, Clock, CheckCircle, XCircle, Star, Search, Sparkles, Heart, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { PrivateRoom, Profile } from "@shared/schema";
 
 interface CategorizedRooms {
-  featuredRoom: PrivateRoom | null;
   myRooms: PrivateRoom[];
   matchRooms: PrivateRoom[];
   popularRooms: PrivateRoom[];
@@ -87,7 +86,7 @@ export default function PrivateRooms() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/private-rooms/categorized"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      toast({ title: "Stanza creata!", description: `La tua stanza "${newRoomName}" è stata creata.` });
+      toast({ title: "Stanza creata!", description: `La tua stanza è stata creata. In attesa di richieste!` });
       setIsCreateOpen(false);
       setNewRoomName("");
       setNewRoomDescription("");
@@ -110,7 +109,6 @@ export default function PrivateRooms() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/private-rooms/categorized"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/private-rooms", featuredRoomId, "my-request"] });
       toast({ title: "Richiesta inviata!", description: "Attendi l'approvazione del proprietario." });
     },
     onError: (error: any) => {
@@ -121,28 +119,9 @@ export default function PrivateRooms() {
 
   const handleCreateRoom = () => {
     if (blockIfGuest("creare o accedere alle stanze private")) return;
-    if (!newRoomName.trim()) {
-      toast({ title: "Errore", description: "Inserisci un nome per la stanza", variant: "destructive" });
-      return;
-    }
-    createRoomMutation.mutate({ name: newRoomName.trim(), description: newRoomDescription.trim() });
+    const roomName = newRoomName.trim() || "Vuoi conversare con me?";
+    createRoomMutation.mutate({ name: roomName, description: newRoomDescription.trim() });
   };
-
-  const featuredRoomId = categorized?.featuredRoom?.id;
-  const isFeaturedOwner = myProfile?.id === categorized?.featuredRoom?.ownerId;
-
-  const { data: featuredRequest } = useQuery<any>({
-    queryKey: ["/api/private-rooms", featuredRoomId, "my-request"],
-    queryFn: async () => {
-      const res = await fetch(`/api/private-rooms/${featuredRoomId}/my-request`, { credentials: "include" });
-      if (!res.ok) return null;
-      return res.json();
-    },
-    enabled: !!featuredRoomId && !!myProfile && !isFeaturedOwner && !isGuest,
-  });
-
-  const isFeaturedMember = isFeaturedOwner || featuredRequest?.status === "approved";
-  const isFeaturedPending = featuredRequest?.status === "pending";
 
   const allDisplayRooms = [
     ...(categorized?.matchRooms || []),
@@ -179,7 +158,7 @@ export default function PrivateRooms() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white" data-testid="text-private-rooms-title">Stanze Private</h1>
-              <p className="text-sm text-white/60" data-testid="text-private-rooms-subtitle">Il tuo spazio esclusivo</p>
+              <p className="text-sm text-white/60" data-testid="text-private-rooms-subtitle">Soggette ad approvazione</p>
             </div>
           </div>
 
@@ -207,7 +186,7 @@ export default function PrivateRooms() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Crea una Stanza Privata</DialogTitle>
+                  <DialogTitle>Vuoi conversare con me?</DialogTitle>
                 </DialogHeader>
                 {!canCreateRoom ? (
                   <div className="space-y-4 pt-4 text-center">
@@ -227,12 +206,21 @@ export default function PrivateRooms() {
                   </div>
                 ) : (
                   <div className="space-y-4 pt-4">
+                    <div className="rounded-lg bg-primary/10 border border-primary/20 p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Lock className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-semibold text-primary">Soggetta ad approvazione</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Chi vuole entrare nella tua stanza dovrà richiedere l'accesso. Sarai tu a decidere chi accettare.
+                      </p>
+                    </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
                       <Input
                         value={newRoomName}
                         onChange={(e) => setNewRoomName(e.target.value)}
-                        placeholder="Es. Il Mio Angolo Cosmico"
+                        placeholder="Vuoi conversare con me?"
                         data-testid="input-room-name-top"
                       />
                     </div>
@@ -241,7 +229,7 @@ export default function PrivateRooms() {
                       <Textarea
                         value={newRoomDescription}
                         onChange={(e) => setNewRoomDescription(e.target.value)}
-                        placeholder="Descrivi la tua stanza..."
+                        placeholder="Scrivi qualcosa per invogliare gli altri a entrare..."
                         className="resize-none"
                         data-testid="input-room-description-top"
                       />
@@ -341,109 +329,6 @@ export default function PrivateRooms() {
           </div>
         ) : (
           <div className="space-y-6">
-            {categorized?.featuredRoom && (() => {
-              const fr = categorized.featuredRoom;
-              const frOwner = categorized.ownerProfiles[fr.ownerId];
-              const frMembers = categorized.recentRequesters[fr.id] || [];
-              const frPending = categorized.pendingCounts[fr.id] || 0;
-              const frMemberCount = categorized.memberCounts[fr.id] || 0;
-              return (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h2 className="text-lg font-semibold text-white/80 mb-3 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  Stanza in Evidenza
-                </h2>
-                <div
-                  className="rounded-xl backdrop-blur-md bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 border border-amber-400/40 p-4 cursor-pointer"
-                  onClick={() => { if (isFeaturedMember) setLocation(`/private-room/${fr.id}`); }}
-                  data-testid="card-featured-room"
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="w-12 h-12 border-2 border-amber-400/50 shrink-0">
-                      <AvatarImage src={frOwner?.imageUrl || "/images/avatar-1.png"} />
-                      <AvatarFallback><Crown className="w-5 h-5" /></AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-bold text-white">{fr.name}</h3>
-                        <Badge variant="secondary" className="bg-amber-400/20 text-amber-300 shrink-0">
-                          VIP
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-white/50 mb-1">di {frOwner?.name || "Admin"}</p>
-                      <p className="text-sm text-white/70 mb-2 line-clamp-2">{fr.description}</p>
-
-                      {frMembers.length > 0 && (
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex -space-x-2">
-                            {frMembers.slice(0, 4).map((m, i) => (
-                              <Avatar key={i} className="w-7 h-7 border-2 border-amber-900/60">
-                                <AvatarImage src={m.imageUrl || "/images/avatar-1.png"} />
-                                <AvatarFallback className="text-[10px]">{m.name[0]}</AvatarFallback>
-                              </Avatar>
-                            ))}
-                            {frMembers.length > 4 && (
-                              <div className="w-7 h-7 rounded-full bg-amber-500/30 border-2 border-amber-900/60 flex items-center justify-center text-[10px] text-amber-200 font-bold">
-                                +{frMembers.length - 4}
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-xs text-amber-300/70">partecipano</span>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-4 text-sm text-amber-300/80 flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
-                          {frMemberCount} membri
-                        </span>
-                        {frPending > 0 && (
-                          <span className="flex items-center gap-1 text-pink-400">
-                            <Bell className="w-4 h-4" />
-                            {frPending} in attesa
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 text-green-400/80">
-                          <Shield className="w-4 h-4" />
-                          Permanente
-                        </span>
-                      </div>
-                    </div>
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                      {isFeaturedMember ? (
-                        <Button size="sm" variant="outline" onClick={() => setLocation(`/private-room/${fr.id}`)} data-testid="button-enter-featured-room">
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          Entra
-                        </Button>
-                      ) : isFeaturedPending ? (
-                        <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-300">
-                          <Clock className="w-3 h-3 mr-1" />
-                          In attesa
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() => {
-                            if (blockIfGuest("richiedere accesso alle stanze private")) return;
-                            requestAccessMutation.mutate(fr.id);
-                          }}
-                          disabled={requestAccessMutation.isPending}
-                          data-testid="button-request-featured-access"
-                        >
-                          Richiedi
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-              );
-            })()}
-
             {(categorized?.myRooms?.length || 0) > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -729,7 +614,13 @@ function RoomCard({
             <AvatarFallback>{room.name[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-white truncate">{room.name}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold text-white truncate">{room.name}</h3>
+              <Badge variant="secondary" className="bg-primary/20 text-primary shrink-0 text-[10px]">
+                <Lock className="w-3 h-3 mr-0.5" />
+                Approvazione
+              </Badge>
+            </div>
             <p className="text-xs text-white/50 flex items-center gap-1 flex-wrap">
               <span>{ownerName || "Sconosciuto"}</span>
               <span className="text-white/30">·</span>
