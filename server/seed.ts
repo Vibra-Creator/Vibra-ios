@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings } from "@shared/schema";
+import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings, vibingSessions, reports, blockedUsers } from "@shared/schema";
 import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -708,8 +708,45 @@ async function cleanupTestData() {
 export async function seedDatabase() {
   try {
 
+    const validBotIds = new Set(seedProfiles.map(p => p.id));
     const existingProfiles = await db.select().from(profiles);
     const existingIds = new Set(existingProfiles.map(p => p.id));
+
+    const oldBotProfiles = existingProfiles.filter(p => p.isBot && !validBotIds.has(p.id));
+    if (oldBotProfiles.length > 0) {
+      console.log(`Removing ${oldBotProfiles.length} outdated bot profiles...`);
+      for (const old of oldBotProfiles) {
+        await db.delete(reports).where(or(eq(reports.reporterId, old.id), eq(reports.reportedId, old.id)));
+        await db.delete(blockedUsers).where(or(eq(blockedUsers.blockerId, old.id), eq(blockedUsers.blockedId, old.id)));
+        await db.delete(sentGifts).where(or(eq(sentGifts.senderId, old.id), eq(sentGifts.receiverId, old.id)));
+        await db.delete(profileRatings).where(or(eq(profileRatings.raterId, old.id), eq(profileRatings.ratedId, old.id)));
+        await db.delete(challengeSubmissions).where(eq(challengeSubmissions.profileId, old.id));
+        await db.delete(roomMembers).where(eq(roomMembers.profileId, old.id));
+        await db.delete(roomMessages).where(eq(roomMessages.senderId, old.id));
+        await db.delete(vibingSessions).where(eq(vibingSessions.profileId, old.id));
+
+        const oldMatches = await db.select().from(matches).where(
+          or(eq(matches.profile1Id, old.id), eq(matches.profile2Id, old.id))
+        );
+        for (const m of oldMatches) {
+          await db.delete(messages).where(eq(messages.matchId, m.id));
+        }
+        await db.delete(matches).where(or(eq(matches.profile1Id, old.id), eq(matches.profile2Id, old.id)));
+        await db.delete(swipes).where(or(eq(swipes.swiperId, old.id), eq(swipes.swipedId, old.id)));
+
+        await db.delete(privateRoomRequests).where(eq(privateRoomRequests.requesterId, old.id));
+        await db.delete(privateRoomMessages).where(eq(privateRoomMessages.senderId, old.id));
+        const oldPrivateRooms = await db.select().from(privateRooms).where(eq(privateRooms.ownerId, old.id));
+        for (const pr of oldPrivateRooms) {
+          await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, pr.id));
+          await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, pr.id));
+        }
+        await db.delete(privateRooms).where(eq(privateRooms.ownerId, old.id));
+
+        await db.delete(profiles).where(eq(profiles.id, old.id));
+        console.log(`  Deleted old bot: ${old.name} (${old.id})`);
+      }
+    }
     
     const missingProfiles = seedProfiles.filter(p => !existingIds.has(p.id));
     
