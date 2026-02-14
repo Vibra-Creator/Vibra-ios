@@ -178,15 +178,79 @@ export default function PrivateRooms() {
           </Badge>
         </div>
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-          <Input
-            placeholder="Cerca stanze per nome o proprietario..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40"
-            data-testid="input-search-rooms"
-          />
+        <div className="flex gap-2 mb-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <Input
+              placeholder="Cerca stanze..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              data-testid="input-search-rooms"
+            />
+          </div>
+          {!isGuest && (
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-1.5 shrink-0" data-testid="button-create-room-top">
+                  <Plus className="w-4 h-4" />
+                  Crea
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Crea una Stanza Privata</DialogTitle>
+                </DialogHeader>
+                {!canCreateRoom ? (
+                  <div className="space-y-4 pt-4 text-center">
+                    <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
+                      <Star className="w-8 h-8 text-yellow-400" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Servono almeno <strong>{requiredPoints} punti</strong> per creare una stanza privata.
+                      <br />Hai <strong>{userPoints} punti</strong>.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Completa le sfide giornaliere per guadagnare punti!
+                    </p>
+                    <Button variant="outline" className="w-full" onClick={() => setIsCreateOpen(false)} data-testid="button-close-dialog-top">
+                      Ho capito
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4 pt-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
+                      <Input
+                        value={newRoomName}
+                        onChange={(e) => setNewRoomName(e.target.value)}
+                        placeholder="Es. Il Mio Angolo Cosmico"
+                        data-testid="input-room-name-top"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Descrizione</label>
+                      <Textarea
+                        value={newRoomDescription}
+                        onChange={(e) => setNewRoomDescription(e.target.value)}
+                        placeholder="Descrivi la tua stanza..."
+                        className="resize-none"
+                        data-testid="input-room-description-top"
+                      />
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={handleCreateRoom}
+                      disabled={createRoomMutation.isPending}
+                      data-testid="button-confirm-create-room-top"
+                    >
+                      {createRoomMutation.isPending ? "Creazione..." : `Crea Stanza (${requiredPoints} punti)`}
+                    </Button>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </motion.div>
 
@@ -216,69 +280,9 @@ export default function PrivateRooms() {
                       <X className="w-3.5 h-3.5" />
                     </Button>
                   </div>
-                  <p className="text-white/60 text-xs leading-relaxed mb-3">
-                    Crea la tua stanza privata e decidi tu chi far entrare! Costa {requiredPoints} punti, dura 12 ore e poi viene cancellata automaticamente. Puoi crearne quante ne vuoi!
+                  <p className="text-white/60 text-xs leading-relaxed">
+                    Crea la tua stanza privata e decidi tu chi far entrare! Costa {requiredPoints} punti, dura 12 ore e poi viene cancellata automaticamente. Usa il pulsante "Crea" in alto per iniziare!
                   </p>
-                  <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="gap-1.5" data-testid="button-create-room">
-                        <Plus className="w-4 h-4" />
-                        Crea Stanza ({requiredPoints} punti)
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Crea una Stanza Privata</DialogTitle>
-                      </DialogHeader>
-                      {!canCreateRoom ? (
-                        <div className="space-y-4 pt-4 text-center">
-                          <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto">
-                            <Star className="w-8 h-8 text-yellow-400" />
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Servono almeno <strong>{requiredPoints} punti</strong> per creare una stanza privata.
-                            <br />Hai <strong>{userPoints} punti</strong>.
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Completa le sfide giornaliere per guadagnare punti!
-                          </p>
-                          <Button variant="outline" className="w-full" onClick={() => setIsCreateOpen(false)} data-testid="button-close-dialog">
-                            Ho capito
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4 pt-4">
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Nome Stanza</label>
-                            <Input
-                              value={newRoomName}
-                              onChange={(e) => setNewRoomName(e.target.value)}
-                              placeholder="Es. Il Mio Angolo Cosmico"
-                              data-testid="input-room-name"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Descrizione</label>
-                            <Textarea
-                              value={newRoomDescription}
-                              onChange={(e) => setNewRoomDescription(e.target.value)}
-                              placeholder="Descrivi la tua stanza..."
-                              className="resize-none"
-                              data-testid="input-room-description"
-                            />
-                          </div>
-                          <Button
-                            className="w-full"
-                            onClick={handleCreateRoom}
-                            disabled={createRoomMutation.isPending}
-                            data-testid="button-confirm-create-room"
-                          >
-                            {createRoomMutation.isPending ? "Creazione..." : `Crea Stanza (${requiredPoints} punti)`}
-                          </Button>
-                        </div>
-                      )}
-                    </DialogContent>
-                  </Dialog>
                 </div>
               </div>
             </div>

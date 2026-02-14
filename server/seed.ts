@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges } from "@shared/schema";
+import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings } from "@shared/schema";
 import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -807,6 +807,20 @@ export async function seedDatabase() {
     }
     if (lowPointProfiles.length > 0) {
       console.log(`Gave 50 starting points to ${lowPointProfiles.length} profiles.`);
+    }
+
+    const botIds = (await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.isBot, true))).map(p => p.id);
+    if (botIds.length > 0) {
+      const botRatings = await db.delete(profileRatings).where(
+        or(
+          sql`${profileRatings.raterId} IN (${sql.join(botIds.map(id => sql`${id}`), sql`, `)})`,
+          sql`${profileRatings.ratedId} IN (${sql.join(botIds.map(id => sql`${id}`), sql`, `)})`
+        )
+      ).returning();
+      if (botRatings.length > 0) {
+        console.log(`Cleaned up ${botRatings.length} bot-related ratings.`);
+      }
+      await db.update(profiles).set({ ratingEnabled: false }).where(eq(profiles.isBot, true));
     }
 
     await createBotUserAccounts();
