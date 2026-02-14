@@ -28,6 +28,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { LogOut } from "lucide-react";
 import {
   genderOptions,
   preferredGenderOptions,
@@ -155,7 +156,7 @@ function StepIndicator({ currentStep, totalSteps }: { currentStep: number; total
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [step, setStep] = useState(0);
   const [interests, setInterests] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
@@ -494,6 +495,18 @@ export default function ProfileEdit() {
             {stepTitles[step]} — {step + 1}/{TOTAL_STEPS}
           </p>
         </div>
+        {!existingProfile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-white/70"
+            onClick={() => logout()}
+            data-testid="button-logout-from-create"
+          >
+            <LogOut className="w-4 h-4" />
+            Esci
+          </Button>
+        )}
       </div>
 
       <StepIndicator currentStep={step} totalSteps={TOTAL_STEPS} />
