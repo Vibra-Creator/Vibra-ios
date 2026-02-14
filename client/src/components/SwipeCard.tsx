@@ -58,7 +58,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end justify-center"
+          className="fixed inset-0 z-[100] flex items-end justify-center"
           onClick={onClose}
           data-testid="profile-detail-overlay"
         >
@@ -69,15 +69,17 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg max-h-[95vh] overflow-y-auto rounded-t-2xl pb-16 overscroll-contain"
+            className="relative w-full max-w-lg rounded-t-2xl overscroll-contain"
+            style={{ maxHeight: "95dvh", height: "95dvh", display: "flex", flexDirection: "column" }}
             onClick={(e) => e.stopPropagation()}
             data-testid="profile-detail-modal"
           >
+            <div className="flex-1 overflow-y-auto pb-20" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}>
             <div className="relative">
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
-                className="w-full aspect-[4/5] object-cover max-h-[50vh]"
+                className="w-full aspect-[4/5] object-cover max-h-[40vh]"
                 data-testid="detail-profile-image"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -223,6 +225,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                   </div>
                 )}
               </div>
+            </div>
             </div>
           </motion.div>
         </motion.div>
