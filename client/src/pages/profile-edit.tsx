@@ -308,7 +308,14 @@ export default function ProfileEdit() {
     },
   });
 
+  const submitClickedRef = useRef(false);
+
   const onSubmit = (data: ProfileFormValues) => {
+    if (!submitClickedRef.current) return;
+    submitClickedRef.current = false;
+
+    if (step !== TOTAL_STEPS - 1) return;
+
     if (interests.length === 0) {
       toast({ title: "Aggiungi Interessi", description: "Aggiungi almeno un interesse al tuo profilo.", variant: "destructive" });
       return;
@@ -513,7 +520,7 @@ export default function ProfileEdit() {
       <StepIndicator currentStep={step} totalSteps={TOTAL_STEPS} />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={(e) => { if (e.key === "Enter" && step !== TOTAL_STEPS - 1) e.preventDefault(); }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -1152,6 +1159,7 @@ export default function ProfileEdit() {
                 type="submit"
                 disabled={isPending}
                 className="gap-2"
+                onClick={() => { submitClickedRef.current = true; }}
                 data-testid="button-save-profile"
               >
                 {isPending ? (
