@@ -14,6 +14,7 @@ import Profile from "@/pages/profile";
 import ProfileEdit from "@/pages/profile-edit";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import Support from "@/pages/support";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
@@ -92,6 +93,7 @@ function AuthenticatedRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/support" component={Support} />
       <Route path="/login" component={RedirectHome} />
       <Route path="/register" component={RedirectHome} />
       <Route path="/" component={Home} />
@@ -137,6 +139,7 @@ function GuestRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/support" component={Support} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/" component={Home} />
@@ -160,6 +163,7 @@ function UnauthenticatedRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/support" component={Support} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/" component={Landing} />
