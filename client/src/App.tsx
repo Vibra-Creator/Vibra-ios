@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, Component, type ReactNode } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoBackground } from "@/components/VideoBackground";
@@ -172,7 +172,7 @@ function UnauthenticatedRouter() {
   );
 }
 
-const pagesWithOwnBackground = ["/login", "/register", "/", "/privacy", "/terms", "/onboarding"];
+const pagesWithOwnBackground = ["/login", "/register", "/", "/privacy", "/terms", "/onboarding", "/profile/edit"];
 
 function GuestBanner() {
   const { exitGuestMode } = useGuest();
@@ -201,13 +201,32 @@ function GuestBanner() {
 }
 
 function AppContent() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { isGuest } = useGuest();
   const isPublicPage = publicPages.includes(location);
   const guestPublicPages = ["/login", "/register", "/privacy", "/terms"];
   const isGuestPublicPage = guestPublicPages.includes(location);
   const hideVideoBackground = pagesWithOwnBackground.includes(location) || (!isAuthenticated && !isGuest);
+
+  const profileAllowedPages = ["/profile/edit", "/onboarding", "/privacy", "/terms", "/support"];
+
+  const { data: myProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ["/api/profiles/me"],
+    queryFn: async () => {
+      const res = await fetch("/api/profiles/me", { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: isAuthenticated && !isGuest,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (isAuthenticated && !isGuest && !profileLoading && !myProfile && !profileAllowedPages.includes(location)) {
+      setLocation("/profile/edit");
+    }
+  }, [isAuthenticated, isGuest, profileLoading, myProfile, location]);
 
   if (isLoading) {
     return (
@@ -241,7 +260,7 @@ function AppContent() {
     return <UnauthenticatedRouter />;
   }
 
-  const showHeader = isAuthenticated && !isPublicPage;
+  const showHeader = isAuthenticated && !isPublicPage && location !== "/profile/edit";
 
   return (
     <>
