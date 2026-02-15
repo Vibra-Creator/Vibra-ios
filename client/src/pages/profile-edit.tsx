@@ -67,6 +67,8 @@ const stepTitles = [
 ];
 
 
+const optionalNumField = z.union([z.literal(""), z.coerce.number()]).optional();
+
 const profileFormSchema = z.object({
   name: z.string().min(2, "Il nome deve avere almeno 2 caratteri"),
   age: z.coerce.number().min(18, "Devi avere almeno 18 anni").max(120, "Età massima 120"),
@@ -79,11 +81,11 @@ const profileFormSchema = z.object({
   hairColor: z.string().optional(),
   eyeColor: z.string().optional(),
   bodyType: z.string().optional(),
-  height: z.coerce.number().min(100).max(250).optional().or(z.literal("")),
-  preferredHeightMin: z.coerce.number().min(100).max(250).optional().or(z.literal("")),
-  preferredHeightMax: z.coerce.number().min(100).max(250).optional().or(z.literal("")),
-  preferredAgeMin: z.coerce.number().min(18).max(120).optional().or(z.literal("")),
-  preferredAgeMax: z.coerce.number().min(18).max(120).optional().or(z.literal("")),
+  height: optionalNumField,
+  preferredHeightMin: optionalNumField,
+  preferredHeightMax: optionalNumField,
+  preferredAgeMin: optionalNumField,
+  preferredAgeMax: optionalNumField,
   education: z.string().optional(),
   preferredEducation: z.string().optional(),
   relationshipType: z.string().optional(),
