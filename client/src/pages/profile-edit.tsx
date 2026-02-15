@@ -776,7 +776,7 @@ export default function ProfileEdit() {
                           )}
                         />
                       </div>
-                      <p className="text-xs text-white/50 flex items-center gap-1 mt-1" data-testid="text-phone-privacy">
+                      <p className="text-xs text-amber-300/90 flex items-center gap-1 mt-1" data-testid="text-phone-privacy">
                         <Phone className="w-3 h-3 shrink-0" />
                         Il numero non sara' visibile nel profilo. Usato solo per verifica interna. (Opzionale)
                       </p>
