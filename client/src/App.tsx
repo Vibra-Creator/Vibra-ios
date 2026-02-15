@@ -282,6 +282,14 @@ function App() {
     return !seen;
   });
 
+  useEffect(() => {
+    const htmlSplash = document.getElementById("html-splash");
+    if (htmlSplash) {
+      htmlSplash.style.opacity = "0";
+      setTimeout(() => htmlSplash.remove(), 500);
+    }
+  }, []);
+
   const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
     sessionStorage.setItem("vibra-splash-seen", "1");
