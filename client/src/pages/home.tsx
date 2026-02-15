@@ -223,8 +223,7 @@ export default function Home() {
           <EmptyState 
             type="no-profiles" 
             onRetry={() => {
-              setSwipedProfiles(new Set());
-              refetch();
+              resetDislikesMutation.mutate();
             }}
             onResetDislikes={() => resetDislikesMutation.mutate()}
             isResetting={resetDislikesMutation.isPending}

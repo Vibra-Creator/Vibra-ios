@@ -14,8 +14,8 @@ export function EmptyState({ type, onRetry, onResetDislikes, isResetting }: Empt
     "no-profiles": {
       icon: Rocket,
       title: "Nessun profilo disponibile",
-      description: "Hai esplorato tutti i profili disponibili nella galassia. Torna più tardi per nuove connessioni cosmiche!",
-      action: "Ricarica",
+      description: "Hai esplorato tutti i profili disponibili nella galassia. Ricarica per rivedere i profili scartati e scoprire nuovi arrivi!",
+      action: "Ricarica Profili",
     },
     "no-matches": {
       icon: Heart,
@@ -59,20 +59,9 @@ export function EmptyState({ type, onRetry, onResetDislikes, isResetting }: Empt
       
       <div className="flex items-center gap-3 flex-wrap justify-center">
         {action && onRetry && (
-          <Button onClick={onRetry} data-testid="button-retry">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            {action}
-          </Button>
-        )}
-        {type === "no-profiles" && onResetDislikes && (
-          <Button 
-            variant="outline" 
-            onClick={onResetDislikes} 
-            disabled={isResetting}
-            data-testid="button-reset-dislikes"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            {isResetting ? "Ripristino..." : "Rivedi Scartati"}
+          <Button onClick={onRetry} disabled={isResetting} data-testid="button-retry">
+            <RefreshCw className={`w-4 h-4 mr-2 ${isResetting ? "animate-spin" : ""}`} />
+            {isResetting ? "Ripristino..." : action}
           </Button>
         )}
       </div>
