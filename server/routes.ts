@@ -1222,9 +1222,10 @@ REGOLE IMPORTANTI:
         imageUrl: objectPath,
       });
 
+      console.log(`Challenge submission created: challengeId=${req.params.id} profileId=${userProfile.id} imageUrl=${objectPath} submissionId=${submission.id}`);
       res.status(201).json({ ...submission, status: "pending", message: "Foto caricata! In attesa di approvazione dall'admin." });
     } catch (error: any) {
-      console.error("Error submitting challenge:", error?.message || error);
+      console.error("Error submitting challenge:", error?.message || error, error?.stack);
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
     }
   });

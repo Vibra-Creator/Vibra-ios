@@ -162,8 +162,20 @@ export default function Challenges() {
 
   const handleSelectPhoto = (challengeId: string) => {
     if (blockIfGuest("partecipare alle sfide")) return;
+    if (!myProfile) {
+      toast({
+        title: "Profilo richiesto",
+        description: "Devi prima completare il tuo profilo per partecipare alle sfide.",
+        variant: "destructive",
+      });
+      setLocation("/profile-edit");
+      return;
+    }
     setUploadingChallengeId(challengeId);
-    fileInputRef.current?.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setTimeout(() => fileInputRef.current?.click(), 100);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,7 +208,11 @@ export default function Challenges() {
   };
 
   const handleConfirmUpload = () => {
-    if (!selectedFile || !uploadingChallengeId) return;
+    if (!selectedFile || !uploadingChallengeId) {
+      console.error("handleConfirmUpload: missing file or challengeId", { selectedFile: !!selectedFile, uploadingChallengeId });
+      return;
+    }
+    console.log("Submitting challenge photo:", { challengeId: uploadingChallengeId, fileName: selectedFile.name, fileSize: selectedFile.size });
     submitMutation.mutate({ challengeId: uploadingChallengeId, file: selectedFile });
   };
 
@@ -226,7 +242,6 @@ export default function Challenges() {
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileChange}
         data-testid="input-challenge-photo"
