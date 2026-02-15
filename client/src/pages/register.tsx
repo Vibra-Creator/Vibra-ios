@@ -166,6 +166,10 @@ export default function Register() {
                     data-testid="input-email"
                   />
                 </div>
+                <p className="text-xs text-white/50 flex items-center gap-1" data-testid="text-email-privacy">
+                  <Lock className="w-3 h-3 shrink-0" />
+                  La tua email non sara' visibile nel profilo. Viene usata solo per accesso e recupero account.
+                </p>
               </div>
 
               <div className="space-y-2">

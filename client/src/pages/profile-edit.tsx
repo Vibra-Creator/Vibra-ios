@@ -70,8 +70,8 @@ const stepTitles = [
 const profileFormSchema = z.object({
   name: z.string().min(2, "Il nome deve avere almeno 2 caratteri"),
   age: z.coerce.number().min(18, "Devi avere almeno 18 anni").max(120, "Età massima 120"),
-  bio: z.string().min(10, "La bio deve avere almeno 10 caratteri").max(500, "Massimo 500 caratteri"),
-  location: z.string().min(2, "Inserisci una posizione valida"),
+  bio: z.string().max(500, "Massimo 500 caratteri").optional().or(z.literal("")),
+  location: z.string().optional().or(z.literal("")),
   alienType: z.string().min(1, "Seleziona un tipo"),
   imageUrl: z.string().min(1, "Seleziona un'immagine"),
   gender: z.string().optional(),
@@ -93,8 +93,8 @@ const profileFormSchema = z.object({
   communicationStyle: z.string().optional(),
   lifestyle: z.string().optional(),
   accessMotivation: z.string().optional(),
-  phonePrefix: z.string().min(1, "Seleziona un prefisso"),
-  phoneNumber: z.string().min(6, "Inserisci un numero di telefono valido (minimo 6 cifre)").max(15, "Numero troppo lungo"),
+  phonePrefix: z.string().optional().or(z.literal("")),
+  phoneNumber: z.string().max(15, "Numero troppo lungo").optional().or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -316,10 +316,6 @@ export default function ProfileEdit() {
 
     if (step !== TOTAL_STEPS - 1) return;
 
-    if (interests.length === 0) {
-      toast({ title: "Aggiungi Interessi", description: "Aggiungi almeno un interesse al tuo profilo.", variant: "destructive" });
-      return;
-    }
     const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled, locationSharingEnabled };
     if (existingProfile) {
       updateMutation.mutate(profileData);
@@ -356,7 +352,7 @@ export default function ProfileEdit() {
 
   const nextStep = async () => {
     if (step === 0) {
-      const valid = await form.trigger(["name", "age", "location", "gender", "preferredGender", "alienType", "imageUrl", "phonePrefix", "phoneNumber"]);
+      const valid = await form.trigger(["name", "age", "alienType", "imageUrl"]);
       if (!valid) return;
     }
     if (step < TOTAL_STEPS - 1) setStep(step + 1);
@@ -778,6 +774,10 @@ export default function ProfileEdit() {
                           )}
                         />
                       </div>
+                      <p className="text-xs text-white/50 flex items-center gap-1 mt-1" data-testid="text-phone-privacy">
+                        <Phone className="w-3 h-3 shrink-0" />
+                        Il numero non sara' visibile nel profilo. Usato solo per verifica interna. (Opzionale)
+                      </p>
                     </div>
 
                     <SelectField control={form.control} name="alienType" label="Tipo Cosmico" options={alienTypes} testId="select-alien-type" placeholder="La tua specie cosmica" />
@@ -1144,32 +1144,60 @@ export default function ProfileEdit() {
               <div />
             )}
 
-            {step < TOTAL_STEPS - 1 ? (
-              <Button
-                type="button"
-                onClick={nextStep}
-                className="gap-2"
-                data-testid="button-next-step"
-              >
-                Avanti
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="gap-2"
-                onClick={() => { submitClickedRef.current = true; }}
-                data-testid="button-save-profile"
-              >
-                {isPending ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                {existingProfile ? "Salva Modifiche" : "Crea Profilo"}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {step >= 1 && step < TOTAL_STEPS - 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setStep(step + 1)}
+                  className="text-white/60"
+                  data-testid="button-skip-step"
+                >
+                  Salta
+                </Button>
+              )}
+
+              {step < TOTAL_STEPS - 1 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  className="gap-2"
+                  data-testid="button-next-step"
+                >
+                  Avanti
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {!existingProfile && (
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      disabled={isPending}
+                      className="text-white/60"
+                      onClick={() => { submitClickedRef.current = true; }}
+                      data-testid="button-skip-save-profile"
+                    >
+                      Salta e Salva
+                    </Button>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={isPending}
+                    className="gap-2"
+                    onClick={() => { submitClickedRef.current = true; }}
+                    data-testid="button-save-profile"
+                  >
+                    {isPending ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {existingProfile ? "Salva Modifiche" : "Crea Profilo"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </form>
       </Form>
