@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Headphones, Mail, Clock, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Headphones, Mail, Clock, ShieldCheck, AlertTriangle, Smartphone, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLocation } from "wouter";
@@ -47,6 +47,39 @@ export default function Support() {
                 >
                   privacyvibra@gmail.com
                 </a>
+              </div>
+            </section>
+
+            <section className="flex items-start gap-4 p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Bug className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-1">Segnalare un malfunzionamento</h2>
+                <p className="mb-2">
+                  Se riscontri un bug, un crash o un comportamento anomalo dell'app, scrivici a{" "}
+                  <a href="mailto:privacyvibra@gmail.com" className="text-primary hover:underline font-medium">
+                    privacyvibra@gmail.com
+                  </a>{" "}
+                  indicando:
+                </p>
+                <ul className="space-y-2 ml-1">
+                  <li className="flex items-start gap-2">
+                    <Smartphone className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <span>Il tuo <strong className="text-foreground">dispositivo</strong> e sistema operativo (es. iPhone 15 - iOS 18, Samsung S24 - Android 15)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <span>Una <strong className="text-foreground">descrizione del problema</strong>: cosa stavi facendo quando si e' verificato l'errore</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Mail className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <span>Il tuo <strong className="text-foreground">username</strong> o email di registrazione</span>
+                  </li>
+                </ul>
+                <p className="mt-2 text-sm">
+                  Se possibile, allega uno screenshot del problema per aiutarci a risolverlo piu' rapidamente.
+                </p>
               </div>
             </section>
 
