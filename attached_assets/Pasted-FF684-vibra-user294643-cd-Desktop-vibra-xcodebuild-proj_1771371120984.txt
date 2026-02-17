@@ -1,0 +1,23 @@
+FF684:vibra user294643$ cd ~/Desktop/vibra && xcodebuild -project vibra.xcodeproj -scheme vibra -configuration Release -archivePath ~/Desktop/vibra.xcarchive archive CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution: Fabio Mattoni (MA8PHU39TR)" PROVISIONING_PROFILE_SPECIFIER="Vibra Distribution" DEVELOPMENT_TEAM=MA8PHU39TR OTHER_CODE_SIGN_FLAGS="--keychain $HOME/Desktop/build.keychain" 2>&1 | grep -i "error" | head -10
+{ platform:macOS, arch:undefined_arch, variant:Designed for [iPad,iPhone], id:00008112-000E056C26A3C01E, name:My Mac, error:Xcode doesn’t support My Mac’s macOS 15.7.2 (24G325).  }
+error: Multiple commands produce '/Users/user294643/Library/Developer/Xcode/DerivedData/vibra-ebmiiydjkfpovghkdosxaidsaktx/Build/Intermediates.noindex/ArchiveIntermediates/vibra/InstallationBuildProductsLocation/Applications/vibra.app/Info.plist'
+FF684:vibra user294643$ rm -rf ~/Library/Developer/Xcode/DerivedData/vibra-* && rm -rf ~/Desktop/vibra.xcarchive
+FF684:vibra user294643$ cd ~/Desktop/vibra && xcodebuild -project vibra.xcodeproj -scheme vibra -configuration Release -archivePath ~/Desktop/vibra.xcarchive archive CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution: Fabio Mattoni (MA8PHU39TR)" PROVISIONING_PROFILE_SPECIFIER="Vibra Distribution" DEVELOPMENT_TEAM=MA8PHU39TR OTHER_CODE_SIGN_FLAGS="--keychain $HOME/Desktop/build.keychain" 2>&1 | grep -i "error\|SUCCEEDED\|FAILED" | head -10
+{ platform:macOS, arch:undefined_arch, variant:Designed for [iPad,iPhone], id:00008112-000E056C26A3C01E, name:My Mac, error:Xcode doesn’t support My Mac’s macOS 15.7.2 (24G325).  }
+error: Multiple commands produce '/Users/user294643/Library/Developer/Xcode/DerivedData/vibra-ebmiiydjkfpovghkdosxaidsaktx/Build/Intermediates.noindex/ArchiveIntermediates/vibra/InstallationBuildProductsLocation/Applications/vibra.app/Info.plist'
+** ARCHIVE FAILED **
+The following build commands failed:
+FF684:vibra user294643$ find ~/Desktop/vibra/vibra -name "Info.plist" -type f
+/Users/user294643/Desktop/vibra/vibra/Info.plist
+FF684:vibra user294643$ grep -c "Info.plist" ~/Desktop/vibra/vibra.xcodeproj/project.pbxproj
+0
+FF684:vibra user294643$ grep -n "GENERATE_INFOPLIST_FILE\|INFOPLIST_FILE" ~/Desktop/vibra/vibra.xcodeproj/project.pbxproj
+259:				GENERATE_INFOPLIST_FILE = YES;
+293:				GENERATE_INFOPLIST_FILE = YES;
+FF684:vibra user294643$ cd ~/Desktop/vibra && sed -i '' 's/GENERATE_INFOPLIST_FILE = YES/GENERATE_INFOPLIST_FILE = NO;\n\t\t\t\tINFOPLIST_FILE = vibra\/Info.plist/g' vibra.xcodeproj/project.pbxproj
+FF684:vibra user294643$ rm -rf ~/Library/Developer/Xcode/DerivedData/vibra-* && rm -rf ~/Desktop/vibra.xcarchive && cd ~/Desktop/vibra && xcodebuild -project vibra.xcodeproj -scheme vibra -configuration Release -archivePath ~/Desktop/vibra.xcarchive archive CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution: Fabio Mattoni (MA8PHU39TR)" PROVISIONING_PROFILE_SPECIFIER="Vibra Distribution" DEVELOPMENT_TEAM=MA8PHU39TR OTHER_CODE_SIGN_FLAGS="--keychain $HOME/Desktop/build.keychain" 2>&1 | grep -i "error\|SUCCEEDED\|FAILED" | head -10
+{ platform:macOS, arch:undefined_arch, variant:Designed for [iPad,iPhone], id:00008112-000E056C26A3C01E, name:My Mac, error:Xcode doesn’t support My Mac’s macOS 15.7.2 (24G325).  }
+error: Multiple commands produce '/Users/user294643/Library/Developer/Xcode/DerivedData/vibra-ebmiiydjkfpovghkdosxaidsaktx/Build/Intermediates.noindex/ArchiveIntermediates/vibra/InstallationBuildProductsLocation/Applications/vibra.app/Info.plist'
+** ARCHIVE FAILED **
+The following build commands failed:
+FF684:vibra user294643$ 
