@@ -1,0 +1,61 @@
+assword (for xcodebuild clean archive -project vibra.xcodeproj -scheme vibra -destination "generic/platform=iOS" -archivePath ./build/Vibra.xcarchive -allowProvisioningUpdates DEVELOPMENT_TEAM="MA8PHU39TR" CODE_SIGN_STYLE="Automatic" 2>&1 | tail -10): **************************************************************
+The login credentials for 'xcodebuild clean archive -project vibra.xcodeproj -scheme vibra -destination "generic/platform=iOS" -archivePath ./build/Vibra.xcarchive -allowProvisioningUpdates DEVELOPMENT_TEAM="MA8PHU39TR" CODE_SIGN_STYLE="Automatic" 2>&1 | tail -10' seem to be wrong
+Do you want to re-enter your password? (y/n)
+x
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+c
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+o
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+d
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+e
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+b
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+u
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+i
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+l
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+d
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+ 
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+c
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+l
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+e
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+a
+Please enter "yes" or "no".
+Do you want to re-enter your password? (y/n)
+n
+
+Looking for related GitHub issues on fastlane/fastlane...
+
+
+#######################################################################
+# fastlane 2.232.1 is available. You are on 2.231.1.
+# You should use the latest version.
+# Please update using `fastlane update_fastlane`.
+#######################################################################
+check
+FF684:vibra user294643$ 
+FF684:vibra user294643$ 
