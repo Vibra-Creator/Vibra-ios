@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Shield, Binoculars } from "lucide-react";
-import { SiGoogle, SiApple } from "react-icons/si";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,120 +11,16 @@ import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
-declare global {
-  interface Window {
-    google?: any;
-    AppleID?: any;
-  }
-}
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { enterGuestMode } = useGuest();
 
   const isAdminLogin = new URLSearchParams(window.location.search).get("admin") === "true";
-
-  const handleSocialSuccess = useCallback(async (provider: string, data: any) => {
-    setIsSocialLoading(provider);
-    try {
-      const endpoint = provider === "google" ? "/api/auth/google" : "/api/auth/apple";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || `Autenticazione ${provider} fallita`);
-      }
-
-      sessionStorage.removeItem("vibra-guest-mode");
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({ title: "Benvenuto!", description: "Accesso effettuato con successo" });
-      setLocation("/");
-    } catch (error: any) {
-      toast({ title: "Errore", description: error.message, variant: "destructive" });
-    } finally {
-      setIsSocialLoading("");
-    }
-  }, [toast, setLocation]);
-
-  const [socialConfig, setSocialConfig] = useState<{ googleClientId: string | null; appleClientId: string | null; appleRedirectUri: string | null }>({ googleClientId: null, appleClientId: null, appleRedirectUri: null });
-  const [googleInitialized, setGoogleInitialized] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/auth/social-config").then(r => r.json()).then(setSocialConfig).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (socialConfig.googleClientId && window.google?.accounts && !googleInitialized) {
-      window.google.accounts.id.initialize({
-        client_id: socialConfig.googleClientId,
-        callback: (response: any) => {
-          handleSocialSuccess("google", { credential: response.credential });
-        },
-      });
-      setGoogleInitialized(true);
-    }
-  }, [socialConfig.googleClientId, handleSocialSuccess, googleInitialized]);
-
-  useEffect(() => {
-    if (socialConfig.appleClientId && window.AppleID) {
-      window.AppleID.auth.init({
-        clientId: socialConfig.appleClientId,
-        scope: "name email",
-        redirectURI: socialConfig.appleRedirectUri || window.location.origin,
-        usePopup: true,
-      });
-    }
-  }, [socialConfig.appleClientId, socialConfig.appleRedirectUri]);
-
-  const handleGoogleLogin = () => {
-    if (!socialConfig.googleClientId) {
-      toast({ title: "Non disponibile", description: "Google Sign-In non è ancora configurato", variant: "destructive" });
-      return;
-    }
-    if (window.google?.accounts) {
-      window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          window.google.accounts.id.renderButton(
-            document.createElement("div"),
-            { theme: "outline", size: "large" }
-          );
-          const btn = document.querySelector('[data-testid="button-login-google"]');
-          if (btn) (btn as HTMLElement).click();
-        }
-      });
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    if (!socialConfig.appleClientId || !window.AppleID) {
-      toast({ title: "Non disponibile", description: "Apple Sign-In non è ancora configurato", variant: "destructive" });
-      return;
-    }
-    try {
-      const response = await window.AppleID.auth.signIn();
-      if (response.authorization) {
-        handleSocialSuccess("apple", {
-          id_token: response.authorization.id_token,
-          user: response.user || null,
-        });
-      }
-    } catch (error: any) {
-      if (error.error !== "popup_closed_by_user") {
-        toast({ title: "Errore", description: "Impossibile avviare il login Apple", variant: "destructive" });
-      }
-    }
-  };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -266,38 +161,6 @@ export default function Login() {
                 {isLoading ? "Accesso in corso..." : "Accedi"}
               </Button>
             </form>
-
-            <div className="relative flex items-center gap-3">
-              <div className="flex-1 h-px bg-white/20" />
-              <span className="text-xs text-white/40">oppure accedi con</span>
-              <div className="flex-1 h-px bg-white/20" />
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-12 bg-white text-black border-white/20 hover:bg-white/90"
-                onClick={handleGoogleLogin}
-                disabled={isSocialLoading === "google"}
-                data-testid="button-login-google"
-              >
-                <SiGoogle className="w-5 h-5 mr-3" />
-                {isSocialLoading === "google" ? "Accesso in corso..." : "Continua con Google"}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-12 bg-black text-white border-white/20 hover:bg-black/80"
-                onClick={handleAppleLogin}
-                disabled={isSocialLoading === "apple"}
-                data-testid="button-login-apple"
-              >
-                <SiApple className="w-5 h-5 mr-3" />
-                {isSocialLoading === "apple" ? "Accesso in corso..." : "Continua con Apple"}
-              </Button>
-            </div>
 
             <p className="text-center text-sm text-white/60">
               Non hai un account?{" "}

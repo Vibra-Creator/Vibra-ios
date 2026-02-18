@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, User, ArrowLeft } from "lucide-react";
-import { SiGoogle, SiApple } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,96 +21,8 @@ export default function Register() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [confirmAge, setConfirmAge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-
-  const handleSocialSuccess = useCallback(async (provider: string, data: any) => {
-    setIsSocialLoading(provider);
-    try {
-      const endpoint = provider === "google" ? "/api/auth/google" : "/api/auth/apple";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || `Registrazione con ${provider} fallita`);
-      }
-
-      sessionStorage.removeItem("vibra-guest-mode");
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({ title: "Benvenuto su Vibra!", description: "Account creato con successo" });
-      setLocation("/onboarding");
-    } catch (error: any) {
-      toast({ title: "Errore", description: error.message, variant: "destructive" });
-    } finally {
-      setIsSocialLoading("");
-    }
-  }, [toast, setLocation]);
-
-  const [socialConfig, setSocialConfig] = useState<{ googleClientId: string | null; appleClientId: string | null; appleRedirectUri: string | null }>({ googleClientId: null, appleClientId: null, appleRedirectUri: null });
-  const [googleInitialized, setGoogleInitialized] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/auth/social-config").then(r => r.json()).then(setSocialConfig).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (socialConfig.googleClientId && window.google?.accounts && !googleInitialized) {
-      window.google.accounts.id.initialize({
-        client_id: socialConfig.googleClientId,
-        callback: (response: any) => {
-          handleSocialSuccess("google", { credential: response.credential });
-        },
-      });
-      setGoogleInitialized(true);
-    }
-  }, [socialConfig.googleClientId, handleSocialSuccess, googleInitialized]);
-
-  useEffect(() => {
-    if (socialConfig.appleClientId && window.AppleID) {
-      window.AppleID.auth.init({
-        clientId: socialConfig.appleClientId,
-        scope: "name email",
-        redirectURI: socialConfig.appleRedirectUri || window.location.origin,
-        usePopup: true,
-      });
-    }
-  }, [socialConfig.appleClientId, socialConfig.appleRedirectUri]);
-
-  const handleGoogleRegister = () => {
-    if (!socialConfig.googleClientId) {
-      toast({ title: "Non disponibile", description: "Google Sign-In non è ancora configurato", variant: "destructive" });
-      return;
-    }
-    if (window.google?.accounts) {
-      window.google.accounts.id.prompt();
-    }
-  };
-
-  const handleAppleRegister = async () => {
-    if (!socialConfig.appleClientId || !window.AppleID) {
-      toast({ title: "Non disponibile", description: "Apple Sign-In non è ancora configurato", variant: "destructive" });
-      return;
-    }
-    try {
-      const response = await window.AppleID.auth.signIn();
-      if (response.authorization) {
-        handleSocialSuccess("apple", {
-          id_token: response.authorization.id_token,
-          user: response.user || null,
-        });
-      }
-    } catch (error: any) {
-      if (error.error !== "popup_closed_by_user") {
-        toast({ title: "Errore", description: "Impossibile avviare la registrazione Apple", variant: "destructive" });
-      }
-    }
-  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -343,38 +254,6 @@ export default function Register() {
                 {isLoading ? "Creazione account..." : "Crea Account"}
               </Button>
             </form>
-
-            <div className="relative flex items-center gap-3">
-              <div className="flex-1 h-px bg-white/20" />
-              <span className="text-xs text-white/40">oppure registrati con</span>
-              <div className="flex-1 h-px bg-white/20" />
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-12 bg-white text-black border-white/20 hover:bg-white/90"
-                onClick={handleGoogleRegister}
-                disabled={isSocialLoading === "google"}
-                data-testid="button-register-google"
-              >
-                <SiGoogle className="w-5 h-5 mr-3" />
-                {isSocialLoading === "google" ? "Registrazione..." : "Continua con Google"}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-12 bg-black text-white border-white/20 hover:bg-black/80"
-                onClick={handleAppleRegister}
-                disabled={isSocialLoading === "apple"}
-                data-testid="button-register-apple"
-              >
-                <SiApple className="w-5 h-5 mr-3" />
-                {isSocialLoading === "apple" ? "Registrazione..." : "Continua con Apple"}
-              </Button>
-            </div>
 
             <p className="text-center text-sm text-white/60">
               Hai già un account?{" "}
