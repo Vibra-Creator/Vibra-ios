@@ -3,6 +3,9 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { authStorage } from "./storage";
+import { OAuth2Client } from "google-auth-library";
+import jwt from "jsonwebtoken";
+import jwksClient from "jwks-rsa";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
@@ -143,6 +146,124 @@ export async function setupAuth(app: Express) {
     } catch (error) {
       console.error("Change password error:", error);
       res.status(500).json({ message: "Errore durante il cambio password" });
+    }
+  });
+
+  app.post("/api/auth/google", async (req, res) => {
+    try {
+      const { credential } = req.body;
+      if (!credential) {
+        return res.status(400).json({ message: "Token mancante" });
+      }
+
+      const googleClientId = process.env.GOOGLE_CLIENT_ID;
+      if (!googleClientId) {
+        return res.status(500).json({ message: "Google Sign-In non configurato" });
+      }
+
+      const client = new OAuth2Client(googleClientId);
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: googleClientId,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        return res.status(400).json({ message: "Token non valido" });
+      }
+
+      const email = payload.email.toLowerCase().trim();
+      const firstName = payload.given_name || "";
+      const lastName = payload.family_name || "";
+      const profileImageUrl = payload.picture || null;
+
+      let user = await authStorage.getUserByEmail(email);
+      if (!user) {
+        user = await authStorage.upsertUser({
+          email,
+          firstName,
+          lastName,
+          profileImageUrl,
+        });
+      }
+
+      (req.session as any).userId = user.id;
+      res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
+    } catch (error: any) {
+      console.error("Google auth error:", error);
+      res.status(401).json({ message: "Autenticazione Google fallita" });
+    }
+  });
+
+  const appleJwksClient = jwksClient({
+    jwksUri: "https://appleid.apple.com/auth/keys",
+    cache: true,
+    rateLimit: true,
+  });
+
+  function getAppleSigningKey(header: jwt.JwtHeader): Promise<string> {
+    return new Promise((resolve, reject) => {
+      appleJwksClient.getSigningKey(header.kid, (err, key) => {
+        if (err) return reject(err);
+        resolve(key!.getPublicKey());
+      });
+    });
+  }
+
+  app.post("/api/auth/apple", async (req, res) => {
+    try {
+      const { id_token, user: appleUser } = req.body;
+      if (!id_token) {
+        return res.status(400).json({ message: "Token mancante" });
+      }
+
+      const appleClientId = process.env.APPLE_CLIENT_ID;
+      if (!appleClientId) {
+        return res.status(500).json({ message: "Apple Sign-In non configurato" });
+      }
+
+      const decoded = jwt.decode(id_token, { complete: true });
+      if (!decoded || !decoded.header) {
+        return res.status(400).json({ message: "Token non valido" });
+      }
+
+      const signingKey = await getAppleSigningKey(decoded.header);
+      const verified = jwt.verify(id_token, signingKey, {
+        algorithms: ["RS256"],
+        issuer: "https://appleid.apple.com",
+        audience: appleClientId,
+      }) as any;
+
+      if (!verified.email) {
+        return res.status(400).json({ message: "Email non disponibile dal token Apple" });
+      }
+
+      if (verified.email_verified === false) {
+        return res.status(400).json({ message: "Email Apple non verificata" });
+      }
+
+      const email = verified.email.toLowerCase().trim();
+      let firstName = "";
+      let lastName = "";
+
+      if (appleUser && appleUser.name) {
+        firstName = appleUser.name.firstName || "";
+        lastName = appleUser.name.lastName || "";
+      }
+
+      let user = await authStorage.getUserByEmail(email);
+      if (!user) {
+        user = await authStorage.upsertUser({
+          email,
+          firstName: firstName || "Utente",
+          lastName: lastName || "",
+        });
+      }
+
+      (req.session as any).userId = user.id;
+      res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
+    } catch (error: any) {
+      console.error("Apple auth error:", error);
+      res.status(401).json({ message: "Autenticazione Apple fallita" });
     }
   });
 

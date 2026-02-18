@@ -120,6 +120,14 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   registerObjectStorageRoutes(app);
 
+  app.get("/api/auth/social-config", (req, res) => {
+    res.json({
+      googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+      appleClientId: process.env.APPLE_CLIENT_ID || null,
+      appleRedirectUri: process.env.APPLE_REDIRECT_URI || null,
+    });
+  });
+
   app.use("/uploads", express.static(uploadsDir));
 
   app.get("/api/profiles/me", isAuthenticated, async (req: any, res) => {
