@@ -184,6 +184,14 @@ export async function registerRoutes(
         return myGender === theirPref;
       };
 
+      const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
       const swipable = allProfiles.filter(p => {
         if (p.id === profileId) return false;
         if (dislikedSet.has(p.id)) return false;
@@ -207,6 +215,13 @@ export async function registerRoutes(
 
           if (p.preferredHeightMin && myProfile.height && myProfile.height < p.preferredHeightMin) return false;
           if (p.preferredHeightMax && myProfile.height && myProfile.height > p.preferredHeightMax) return false;
+
+          if (myProfile.profileLatitude && myProfile.profileLongitude && myProfile.maxDistanceKm) {
+            if (p.profileLatitude && p.profileLongitude) {
+              const dist = haversineKm(myProfile.profileLatitude, myProfile.profileLongitude, p.profileLatitude, p.profileLongitude);
+              if (dist > myProfile.maxDistanceKm) return false;
+            }
+          }
         }
 
         return true;

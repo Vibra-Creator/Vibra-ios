@@ -3,6 +3,17 @@ import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMes
 import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
+const cityCoords: Record<string, { lat: number; lng: number }> = {
+  Roma: { lat: 41.90, lng: 12.50 }, Milano: { lat: 45.46, lng: 9.19 }, Napoli: { lat: 40.85, lng: 14.27 },
+  Firenze: { lat: 43.77, lng: 11.25 }, Torino: { lat: 45.07, lng: 7.69 }, Bologna: { lat: 44.49, lng: 11.34 },
+  Palermo: { lat: 38.12, lng: 13.36 }, Genova: { lat: 44.41, lng: 8.93 }, Venezia: { lat: 45.44, lng: 12.32 },
+  Verona: { lat: 45.44, lng: 10.99 }, Catania: { lat: 37.50, lng: 15.09 }, Bari: { lat: 41.12, lng: 16.87 },
+  Cagliari: { lat: 39.22, lng: 9.12 }, Brescia: { lat: 45.54, lng: 10.21 }, Modena: { lat: 44.65, lng: 10.92 },
+  Parma: { lat: 44.80, lng: 10.33 }, Padova: { lat: 45.41, lng: 11.88 }, Perugia: { lat: 43.11, lng: 12.39 },
+  Salerno: { lat: 40.68, lng: 14.77 }, Messina: { lat: 38.19, lng: 15.55 },
+  Trento: { lat: 46.07, lng: 11.12 }, Treviso: { lat: 45.67, lng: 12.24 }, Amalfi: { lat: 40.63, lng: 14.60 },
+};
+
 const seedProfiles = [
   {
     id: "16",
@@ -753,7 +764,8 @@ export async function seedDatabase() {
     if (missingProfiles.length > 0) {
       console.log(`Seeding ${missingProfiles.length} new bot profiles...`);
       for (const profile of missingProfiles) {
-        await db.insert(profiles).values({ ...profile, isBot: true, points: 0, ratingEnabled: false });
+        const coords = cityCoords[profile.location] || null;
+        await db.insert(profiles).values({ ...profile, isBot: true, points: 0, ratingEnabled: false, profileLatitude: coords?.lat || null, profileLongitude: coords?.lng || null });
       }
       console.log("Bot profiles seeded successfully!");
     } else {

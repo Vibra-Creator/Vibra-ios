@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2, UserCircle, Eye } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2, UserCircle, Eye, Compass } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -170,6 +171,9 @@ export default function ProfileEdit() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [ratingEnabled, setRatingEnabled] = useState(false);
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number>(50);
+  const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
+  const [profileLongitude, setProfileLongitude] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const hasInitialized = useRef(false);
 
@@ -250,6 +254,9 @@ export default function ProfileEdit() {
       setUploadedPhotos(existingProfile.photos || []);
       setRatingEnabled(existingProfile.ratingEnabled || false);
       setLocationSharingEnabled(existingProfile.locationSharingEnabled || false);
+      if (existingProfile.maxDistanceKm) setMaxDistanceKm(existingProfile.maxDistanceKm);
+      if (existingProfile.profileLatitude) setProfileLatitude(existingProfile.profileLatitude);
+      if (existingProfile.profileLongitude) setProfileLongitude(existingProfile.profileLongitude);
     }
   }, [existingProfile]);
 
@@ -318,7 +325,7 @@ export default function ProfileEdit() {
 
     if (step !== TOTAL_STEPS - 1) return;
 
-    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled, locationSharingEnabled };
+    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled, locationSharingEnabled, maxDistanceKm, profileLatitude, profileLongitude };
     if (existingProfile) {
       updateMutation.mutate(profileData);
     } else {
@@ -711,6 +718,8 @@ export default function ProfileEdit() {
                                           field.onChange(city.nome);
                                           setCitySearch(city.nome);
                                           setShowCityDropdown(false);
+                                          setProfileLatitude(city.lat);
+                                          setProfileLongitude(city.lng);
                                         }}
                                         data-testid={`city-option-${slugify(city.nome)}`}
                                       >
@@ -727,6 +736,26 @@ export default function ProfileEdit() {
                         );
                       }}
                     />
+
+                    <div className="space-y-3">
+                      <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
+                        <Compass className="w-4 h-4" />
+                        Distanza Massima
+                      </FormLabel>
+                      <div className="flex items-center gap-4">
+                        <Slider
+                          value={[maxDistanceKm]}
+                          onValueChange={(v) => setMaxDistanceKm(v[0])}
+                          min={5}
+                          max={200}
+                          step={5}
+                          className="flex-1"
+                          data-testid="slider-max-distance"
+                        />
+                        <span className="text-white font-bold min-w-[60px] text-right" data-testid="text-max-distance">{maxDistanceKm} km</span>
+                      </div>
+                      <p className="text-xs text-white/60">Mostra solo profili entro questo raggio dalla tua citta</p>
+                    </div>
 
                     <div className="space-y-2">
                       <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">

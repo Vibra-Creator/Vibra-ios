@@ -23,6 +23,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Private Rooms**: Create exclusive private rooms with access approval system (Stanze Private) - limit 1 per user, categorized view (La Mia Stanza, Stanze dei Match, Popolari), "Stanza VIP" badge on swipe cards
 - **Prima Impressione**: Rating system where users can opt-in to receive 1-10 ratings from others on their swipe card. Rated users see ratings in dedicated page, can reply with one message which auto-creates a match and opens chat
 - **Sto Vibing Ora**: Live presence mode - activate for 30 minutes to see only nearby active users (1-10 km radius) who are also vibing. Uses browser geolocation, Haversine distance calculation, countdown timer, auto-expires
+- **Distance Filtering**: Profiles filtered by distance (5-200km slider). City coordinates auto-set from Italian cities database. Haversine formula calculates real distances between users.
 - **Guest Mode (Modalità Ospite)**: Browse the entire app without registering. See all profiles, rooms, challenges, and features in read-only mode. Interactions (swipe, chat, join rooms) blocked with registration prompt modal. Guest state stored in sessionStorage, public API endpoints at /api/guest/*
 
 ## Tech Stack
@@ -98,7 +99,7 @@ shared/
 
 ## Database Schema
 - **users**: id, email, firstName, lastName, profileImageUrl, isAdmin, createdAt, updatedAt
-- **profiles**: id, userId, name, age, bio, imageUrl, location, interests[], alienType, isBot, isVerified, ratingEnabled + 20 new fields (gender, hairColor, eyeColor, bodyType, height, education, languages[], relationshipType, zodiacSign, loveLanguage, etc.)
+- **profiles**: id, userId, name, age, bio, imageUrl, location, interests[], alienType, isBot, isVerified, ratingEnabled, profileLatitude, profileLongitude, maxDistanceKm + 20 new fields (gender, hairColor, eyeColor, bodyType, height, education, languages[], relationshipType, zodiacSign, loveLanguage, etc.)
 - **swipes**: id, swiperId, swipedId, liked, createdAt
 - **matches**: id, profile1Id, profile2Id, createdAt
 - **messages**: id, matchId, senderId, content, read, createdAt
