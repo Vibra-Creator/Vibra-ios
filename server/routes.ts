@@ -166,6 +166,7 @@ export async function registerRoutes(
         const allProfiles = await storage.getProfiles();
         return res.json({ profiles: allProfiles, likedIds: [] });
       }
+      const myProfile = await storage.getProfile(profileId);
       const allProfiles = await storage.getProfiles();
       const swipedIds = await storage.getSwipedProfileIds(profileId);
       const likedIds = await storage.getLikedProfileIds(profileId);
@@ -173,7 +174,44 @@ export async function registerRoutes(
       const dislikedSet = new Set(swipedIds.filter(id => !likedSet.has(id)));
       const blockedIds = await storage.getBlockedIds(profileId);
       const blockedSet = new Set(blockedIds);
-      const swipable = allProfiles.filter(p => p.id !== profileId && !dislikedSet.has(p.id) && !blockedSet.has(p.id));
+
+      const isGenderFlexible = (pref: string | null | undefined) =>
+        !pref || pref === "" || pref === "Indifferente" || pref === "Entrambi" || pref === "Tutti";
+
+      const genderMatches = (myGender: string | null | undefined, theirPref: string | null | undefined) => {
+        if (isGenderFlexible(theirPref)) return true;
+        if (!myGender || myGender === "" || myGender === "Preferisco non rispondere") return true;
+        return myGender === theirPref;
+      };
+
+      const swipable = allProfiles.filter(p => {
+        if (p.id === profileId) return false;
+        if (dislikedSet.has(p.id)) return false;
+        if (blockedSet.has(p.id)) return false;
+
+        if (myProfile) {
+          if (!isGenderFlexible(myProfile.preferredGender) && p.gender && p.gender !== "" && p.gender !== "Preferisco non rispondere") {
+            if (p.gender !== myProfile.preferredGender) return false;
+          }
+
+          if (!genderMatches(myProfile.gender, p.preferredGender)) return false;
+
+          if (myProfile.preferredAgeMin && p.age < myProfile.preferredAgeMin) return false;
+          if (myProfile.preferredAgeMax && p.age > myProfile.preferredAgeMax) return false;
+
+          if (p.preferredAgeMin && myProfile.age < p.preferredAgeMin) return false;
+          if (p.preferredAgeMax && myProfile.age > p.preferredAgeMax) return false;
+
+          if (myProfile.preferredHeightMin && p.height && p.height < myProfile.preferredHeightMin) return false;
+          if (myProfile.preferredHeightMax && p.height && p.height > myProfile.preferredHeightMax) return false;
+
+          if (p.preferredHeightMin && myProfile.height && myProfile.height < p.preferredHeightMin) return false;
+          if (p.preferredHeightMax && myProfile.height && myProfile.height > p.preferredHeightMax) return false;
+        }
+
+        return true;
+      });
+
       res.json({ profiles: swipable, likedIds });
     } catch (error) {
       console.error("Error fetching swipable profiles:", error);
