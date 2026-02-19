@@ -161,6 +161,16 @@ export default function Home() {
 
   const loadingState = isGuest ? guestLoading : (profileLoading || isLoading);
 
+  const matchModalElement = !isGuest ? (
+    <MatchModal
+      isOpen={showMatch}
+      onClose={() => setShowMatch(false)}
+      matchedProfile={matchedProfile}
+      currentProfile={myProfile}
+      matchId={currentMatchId}
+    />
+  ) : null;
+
   if (loadingState) {
     return (
       <div className="flex-1 flex items-center justify-center p-4 relative">
@@ -168,6 +178,7 @@ export default function Home() {
         <div className="relative z-10 w-full max-w-sm">
           <ProfileCardSkeleton />
         </div>
+        {matchModalElement}
       </div>
     );
   }
@@ -202,6 +213,7 @@ export default function Home() {
             </Button>
           </div>
         </div>
+        {matchModalElement}
       </div>
     );
   }
@@ -211,6 +223,7 @@ export default function Home() {
       <div className="flex-1 flex items-center justify-center p-4 relative">
         {bgLayer}
         <div className="relative z-10"><EmptyState type="error" onRetry={() => refetch()} /></div>
+        {matchModalElement}
       </div>
     );
   }
@@ -229,6 +242,7 @@ export default function Home() {
             isResetting={resetDislikesMutation.isPending}
           />
         </div>
+        {matchModalElement}
       </div>
     );
   }
@@ -268,16 +282,7 @@ export default function Home() {
         />
       </div>
 
-      {!isGuest && (
-        <MatchModal
-          isOpen={showMatch}
-          onClose={() => setShowMatch(false)}
-          matchedProfile={matchedProfile}
-          currentProfile={myProfile}
-          matchId={currentMatchId}
-        />
-      )}
-
+      {matchModalElement}
       <GuestBlockerModal />
     </div>
   );
