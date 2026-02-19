@@ -45,9 +45,13 @@ function useHeartbeatReveal(isOpen: boolean) {
     if (!isOpen) return;
 
     const tick = () => {
-      setHeartbeatPhase((p) => p + 1);
+      const currentElapsed = Date.now() - startTimeRef.current;
+      const p = Math.min(currentElapsed / REVEAL_DURATION, 1);
 
-      const p = Math.min(elapsed / REVEAL_DURATION, 1);
+      if (p >= 1) return;
+
+      setHeartbeatPhase((prev) => prev + 1);
+
       const interval = Math.max(300, 900 - p * 600);
 
       if ("vibrate" in navigator) {
@@ -67,7 +71,7 @@ function useHeartbeatReveal(isOpen: boolean) {
       if (hapticIntervalRef.current) clearTimeout(hapticIntervalRef.current);
       try { navigator.vibrate(0); } catch {}
     };
-  }, [isOpen, elapsed]);
+  }, [isOpen]);
 
   return { progress, blurAmount, separationX, photoScale, heartbeatPhase };
 }
