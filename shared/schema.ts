@@ -46,6 +46,9 @@ export const profiles = pgTable("profiles", {
   points: integer("points").default(0),
   ratingEnabled: boolean("rating_enabled").default(false),
   locationSharingEnabled: boolean("location_sharing_enabled").default(false),
+  profileLatitude: doublePrecision("profile_latitude"),
+  profileLongitude: doublePrecision("profile_longitude"),
+  maxDistanceKm: integer("max_distance_km"),
 });
 
 export const swipes = pgTable("swipes", {
