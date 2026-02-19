@@ -160,6 +160,12 @@ export default function Login() {
               >
                 {isLoading ? "Accesso in corso..." : "Accedi"}
               </Button>
+
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-xs text-white/50 hover:text-primary hover:underline" data-testid="link-forgot-password">
+                  Password dimenticata?
+                </Link>
+              </div>
             </form>
 
             <p className="text-center text-sm text-white/60">

@@ -29,13 +29,14 @@ import PrimaImpressione from "@/pages/prima-impressione";
 import Vibing from "@/pages/vibing";
 import LocationMap from "@/pages/location-map";
 import Onboarding from "@/pages/onboarding";
+import ForgotPassword from "@/pages/forgot-password";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { ViewportSelector } from "@/components/ViewportSelector";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
-const publicPages = ["/privacy", "/terms", "/login", "/register", "/onboarding"];
+const publicPages = ["/privacy", "/terms", "/login", "/register", "/onboarding", "/forgot-password"];
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -96,6 +97,7 @@ function AuthenticatedRouter() {
       <Route path="/support" component={Support} />
       <Route path="/login" component={RedirectHome} />
       <Route path="/register" component={RedirectHome} />
+      <Route path="/forgot-password" component={RedirectHome} />
       <Route path="/" component={Home} />
       <Route path="/matches" component={Matches} />
       <Route path="/chat/:matchId" component={Chat} />
@@ -142,6 +144,7 @@ function GuestRouter() {
       <Route path="/support" component={Support} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/" component={Home} />
       <Route path="/matches" component={Matches} />
       <Route path="/chat/:matchId" component={GuestRedirectHome} />
@@ -166,13 +169,14 @@ function UnauthenticatedRouter() {
       <Route path="/support" component={Support} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/" component={Landing} />
       <Route component={Landing} />
     </Switch>
   );
 }
 
-const pagesWithOwnBackground = ["/login", "/register", "/", "/privacy", "/terms", "/onboarding", "/profile/edit"];
+const pagesWithOwnBackground = ["/login", "/register", "/forgot-password", "/", "/privacy", "/terms", "/onboarding", "/profile/edit"];
 
 function GuestBanner() {
   const { exitGuestMode } = useGuest();

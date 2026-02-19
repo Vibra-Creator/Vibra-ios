@@ -267,6 +267,42 @@ export async function setupAuth(app: Express) {
     }
   });
 
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email, firstName, lastName, newPassword } = req.body;
+
+      if (!email || !firstName || !newPassword) {
+        return res.status(400).json({ message: "Tutti i campi sono obbligatori" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "La nuova password deve avere almeno 8 caratteri" });
+      }
+
+      const trimmedEmail = email.trim().toLowerCase();
+      const user = await authStorage.getUserByEmail(trimmedEmail);
+
+      if (!user) {
+        return res.status(404).json({ message: "Nessun account trovato con questa email" });
+      }
+
+      const nameMatch = user.firstName?.toLowerCase().trim() === firstName.toLowerCase().trim();
+      const lastNameMatch = !user.lastName || user.lastName.trim() === "" || user.lastName?.toLowerCase().trim() === (lastName || "").toLowerCase().trim();
+
+      if (!nameMatch || !lastNameMatch) {
+        return res.status(400).json({ message: "I dati inseriti non corrispondono all'account" });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await authStorage.updateUserPassword(user.id, hashedPassword);
+
+      res.json({ message: "Password aggiornata con successo! Ora puoi accedere." });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Errore durante il ripristino della password" });
+    }
+  });
+
   app.get("/api/logout", (req, res) => {
     req.session.destroy(() => {
       res.redirect("/");
