@@ -267,6 +267,10 @@ export async function setupAuth(app: Express) {
     }
   });
 
+  const forgotPasswordAttempts = new Map<string, { count: number; lastAttempt: number }>();
+  const FORGOT_PASSWORD_MAX_ATTEMPTS = 5;
+  const FORGOT_PASSWORD_WINDOW_MS = 15 * 60 * 1000;
+
   app.post("/api/auth/forgot-password", async (req, res) => {
     try {
       const { email, firstName, lastName, newPassword } = req.body;
@@ -280,21 +284,45 @@ export async function setupAuth(app: Express) {
       }
 
       const trimmedEmail = email.trim().toLowerCase();
+      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+      const rateLimitKey = `${clientIp}:${trimmedEmail}`;
+      const now = Date.now();
+      const attempts = forgotPasswordAttempts.get(rateLimitKey);
+
+      if (attempts) {
+        if (now - attempts.lastAttempt < FORGOT_PASSWORD_WINDOW_MS) {
+          if (attempts.count >= FORGOT_PASSWORD_MAX_ATTEMPTS) {
+            return res.status(429).json({ message: "Troppi tentativi. Riprova tra 15 minuti." });
+          }
+          attempts.count++;
+          attempts.lastAttempt = now;
+        } else {
+          forgotPasswordAttempts.set(rateLimitKey, { count: 1, lastAttempt: now });
+        }
+      } else {
+        forgotPasswordAttempts.set(rateLimitKey, { count: 1, lastAttempt: now });
+      }
+
+      const genericError = "I dati inseriti non corrispondono. Verifica email, nome e cognome.";
+
       const user = await authStorage.getUserByEmail(trimmedEmail);
 
       if (!user) {
-        return res.status(404).json({ message: "Nessun account trovato con questa email" });
+        return res.status(400).json({ message: genericError });
       }
 
       const nameMatch = user.firstName?.toLowerCase().trim() === firstName.toLowerCase().trim();
       const lastNameMatch = !user.lastName || user.lastName.trim() === "" || user.lastName?.toLowerCase().trim() === (lastName || "").toLowerCase().trim();
 
       if (!nameMatch || !lastNameMatch) {
-        return res.status(400).json({ message: "I dati inseriti non corrispondono all'account" });
+        return res.status(400).json({ message: genericError });
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 12);
       await authStorage.updateUserPassword(user.id, hashedPassword);
+
+      const successAttempts = forgotPasswordAttempts.get(rateLimitKey);
+      if (successAttempts) forgotPasswordAttempts.delete(rateLimitKey);
 
       res.json({ message: "Password aggiornata con successo! Ora puoi accedere." });
     } catch (error) {
