@@ -524,20 +524,44 @@ export async function registerRoutes(
       let matchData = null;
       
       if (validatedData.liked) {
-        const isMutualLike = await storage.checkMutualLike(validatedData.swiperId, validatedData.swipedId);
-        console.log(`[SWIPE] Mutual like check: ${isMutualLike}`);
+        const swipedProfile = await storage.getProfile(validatedData.swipedId);
         
-        if (isMutualLike) {
-          const existingMatch = await storage.getMatch(validatedData.swiperId, validatedData.swipedId);
-          console.log(`[SWIPE] Existing match: ${!!existingMatch}`);
+        if (swipedProfile?.isBot) {
+          const existingBotSwipe = await storage.getSwipe(validatedData.swipedId, validatedData.swiperId);
+          if (!existingBotSwipe) {
+            await storage.createSwipe({
+              swiperId: validatedData.swipedId,
+              swipedId: validatedData.swiperId,
+              liked: true,
+            });
+            console.log(`[SWIPE] Bot ${validatedData.swipedId} auto-liked back ${validatedData.swiperId}`);
+          }
           
+          const existingMatch = await storage.getMatch(validatedData.swiperId, validatedData.swipedId);
           if (!existingMatch) {
             matchData = await storage.createMatch({
               profile1Id: validatedData.swiperId,
               profile2Id: validatedData.swipedId,
             });
             match = true;
-            console.log(`[SWIPE] MATCH CREATED! ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+            console.log(`[SWIPE] BOT MATCH CREATED! ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+          }
+        } else {
+          const isMutualLike = await storage.checkMutualLike(validatedData.swiperId, validatedData.swipedId);
+          console.log(`[SWIPE] Mutual like check: ${isMutualLike}`);
+          
+          if (isMutualLike) {
+            const existingMatch = await storage.getMatch(validatedData.swiperId, validatedData.swipedId);
+            console.log(`[SWIPE] Existing match: ${!!existingMatch}`);
+            
+            if (!existingMatch) {
+              matchData = await storage.createMatch({
+                profile1Id: validatedData.swiperId,
+                profile2Id: validatedData.swipedId,
+              });
+              match = true;
+              console.log(`[SWIPE] MATCH CREATED! ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+            }
           }
         }
       }
