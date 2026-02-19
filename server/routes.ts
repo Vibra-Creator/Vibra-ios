@@ -526,7 +526,11 @@ export async function registerRoutes(
       if (validatedData.liked) {
         const swipedProfile = await storage.getProfile(validatedData.swipedId);
         
-        if (swipedProfile?.isBot) {
+        if (!swipedProfile) {
+          return res.status(404).json({ error: "Profile not found" });
+        }
+        
+        if (swipedProfile.isBot) {
           const existingBotSwipe = await storage.getSwipe(validatedData.swipedId, validatedData.swiperId);
           if (!existingBotSwipe) {
             await storage.createSwipe({
