@@ -38,7 +38,7 @@ import type { Profile, Match, SentGift, VirtualGift } from "@shared/schema";
 function ProfileSkeleton() {
   return (
     <div className="flex-1 p-4 max-w-lg mx-auto space-y-6">
-      <Skeleton className="aspect-[4/3] rounded-2xl" />
+      <Skeleton className="aspect-[3/4] rounded-2xl" />
       <div className="grid grid-cols-3 gap-3">
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-24 rounded-lg" />
@@ -444,7 +444,7 @@ export default function ProfilePage() {
           </Button>
         </div>
         <div className="relative">
-          <div className="aspect-[4/3] rounded-2xl overflow-hidden">
+          <div className="aspect-[3/4] rounded-2xl overflow-hidden">
             <img
               src={profile.imageUrl}
               alt={profile.name}
