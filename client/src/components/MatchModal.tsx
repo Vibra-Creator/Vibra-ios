@@ -3,6 +3,141 @@ import { Heart, MessageCircle, X, Sparkles, Zap, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+
+function useHeartbeatReveal(isOpen: boolean) {
+  const [elapsed, setElapsed] = useState(0);
+  const [heartbeatPhase, setHeartbeatPhase] = useState(0);
+  const startTimeRef = useRef<number>(0);
+  const hapticIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const REVEAL_DURATION = 10000;
+
+  const progress = Math.min(elapsed / REVEAL_DURATION, 1);
+  const blurAmount = Math.max(20 * (1 - progress), 0);
+  const separationX = Math.max(60 * (1 - progress), 0);
+  const photoScale = 0.85 + 0.15 * progress;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setElapsed(0);
+      setHeartbeatPhase(0);
+      return;
+    }
+
+    startTimeRef.current = Date.now();
+
+    const frame = () => {
+      const now = Date.now();
+      const e = now - startTimeRef.current;
+      setElapsed(e);
+      if (e < REVEAL_DURATION) {
+        rafId = requestAnimationFrame(frame);
+      }
+    };
+    let rafId = requestAnimationFrame(frame);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const tick = () => {
+      setHeartbeatPhase((p) => p + 1);
+
+      const p = Math.min(elapsed / REVEAL_DURATION, 1);
+      const interval = Math.max(300, 900 - p * 600);
+
+      if ("vibrate" in navigator) {
+        const intensity = Math.round(10 + p * 50);
+        const pattern = p < 0.5
+          ? [intensity, 80, Math.round(intensity * 0.6)]
+          : [intensity, 50, Math.round(intensity * 0.8), 40, Math.round(intensity * 0.5)];
+        try { navigator.vibrate(pattern); } catch {}
+      }
+
+      hapticIntervalRef.current = setTimeout(tick, interval);
+    };
+
+    hapticIntervalRef.current = setTimeout(tick, 800);
+
+    return () => {
+      if (hapticIntervalRef.current) clearTimeout(hapticIntervalRef.current);
+      try { navigator.vibrate(0); } catch {}
+    };
+  }, [isOpen, elapsed]);
+
+  return { progress, blurAmount, separationX, photoScale, heartbeatPhase };
+}
+
+function HeartbeatPhoto({
+  src,
+  alt,
+  blurAmount,
+  offsetX,
+  scale,
+  heartbeatPhase,
+  direction,
+  glowColor,
+  conicGradient,
+  testId,
+}: {
+  src: string;
+  alt: string;
+  blurAmount: number;
+  offsetX: number;
+  scale: number;
+  heartbeatPhase: number;
+  direction: "left" | "right";
+  glowColor: string;
+  conicGradient: string;
+  testId?: string;
+}) {
+  const beatScale = heartbeatPhase % 2 === 0 ? 1.08 : 1;
+  const translateX = direction === "left" ? -offsetX : offsetX;
+
+  return (
+    <motion.div
+      className="relative"
+      style={{
+        transform: `translateX(${translateX}px) scale(${scale * beatScale})`,
+        transition: "transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+      }}
+    >
+      <motion.div
+        className="absolute -inset-2 rounded-full"
+        style={{
+          background: conicGradient,
+          filter: "blur(6px)",
+          opacity: 0.5 + (1 - blurAmount / 20) * 0.5,
+        }}
+        animate={{ rotate: [0, direction === "left" ? 360 : -360] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        className="absolute -inset-3 rounded-full pointer-events-none"
+        style={{
+          boxShadow: `0 0 ${20 + (1 - blurAmount / 20) * 40}px ${glowColor}`,
+          opacity: heartbeatPhase % 2 === 0 ? 0.8 : 0.3,
+          transition: "opacity 0.15s ease, box-shadow 0.3s ease",
+        }}
+      />
+      <img
+        src={src}
+        alt={alt}
+        className="relative w-24 h-24 rounded-full object-cover border-2 border-white/50"
+        style={{
+          filter: `blur(${blurAmount}px)`,
+          transition: "filter 0.5s ease-out",
+          boxShadow: `0 0 30px ${glowColor}, 0 0 60px ${glowColor}44`,
+        }}
+        data-testid={testId}
+      />
+    </motion.div>
+  );
+}
 import type { Profile } from "@shared/schema";
 
 interface MatchModalProps {
@@ -179,6 +314,7 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
   const [, setLocation] = useLocation();
   const [phase, setPhase] = useState(0);
   const playMatchSound = useMatchSound();
+  const { progress, blurAmount, separationX, photoScale, heartbeatPhase } = useHeartbeatReveal(isOpen);
 
   const particles = useMemo(() => generateParticles(80), []);
   const starbursts = useMemo(() => generateStarbursts(24), []);
@@ -508,34 +644,26 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
                   className="flex justify-center items-center gap-4 mb-6"
                 >
                   {currentProfile && (
-                    <motion.div
-                      className="relative"
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <motion.div
-                        className="absolute -inset-2 rounded-full"
-                        style={{ background: "conic-gradient(from 0deg, #ff00ff, #00ffff, #ff0088, #8800ff, #ff00ff)", filter: "blur(6px)" }}
-                        animate={{ rotate: [0, 360] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      />
-                      <img
-                        src={currentProfile.imageUrl}
-                        alt="Tu"
-                        className="relative w-24 h-24 rounded-full object-cover border-2 border-white/50"
-                        style={{ boxShadow: "0 0 30px rgba(200,0,255,0.5), 0 0 60px rgba(200,0,255,0.2)" }}
-                      />
-                    </motion.div>
+                    <HeartbeatPhoto
+                      src={currentProfile.imageUrl}
+                      alt="Tu"
+                      blurAmount={blurAmount}
+                      offsetX={separationX}
+                      scale={photoScale}
+                      heartbeatPhase={heartbeatPhase}
+                      direction="left"
+                      glowColor="rgba(200,0,255,0.5)"
+                      conicGradient="conic-gradient(from 0deg, #ff00ff, #00ffff, #ff0088, #8800ff, #ff00ff)"
+                    />
                   )}
 
                   <motion.div
-                    animate={{
-                      scale: [1, 1.4, 1],
-                      rotate: [0, 10, -10, 0],
-                    }}
-                    transition={{ repeat: Infinity, duration: 1.2 }}
                     className="relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-400"
-                    style={{ boxShadow: "0 0 30px rgba(255,0,136,0.5), 0 0 60px rgba(0,200,255,0.3)" }}
+                    style={{
+                      boxShadow: `0 0 ${20 + progress * 30}px rgba(255,0,136,${0.3 + progress * 0.4}), 0 0 ${40 + progress * 40}px rgba(0,200,255,${0.2 + progress * 0.3})`,
+                      transform: `scale(${heartbeatPhase % 2 === 0 ? 1.3 : 1})`,
+                      transition: "transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease",
+                    }}
                   >
                     <Heart className="w-7 h-7 text-white fill-white" />
                     <motion.div
@@ -550,25 +678,18 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
                     />
                   </motion.div>
 
-                  <motion.div
-                    className="relative"
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                  >
-                    <motion.div
-                      className="absolute -inset-2 rounded-full"
-                      style={{ background: "conic-gradient(from 180deg, #00ffff, #ff00ff, #ff0088, #00ff88, #00ffff)", filter: "blur(6px)" }}
-                      animate={{ rotate: [0, -360] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    />
-                    <img
-                      src={matchedProfile.imageUrl}
-                      alt={matchedProfile.name}
-                      className="relative w-24 h-24 rounded-full object-cover border-2 border-white/50"
-                      style={{ boxShadow: "0 0 30px rgba(0,200,255,0.5), 0 0 60px rgba(0,200,255,0.2)" }}
-                      data-testid="match-profile-image"
-                    />
-                  </motion.div>
+                  <HeartbeatPhoto
+                    src={matchedProfile.imageUrl}
+                    alt={matchedProfile.name}
+                    blurAmount={blurAmount}
+                    offsetX={separationX}
+                    scale={photoScale}
+                    heartbeatPhase={heartbeatPhase}
+                    direction="right"
+                    glowColor="rgba(0,200,255,0.5)"
+                    conicGradient="conic-gradient(from 180deg, #00ffff, #ff00ff, #ff0088, #00ff88, #00ffff)"
+                    testId="match-profile-image"
+                  />
                 </motion.div>
 
                 <motion.div
