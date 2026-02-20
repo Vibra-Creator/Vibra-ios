@@ -23,7 +23,7 @@ import {
   locationShares
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -42,6 +42,7 @@ export interface IStorage {
   getSwipedProfileIds(swiperId: string): Promise<string[]>;
   getLikedProfileIds(swiperId: string): Promise<string[]>;
   resetDislikedSwipes(swiperId: string): Promise<number>;
+  resetAllSwipes(swiperId: string): Promise<number>;
   checkMutualLike(userId1: string, userId2: string): Promise<boolean>;
   
   createMatch(match: InsertMatch): Promise<Match>;
@@ -189,6 +190,24 @@ export class DatabaseStorage implements IStorage {
   async resetDislikedSwipes(swiperId: string): Promise<number> {
     const result = await db.delete(swipes).where(
       and(eq(swipes.swiperId, swiperId), eq(swipes.liked, false))
+    ).returning();
+    return result.length;
+  }
+
+  async resetAllSwipes(swiperId: string): Promise<number> {
+    const matchedIds = await db.select({ id: matches.id, p1: matches.profile1Id, p2: matches.profile2Id })
+      .from(matches)
+      .where(or(eq(matches.profile1Id, swiperId), eq(matches.profile2Id, swiperId)));
+    const matchedProfileIds = new Set(matchedIds.map(m => m.p1 === swiperId ? m.p2 : m.p1));
+
+    const allSwipes = await db.select().from(swipes).where(eq(swipes.swiperId, swiperId));
+    const toDelete = allSwipes.filter(s => !matchedProfileIds.has(s.swipedId));
+
+    if (toDelete.length === 0) return 0;
+
+    const deleteIds = toDelete.map(s => s.id);
+    const result = await db.delete(swipes).where(
+      and(eq(swipes.swiperId, swiperId), inArray(swipes.id, deleteIds))
     ).returning();
     return result.length;
   }

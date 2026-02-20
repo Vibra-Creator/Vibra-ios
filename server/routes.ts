@@ -277,7 +277,7 @@ export async function registerRoutes(
       const userProfile = await storage.getProfileByUserId(userId);
       if (!userProfile) return res.status(404).json({ error: "Profile not found" });
 
-      const count = await storage.resetDislikedSwipes(userProfile.id);
+      const count = await storage.resetAllSwipes(userProfile.id);
       res.json({ reset: count });
     } catch (error) {
       console.error("Error resetting disliked swipes:", error);

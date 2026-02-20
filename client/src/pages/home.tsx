@@ -142,7 +142,7 @@ export default function Home() {
       setSwipedProfiles(new Set());
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
       refetch();
-      toast({ title: "Profili ripristinati!", description: "I profili scartati sono di nuovo disponibili." });
+      toast({ title: "Profili ripristinati!", description: "Tutti i profili sono di nuovo disponibili (i match restano)." });
     },
     onError: () => {
       toast({ title: "Errore", description: "Non è stato possibile ripristinare i profili.", variant: "destructive" });
