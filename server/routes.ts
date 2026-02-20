@@ -202,19 +202,21 @@ export async function registerRoutes(
             if (p.gender !== myProfile.preferredGender) return false;
           }
 
-          if (!genderMatches(myProfile.gender, p.preferredGender)) return false;
+          if (!p.isBot) {
+            if (!genderMatches(myProfile.gender, p.preferredGender)) return false;
+
+            if (p.preferredAgeMin && myProfile.age < p.preferredAgeMin) return false;
+            if (p.preferredAgeMax && myProfile.age > p.preferredAgeMax) return false;
+
+            if (p.preferredHeightMin && myProfile.height && myProfile.height < p.preferredHeightMin) return false;
+            if (p.preferredHeightMax && myProfile.height && myProfile.height > p.preferredHeightMax) return false;
+          }
 
           if (myProfile.preferredAgeMin && p.age < myProfile.preferredAgeMin) return false;
           if (myProfile.preferredAgeMax && p.age > myProfile.preferredAgeMax) return false;
 
-          if (p.preferredAgeMin && myProfile.age < p.preferredAgeMin) return false;
-          if (p.preferredAgeMax && myProfile.age > p.preferredAgeMax) return false;
-
           if (myProfile.preferredHeightMin && p.height && p.height < myProfile.preferredHeightMin) return false;
           if (myProfile.preferredHeightMax && p.height && p.height > myProfile.preferredHeightMax) return false;
-
-          if (p.preferredHeightMin && myProfile.height && myProfile.height < p.preferredHeightMin) return false;
-          if (p.preferredHeightMax && myProfile.height && myProfile.height > p.preferredHeightMax) return false;
 
           if (myProfile.profileLatitude && myProfile.profileLongitude && myProfile.maxDistanceKm) {
             if (p.profileLatitude && p.profileLongitude) {
