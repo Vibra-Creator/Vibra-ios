@@ -753,7 +753,7 @@ export default function ProfileEdit() {
                               : "bg-white/5 border-white/20 text-white/60 hover:border-white/40"
                           }`}
                         >
-                          {maxDistanceKm === 0 ? "🌍 Tutta Italia" : "🌍 Ovunque"}
+                          {maxDistanceKm === 0 ? "🌍 Tutto il Mondo" : "🌍 Ovunque"}
                         </button>
                         {maxDistanceKm > 0 && (
                           <>
@@ -772,7 +772,7 @@ export default function ProfileEdit() {
                       </div>
                       <p className="text-xs text-white/60">
                         {maxDistanceKm === 0
-                          ? "Nessun limite di distanza — vedrai profili da tutta Italia"
+                          ? "Nessun limite di distanza — vedrai profili da tutto il mondo"
                           : "Mostra solo profili entro questo raggio dalla tua città"}
                       </p>
                     </div>
