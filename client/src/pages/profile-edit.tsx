@@ -51,6 +51,7 @@ import {
   availableImages,
   slugify,
   italianCities,
+  worldCities,
   phonePrefixes,
 } from "@/lib/profile-options";
 import type { Profile } from "@shared/schema";
@@ -676,27 +677,29 @@ export default function ProfileEdit() {
                       control={form.control}
                       name="location"
                       render={({ field }) => {
+                        const allCities = [...italianCities, ...worldCities];
                         const filteredCities = citySearch
-                          ? italianCities.filter(c =>
+                          ? allCities.filter(c =>
                               c.nome.toLowerCase().includes(citySearch.toLowerCase()) ||
                               c.provincia.toLowerCase().includes(citySearch.toLowerCase()) ||
                               c.regione.toLowerCase().includes(citySearch.toLowerCase())
                             )
-                          : italianCities;
+                          : allCities;
                         return (
                           <FormItem className="relative">
                             <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                               <MapPin className="w-4 h-4" />
-                              Citta
+                              Città
                             </FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Input
                                   className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
-                                  placeholder="Cerca la tua citta..."
+                                  placeholder="Cerca la tua città nel mondo..."
                                   value={citySearch}
                                   onChange={(e) => {
                                     setCitySearch(e.target.value);
+                                    field.onChange(e.target.value);
                                     setShowCityDropdown(true);
                                     if (!e.target.value) {
                                       field.onChange("");
@@ -724,7 +727,7 @@ export default function ProfileEdit() {
                                         data-testid={`city-option-${slugify(city.nome)}`}
                                       >
                                         <span>{city.nome}</span>
-                                        <span className="text-xs text-white/60">{city.provincia} - {city.regione}</span>
+                                        <span className="text-xs text-white/60">{city.provincia ? `${city.provincia} - ` : ""}{city.regione}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -773,7 +776,7 @@ export default function ProfileEdit() {
                       <p className="text-xs text-white/60">
                         {maxDistanceKm === 0
                           ? "Nessun limite di distanza — vedrai profili da tutto il mondo"
-                          : "Mostra solo profili entro questo raggio dalla tua città"}
+                          : "Mostra solo profili entro questo raggio dalla tua posizione"}
                       </p>
                     </div>
 
