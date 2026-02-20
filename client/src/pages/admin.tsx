@@ -302,25 +302,42 @@ export default function Admin() {
           {/* UTENTI TAB */}
           <TabsContent value="users">
             <Card>
-              <CardHeader><CardTitle className="text-lg">Utenti Registrati</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">Utenti Registrati ({users?.length || 0})</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {users?.map((u) => (
-                    <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border" data-testid={`user-row-${u.id}`}>
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={u.profileImageUrl || undefined} alt={u.firstName || "User"} />
-                        <AvatarFallback>{(u.firstName?.[0] || u.email?.[0] || "U").toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-medium text-foreground truncate">{u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email || "Utente"}</h3>
-                          {u.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
+                  {users?.map((u) => {
+                    const userProfile = profiles?.find(p => p.userId === u.id);
+                    return (
+                      <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border" data-testid={`user-row-${u.id}`}>
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={userProfile?.imageUrl || u.profileImageUrl || undefined} alt={u.firstName || "User"} />
+                          <AvatarFallback>{(u.firstName?.[0] || u.email?.[0] || "U").toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-medium text-foreground truncate">{userProfile?.name || (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : "Utente")}</h3>
+                            {u.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
+                            {userProfile?.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                            {userProfile && <Badge variant="secondary" className="text-xs">{userProfile.location || "Nessuna città"}</Badge>}
+                          </div>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            <p className="text-sm text-muted-foreground truncate" data-testid={`user-email-${u.id}`}>
+                              📧 {u.email || "Nessuna email"}
+                            </p>
+                            {userProfile?.phoneNumber && (
+                              <p className="text-sm text-muted-foreground truncate" data-testid={`user-phone-${u.id}`}>
+                                📱 {userProfile.phonePrefix || ""}{userProfile.phoneNumber}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">{u.email || "Nessuna email"}</p>
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-xs text-muted-foreground block">{u.createdAt ? new Date(u.createdAt).toLocaleDateString("it-IT") : "N/A"}</span>
+                          {userProfile && <span className="text-xs text-muted-foreground block">{userProfile.age ? `${userProfile.age} anni` : ""}</span>}
+                        </div>
                       </div>
-                      <span className="text-xs text-muted-foreground">{u.createdAt ? new Date(u.createdAt).toLocaleDateString("it-IT") : "N/A"}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
