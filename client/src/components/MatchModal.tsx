@@ -5,39 +5,39 @@ import { useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 function useHeartbeatReveal(isOpen: boolean) {
-  const [elapsed, setElapsed] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [heartbeatPhase, setHeartbeatPhase] = useState(0);
   const startTimeRef = useRef<number>(0);
+  const rafIdRef = useRef<number>(0);
   const hapticIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const REVEAL_DURATION = 10000;
+  const REVEAL_DURATION = 3000;
 
-  const progress = Math.min(elapsed / REVEAL_DURATION, 1);
-  const blurAmount = Math.max(20 * (1 - progress), 0);
-  const separationX = Math.max(60 * (1 - progress), 0);
-  const photoScale = 0.85 + 0.15 * progress;
+  const blurAmount = Math.max(10 * (1 - progress), 0);
+  const separationX = Math.max(30 * (1 - progress), 0);
+  const photoScale = 0.9 + 0.1 * progress;
 
   useEffect(() => {
     if (!isOpen) {
-      setElapsed(0);
+      setProgress(0);
       setHeartbeatPhase(0);
       return;
     }
 
-    startTimeRef.current = Date.now();
+    startTimeRef.current = performance.now();
 
-    const frame = () => {
-      const now = Date.now();
+    const frame = (now: number) => {
       const e = now - startTimeRef.current;
-      setElapsed(e);
-      if (e < REVEAL_DURATION) {
-        rafId = requestAnimationFrame(frame);
+      const p = Math.min(e / REVEAL_DURATION, 1);
+      setProgress(p);
+      if (p < 1) {
+        rafIdRef.current = requestAnimationFrame(frame);
       }
     };
-    let rafId = requestAnimationFrame(frame);
+    rafIdRef.current = requestAnimationFrame(frame);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      cancelAnimationFrame(rafIdRef.current);
     };
   }, [isOpen]);
 
@@ -45,27 +45,24 @@ function useHeartbeatReveal(isOpen: boolean) {
     if (!isOpen) return;
 
     const tick = () => {
-      const currentElapsed = Date.now() - startTimeRef.current;
+      const currentElapsed = performance.now() - startTimeRef.current;
       const p = Math.min(currentElapsed / REVEAL_DURATION, 1);
 
       if (p >= 1) return;
 
       setHeartbeatPhase((prev) => prev + 1);
 
-      const interval = Math.max(300, 900 - p * 600);
+      const interval = Math.max(250, 600 - p * 400);
 
       if ("vibrate" in navigator) {
         const intensity = Math.round(10 + p * 50);
-        const pattern = p < 0.5
-          ? [intensity, 80, Math.round(intensity * 0.6)]
-          : [intensity, 50, Math.round(intensity * 0.8), 40, Math.round(intensity * 0.5)];
-        try { navigator.vibrate(pattern); } catch {}
+        try { navigator.vibrate([intensity, 60]); } catch {}
       }
 
       hapticIntervalRef.current = setTimeout(tick, interval);
     };
 
-    hapticIntervalRef.current = setTimeout(tick, 800);
+    hapticIntervalRef.current = setTimeout(tick, 500);
 
     return () => {
       if (hapticIntervalRef.current) clearTimeout(hapticIntervalRef.current);
@@ -131,10 +128,9 @@ function HeartbeatPhoto({
       <img
         src={src}
         alt={alt}
-        className="relative w-24 h-24 rounded-full object-cover border-2 border-white/50"
+        className="relative w-28 h-28 rounded-full object-cover border-2 border-white/50"
         style={{
-          filter: `blur(${blurAmount}px)`,
-          transition: "filter 0.5s ease-out",
+          filter: blurAmount > 0.5 ? `blur(${blurAmount}px)` : "none",
           boxShadow: `0 0 30px ${glowColor}, 0 0 60px ${glowColor}44`,
         }}
         data-testid={testId}
@@ -320,11 +316,11 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
   const playMatchSound = useMatchSound();
   const { progress, blurAmount, separationX, photoScale, heartbeatPhase } = useHeartbeatReveal(isOpen);
 
-  const particles = useMemo(() => generateParticles(80), []);
-  const starbursts = useMemo(() => generateStarbursts(24), []);
-  const floatingHearts = useMemo(() => generateFloatingHearts(20), []);
-  const fireworks = useMemo(() => generateFireworks(6), []);
-  const glowOrbs = useMemo(() => Array.from({ length: 15 }, (_, i) => ({
+  const particles = useMemo(() => generateParticles(30), []);
+  const starbursts = useMemo(() => generateStarbursts(12), []);
+  const floatingHearts = useMemo(() => generateFloatingHearts(8), []);
+  const fireworks = useMemo(() => generateFireworks(3), []);
+  const glowOrbs = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
@@ -356,7 +352,7 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
           className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden"
           onClick={onClose}
         >
-          <div className="absolute inset-0 bg-black" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #0a0015 0%, #120020 30%, #050818 60%, #0d0020 100%)" }} />
 
           <motion.div
             className="absolute inset-0"
@@ -372,13 +368,8 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
           {phase >= 0 && (
             <>
               <ExplosionRing delay={0.1} color="#ff00ff" size={600} />
-              <ExplosionRing delay={0.3} color="#00ffff" size={800} />
-              <ExplosionRing delay={0.5} color="#ff0088" size={1000} />
-              <ExplosionRing delay={0.7} color="#8800ff" size={1200} />
-              <ExplosionRing delay={0.9} color="#ffff00" size={500} />
-              <ExplosionRing delay={1.1} color="#00ff88" size={900} />
-              <ExplosionRing delay={1.5} color="#ff4400" size={700} />
-              <ExplosionRing delay={2.0} color="#00ffcc" size={1100} />
+              <ExplosionRing delay={0.4} color="#00ffff" size={800} />
+              <ExplosionRing delay={0.7} color="#ff0088" size={500} />
             </>
           )}
 
@@ -592,18 +583,18 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
                     </motion.div>
                   </div>
 
-                  {[...Array(8)].map((_, i) => (
+                  {[...Array(4)].map((_, i) => (
                     <motion.div
                       key={`mini-star-${i}`}
                       className="absolute left-1/2 top-1/2 pointer-events-none"
                       style={{ color: PARTICLE_COLORS[i % PARTICLE_COLORS.length] }}
                       animate={{
-                        x: Math.cos((i * 45) * Math.PI / 180) * 50,
-                        y: Math.sin((i * 45) * Math.PI / 180) * 50,
+                        x: Math.cos((i * 90) * Math.PI / 180) * 50,
+                        y: Math.sin((i * 90) * Math.PI / 180) * 50,
                         scale: [0, 1, 0],
                         opacity: [0, 1, 0],
                       }}
-                      transition={{ delay: 0.8 + i * 0.1, duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
+                      transition={{ delay: 0.8 + i * 0.15, duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
                     >
                       <Star className="w-4 h-4 fill-current" />
                     </motion.div>
