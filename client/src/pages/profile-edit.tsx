@@ -742,19 +742,39 @@ export default function ProfileEdit() {
                         <Compass className="w-4 h-4" />
                         Distanza Massima
                       </FormLabel>
-                      <div className="flex items-center gap-4">
-                        <Slider
-                          value={[maxDistanceKm]}
-                          onValueChange={(v) => setMaxDistanceKm(v[0])}
-                          min={5}
-                          max={200}
-                          step={5}
-                          className="flex-1"
-                          data-testid="slider-max-distance"
-                        />
-                        <span className="text-white font-bold min-w-[60px] text-right" data-testid="text-max-distance">{maxDistanceKm} km</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          data-testid="button-toggle-distance"
+                          onClick={() => setMaxDistanceKm(maxDistanceKm === 0 ? 50 : 0)}
+                          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                            maxDistanceKm === 0
+                              ? "bg-gradient-to-r from-purple-500 to-cyan-500 border-purple-400/50 text-white shadow-[0_0_12px_rgba(139,92,246,0.4)]"
+                              : "bg-white/5 border-white/20 text-white/60 hover:border-white/40"
+                          }`}
+                        >
+                          {maxDistanceKm === 0 ? "🌍 Tutta Italia" : "🌍 Ovunque"}
+                        </button>
+                        {maxDistanceKm > 0 && (
+                          <>
+                            <Slider
+                              value={[maxDistanceKm]}
+                              onValueChange={(v) => setMaxDistanceKm(v[0])}
+                              min={5}
+                              max={200}
+                              step={5}
+                              className="flex-1"
+                              data-testid="slider-max-distance"
+                            />
+                            <span className="text-white font-bold min-w-[50px] text-right text-sm" data-testid="text-max-distance">{maxDistanceKm} km</span>
+                          </>
+                        )}
                       </div>
-                      <p className="text-xs text-white/60">Mostra solo profili entro questo raggio dalla tua citta</p>
+                      <p className="text-xs text-white/60">
+                        {maxDistanceKm === 0
+                          ? "Nessun limite di distanza — vedrai profili da tutta Italia"
+                          : "Mostra solo profili entro questo raggio dalla tua città"}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
