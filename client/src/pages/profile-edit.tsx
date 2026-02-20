@@ -171,7 +171,7 @@ export default function ProfileEdit() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [ratingEnabled, setRatingEnabled] = useState(false);
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
-  const [maxDistanceKm, setMaxDistanceKm] = useState<number>(50);
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number>(0);
   const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
   const [profileLongitude, setProfileLongitude] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -867,9 +867,33 @@ export default function ProfileEdit() {
 
               {step === 2 && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-xl font-semibold text-white">
-                    <Heart className="w-5 h-5 text-primary" />
-                    Preferenze Partner
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xl font-semibold text-white">
+                      <Heart className="w-5 h-5 text-primary" />
+                      Preferenze Partner
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-white/60 text-xs"
+                      data-testid="button-clear-preferences"
+                      onClick={() => {
+                        form.setValue("preferredGender", "");
+                        form.setValue("preferredAgeMin", "");
+                        form.setValue("preferredAgeMax", "");
+                        form.setValue("preferredHeightMin", "");
+                        form.setValue("preferredHeightMax", "");
+                        form.setValue("preferredEducation", "");
+                        setMaxDistanceKm(0);
+                        setProfileLatitude(null);
+                        setProfileLongitude(null);
+                        setLocationSharingEnabled(false);
+                        toast({ title: "Preferenze azzerate", description: "Tutte le preferenze di ricerca sono state rimosse." });
+                      }}
+                    >
+                      Azzera Tutto
+                    </Button>
                   </div>
                     <div className="grid grid-cols-2 gap-4">
                       <FormField

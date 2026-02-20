@@ -192,10 +192,14 @@ export async function registerRoutes(
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       };
 
+      let afterSelf = 0, afterSwiped = 0, afterBlocked = 0, afterGender = 0, afterAge = 0, afterDist = 0;
       const swipable = allProfiles.filter(p => {
         if (p.id === profileId) return false;
+        afterSelf++;
         if (dislikedSet.has(p.id)) return false;
+        afterSwiped++;
         if (blockedSet.has(p.id)) return false;
+        afterBlocked++;
 
         if (myProfile) {
           if (!isGenderFlexible(myProfile.preferredGender) && p.gender && p.gender !== "" && p.gender !== "Preferisco non rispondere") {
@@ -203,18 +207,14 @@ export async function registerRoutes(
           }
 
           if (!genderMatches(myProfile.gender, p.preferredGender)) return false;
+          afterGender++;
 
           if (p.preferredAgeMin && myProfile.age < p.preferredAgeMin) return false;
           if (p.preferredAgeMax && myProfile.age > p.preferredAgeMax) return false;
 
-          if (p.preferredHeightMin && myProfile.height && myProfile.height < p.preferredHeightMin) return false;
-          if (p.preferredHeightMax && myProfile.height && myProfile.height > p.preferredHeightMax) return false;
-
           if (myProfile.preferredAgeMin && p.age < myProfile.preferredAgeMin) return false;
           if (myProfile.preferredAgeMax && p.age > myProfile.preferredAgeMax) return false;
-
-          if (myProfile.preferredHeightMin && p.height && p.height < myProfile.preferredHeightMin) return false;
-          if (myProfile.preferredHeightMax && p.height && p.height > myProfile.preferredHeightMax) return false;
+          afterAge++;
 
           if (myProfile.profileLatitude && myProfile.profileLongitude && myProfile.maxDistanceKm) {
             if (p.profileLatitude && p.profileLongitude) {
@@ -222,10 +222,13 @@ export async function registerRoutes(
               if (dist > myProfile.maxDistanceKm) return false;
             }
           }
+          afterDist++;
         }
 
         return true;
       });
+
+      console.log(`[SWIPABLE] user=${myProfile?.name} total=${allProfiles.length} afterSelf=${afterSelf} afterSwiped=${afterSwiped} afterBlocked=${afterBlocked} afterGender=${afterGender} afterAge=${afterAge} afterDist=${afterDist} final=${swipable.length} | prefs: gender=${myProfile?.preferredGender} ageMin=${myProfile?.preferredAgeMin} ageMax=${myProfile?.preferredAgeMax} maxDist=${myProfile?.maxDistanceKm}`);
 
       res.json({ profiles: swipable, likedIds });
     } catch (error) {
@@ -426,10 +429,12 @@ export async function registerRoutes(
         }
       }
 
+      console.log(`[PROFILE UPDATE] id=${req.params.id} saving: gender=${validatedData.preferredGender} ageMin=${validatedData.preferredAgeMin} ageMax=${validatedData.preferredAgeMax} heightMin=${validatedData.preferredHeightMin} heightMax=${validatedData.preferredHeightMax} maxDist=${validatedData.maxDistanceKm}`);
       const profile = await storage.updateProfile(req.params.id, validatedData);
       res.json(profile);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("[PROFILE UPDATE] Validation failed:", error.errors);
         return res.status(400).json({ error: "Invalid profile data", details: error.errors });
       }
       console.error("Error updating profile:", error);
