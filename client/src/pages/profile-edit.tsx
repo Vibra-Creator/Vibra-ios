@@ -254,7 +254,7 @@ export default function ProfileEdit() {
       setUploadedPhotos(existingProfile.photos || []);
       setRatingEnabled(existingProfile.ratingEnabled || false);
       setLocationSharingEnabled(existingProfile.locationSharingEnabled || false);
-      if (existingProfile.maxDistanceKm) setMaxDistanceKm(existingProfile.maxDistanceKm);
+      if (existingProfile.maxDistanceKm != null) setMaxDistanceKm(existingProfile.maxDistanceKm);
       if (existingProfile.profileLatitude) setProfileLatitude(existingProfile.profileLatitude);
       if (existingProfile.profileLongitude) setProfileLongitude(existingProfile.profileLongitude);
     }
