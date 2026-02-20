@@ -205,12 +205,7 @@ export async function registerRoutes(
           if (!isGenderFlexible(myProfile.preferredGender) && p.gender && p.gender !== "" && p.gender !== "Preferisco non rispondere") {
             if (p.gender !== myProfile.preferredGender) return false;
           }
-
-          if (!genderMatches(myProfile.gender, p.preferredGender)) return false;
           afterGender++;
-
-          if (p.preferredAgeMin && myProfile.age < p.preferredAgeMin) return false;
-          if (p.preferredAgeMax && myProfile.age > p.preferredAgeMax) return false;
 
           if (myProfile.preferredAgeMin && p.age < myProfile.preferredAgeMin) return false;
           if (myProfile.preferredAgeMax && p.age > myProfile.preferredAgeMax) return false;
