@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -22,6 +22,19 @@ interface AdminStats {
   recentUsers: User[];
 }
 
+interface ChatMessage {
+  id: string;
+  matchId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  read: boolean;
+  senderName: string;
+  senderImage: string | null;
+  receiverName: string;
+  receiverImage: string | null;
+}
+
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -30,6 +43,8 @@ export default function Admin() {
   const [suspendReason, setSuspendReason] = useState("");
   const [suspendPermanent, setSuspendPermanent] = useState(false);
   const [newBannedWord, setNewBannedWord] = useState("");
+  const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -57,6 +72,10 @@ export default function Admin() {
 
   const { data: roomMessages } = useQuery<RoomMessage[]>({
     queryKey: ["/api/admin/room-messages"],
+  });
+
+  const { data: chatMessages } = useQuery<ChatMessage[]>({
+    queryKey: ["/api/admin/chat-messages"],
   });
 
   const { data: submissions } = useQuery<ChallengeSubmission[]>({
@@ -144,6 +163,14 @@ export default function Admin() {
     },
   });
 
+  const deleteChatMessageMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/admin/chat-messages/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/chat-messages"] });
+      toast({ title: "Messaggio chat eliminato" });
+    },
+  });
+
   const reviewSubmissionMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) =>
       apiRequest("PATCH", `/api/admin/challenge-submissions/${id}`, { status }),
@@ -198,6 +225,20 @@ export default function Admin() {
   const getUserEmail = (userId: string) => {
     const u = users?.find(usr => usr.id === userId);
     return u ? (u.email || `${u.firstName} ${u.lastName}`) : userId;
+  };
+
+  const getUserForProfile = (profile: Profile) => {
+    return users?.find(u => u.id === profile.userId);
+  };
+
+  const renderProfileDetail = (label: string, value: string | number | null | undefined) => {
+    if (!value) return null;
+    return (
+      <div className="flex justify-between py-1 border-b border-border/30">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-xs text-foreground font-medium">{value}</span>
+      </div>
+    );
   };
 
   return (
@@ -258,7 +299,8 @@ export default function Admin() {
               Segnalazioni {pendingReports.length > 0 && <Badge variant="destructive" className="ml-1">{pendingReports.length}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="suspensions" data-testid="tab-suspensions">Sospensioni</TabsTrigger>
-            <TabsTrigger value="messages" data-testid="tab-messages">Messaggi</TabsTrigger>
+            <TabsTrigger value="chat" data-testid="tab-chat">Chat Private</TabsTrigger>
+            <TabsTrigger value="messages" data-testid="tab-messages">Msg Stanze</TabsTrigger>
             <TabsTrigger value="photos" data-testid="tab-photos">
               Foto {pendingSubmissions.length > 0 && <Badge variant="destructive" className="ml-1">{pendingSubmissions.length}</Badge>}
             </TabsTrigger>
@@ -268,31 +310,117 @@ export default function Admin() {
           {/* PROFILI TAB */}
           <TabsContent value="profiles">
             <Card>
-              <CardHeader><CardTitle className="text-lg">Gestione Profili</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">Gestione Profili ({profiles?.length || 0})</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {profiles?.map((profile) => (
-                    <div key={profile.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover-elevate" data-testid={`profile-row-${profile.id}`}>
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={profile.imageUrl} alt={profile.name} />
-                        <AvatarFallback>{profile.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-medium text-foreground truncate">{profile.name}, {profile.age}</h3>
-                          {profile.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
-                          {profile.isBot && <Badge variant="secondary" className="text-xs">Bot</Badge>}
+                  {profiles?.map((profile) => {
+                    const profileUser = getUserForProfile(profile);
+                    const isExpanded = expandedProfile === profile.id;
+                    return (
+                      <div key={profile.id} className="rounded-lg bg-card border border-border" data-testid={`profile-row-${profile.id}`}>
+                        <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/10" onClick={() => setExpandedProfile(isExpanded ? null : profile.id)}>
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={profile.imageUrl} alt={profile.name} />
+                            <AvatarFallback>{profile.name[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-medium text-foreground truncate">{profile.name}, {profile.age}</h3>
+                              {profile.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                              {profile.isBot && <Badge variant="secondary" className="text-xs">Bot</Badge>}
+                              {profile.gender && <Badge variant="outline" className="text-xs">{profile.gender}</Badge>}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="text-xs text-muted-foreground">{profile.alienType}</span>
+                              {profile.location && <span className="text-xs text-muted-foreground">- {profile.location}</span>}
+                              {profileUser?.email && <span className="text-xs text-cyan-400">{profileUser.email}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                            <Button variant="ghost" size="icon" className={profile.isVerified ? "text-blue-500" : "text-muted-foreground"} onClick={(e) => { e.stopPropagation(); verifyProfileMutation.mutate({ profileId: profile.id, isVerified: !profile.isVerified }); }} data-testid={`button-verify-${profile.id}`}>
+                              <BadgeCheck className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">{profile.alienType} - {profile.location}</p>
+
+                        {isExpanded && (
+                          <div className="px-4 pb-4 border-t border-border/50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+                              <div>
+                                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1"><Mail className="w-3 h-3" /> Contatti</h4>
+                                {renderProfileDetail("Email", profileUser?.email)}
+                                {renderProfileDetail("Telefono", profile.phoneNumber ? `${profile.phonePrefix || ""}${profile.phoneNumber}` : null)}
+                                {renderProfileDetail("Città", profile.location)}
+                                {renderProfileDetail("ID Utente", profile.userId?.slice(0, 12) + "...")}
+                                {renderProfileDetail("Registrato", profileUser?.createdAt ? new Date(profileUser.createdAt).toLocaleString("it-IT") : null)}
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1"><Eye className="w-3 h-3" /> Aspetto</h4>
+                                {renderProfileDetail("Genere", profile.gender)}
+                                {renderProfileDetail("Altezza", profile.height ? `${profile.height} cm` : null)}
+                                {renderProfileDetail("Capelli", profile.hairColor)}
+                                {renderProfileDetail("Occhi", profile.eyeColor)}
+                                {renderProfileDetail("Corporatura", profile.bodyType)}
+                                {renderProfileDetail("Segno Zodiacale", profile.zodiacSign)}
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1"><Heart className="w-3 h-3" /> Preferenze</h4>
+                                {renderProfileDetail("Cerca Genere", profile.preferredGender)}
+                                {renderProfileDetail("Età Min-Max", (profile.preferredAgeMin || profile.preferredAgeMax) ? `${profile.preferredAgeMin || "?"} - ${profile.preferredAgeMax || "?"}` : null)}
+                                {renderProfileDetail("Altezza Min-Max", (profile.preferredHeightMin || profile.preferredHeightMax) ? `${profile.preferredHeightMin || "?"} - ${profile.preferredHeightMax || "?"} cm` : null)}
+                                {renderProfileDetail("Tipo Relazione", profile.relationshipType)}
+                                {renderProfileDetail("Figli", profile.wantsChildren)}
+                                {renderProfileDetail("Distanza Max", profile.maxDistanceKm ? `${profile.maxDistanceKm} km` : null)}
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1"><BookOpen className="w-3 h-3" /> Altro</h4>
+                                {renderProfileDetail("Istruzione", profile.education)}
+                                {renderProfileDetail("Istruz. Preferita", profile.preferredEducation)}
+                                {renderProfileDetail("Lingue", profile.languages?.join(", "))}
+                                {renderProfileDetail("Linguaggio Amore", profile.loveLanguage)}
+                                {renderProfileDetail("Stile Comunicaz.", profile.communicationStyle)}
+                                {renderProfileDetail("Stile di Vita", profile.lifestyle)}
+                                {renderProfileDetail("Motivazione", profile.accessMotivation)}
+                              </div>
+                              <div className="md:col-span-2 lg:col-span-2">
+                                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1"><Star className="w-3 h-3" /> Bio e Interessi</h4>
+                                {profile.bio && <p className="text-xs text-foreground bg-accent/10 p-2 rounded mb-2">{profile.bio}</p>}
+                                {profile.interests && profile.interests.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {profile.interests.map((int, i) => (
+                                      <Badge key={i} variant="outline" className="text-xs">{int}</Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {profile.photos && profile.photos.length > 0 && (
+                              <div className="mt-3">
+                                <h4 className="text-sm font-semibold text-foreground mb-2">Galleria Foto ({profile.photos.length})</h4>
+                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                  {profile.photos.map((photo, i) => (
+                                    <img key={i} src={photo} alt={`Foto ${i + 1}`} className="w-16 h-16 rounded-lg object-cover border border-border flex-shrink-0" />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>Punti: {profile.points || 0}</span>
+                              <span>|</span>
+                              <span>Rating: {profile.ratingEnabled ? "Attivo" : "Disattivo"}</span>
+                              <span>|</span>
+                              <span>Posizione: {profile.locationSharingEnabled ? "Condivisa" : "Non condivisa"}</span>
+                              {profile.profileLatitude && <span>| Coord: {profile.profileLatitude?.toFixed(2)}, {profile.profileLongitude?.toFixed(2)}</span>}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <Button variant="ghost" size="icon" className={profile.isVerified ? "text-blue-500" : "text-muted-foreground"} onClick={() => verifyProfileMutation.mutate({ profileId: profile.id, isVerified: !profile.isVerified })} data-testid={`button-verify-${profile.id}`}>
-                        <BadgeCheck className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(!profiles || profiles.length === 0) && <div className="text-center py-8 text-muted-foreground">Nessun profilo trovato</div>}
                 </div>
               </CardContent>
@@ -307,34 +435,80 @@ export default function Admin() {
                 <div className="space-y-2">
                   {users?.map((u) => {
                     const userProfile = profiles?.find(p => p.userId === u.id);
+                    const isExpanded = expandedUser === u.id;
                     return (
-                      <div key={u.id} className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border" data-testid={`user-row-${u.id}`}>
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src={userProfile?.imageUrl || u.profileImageUrl || undefined} alt={u.firstName || "User"} />
-                          <AvatarFallback>{(u.firstName?.[0] || u.email?.[0] || "U").toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-medium text-foreground truncate">{userProfile?.name || (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : "Utente")}</h3>
-                            {u.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
-                            {userProfile?.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
-                            {userProfile && <Badge variant="secondary" className="text-xs">{userProfile.location || "Nessuna città"}</Badge>}
-                          </div>
-                          <div className="flex flex-col gap-0.5 mt-1">
-                            <p className="text-sm text-muted-foreground truncate" data-testid={`user-email-${u.id}`}>
-                              📧 {u.email || "Nessuna email"}
-                            </p>
-                            {userProfile?.phoneNumber && (
-                              <p className="text-sm text-muted-foreground truncate" data-testid={`user-phone-${u.id}`}>
-                                📱 {userProfile.phonePrefix || ""}{userProfile.phoneNumber}
+                      <div key={u.id} className="rounded-lg bg-card border border-border" data-testid={`user-row-${u.id}`}>
+                        <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/10" onClick={() => setExpandedUser(isExpanded ? null : u.id)}>
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={userProfile?.imageUrl || u.profileImageUrl || undefined} alt={u.firstName || "User"} />
+                            <AvatarFallback>{(u.firstName?.[0] || u.email?.[0] || "U").toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-medium text-foreground truncate">{userProfile?.name || (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : "Utente")}</h3>
+                              {u.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
+                              {userProfile?.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                            </div>
+                            <div className="flex flex-col gap-0.5 mt-0.5">
+                              <p className="text-sm text-cyan-400 truncate" data-testid={`user-email-${u.id}`}>
+                                {u.email || "Nessuna email"}
                               </p>
+                              <div className="flex items-center gap-3 flex-wrap">
+                                {userProfile?.phoneNumber && (
+                                  <span className="text-xs text-muted-foreground" data-testid={`user-phone-${u.id}`}>
+                                    {userProfile.phonePrefix || ""}{userProfile.phoneNumber}
+                                  </span>
+                                )}
+                                {userProfile?.location && (
+                                  <span className="text-xs text-muted-foreground">{userProfile.location}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right flex-shrink-0">
+                              <span className="text-xs text-muted-foreground block">{u.createdAt ? new Date(u.createdAt).toLocaleDateString("it-IT") : "N/A"}</span>
+                              {userProfile && <span className="text-xs text-muted-foreground block">{userProfile.age ? `${userProfile.age} anni` : ""}</span>}
+                            </div>
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                        </div>
+
+                        {isExpanded && userProfile && (
+                          <div className="px-4 pb-4 border-t border-border/50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                              <div>
+                                <h4 className="text-sm font-semibold text-foreground mb-2">Informazioni Personali</h4>
+                                {renderProfileDetail("Email", u.email)}
+                                {renderProfileDetail("Telefono", userProfile.phoneNumber ? `${userProfile.phonePrefix || ""}${userProfile.phoneNumber}` : "Non inserito")}
+                                {renderProfileDetail("Città", userProfile.location || "Non inserita")}
+                                {renderProfileDetail("Genere", userProfile.gender || "Non specificato")}
+                                {renderProfileDetail("Età", userProfile.age ? `${userProfile.age} anni` : null)}
+                                {renderProfileDetail("Altezza", userProfile.height ? `${userProfile.height} cm` : null)}
+                                {renderProfileDetail("Tipo Alieno", userProfile.alienType)}
+                                {renderProfileDetail("Istruzione", userProfile.education)}
+                                {renderProfileDetail("Lingue", userProfile.languages?.join(", "))}
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-semibold text-foreground mb-2">Preferenze e Ricerca</h4>
+                                {renderProfileDetail("Cerca Genere", userProfile.preferredGender || "Indifferente")}
+                                {renderProfileDetail("Età cercata", (userProfile.preferredAgeMin || userProfile.preferredAgeMax) ? `${userProfile.preferredAgeMin || "?"} - ${userProfile.preferredAgeMax || "?"} anni` : null)}
+                                {renderProfileDetail("Tipo Relazione", userProfile.relationshipType)}
+                                {renderProfileDetail("Figli", userProfile.wantsChildren)}
+                                {renderProfileDetail("Motivazione", userProfile.accessMotivation)}
+                                {renderProfileDetail("Stile di Vita", userProfile.lifestyle)}
+                                {renderProfileDetail("Punti", userProfile.points?.toString())}
+                                {renderProfileDetail("Registrato il", u.createdAt ? new Date(u.createdAt).toLocaleString("it-IT") : null)}
+                              </div>
+                            </div>
+                            {userProfile.bio && (
+                              <div className="mt-3">
+                                <h4 className="text-sm font-semibold text-foreground mb-1">Bio</h4>
+                                <p className="text-xs text-foreground bg-accent/10 p-2 rounded">{userProfile.bio}</p>
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <span className="text-xs text-muted-foreground block">{u.createdAt ? new Date(u.createdAt).toLocaleDateString("it-IT") : "N/A"}</span>
-                          {userProfile && <span className="text-xs text-muted-foreground block">{userProfile.age ? `${userProfile.age} anni` : ""}</span>}
-                        </div>
+                        )}
                       </div>
                     );
                   })}
@@ -443,7 +617,44 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
-          {/* MESSAGGI TAB */}
+          {/* CHAT PRIVATE TAB */}
+          <TabsContent value="chat">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><MessageSquare className="w-5 h-5" /> Messaggi Chat Private (ultimi 200)</CardTitle></CardHeader>
+              <CardContent>
+                {(!chatMessages || chatMessages.length === 0) ? (
+                  <div className="text-center py-8 text-muted-foreground">Nessun messaggio nelle chat private</div>
+                ) : (
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                    {chatMessages.map((msg) => (
+                      <div key={msg.id} className="flex items-start justify-between gap-3 p-3 rounded-lg bg-card border border-border" data-testid={`chat-msg-${msg.id}`}>
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <Avatar className="w-8 h-8 flex-shrink-0">
+                            <AvatarImage src={msg.senderImage || undefined} />
+                            <AvatarFallback className="text-xs">{msg.senderName?.[0] || "?"}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm text-foreground">{msg.senderName}</span>
+                              <span className="text-xs text-muted-foreground">→</span>
+                              <span className="font-medium text-sm text-cyan-400">{msg.receiverName}</span>
+                              <span className="text-xs text-muted-foreground">{new Date(msg.createdAt).toLocaleString("it-IT")}</span>
+                            </div>
+                            <p className="text-sm text-foreground break-words mt-1">{msg.content}</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="text-destructive flex-shrink-0" onClick={() => { if (confirm("Eliminare questo messaggio?")) deleteChatMessageMutation.mutate(msg.id); }} data-testid={`button-delete-chat-${msg.id}`}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* MESSAGGI STANZE TAB */}
           <TabsContent value="messages">
             <Card>
               <CardHeader><CardTitle className="text-lg flex items-center gap-2"><MessageCircle className="w-5 h-5" /> Messaggi nelle Stanze</CardTitle></CardHeader>

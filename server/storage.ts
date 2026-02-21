@@ -111,6 +111,7 @@ export interface IStorage {
   removeBannedWord(id: string): Promise<void>;
   
   // Message moderation
+  deleteMessage(messageId: string): Promise<void>;
   deleteRoomMessage(messageId: string): Promise<void>;
   deletePrivateRoomMessage(messageId: string): Promise<void>;
   getAllRoomMessages(): Promise<RoomMessage[]>;
@@ -645,6 +646,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Message moderation
+  async deleteMessage(messageId: string): Promise<void> {
+    await db.delete(messages).where(eq(messages.id, messageId));
+  }
+
   async deleteRoomMessage(messageId: string): Promise<void> {
     await db.delete(roomMessages).where(eq(roomMessages.id, messageId));
   }

@@ -1049,6 +1049,42 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/chat-messages", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allMessages = await storage.getAllMessages();
+      const allProfiles = await storage.getAllProfiles();
+      const allMatches = await storage.getAllMatches();
+      const profileMap = new Map(allProfiles.map(p => [p.id, p]));
+      const matchMap = new Map(allMatches.map(m => [m.id, m]));
+
+      const enriched = allMessages.slice(0, 200).map(msg => {
+        const match = matchMap.get(msg.matchId);
+        const sender = profileMap.get(msg.senderId);
+        const receiverId = match ? (match.profile1Id === msg.senderId ? match.profile2Id : match.profile1Id) : null;
+        const receiver = receiverId ? profileMap.get(receiverId) : null;
+        return {
+          ...msg,
+          senderName: sender?.name || "Sconosciuto",
+          senderImage: sender?.imageUrl || null,
+          receiverName: receiver?.name || "Sconosciuto",
+          receiverImage: receiver?.imageUrl || null,
+        };
+      });
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chat messages" });
+    }
+  });
+
+  app.delete("/api/admin/chat-messages/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.deleteMessage(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
   // Check user suspension status (used by frontend)
   app.get("/api/suspension-status", isAuthenticated, async (req: any, res) => {
     try {
