@@ -493,6 +493,7 @@ export default function ProfileEdit() {
         <Button
           variant="ghost"
           size="icon"
+          className="text-white hover:bg-white/20"
           onClick={() => {
             if (step > 0) prevStep();
             else setLocation(existingProfile ? "/profile" : "/");
@@ -1212,7 +1213,7 @@ export default function ProfileEdit() {
                 type="button"
                 variant="outline"
                 onClick={prevStep}
-                className="gap-2"
+                className="gap-2 text-white border-white/30 hover:bg-white/20"
                 data-testid="button-prev-step"
               >
                 <ArrowLeft className="w-4 h-4" />
