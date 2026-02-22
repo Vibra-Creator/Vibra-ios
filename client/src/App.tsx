@@ -15,6 +15,7 @@ import ProfileEdit from "@/pages/profile-edit";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Support from "@/pages/support";
+import ChildSafety from "@/pages/child-safety";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
@@ -36,7 +37,7 @@ import { Button } from "@/components/ui/button";
 import { ViewportSelector } from "@/components/ViewportSelector";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
-const publicPages = ["/privacy", "/terms", "/login", "/register", "/onboarding", "/forgot-password"];
+const publicPages = ["/privacy", "/terms", "/child-safety", "/login", "/register", "/onboarding", "/forgot-password"];
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -94,6 +95,7 @@ function AuthenticatedRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/child-safety" component={ChildSafety} />
       <Route path="/support" component={Support} />
       <Route path="/login" component={RedirectHome} />
       <Route path="/register" component={RedirectHome} />
@@ -141,6 +143,7 @@ function GuestRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/child-safety" component={ChildSafety} />
       <Route path="/support" component={Support} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
@@ -166,6 +169,7 @@ function UnauthenticatedRouter() {
     <Switch>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/child-safety" component={ChildSafety} />
       <Route path="/support" component={Support} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
