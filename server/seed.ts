@@ -1654,6 +1654,7 @@ export async function seedDatabase() {
     await createBotUserAccounts();
     await ensureAdminAccount();
     await promoteUserToAdmin("famax61@yahoo.com");
+    await promoteUserToAdmin("famax61@gmail.com");
     await cleanupTestData();
     try {
       const oldRoom = await db.select().from(privateRooms).where(eq(privateRooms.id, "entra-chi-dico-io"));

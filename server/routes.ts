@@ -713,6 +713,8 @@ export async function registerRoutes(
     }
   });
 
+  const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
+
   const isAdmin = async (req: any, res: any, next: any) => {
     try {
       const userId = req.user?.claims?.sub;
@@ -721,7 +723,16 @@ export async function registerRoutes(
       }
       
       const user = await storage.getUser(userId);
-      if (!user?.isAdmin) {
+      if (!user) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      if (!user.isAdmin && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+        await db.update(users).set({ isAdmin: true }).where(eq(users.id, userId));
+        user.isAdmin = true;
+      }
+
+      if (!user.isAdmin) {
         return res.status(403).json({ error: "Admin access required" });
       }
       
