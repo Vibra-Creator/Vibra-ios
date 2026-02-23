@@ -447,6 +447,7 @@ export default function ProfileEdit() {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed");
+      form.setValue("imageUrl", photoUrl);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({ title: "Foto profilo aggiornata!", description: "Questa foto è ora la tua immagine del profilo." });
     } catch {
