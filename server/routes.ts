@@ -1032,6 +1032,21 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/reset-password", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId, newPassword } = req.body;
+      if (!userId || !newPassword) {
+        return res.status(400).json({ error: "userId and newPassword required" });
+      }
+      const bcrypt = await import("bcryptjs");
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
   // Message moderation
   app.get("/api/admin/room-messages", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

@@ -45,6 +45,8 @@ export default function Admin() {
   const [newBannedWord, setNewBannedWord] = useState("");
   const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [resetPwUserId, setResetPwUserId] = useState<string | null>(null);
+  const [resetPwValue, setResetPwValue] = useState("");
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -106,6 +108,19 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
       toast({ title: "Dati di test resettati!", description: `Eliminati: ${data.deleted.swipes} swipe, ${data.deleted.matches} match, ${data.deleted.messages} messaggi` });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) =>
+      apiRequest("POST", "/api/admin/reset-password", { userId, newPassword }),
+    onSuccess: () => {
+      setResetPwUserId(null);
+      setResetPwValue("");
+      toast({ title: "Password resettata con successo!" });
+    },
+    onError: () => {
+      toast({ title: "Errore nel reset della password", variant: "destructive" });
     },
   });
 
@@ -507,6 +522,35 @@ export default function Admin() {
                                 <p className="text-xs text-foreground bg-accent/10 p-2 rounded">{userProfile.bio}</p>
                               </div>
                             )}
+                            <div className="mt-3 pt-3 border-t border-border/50">
+                              {resetPwUserId === u.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    placeholder="Nuova password"
+                                    value={resetPwValue}
+                                    onChange={(e) => setResetPwValue(e.target.value)}
+                                    className="h-8 text-sm max-w-[200px]"
+                                    data-testid={`input-reset-pw-${u.id}`}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="h-8"
+                                    disabled={!resetPwValue || resetPasswordMutation.isPending}
+                                    onClick={() => resetPasswordMutation.mutate({ userId: u.id, newPassword: resetPwValue })}
+                                    data-testid={`button-confirm-reset-pw-${u.id}`}
+                                  >
+                                    {resetPasswordMutation.isPending ? "..." : "Conferma"}
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="h-8" onClick={() => { setResetPwUserId(null); setResetPwValue(""); }}>
+                                    Annulla
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setResetPwUserId(u.id)} data-testid={`button-reset-pw-${u.id}`}>
+                                  Reset Password
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
