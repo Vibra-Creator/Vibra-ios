@@ -120,7 +120,7 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
           <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{label}</FormLabel>
           <Select onValueChange={field.onChange} value={field.value || undefined}>
             <FormControl>
-              <SelectTrigger className="bg-white/15 backdrop-blur-md border-white/25 text-white [&>span[data-placeholder]]:text-white/70" data-testid={testId}>
+              <SelectTrigger className="bg-white/5 backdrop-blur-sm border-white/20 text-white [&>span[data-placeholder]]:text-white/90" data-testid={testId}>
                 <SelectValue placeholder={placeholder || "Seleziona"} />
               </SelectTrigger>
             </FormControl>
@@ -507,7 +507,7 @@ export default function ProfileEdit() {
           <h1 className="text-xl font-bold text-white" data-testid="text-step-title">
             {existingProfile ? "Modifica Profilo" : "Crea il Tuo Profilo"}
           </h1>
-          <p className="text-sm text-white/60" data-testid="text-step-subtitle">
+          <p className="text-sm text-white/80" data-testid="text-step-subtitle">
             {stepTitles[step]} — {step + 1}/{TOTAL_STEPS}
           </p>
         </div>
@@ -515,7 +515,7 @@ export default function ProfileEdit() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-white/70"
+            className="gap-1.5 text-white/90"
             onClick={() => logout()}
             data-testid="button-logout-from-create"
           >
@@ -614,7 +614,7 @@ export default function ProfileEdit() {
                                   className="absolute bottom-1 left-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
                                   data-testid={`button-set-profile-photo-${idx}`}
                                 >
-                                  <UserCircle className="w-4 h-4 text-white/70" />
+                                  <UserCircle className="w-4 h-4 text-white/90" />
                                 </button>
                               )}
                             </div>
@@ -625,7 +625,7 @@ export default function ProfileEdit() {
                             type="button"
                             onClick={() => photoInputRef.current?.click()}
                             disabled={isUploadingPhoto}
-                            className="aspect-square rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/70 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors"
+                            className="aspect-square rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/90 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors"
                             data-testid="button-add-photo"
                           >
                             {isUploadingPhoto ? (
@@ -649,7 +649,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Nome</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70 placeholder:text-sm" placeholder="Il tuo nome" {...field} data-testid="input-name" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90 placeholder:text-sm" placeholder="Il tuo nome" {...field} data-testid="input-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -662,7 +662,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -696,7 +696,7 @@ export default function ProfileEdit() {
                             <FormControl>
                               <div className="relative">
                                 <Input
-                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
+                                  className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
                                   placeholder="Cerca la tua città nel mondo..."
                                   value={citySearch}
                                   onChange={(e) => {
@@ -729,7 +729,7 @@ export default function ProfileEdit() {
                                         data-testid={`city-option-${slugify(city.nome)}`}
                                       >
                                         <span>{city.nome}</span>
-                                        <span className="text-xs text-white/60">{city.provincia ? `${city.provincia} - ` : ""}{city.regione}</span>
+                                        <span className="text-xs text-white/80">{city.provincia ? `${city.provincia} - ` : ""}{city.regione}</span>
                                       </button>
                                     ))}
                                   </div>
@@ -755,7 +755,7 @@ export default function ProfileEdit() {
                           className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                             maxDistanceKm === 0
                               ? "bg-gradient-to-r from-purple-500 to-cyan-500 border-purple-400/50 text-white shadow-[0_0_12px_rgba(139,92,246,0.4)]"
-                              : "bg-white/5 border-white/20 text-white/60 hover:border-white/40"
+                              : "bg-white/5 border-white/20 text-white/80 hover:border-white/40"
                           }`}
                         >
                           {maxDistanceKm === 0 ? "🌍 Tutto il Mondo" : "🌍 Ovunque"}
@@ -775,7 +775,7 @@ export default function ProfileEdit() {
                           </>
                         )}
                       </div>
-                      <p className="text-xs text-white/60">
+                      <p className="text-xs text-white/80">
                         {maxDistanceKm === 0
                           ? "Nessun limite di distanza — vedrai profili da tutto il mondo"
                           : "Mostra solo profili entro questo raggio dalla tua posizione"}
@@ -818,7 +818,7 @@ export default function ProfileEdit() {
                             <FormItem className="flex-1">
                               <FormControl>
                                 <Input
-                                  className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
+                                  className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
                                   type="tel"
                                   placeholder="Numero di telefono"
                                   {...field}
@@ -846,7 +846,7 @@ export default function ProfileEdit() {
                     <Ruler className="w-5 h-5 text-accent" />
                     Aspetto Fisico
                   </div>
-                  <p className="text-white/70 text-sm">Descrivi il tuo aspetto fisico per trovare la tua anima gemella</p>
+                  <p className="text-white/90 text-sm">Descrivi il tuo aspetto fisico per trovare la tua anima gemella</p>
                     <div className="grid grid-cols-2 gap-4">
                       <SelectField control={form.control} name="hairColor" label="Capelli" options={hairColorOptions} placeholder="Colore capelli" testId="select-hair-color" />
                       <SelectField control={form.control} name="eyeColor" label="Occhi" options={eyeColorOptions} placeholder="Colore occhi" testId="select-eye-color" />
@@ -860,7 +860,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Altezza (cm)</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -881,7 +881,7 @@ export default function ProfileEdit() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="text-white/60 text-xs"
+                      className="text-white/80 text-xs"
                       data-testid="button-clear-preferences"
                       onClick={() => {
                         form.setValue("preferredGender", "");
@@ -908,7 +908,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Min. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -921,7 +921,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Max. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -936,7 +936,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Min. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -949,7 +949,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Max. Partner</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1001,7 +1001,7 @@ export default function ProfileEdit() {
 
                     <div className="mt-6 pt-4 border-t border-white/15">
                       <p className="text-white font-semibold text-sm tracking-wide uppercase mb-3">Funzioni Extra</p>
-                      <p className="text-white/70 text-sm mb-4">Attiva o disattiva queste funzioni opzionali per personalizzare la tua esperienza</p>
+                      <p className="text-white/90 text-sm mb-4">Attiva o disattiva queste funzioni opzionali per personalizzare la tua esperienza</p>
                     </div>
 
                     <button
@@ -1024,7 +1024,7 @@ export default function ProfileEdit() {
                           <p className={`font-bold text-base mb-1 transition-colors ${ratingEnabled ? "text-white" : "text-white/80"}`}>
                             Prima Impressione
                           </p>
-                          <p className="text-white/70 text-sm leading-relaxed">
+                          <p className="text-white/90 text-sm leading-relaxed">
                             Attiva per permettere agli altri di votarti da 1 a 5 sulla tua card. Vedrai tutti i voti ricevuti nella sezione dedicata "Prima Impressione".
                           </p>
                         </div>
@@ -1064,7 +1064,7 @@ export default function ProfileEdit() {
                           <p className={`font-bold text-base mb-1 transition-colors ${locationSharingEnabled ? "text-white" : "text-white/80"}`}>
                             Mostra Dove Sei
                           </p>
-                          <p className="text-white/70 text-sm leading-relaxed">
+                          <p className="text-white/90 text-sm leading-relaxed">
                             Condividi la tua posizione con i tuoi Match. Solo chi ha un match con te e ha attivato questa opzione potrà vedere dove ti trovi su una mappa.
                           </p>
                         </div>
@@ -1084,11 +1084,11 @@ export default function ProfileEdit() {
                           </div>
                           <div className="bg-white/5 rounded-lg p-3 space-y-1">
                             <p className="text-white/80 text-xs font-medium">Come funziona:</p>
-                            <p className="text-white/60 text-xs">1. Attiva questa opzione nel tuo profilo</p>
-                            <p className="text-white/60 text-xs">2. Vai nella sezione "Dove Sei" dal menu</p>
-                            <p className="text-white/60 text-xs">3. Tocca "Condividi Posizione" per iniziare</p>
-                            <p className="text-white/60 text-xs">4. Solo i tuoi match con questa opzione attiva vedranno la tua posizione</p>
-                            <p className="text-white/60 text-xs">5. Puoi interrompere la condivisione in qualsiasi momento</p>
+                            <p className="text-white/80 text-xs">1. Attiva questa opzione nel tuo profilo</p>
+                            <p className="text-white/80 text-xs">2. Vai nella sezione "Dove Sei" dal menu</p>
+                            <p className="text-white/80 text-xs">3. Tocca "Condividi Posizione" per iniziare</p>
+                            <p className="text-white/80 text-xs">4. Solo i tuoi match con questa opzione attiva vedranno la tua posizione</p>
+                            <p className="text-white/80 text-xs">5. Puoi interrompere la condivisione in qualsiasi momento</p>
                           </div>
                         </div>
                       )}
@@ -1104,7 +1104,7 @@ export default function ProfileEdit() {
                   </div>
                     <div>
                       <FormLabel className="mb-1 block text-white font-semibold text-sm tracking-wide uppercase">Lingue Parlate</FormLabel>
-                      <p className="text-white/70 text-sm mb-3">Seleziona tutte le lingue che parli per trovare persone compatibili</p>
+                      <p className="text-white/90 text-sm mb-3">Seleziona tutte le lingue che parli per trovare persone compatibili</p>
                       <div className="flex flex-wrap gap-2">
                         {languageOptions.map((lang) => (
                           <Badge
@@ -1129,12 +1129,12 @@ export default function ProfileEdit() {
                           <FormControl>
                             <Textarea
                               placeholder="Racconta qualcosa di te..."
-                              className="resize-none min-h-[120px] bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
+                              className="resize-none min-h-[120px] bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
                               {...field}
                               data-testid="input-bio"
                             />
                           </FormControl>
-                          <div className="text-xs text-white/60 text-right">
+                          <div className="text-xs text-white/80 text-right">
                             {field.value?.length || 0}/500
                           </div>
                           <FormMessage />
@@ -1150,7 +1150,7 @@ export default function ProfileEdit() {
                     <Sparkles className="w-5 h-5 text-accent" />
                     Interessi
                   </div>
-                    <p className="text-sm text-white/70">
+                    <p className="text-sm text-white/90">
                       Seleziona fino a 10 interessi che ti rappresentano ({interests.length}/10)
                     </p>
 
@@ -1172,12 +1172,12 @@ export default function ProfileEdit() {
                     )}
 
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/80" />
                       <Input
                         placeholder="Cerca interessi..."
                         value={interestSearch}
                         onChange={(e) => setInterestSearch(e.target.value)}
-                        className="pl-9 bg-white/15 backdrop-blur-md border-white/25 text-white placeholder:text-white/70"
+                        className="pl-9 bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
                         data-testid="input-search-interests"
                       />
                     </div>
@@ -1230,7 +1230,7 @@ export default function ProfileEdit() {
                   type="button"
                   variant="ghost"
                   onClick={() => setStep(step + 1)}
-                  className="text-white/60"
+                  className="text-white/90"
                   data-testid="button-skip-step"
                 >
                   Salta
@@ -1254,7 +1254,7 @@ export default function ProfileEdit() {
                       type="submit"
                       variant="ghost"
                       disabled={isPending}
-                      className="text-white/60"
+                      className="text-white/90"
                       onClick={() => { submitClickedRef.current = true; }}
                       data-testid="button-skip-save-profile"
                     >
