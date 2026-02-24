@@ -391,7 +391,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       <>
         <motion.div
           ref={ref}
-          className="absolute w-full cursor-grab active:cursor-grabbing"
+          className="absolute w-full h-full cursor-grab active:cursor-grabbing"
           style={{ x, rotate, opacity }}
           drag={isTop ? "x" : false}
           dragConstraints={{ left: 0, right: 0 }}
@@ -407,8 +407,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           data-testid={`swipe-card-${profile.id}`}
         >
-          <div className="relative rounded-2xl overflow-hidden bg-card shadow-2xl border border-card-border">
-            <div className="relative aspect-[3/4] overflow-hidden">
+          <div className="relative rounded-2xl overflow-hidden bg-card shadow-2xl border border-card-border h-full">
+            <div className="relative h-full overflow-hidden">
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
@@ -612,7 +612,7 @@ interface ActionButtonsProps {
 
 export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled, likeDisabled }: ActionButtonsProps) {
   return (
-    <div className="flex items-center justify-center gap-6 py-6">
+    <div className="flex items-center justify-center gap-6 py-3">
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}

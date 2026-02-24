@@ -248,9 +248,9 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+    <div className="flex-1 flex flex-col items-center justify-between p-4 relative overflow-hidden">
       {bgLayer}
-      <div className="w-full max-w-sm relative z-10 h-[500px] sm:h-[550px]">
+      <div className="w-full max-w-sm relative z-10 flex-1 min-h-0" style={{ maxHeight: 'calc(100vh - 220px)' }}>
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}
