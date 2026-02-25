@@ -116,6 +116,17 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  app.get("/download/upload_certificate.pem", (req, res) => {
+    const pemPath = path.join(process.cwd(), "client", "public", "upload_certificate.pem");
+    if (fs.existsSync(pemPath)) {
+      res.setHeader("Content-Type", "application/x-pem-file");
+      res.setHeader("Content-Disposition", "attachment; filename=upload_certificate.pem");
+      res.sendFile(pemPath);
+    } else {
+      res.status(404).send("File not found");
+    }
+  });
+
   await setupAuth(app);
   registerAuthRoutes(app);
   registerObjectStorageRoutes(app);
