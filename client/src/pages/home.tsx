@@ -250,7 +250,7 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col items-center p-4 relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
-      <div className="w-full max-w-sm relative z-10 flex-1 min-h-0" style={{ maxHeight: 'calc(100dvh - 170px)' }}>
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: 'calc(100dvh - 170px)' }}>
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}
