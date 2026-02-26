@@ -93,6 +93,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "register.createError": "Impossibile creare l'account",
     "register.welcomeTitle": "Benvenuto su Vibra!",
     "register.welcomeDesc": "Account creato con successo",
+    "register.discountMessage": "Hai un {percent}% di sconto sull'abbonamento!",
 
     // Home
     "home.welcome": "Benvenuto su Vibra!",
@@ -842,6 +843,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "register.createError": "Unable to create account",
     "register.welcomeTitle": "Welcome to Vibra!",
     "register.welcomeDesc": "Account created successfully",
+    "register.discountMessage": "You get a {percent}% discount on subscription!",
 
     // Home
     "home.welcome": "Welcome to Vibra!",
@@ -1591,6 +1593,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "register.createError": "No se pudo crear la cuenta",
     "register.welcomeTitle": "¡Bienvenido a Vibra!",
     "register.welcomeDesc": "Cuenta creada con éxito",
+    "register.discountMessage": "¡Tienes un {percent}% de descuento en la suscripción!",
 
     // Home
     "home.welcome": "¡Bienvenido a Vibra!",

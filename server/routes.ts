@@ -830,7 +830,9 @@ export async function registerRoutes(
       const code = req.params.code.toUpperCase();
       const [profile] = await db.select().from(profiles).where(eq(profiles.referralCode, code));
       if (!profile) return res.json({ valid: false });
-      res.json({ valid: true, referrerName: profile.name });
+      const [discountSetting] = await db.select().from(appSettings).where(eq(appSettings.key, "referral_discount_percent"));
+      const discountPercent = discountSetting ? parseFloat(discountSetting.value) : 10;
+      res.json({ valid: true, referrerName: profile.name, discountPercent });
     } catch (error) {
       res.status(500).json({ error: "Failed to validate code" });
     }
