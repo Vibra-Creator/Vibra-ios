@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile, LocationShare } from "@shared/schema";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -17,6 +18,7 @@ export default function LocationMap() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -59,17 +61,17 @@ export default function LocationMap() {
       }
       queryClient.invalidateQueries({ queryKey: ["/api/location/status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/location/matches"] });
-      toast({ title: "Condivisione interrotta", description: "La tua posizione non è più visibile ai match." });
+      toast({ title: t("location.stopped"), description: t("location.stoppedDesc") });
     },
   });
 
   const startSharing = () => {
     if (!myProfile?.locationSharingEnabled) {
-      toast({ title: "Funzione non attiva", description: "Attiva 'Mostra Dove Sei' nelle impostazioni del profilo.", variant: "destructive" });
+      toast({ title: t("location.notActive"), description: t("location.activate"), variant: "destructive" });
       return;
     }
     if (!navigator.geolocation) {
-      toast({ title: "Geolocalizzazione non disponibile", description: "Il tuo browser non supporta la geolocalizzazione.", variant: "destructive" });
+      toast({ title: t("location.geoNotAvailable"), description: t("location.geoNotSupported"), variant: "destructive" });
       return;
     }
 
@@ -84,10 +86,10 @@ export default function LocationMap() {
           { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
         );
         setWatchId(id);
-        toast({ title: "Posizione condivisa", description: "I tuoi match con questa funzione attiva potranno vederti sulla mappa." });
+        toast({ title: t("location.shared"), description: t("location.sharedDesc") });
       },
       (err) => {
-        toast({ title: "Errore posizione", description: "Consenti l'accesso alla posizione nel browser.", variant: "destructive" });
+        toast({ title: t("location.positionError"), description: t("location.allowAccess"), variant: "destructive" });
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -161,7 +163,7 @@ export default function LocationMap() {
 
     myMarkerRef.current = L.marker([locationStatus.share.latitude, locationStatus.share.longitude], { icon: myIcon })
       .addTo(leafletMap.current)
-      .bindPopup(`<div style="text-align:center;font-family:sans-serif;"><strong>Tu</strong></div>`);
+      .bindPopup(`<div style="text-align:center;font-family:sans-serif;"><strong>${t("location.you")}</strong></div>`);
 
     leafletMap.current.setView([locationStatus.share.latitude, locationStatus.share.longitude], 14);
   }, [locationStatus?.share, myProfile]);
@@ -180,7 +182,7 @@ export default function LocationMap() {
         <div className="flex-1 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-secondary" />
-            <h2 className="text-white font-semibold text-sm" data-testid="text-location-title">Dove Sei</h2>
+            <h2 className="text-white font-semibold text-sm" data-testid="text-location-title">{t("location.title")}</h2>
             <Button
               variant="ghost"
               size="icon"
@@ -194,10 +196,10 @@ export default function LocationMap() {
           {isSharing && (
             <div className="mt-1 flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-green-400">Posizione attiva</span>
+              <span className="text-xs text-green-400">{t("location.active")}</span>
               {matchLocations && matchLocations.length > 0 && (
                 <span className="text-xs text-white/40 ml-1">
-                  {matchLocations.length} match visibil{matchLocations.length === 1 ? "e" : "i"}
+                  {matchLocations.length} {matchLocations.length === 1 ? t("location.matchVisibleSingular") : t("location.matchVisible")}
                 </span>
               )}
             </div>
@@ -217,18 +219,18 @@ export default function LocationMap() {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-yellow-400" />
-                  <h3 className="text-white font-semibold text-sm">Privacy e Sicurezza</h3>
+                  <h3 className="text-white font-semibold text-sm">{t("location.privacySafety")}</h3>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setShowInfo(false)} data-testid="button-close-info">
                   <X className="w-4 h-4 text-white/60" />
                 </Button>
               </div>
               <div className="space-y-2 text-white/70 text-xs">
-                <p>Questa funzione ti permette di condividere la tua posizione <strong className="text-white">solo con i tuoi Match</strong> che hanno anche loro attivato questa opzione.</p>
-                <p>La tua posizione <strong className="text-white">non è visibile</strong> a utenti con cui non hai un match reciproco.</p>
-                <p>Puoi <strong className="text-white">disattivare</strong> la condivisione in qualsiasi momento toccando "Interrompi".</p>
-                <p>Per motivi di sicurezza, <strong className="text-white">non condividere mai</strong> la tua posizione esatta con sconosciuti al di fuori dell'app.</p>
-                <p className="text-yellow-400/80">Usa questa funzione con responsabilità. Incontra sempre le persone in luoghi pubblici.</p>
+                <p>{t("location.privacyText1")}</p>
+                <p>{t("location.privacyText2")}</p>
+                <p>{t("location.privacyText3")}</p>
+                <p>{t("location.privacyText4")}</p>
+                <p className="text-yellow-400/80">{t("location.privacyText5")}</p>
               </div>
             </Card>
           </motion.div>
@@ -243,8 +245,8 @@ export default function LocationMap() {
                 <MapPin className="w-5 h-5 text-white/40" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium">Funzione non attiva</p>
-                <p className="text-white/50 text-xs">Attiva "Mostra Dove Sei" nelle impostazioni del profilo per condividere la tua posizione con i match.</p>
+                <p className="text-white text-sm font-medium">{t("location.notActive")}</p>
+                <p className="text-white/50 text-xs">{t("location.notActiveDesc")}</p>
               </div>
             </div>
           </Card>
@@ -256,7 +258,7 @@ export default function LocationMap() {
             data-testid="button-start-sharing"
           >
             <Share2 className="w-5 h-5 mr-2" />
-            {shareMutation.isPending ? "Attivazione..." : "Condividi Posizione"}
+            {shareMutation.isPending ? t("location.activating") : t("location.sharePosition")}
           </Button>
         ) : (
           <div className="space-y-3">
@@ -288,7 +290,7 @@ export default function LocationMap() {
               data-testid="button-stop-sharing"
             >
               <X className="w-4 h-4 mr-2" />
-              {stopMutation.isPending ? "Interrompo..." : "Interrompi Condivisione"}
+              {stopMutation.isPending ? t("location.stopping") : t("location.stopSharing")}
             </Button>
           </div>
         )}

@@ -7,9 +7,10 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile } from "@shared/schema";
 
-function getActivityStatus(lastActiveAt: string | Date | null | undefined): { label: string; color: string; isOnline: boolean } {
+function getActivityStatus(lastActiveAt: string | Date | null | undefined, t: (key: string) => string): { label: string; color: string; isOnline: boolean } {
   if (!lastActiveAt) return { label: "", color: "", isOnline: false };
   const now = new Date();
   const lastActive = new Date(lastActiveAt);
@@ -18,12 +19,12 @@ function getActivityStatus(lastActiveAt: string | Date | null | undefined): { la
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMin < 5) return { label: "Attivo ora", color: "bg-green-500", isOnline: true };
-  if (diffMin < 60) return { label: `${diffMin} min fa`, color: "bg-green-400", isOnline: true };
-  if (diffHours < 2) return { label: "1 ora fa", color: "bg-yellow-400", isOnline: false };
-  if (diffHours < 6) return { label: `${diffHours} ore fa`, color: "bg-yellow-500", isOnline: false };
-  if (diffHours < 24) return { label: `${diffHours} ore fa`, color: "bg-orange-400", isOnline: false };
-  if (diffDays < 3) return { label: `${diffDays}g fa`, color: "bg-orange-500", isOnline: false };
+  if (diffMin < 5) return { label: t("swipe.activeNow"), color: "bg-green-500", isOnline: true };
+  if (diffMin < 60) return { label: `${diffMin} ${t("swipe.minAgo")}`, color: "bg-green-400", isOnline: true };
+  if (diffHours < 2) return { label: t("swipe.hourAgo"), color: "bg-yellow-400", isOnline: false };
+  if (diffHours < 6) return { label: `${diffHours} ${t("swipe.hoursAgo")}`, color: "bg-yellow-500", isOnline: false };
+  if (diffHours < 24) return { label: `${diffHours} ${t("swipe.hoursAgo")}`, color: "bg-orange-400", isOnline: false };
+  if (diffDays < 3) return { label: `${diffDays}${t("swipe.daysAgo")}`, color: "bg-orange-500", isOnline: false };
   return { label: "", color: "", isOnline: false };
 }
 
@@ -36,6 +37,7 @@ interface ProfileDetailModalProps {
 
 function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }: ProfileDetailModalProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
 
@@ -43,20 +45,20 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
     mutationFn: (data: { reportedId: string; reason: string }) =>
       apiRequest("POST", "/api/reports", data),
     onSuccess: () => {
-      toast({ title: "Segnalazione inviata", description: "Grazie per la tua segnalazione. Il nostro team la esaminerà." });
+      toast({ title: t("swipe.reportSent"), description: t("swipe.reportSentDesc") });
       setShowReportMenu(false);
     },
     onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile inviare la segnalazione.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("swipe.reportError"), variant: "destructive" });
     },
   });
 
   const reportReasons = [
-    "Contenuto inappropriato",
-    "Profilo falso",
-    "Comportamento molesto",
-    "Spam",
-    "Altro",
+    { key: "swipe.inappropriate", value: t("swipe.inappropriate") },
+    { key: "swipe.fakeProfile", value: t("swipe.fakeProfile") },
+    { key: "swipe.harassment", value: t("swipe.harassment") },
+    { key: "swipe.spam", value: t("swipe.spam") },
+    { key: "swipe.other", value: t("swipe.other") },
   ];
 
   if (!isOpen) return null;
@@ -64,12 +66,12 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
   const allPhotos = [profile.imageUrl, ...(profile.photos || [])].filter(Boolean) as string[];
 
   const detailItems = [
-    { label: "Tipo Alieno", value: profile.alienType, icon: Sparkles },
-    { label: "Genere", value: profile.gender, icon: User },
-    { label: "Altezza", value: profile.height ? `${profile.height} cm` : null, icon: Ruler },
-    { label: "Istruzione", value: profile.education, icon: GraduationCap },
-    { label: "Stile di Vita", value: profile.lifestyle, icon: Briefcase },
-    { label: "Comunicazione", value: profile.communicationStyle ? profile.communicationStyle.split(",").join(", ") : null, icon: MessageCircle },
+    { label: t("swipe.alienType"), value: profile.alienType, icon: Sparkles },
+    { label: t("swipe.gender"), value: profile.gender, icon: User },
+    { label: t("swipe.height"), value: profile.height ? `${profile.height} cm` : null, icon: Ruler },
+    { label: t("swipe.education"), value: profile.education, icon: GraduationCap },
+    { label: t("swipe.lifestyle"), value: profile.lifestyle, icon: Briefcase },
+    { label: t("swipe.communication"), value: profile.communicationStyle ? profile.communicationStyle.split(",").join(", ") : null, icon: MessageCircle },
   ].filter(item => item.value);
 
   return (
@@ -134,7 +136,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                     <span className="text-sm">{profile.location}</span>
                   </div>
                   {(() => {
-                    const activity = getActivityStatus((profile as any).lastActiveAt);
+                    const activity = getActivityStatus((profile as any).lastActiveAt, t);
                     if (!activity.label) return null;
                     return (
                       <div className="flex items-center gap-1.5">
@@ -156,14 +158,14 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                 {hasPrivateRoom && (
                   <Badge variant="secondary" className="bg-amber-500/80 text-white" data-testid={`detail-badge-private-room-${profile.id}`}>
                     <Lock className="w-3 h-3 mr-1" />
-                    Ha una Stanza VIP
+                    {t("swipe.hasVipRoom")}
                   </Badge>
                 )}
               </div>
 
               {profile.bio && (
                 <div>
-                  <h3 className="text-sm font-semibold text-white/60 mb-2">Bio</h3>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">{t("swipe.bio")}</h3>
                   <p className="text-white/90 text-sm leading-relaxed" data-testid="detail-profile-bio">{profile.bio}</p>
                 </div>
               )}
@@ -184,7 +186,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
 
               {profile.interests && profile.interests.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-white/60 mb-2">Interessi</h3>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">{t("swipe.interests")}</h3>
                   <div className="flex flex-wrap gap-2">
                     {profile.interests.map((interest, idx) => (
                       <Badge
@@ -201,7 +203,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
 
               {profile.photos && profile.photos.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-white/60 mb-2">Foto</h3>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">{t("swipe.photos")}</h3>
                   <div className="grid grid-cols-3 gap-2">
                     {profile.photos.map((photo, idx) => (
                       <div
@@ -210,7 +212,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                         onClick={() => setViewingPhotoIndex(idx + 1)}
                         data-testid={`detail-photo-${idx}`}
                       >
-                        <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                        <img src={photo} alt={`${t("swipe.photos")} ${idx + 1}`} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
@@ -222,7 +224,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
 
               {profile.languages && profile.languages.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-white/60 mb-2">Lingue</h3>
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">{t("swipe.languages")}</h3>
                   <div className="flex flex-wrap gap-2">
                     {profile.languages.map((lang, idx) => (
                       <Badge key={idx} variant="outline" className="bg-white/10 border-white/30 text-white">
@@ -242,21 +244,21 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                     data-testid={`button-report-${profile.id}`}
                   >
                     <Flag className="w-4 h-4 mr-2" />
-                    Segnala profilo
+                    {t("swipe.reportProfile")}
                   </Button>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-sm text-white/60 text-center">Seleziona il motivo:</p>
+                    <p className="text-sm text-white/60 text-center">{t("swipe.selectReason")}</p>
                     {reportReasons.map((reason) => (
                       <Button
-                        key={reason}
+                        key={reason.key}
                         variant="ghost"
                         className="w-full text-white/80 justify-start"
-                        onClick={() => reportMutation.mutate({ reportedId: profile.id, reason })}
+                        onClick={() => reportMutation.mutate({ reportedId: profile.id, reason: reason.value })}
                         disabled={reportMutation.isPending}
-                        data-testid={`button-report-reason-${reason.toLowerCase().replace(/\s+/g, "-")}`}
+                        data-testid={`button-report-reason-${reason.key}`}
                       >
-                        {reason}
+                        {reason.value}
                       </Button>
                     ))}
                     <Button
@@ -265,7 +267,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                       onClick={() => setShowReportMenu(false)}
                       data-testid="button-cancel-report"
                     >
-                      Annulla
+                      {t("swipe.cancel")}
                     </Button>
                   </div>
                 )}
@@ -331,7 +333,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2 }}
               src={allPhotos[viewingPhotoIndex]}
-              alt={`Foto ${viewingPhotoIndex + 1}`}
+              alt={`${t("swipe.photos")} ${viewingPhotoIndex + 1}`}
               className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
               data-testid="photo-viewer-image"
@@ -360,6 +362,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
     const dragDistanceRef = useRef(0);
     const { toast } = useToast();
+    const { t } = useLanguage();
 
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {
@@ -367,16 +370,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       },
       onSuccess: () => {
         setRatingSubmitted(true);
-        const ratingLabels: Record<number, string> = { 1: "Preferisco non pronunciarmi", 2: "Non sei il mio tipo", 3: "Qualcosa in te mi attrae", 4: "Sei il mio tipo ideale", 5: "Sei fantastico/a!" };
-        toast({ title: "Voto inviato!", description: `${ratingLabels[selectedRating!] || ""} - ${profile.name}` });
+        const ratingLabels: Record<number, string> = { 1: t("pi.rating1"), 2: t("pi.rating2"), 3: t("pi.rating3"), 4: t("pi.rating4"), 5: t("pi.rating5") };
+        toast({ title: t("swipe.voteSent"), description: `${ratingLabels[selectedRating!] || ""} - ${profile.name}` });
         queryClient.invalidateQueries({ queryKey: ["/api/ratings/received"] });
         setTimeout(() => setShowRating(false), 1500);
       },
       onError: (error: Error) => {
         if (error.message.includes("Already rated")) {
-          toast({ title: "Già votato", description: "Hai già dato un voto a questo profilo.", variant: "destructive" });
+          toast({ title: t("swipe.alreadyVoted"), description: t("swipe.alreadyVotedDesc"), variant: "destructive" });
         } else {
-          toast({ title: "Errore", description: "Non è stato possibile inviare il voto.", variant: "destructive" });
+          toast({ title: t("common.error"), description: t("swipe.voteError"), variant: "destructive" });
         }
         setShowRating(false);
       },
@@ -453,7 +456,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 <div className="absolute top-4 right-4 z-20 pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/90 backdrop-blur-sm shadow-lg">
                     <Heart className="w-4 h-4 text-white fill-white" />
-                    <span className="text-white text-xs font-bold tracking-wide">LIKE DATO</span>
+                    <span className="text-white text-xs font-bold tracking-wide">{t("swipe.likeDone")}</span>
                   </div>
                 </div>
               )}
@@ -485,7 +488,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   {hasPrivateRoom && (
                     <Badge variant="secondary" className="bg-amber-500/80 text-white backdrop-blur-sm" data-testid={`badge-private-room-${profile.id}`}>
                       <Lock className="w-3 h-3 mr-1" />
-                      Stanza VIP
+                      {t("swipe.vipRoom")}
                     </Badge>
                   )}
                 </div>
@@ -505,7 +508,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <span className="text-sm">{profile.location}</span>
                   </div>
                   {(() => {
-                    const activity = getActivityStatus((profile as any).lastActiveAt);
+                    const activity = getActivityStatus((profile as any).lastActiveAt, t);
                     if (!activity.label) return null;
                     return (
                       <div className="flex items-center gap-1.5" data-testid={`activity-status-${profile.id}`}>
@@ -552,8 +555,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
             >
               <Eye className="w-3.5 h-3.5" />
               <span className="flex flex-col items-start leading-tight">
-                <span>Prima Impressione</span>
-                <span className="text-[9px] font-normal text-white/70">Digli cosa pensi!</span>
+                <span>{t("swipe.piButton")}</span>
+                <span className="text-[9px] font-normal text-white/70">{t("swipe.piSubtitle")}</span>
               </span>
             </motion.button>
           </motion.div>
@@ -585,16 +588,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="text-white text-base font-semibold leading-tight">{profile.name}, {profile.age}</span>
-                    <span className="text-white/50 text-xs leading-tight mt-0.5">Che impressione ti fa?</span>
+                    <span className="text-white/50 text-xs leading-tight mt-0.5">{t("swipe.piPrompt")}</span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
                   {[
-                    { value: 1, label: "Preferisco non pronunciarmi" },
-                    { value: 2, label: "Non sei il mio tipo" },
-                    { value: 3, label: "Qualcosa in te mi attrae" },
-                    { value: 4, label: "Sei il mio tipo ideale" },
-                    { value: 5, label: "Sei fantastico/a!" },
+                    { value: 1, label: t("pi.rating1") },
+                    { value: 2, label: t("pi.rating2") },
+                    { value: 3, label: t("pi.rating3") },
+                    { value: 4, label: t("pi.rating4") },
+                    { value: 5, label: t("pi.rating5") },
                   ].map((opt) => (
                     <button
                       key={opt.value}
@@ -617,7 +620,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     className="flex-1 py-3 rounded-xl bg-white/10 text-white/60 text-sm font-medium active:bg-white/20"
                     data-testid="button-cancel-rating"
                   >
-                    Annulla
+                    {t("swipe.cancel")}
                   </button>
                   <button
                     onClick={() => { if (selectedRating) ratingMutation.mutate(selectedRating); }}
@@ -625,7 +628,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-50 active:bg-primary/80"
                     data-testid="button-submit-rating"
                   >
-                    {ratingSubmitted ? "Inviato!" : ratingMutation.isPending ? "..." : "Invia Voto"}
+                    {ratingSubmitted ? t("swipe.sent") : ratingMutation.isPending ? "..." : t("swipe.sendVote")}
                   </button>
                 </div>
               </motion.div>

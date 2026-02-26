@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { VirtualGift } from "@shared/schema";
 
 const giftIcons: Record<string, typeof Star> = {
@@ -37,6 +38,7 @@ export default function GiftPicker({ receiverId, receiverName, onClose, onGiftSe
   const [selectedGift, setSelectedGift] = useState<VirtualGift | null>(null);
   const [giftMessage, setGiftMessage] = useState("");
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const { data: gifts = [] } = useQuery<VirtualGift[]>({
     queryKey: ["/api/gifts"],
@@ -65,17 +67,17 @@ export default function GiftPicker({ receiverId, receiverName, onClose, onGiftSe
         onGiftSent(selectedGift);
       }
       toast({
-        title: "Regalo inviato!",
-        description: `Hai inviato ${selectedGift?.name} a ${receiverName}`,
+        title: t("gift.sent"),
+        description: `${t("gift.sentDesc")} ${selectedGift?.name} ${t("gift.to")} ${receiverName}`,
       });
       onClose();
     },
     onError: (error: any) => {
       const msg = error?.message?.includes("insufficienti")
-        ? "Non hai abbastanza punti per questo regalo"
-        : "Errore nell'invio del regalo";
+        ? t("gift.notEnoughPoints")
+        : t("gift.error");
       toast({
-        title: "Errore",
+        title: t("common.error"),
         description: msg,
         variant: "destructive",
       });
@@ -102,12 +104,12 @@ export default function GiftPicker({ receiverId, receiverName, onClose, onGiftSe
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-white" data-testid="text-gift-title">
-              Invia un Regalo a {receiverName}
+              {t("gift.sendTo")} {receiverName}
             </h3>
             <div className="flex items-center gap-2 mt-1">
               <Coins className="w-4 h-4 text-yellow-400" />
               <span className="text-sm text-yellow-400 font-medium" data-testid="text-points-balance">
-                {myPoints} punti disponibili
+                {myPoints} {t("gift.pointsAvailable")}
               </span>
             </div>
           </div>
@@ -162,7 +164,7 @@ export default function GiftPicker({ receiverId, receiverName, onClose, onGiftSe
             <Input
               value={giftMessage}
               onChange={(e) => setGiftMessage(e.target.value)}
-              placeholder="Aggiungi un messaggio (opzionale)..."
+              placeholder={t("gift.addMessage")}
               className="bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40"
               maxLength={100}
               data-testid="input-gift-message"
@@ -176,12 +178,12 @@ export default function GiftPicker({ receiverId, receiverName, onClose, onGiftSe
               {sendGiftMutation.isPending ? (
                 <span className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  Invio in corso...
+                  {t("gift.sending")}
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Gift className="w-4 h-4" />
-                  Invia {selectedGift.name} ({selectedGift.cost} punti)
+                  {t("gift.sendGift")} {selectedGift.name} ({selectedGift.cost} {t("gift.points")})
                 </span>
               )}
             </Button>

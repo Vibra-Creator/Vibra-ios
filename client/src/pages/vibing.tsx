@@ -12,6 +12,7 @@ import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile, VibingSession } from "@shared/schema";
 
 type VibeStatus = {
@@ -27,6 +28,7 @@ export default function Vibing() {
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
   const [radiusKm, setRadiusKm] = useState(5);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -84,10 +86,10 @@ export default function Vibing() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vibe/status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vibe/nearby"] });
-      toast({ title: "Sei live!", description: "Modalità vibing attivata per 30 minuti" });
+      toast({ title: t("vibing.liveTitle"), description: t("vibing.liveDesc") });
     },
     onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile attivare la modalità vibing", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("vibing.activateError"), variant: "destructive" });
     },
   });
 
@@ -96,17 +98,17 @@ export default function Vibing() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vibe/status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vibe/nearby"] });
-      toast({ title: "Vibing terminato", description: "Sei tornato alla modalità normale" });
+      toast({ title: t("vibing.endedTitle"), description: t("vibing.endedDesc") });
     },
   });
 
   const handleActivate = useCallback(() => {
-    if (blockIfGuest("attivare il vibing")) return;
+    if (blockIfGuest(t("vibing.activateAction"))) return;
     setGeoError(null);
     setLocating(true);
 
     if (!navigator.geolocation) {
-      setGeoError("Il tuo browser non supporta la geolocalizzazione");
+      setGeoError(t("vibing.geoNotSupported"));
       setLocating(false);
       return;
     }
@@ -123,13 +125,13 @@ export default function Vibing() {
         setLocating(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setGeoError("Permesso di geolocalizzazione negato. Attivalo nelle impostazioni del browser.");
+            setGeoError(t("vibing.geoDenied"));
             break;
           case error.POSITION_UNAVAILABLE:
-            setGeoError("Posizione non disponibile. Riprova.");
+            setGeoError(t("vibing.geoUnavailable"));
             break;
           default:
-            setGeoError("Impossibile ottenere la posizione. Riprova.");
+            setGeoError(t("vibing.geoError"));
         }
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -149,9 +151,9 @@ export default function Vibing() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center">
           <Zap className="w-12 h-12 text-white/30 mx-auto mb-3" />
-          <p className="text-white/60 text-sm">Crea il tuo profilo per iniziare</p>
+          <p className="text-white/60 text-sm">{t("vibing.createProfileFirst")}</p>
           <Button className="mt-4" onClick={() => setLocation("/profile/edit")} data-testid="button-create-profile-vibe">
-            Crea Profilo
+            {t("vibing.createProfile")}
           </Button>
         </div>
       </div>
@@ -190,17 +192,17 @@ export default function Vibing() {
 
             <div className="text-center max-w-xs">
               <h1 className="text-2xl font-bold text-white mb-2" data-testid="text-vibing-title">
-                Sto Vibing Ora
+                {t("vibing.title")}
               </h1>
               <p className="text-white/60 text-sm leading-relaxed">
-                Attiva la modalità live per 30 minuti. Vedrai solo persone attive vicino a te, pronte a incontrarsi ORA.
+                {t("vibing.subtitle")}
               </p>
             </div>
 
             <div className="w-full max-w-xs space-y-4">
               <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-white/70 text-sm">Raggio di ricerca</span>
+                  <span className="text-white/70 text-sm">{t("vibing.searchRadius")}</span>
                   <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300">
                     {radiusKm} km
                   </Badge>
@@ -223,15 +225,15 @@ export default function Vibing() {
               <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 space-y-2">
                 <div className="flex items-center gap-2 text-white/60 text-xs">
                   <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Dura 30 minuti, poi si disattiva</span>
+                  <span>{t("vibing.duration")}</span>
                 </div>
                 <div className="flex items-center gap-2 text-white/60 text-xs">
                   <Radio className="w-3.5 h-3.5 text-green-400" />
-                  <span>Vedi solo chi è online ORA</span>
+                  <span>{t("vibing.onlineOnly")}</span>
                 </div>
                 <div className="flex items-center gap-2 text-white/60 text-xs">
                   <MapPin className="w-3.5 h-3.5 text-pink-400" />
-                  <span>Solo persone vicine a te</span>
+                  <span>{t("vibing.nearbyOnly")}</span>
                 </div>
               </div>
 
@@ -251,17 +253,17 @@ export default function Vibing() {
                 {locating ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Localizzazione...
+                    {t("vibing.locating")}
                   </>
                 ) : activateMutation.isPending ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Attivazione...
+                    {t("vibing.activating")}
                   </>
                 ) : (
                   <>
                     <Zap className="w-5 h-5 mr-2" />
-                    Inizia a Vibare
+                    {t("vibing.startVibing")}
                   </>
                 )}
               </Button>
@@ -313,10 +315,10 @@ export default function Vibing() {
             <div className="flex-1 p-4 overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-white font-semibold text-sm">
-                  Persone vicine a te
+                  {t("vibing.nearbyPeople")}
                 </h2>
                 <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300">
-                  {nearbyVibers.length} {nearbyVibers.length === 1 ? "persona" : "persone"}
+                  {nearbyVibers.length} {nearbyVibers.length === 1 ? t("vibing.person") : t("vibing.people")}
                 </Badge>
               </div>
 
@@ -324,7 +326,7 @@ export default function Vibing() {
                 <div className="flex items-center justify-center py-16">
                   <div className="text-center">
                     <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-3" />
-                    <p className="text-white/50 text-sm">Cerco persone nelle vicinanze...</p>
+                    <p className="text-white/50 text-sm">{t("vibing.searching")}</p>
                   </div>
                 </div>
               ) : nearbyVibers.length === 0 ? (
@@ -339,8 +341,8 @@ export default function Vibing() {
                   >
                     <Radio className="w-12 h-12 text-white/20 mb-4" />
                   </motion.div>
-                  <p className="text-white/40 text-sm text-center mb-1">Nessuno sta vibando nelle vicinanze</p>
-                  <p className="text-white/25 text-xs text-center">Resta online, qualcuno potrebbe unirsi!</p>
+                  <p className="text-white/40 text-sm text-center mb-1">{t("vibing.noOneNearby")}</p>
+                  <p className="text-white/25 text-xs text-center">{t("vibing.stayOnline")}</p>
                 </motion.div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">

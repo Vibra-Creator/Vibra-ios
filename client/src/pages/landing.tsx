@@ -5,6 +5,8 @@ import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Landing() {
@@ -12,6 +14,7 @@ export default function Landing() {
   const [videoPlaying, setVideoPlaying] = useState(false);
   const { enterGuestMode } = useGuest();
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const video = videoRef.current;
@@ -35,23 +38,24 @@ export default function Landing() {
       document.removeEventListener("click", handleClick);
     };
   }, []);
+
   const features = [
     {
       icon: Sparkles,
-      title: "Swipe & Match",
-      description: "Scorri i profili e trova chi vibra con te. Un like reciproco crea una connessione speciale.",
+      title: t("landing.feature1.title"),
+      description: t("landing.feature1.desc"),
       color: "from-purple-500 to-pink-500"
     },
     {
       icon: MessageCircle,
-      title: "Chat Sicura",
-      description: "Chatta con chi hai matchato e crea legami autentici in un ambiente protetto.",
+      title: t("landing.feature2.title"),
+      description: t("landing.feature2.desc"),
       color: "from-cyan-500 to-blue-500"
     },
     {
       icon: ShieldCheck,
-      title: "Profili Verificati",
-      description: "Ogni profilo è verificato. Vibra è uno spazio sicuro dove puoi essere te stesso.",
+      title: t("landing.feature3.title"),
+      description: t("landing.feature3.desc"),
       color: "from-green-500 to-emerald-500"
     }
   ];
@@ -95,17 +99,20 @@ export default function Landing() {
             <img src={vibraLogo} alt="Vibra" className="w-10 h-10 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
           </div>
           
-          <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
-            <a href="#features" className="hover:text-white transition-colors">Funzionalità</a>
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Termini</Link>
-          </nav>
+          <div className="flex items-center gap-4">
+            <LanguageSelector />
+            <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
+              <a href="#features" className="hover:text-white transition-colors">{t("landing.features")}</a>
+              <Link href="/privacy" className="hover:text-white transition-colors">{t("landing.privacy")}</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">{t("landing.termsNav")}</Link>
+            </nav>
 
-          <Link href="/login">
-            <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-login-header">
-              Accedi
-            </Button>
-          </Link>
+            <Link href="/login">
+              <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-login-header">
+                {t("landing.login")}
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -120,22 +127,18 @@ export default function Landing() {
               <img src={vibraLogo} alt="Vibra" className="w-36 h-36 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-hero" />
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-              L'app di incontri che ti fa{" "}
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                vibrare
-              </span>{" "}
-              di emozione
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6" data-testid="text-hero-title">
+              {t("landing.hero")}
             </h1>
             
             <p className="text-xl text-white/70 max-w-2xl mx-auto mb-10">
-              Connettiti con chi vibra come te. Scopri profili autentici, chatta in sicurezza e trova la tua connessione speciale.
+              {t("landing.subtitle")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register">
                 <Button size="lg" className="h-14 px-8 text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-get-started">
-                  Inizia Ora
+                  {t("landing.cta")}
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
@@ -151,18 +154,18 @@ export default function Landing() {
                 data-testid="button-guest-explore"
               >
                 <Eye className="w-5 h-5 mr-2" />
-                Esplora senza account
+                {t("landing.explore")}
               </Button>
             </div>
 
             <div className="mt-8 flex items-center justify-center gap-8 text-base text-white/70 flex-wrap">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-green-500" />
-                <span>Free per un periodo di 30 giorni</span>
+                <span>{t("landing.free")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Heart className="w-5 h-5 text-pink-500" />
-                <span>Nessun costo nascosto</span>
+                <span>{t("landing.noCost")}</span>
               </div>
             </div>
 
@@ -170,7 +173,7 @@ export default function Landing() {
               <Link href="/login?admin=true">
                 <Button variant="outline" className="gap-2 text-white/70 border-white/20 backdrop-blur-sm" data-testid="button-admin-access">
                   <Shield className="w-4 h-4" />
-                  Accesso Admin
+                  {t("landing.adminAccess")}
                 </Button>
               </Link>
             </div>
@@ -185,17 +188,17 @@ export default function Landing() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Come Funziona Vibra
+              {t("landing.howItWorks")}
             </h2>
             <p className="text-lg text-white/60">
-              Semplice, sicuro, autentico
+              {t("landing.howItWorksDesc")}
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
-                key={feature.title}
+                key={index}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -226,14 +229,14 @@ export default function Landing() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              Pronto a Vibrare?
+              {t("landing.readyTitle")}
             </h2>
             <p className="text-lg text-white/60 mb-8">
-              Unisciti a migliaia di persone che hanno già trovato la loro connessione su Vibra
+              {t("landing.readyDesc")}
             </p>
             <Link href="/register">
               <Button size="lg" className="h-14 px-10 text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-join-now">
-                Entra in Vibrazione
+                {t("landing.readyCta")}
                 <Heart className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -246,14 +249,14 @@ export default function Landing() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Heart className="w-4 h-4 text-pink-500" />
-              <span>© 2026 Vibra. Tutti i diritti riservati.</span>
+              <span>{t("landing.footerRights")}</span>
             </div>
             <div className="flex items-center gap-6">
               <Link href="/privacy" className="hover:text-foreground transition-colors">
-                Privacy Policy
+                {t("landing.footerPrivacy")}
               </Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">
-                Termini di Servizio
+                {t("landing.footerTerms")}
               </Link>
             </div>
           </div>

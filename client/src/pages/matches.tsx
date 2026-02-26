@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Link } from "wouter";
 import type { Profile, Match } from "@shared/schema";
 
@@ -20,6 +21,7 @@ export default function Matches() {
   const { user } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
+  const { t } = useLanguage();
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -53,9 +55,9 @@ export default function Matches() {
             <Heart className="w-5 h-5 text-white fill-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">I Tuoi Match</h1>
+            <h1 className="text-2xl font-bold text-white">{t("matches.title")}</h1>
             <p className="text-sm text-white/60">
-              {isGuest ? "Registrati per vedere i match" : `${matches?.length || 0} connessioni cosmiche`}
+              {isGuest ? t("matches.registerPrompt") : `${matches?.length || 0} ${t("matches.cosmicConnections")}`}
             </p>
           </div>
         </div>
@@ -71,14 +73,14 @@ export default function Matches() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent/30 to-primary/30 flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-accent" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">Qui vedrai i tuoi match quando ti registrerai!</h3>
+          <h3 className="text-lg font-bold text-white mb-2">{t("matches.guestTitle")}</h3>
           <p className="text-white/60 text-sm mb-6">
-            Crea un account gratuito per iniziare a trovare le tue connessioni cosmiche e chattare con loro.
+            {t("matches.guestDesc")}
           </p>
           <Link href="/register">
             <Button className="w-full bg-gradient-to-r from-primary to-accent" data-testid="button-guest-register-matches">
               <UserPlus className="w-4 h-4 mr-2" />
-              Registrati Gratis
+              {t("matches.guestCta")}
             </Button>
           </Link>
         </motion.div>

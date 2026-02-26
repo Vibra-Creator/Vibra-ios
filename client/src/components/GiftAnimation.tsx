@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Heart, Sparkles } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { VirtualGift } from "@shared/schema";
 
 const giftIcons: Record<string, typeof Star> = {
@@ -38,6 +39,7 @@ function Particle({ color, delay, x, y }: { color: string; delay: number; x: num
 
 export default function GiftAnimation({ gift, senderName, message, onComplete }: GiftAnimationProps) {
   const [show, setShow] = useState(true);
+  const { t } = useLanguage();
   const IconComponent = giftIcons[gift.icon] || Star;
 
   useEffect(() => {
@@ -109,7 +111,7 @@ export default function GiftAnimation({ gift, senderName, message, onComplete }:
                 {gift.name}
               </h3>
               <p className="text-white/70 text-sm">
-                Da <span className="text-white font-medium">{senderName}</span>
+                {t("gift.from")} <span className="text-white font-medium">{senderName}</span>
               </p>
               {message && (
                 <motion.p
@@ -129,7 +131,7 @@ export default function GiftAnimation({ gift, senderName, message, onComplete }:
               transition={{ delay: 2 }}
               className="mt-6 text-white/40 text-xs"
             >
-              Tocca per chiudere
+              {t("gift.tapToClose")}
             </motion.p>
           </motion.div>
         </motion.div>

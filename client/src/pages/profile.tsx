@@ -33,6 +33,7 @@ import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile, Match, SentGift, VirtualGift } from "@shared/schema";
 
 function ProfileSkeleton() {
@@ -51,6 +52,7 @@ function ProfileSkeleton() {
 
 function CreateProfilePrompt() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   return (
     <div className="flex-1 flex items-center justify-center p-4">
@@ -63,9 +65,9 @@ function CreateProfilePrompt() {
              style={{ boxShadow: "var(--glow-primary)" }}>
           <Sparkles className="w-12 h-12 text-white" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Crea il Tuo Profilo</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{t("profile.createTitle")}</h2>
         <p className="text-white/60 mb-6">
-          Unisciti alla comunità galattica e inizia a trovare le tue connessioni cosmiche!
+          {t("profile.createDesc")}
         </p>
         <Button 
           size="lg" 
@@ -74,7 +76,7 @@ function CreateProfilePrompt() {
           data-testid="button-create-profile"
         >
           <Plus className="w-5 h-5 mr-2" />
-          Crea Profilo
+          {t("profile.createBtn")}
         </Button>
       </motion.div>
     </div>
@@ -90,6 +92,7 @@ const ProfileBackground = () => (
 
 function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const toggleMutation = useMutation({
     mutationFn: async () => {
@@ -100,14 +103,14 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({
-        title: profile.ratingEnabled ? "Prima Impressione disattivata" : "Sei in gioco!",
+        title: profile.ratingEnabled ? t("profile.piDeactivated") : t("profile.piActivated"),
         description: profile.ratingEnabled
-          ? "Non riceverai più voti sulla tua card."
-          : "Ora gli altri potranno votarti e scriverti il primo messaggio!",
+          ? t("profile.piDeactivatedDesc")
+          : t("profile.piActivatedDesc"),
       });
     },
     onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile aggiornare l'impostazione.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("profile.piUpdateError"), variant: "destructive" });
     },
   });
 
@@ -131,12 +134,12 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className={`font-extrabold text-xl tracking-wide mb-1 transition-colors drop-shadow-lg ${profile.ratingEnabled ? "text-white" : "text-white/90"}`}>
-            Prima Impressione
+            {t("profile.primaImpressione")}
           </p>
           <p className={`text-sm leading-relaxed font-semibold ${profile.ratingEnabled ? "text-white/90" : "text-white/70"}`}>
             {profile.ratingEnabled
-              ? "Sei in gioco! Gli altri possono votarti e iniziare a chattare con te"
-              : "Mettiti in gioco! Attiva e scopri cosa pensano gli altri di te. Chi ti vota potrà scriverti"}
+              ? t("profile.piEnabled")
+              : t("profile.piDisabled")}
           </p>
         </div>
         <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${
@@ -150,7 +153,7 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
       {profile.ratingEnabled && (
         <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-sm text-green-400 font-semibold">Attivo</span>
+          <span className="text-sm text-green-400 font-semibold">{t("profile.active")}</span>
         </div>
       )}
     </button>
@@ -159,18 +162,19 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
 
 function ReferralSection() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { data: referralData, isLoading } = useQuery<{ code: string; referrals: number; paidReferrals: number }>({
     queryKey: ["/api/referral/my-code"],
   });
 
   const shareCode = () => {
     const code = referralData?.code || "";
-    const shareText = `Unisciti a Vibra! Usa il mio codice invito: ${code}\nhttps://vibraalienmatch.com/register`;
+    const shareText = `${t("profile.inviteFriends")}! ${code}\nhttps://vibraalienmatch.com/register`;
     if (navigator.share) {
-      navigator.share({ title: "Vibra - Codice Invito", text: shareText }).catch(() => {});
+      navigator.share({ title: t("profile.inviteShareTitle"), text: shareText }).catch(() => {});
     } else {
       navigator.clipboard.writeText(shareText);
-      toast({ title: "Copiato!", description: "Il tuo codice invito è stato copiato negli appunti" });
+      toast({ title: t("profile.copied"), description: t("profile.copiedDesc") });
     }
   };
 
@@ -184,28 +188,28 @@ function ReferralSection() {
           <UserPlus className="w-6 h-6 text-primary" />
         </div>
         <div className="flex-1">
-          <p className="font-bold text-white text-lg">Invita Amici</p>
-          <p className="text-xs text-white/60">Condividi il tuo codice e guadagna ricompense</p>
+          <p className="font-bold text-white text-lg">{t("profile.inviteFriends")}</p>
+          <p className="text-xs text-white/60">{t("profile.inviteDesc")}</p>
         </div>
       </div>
       <div className="bg-black/40 rounded-lg p-3 mb-3 flex items-center justify-between">
         <div>
-          <p className="text-[10px] text-white/40 uppercase tracking-wider">Il tuo codice</p>
+          <p className="text-[10px] text-white/40 uppercase tracking-wider">{t("profile.yourCode")}</p>
           <p className="text-xl font-bold text-white tracking-widest" data-testid="text-referral-code">{referralData.code}</p>
         </div>
         <Button size="sm" variant="outline" className="text-white border-white/30" onClick={shareCode} data-testid="button-share-referral">
           <Gift className="w-4 h-4 mr-1" />
-          Condividi
+          {t("profile.share")}
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-white/5 rounded-lg p-2 text-center">
           <p className="text-2xl font-bold text-white" data-testid="text-referral-count">{referralData.referrals}</p>
-          <p className="text-[10px] text-white/50">Amici Invitati</p>
+          <p className="text-[10px] text-white/50">{t("profile.friendsInvited")}</p>
         </div>
         <div className="bg-white/5 rounded-lg p-2 text-center">
           <p className="text-2xl font-bold text-white" data-testid="text-referral-paid">{referralData.paidReferrals}</p>
-          <p className="text-[10px] text-white/50">Abbonati</p>
+          <p className="text-[10px] text-white/50">{t("profile.subscribers")}</p>
         </div>
       </div>
     </div>
@@ -220,6 +224,7 @@ function ChangePasswordDialog() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const changeMutation = useMutation({
     mutationFn: async () => {
@@ -230,28 +235,28 @@ function ChangePasswordDialog() {
       return (res as Response).json();
     },
     onSuccess: () => {
-      toast({ title: "Password aggiornata!", description: "La tua password è stata cambiata con successo." });
+      toast({ title: t("profile.passwordUpdated"), description: t("profile.passwordUpdatedDesc") });
       setOpen(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     },
     onError: (err: any) => {
-      toast({ title: "Errore", description: err.message || "Non è stato possibile cambiare la password.", variant: "destructive" });
+      toast({ title: t("common.error"), description: err.message || t("profile.passwordError"), variant: "destructive" });
     },
   });
 
   const handleSubmit = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast({ title: "Campi mancanti", description: "Compila tutti i campi.", variant: "destructive" });
+      toast({ title: t("profile.missingFields"), description: t("profile.fillAllFields"), variant: "destructive" });
       return;
     }
     if (newPassword.length < 8) {
-      toast({ title: "Password troppo corta", description: "La nuova password deve avere almeno 8 caratteri.", variant: "destructive" });
+      toast({ title: t("profile.passwordTooShort"), description: t("profile.passwordTooShortDesc"), variant: "destructive" });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast({ title: "Le password non corrispondono", description: "Controlla che le due password siano uguali.", variant: "destructive" });
+      toast({ title: t("profile.passwordMismatch"), description: t("profile.passwordMismatchDesc"), variant: "destructive" });
       return;
     }
     changeMutation.mutate();
@@ -266,25 +271,25 @@ function ChangePasswordDialog() {
           data-testid="button-change-password"
         >
           <Lock className="w-5 h-5" />
-          Cambia Password
+          {t("profile.changePassword")}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-border">
         <DialogHeader>
-          <DialogTitle>Cambia Password</DialogTitle>
+          <DialogTitle>{t("profile.changePassword")}</DialogTitle>
           <DialogDescription>
-            Inserisci la tua password attuale e scegli una nuova password.
+            {t("profile.changePasswordDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Password Attuale</label>
+            <label className="text-sm font-medium">{t("profile.currentPassword")}</label>
             <div className="relative">
               <Input
                 type={showCurrent ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="La tua password attuale"
+                placeholder={t("profile.currentPasswordPlaceholder")}
                 data-testid="input-current-password"
               />
               <button
@@ -298,13 +303,13 @@ function ChangePasswordDialog() {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Nuova Password</label>
+            <label className="text-sm font-medium">{t("profile.newPassword")}</label>
             <div className="relative">
               <Input
                 type={showNew ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Minimo 8 caratteri"
+                placeholder={t("profile.newPasswordHint")}
                 data-testid="input-new-password"
               />
               <button
@@ -318,26 +323,26 @@ function ChangePasswordDialog() {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Conferma Nuova Password</label>
+            <label className="text-sm font-medium">{t("profile.confirmNewPassword")}</label>
             <Input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Ripeti la nuova password"
+              placeholder={t("profile.confirmNewPasswordPlaceholder")}
               data-testid="input-confirm-password"
             />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel-password">
-            Annulla
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={changeMutation.isPending}
             data-testid="button-submit-password"
           >
-            {changeMutation.isPending ? "Aggiornamento..." : "Cambia Password"}
+            {changeMutation.isPending ? t("profile.updating") : t("profile.changePassword")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -351,6 +356,7 @@ export default function ProfilePage() {
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   if (isGuest) {
@@ -367,20 +373,20 @@ export default function ProfilePage() {
                  style={{ boxShadow: "var(--glow-primary)" }}>
               <User className="w-12 h-12 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2" data-testid="text-guest-profile-title">Crea il Tuo Profilo</h2>
+            <h2 className="text-2xl font-bold text-white mb-2" data-testid="text-guest-profile-title">{t("profile.createTitle")}</h2>
             <p className="text-white/60 mb-6" data-testid="text-guest-profile-description">
-              Crea il tuo profilo per personalizzare la tua esperienza. Mostra chi sei, i tuoi interessi e trova le tue connessioni cosmiche!
+              {t("profile.guestCreateDesc")}
             </p>
             <div className="flex flex-col gap-3">
               <Link href="/register">
                 <Button className="w-full bg-gradient-to-r from-primary to-accent" data-testid="button-guest-register-profile">
                   <UserPlus className="w-5 h-5 mr-2" />
-                  Registrati Gratis
+                  {t("profile.registerFree")}
                 </Button>
               </Link>
               <Link href="/login">
                 <Button variant="outline" className="w-full" data-testid="button-guest-login-profile">
-                  Ho già un account
+                  {t("profile.haveAccount")}
                 </Button>
               </Link>
             </div>
@@ -397,12 +403,12 @@ export default function ProfilePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      toast({ title: "Profilo eliminato", description: "Il tuo profilo e tutti i dati associati sono stati cancellati." });
+      toast({ title: t("profile.profileDeleted"), description: t("profile.profileDeletedDesc") });
       setIsDeleteOpen(false);
       setLocation("/profile/edit");
     },
     onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile eliminare il profilo.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("profile.profileDeleteError"), variant: "destructive" });
     },
   });
 
@@ -412,11 +418,11 @@ export default function ProfilePage() {
       return await apiRequest("DELETE", "/api/profiles/me?deleteAccount=true");
     },
     onSuccess: () => {
-      toast({ title: "Account eliminato", description: "Il tuo account e tutti i dati sono stati eliminati." });
+      toast({ title: t("profile.accountDeleted"), description: t("profile.accountDeletedDesc") });
       window.location.href = "/login";
     },
     onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile eliminare l'account.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("profile.accountDeleteError"), variant: "destructive" });
     },
   });
 
@@ -434,9 +440,9 @@ export default function ProfilePage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: "Download completato", description: "I tuoi dati sono stati scaricati." });
+      toast({ title: t("profile.downloadComplete"), description: t("profile.downloadCompleteDesc") });
     } catch {
-      toast({ title: "Errore", description: "Impossibile scaricare i dati.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("profile.downloadError"), variant: "destructive" });
     }
   };
 
@@ -458,9 +464,9 @@ export default function ProfilePage() {
   });
 
   const stats = [
-    { icon: Heart, label: "Match", value: String(matchesData?.length ?? 0), color: "text-accent" },
-    { icon: Coins, label: "Punti", value: String(profile?.points ?? 0), color: "text-yellow-400" },
-    { icon: Gift, label: "Regali", value: String(receivedGiftsData?.length ?? 0), color: "text-primary" },
+    { icon: Heart, label: t("profile.match"), value: String(matchesData?.length ?? 0), color: "text-accent" },
+    { icon: Coins, label: t("profile.points"), value: String(profile?.points ?? 0), color: "text-yellow-400" },
+    { icon: Gift, label: t("profile.gifts"), value: String(receivedGiftsData?.length ?? 0), color: "text-primary" },
   ];
 
   if (isLoading) {
@@ -568,7 +574,7 @@ export default function ProfilePage() {
           <div>
             <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
               <User className="w-4 h-4 text-primary" />
-              Bio
+              {t("profile.bio")}
             </h3>
             <p className="text-white/60 text-sm" data-testid="user-profile-bio">
               {profile.bio}
@@ -578,7 +584,7 @@ export default function ProfilePage() {
           <div>
             <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
               <Sparkles className="w-4 h-4 text-secondary" />
-              Interessi
+              {t("profile.interests")}
             </h3>
             <div className="flex flex-wrap gap-2">
               {profile.interests.map((interest, idx) => (
@@ -606,7 +612,7 @@ export default function ProfilePage() {
             data-testid="button-edit-full-profile"
           >
             <Edit2 className="w-5 h-5" />
-            Modifica Profilo
+            {t("profile.editProfile")}
           </Button>
           <Button 
             variant="outline" 
@@ -615,7 +621,7 @@ export default function ProfilePage() {
             data-testid="button-guide"
           >
             <HelpCircle className="w-5 h-5" />
-            Guida alle Funzioni
+            {t("profile.guide")}
           </Button>
           <Button 
             variant="outline" 
@@ -624,7 +630,7 @@ export default function ProfilePage() {
             data-testid="button-settings"
           >
             <Settings className="w-5 h-5" />
-            Impostazioni
+            {t("profile.settings")}
           </Button>
           <ChangePasswordDialog />
           <Button 
@@ -635,7 +641,7 @@ export default function ProfilePage() {
             data-testid="button-logout"
           >
             <LogOut className="w-5 h-5" />
-            {isLoggingOut ? "Uscita..." : "Esci"}
+            {isLoggingOut ? t("profile.loggingOut") : t("profile.logout")}
           </Button>
 
           <Button 
@@ -645,7 +651,7 @@ export default function ProfilePage() {
             data-testid="button-export-data"
           >
             <Download className="w-5 h-5" />
-            Scarica i Miei Dati (GDPR)
+            {t("profile.exportData")}
           </Button>
 
           <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
@@ -656,25 +662,25 @@ export default function ProfilePage() {
                 data-testid="button-delete-profile"
               >
                 <Trash2 className="w-5 h-5" />
-                Elimina Profilo
+                {t("profile.deleteProfile")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
               <AlertDialogHeader>
-                <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
+                <AlertDialogTitle>{t("profile.deleteProfileTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Questa azione è irreversibile. Il tuo profilo, i match, i messaggi, le stanze private e tutti i dati associati verranno eliminati definitivamente.
+                  {t("profile.deleteProfileDesc")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel data-testid="button-cancel-delete">Annulla</AlertDialogCancel>
+                <AlertDialogCancel data-testid="button-cancel-delete">{t("profile.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => deleteProfileMutation.mutate()}
                   disabled={deleteProfileMutation.isPending}
                   data-testid="button-confirm-delete"
                 >
-                  {deleteProfileMutation.isPending ? "Eliminazione..." : "Elimina Profilo"}
+                  {deleteProfileMutation.isPending ? t("profile.deleting") : t("profile.deleteProfile")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -688,25 +694,25 @@ export default function ProfilePage() {
                 data-testid="button-delete-account"
               >
                 <X className="w-5 h-5" />
-                Elimina Account Completo
+                {t("profile.deleteAccountComplete")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-border">
               <AlertDialogHeader>
-                <AlertDialogTitle>Eliminare l'account?</AlertDialogTitle>
+                <AlertDialogTitle>{t("profile.deleteAccountTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Questa azione eliminerà PERMANENTEMENTE il tuo account, profilo, tutti i match, messaggi, stanze, e ogni dato associato. Non potrai più accedere con queste credenziali.
+                  {t("profile.deleteAccountDesc")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel data-testid="button-cancel-account-delete">Annulla</AlertDialogCancel>
+                <AlertDialogCancel data-testid="button-cancel-account-delete">{t("profile.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={() => deleteAccountMutation.mutate()}
                   disabled={deleteAccountMutation.isPending}
                   data-testid="button-confirm-account-delete"
                 >
-                  {deleteAccountMutation.isPending ? "Eliminazione..." : "Elimina Account"}
+                  {deleteAccountMutation.isPending ? t("profile.deleting") : t("profile.deleteAccountBtn")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

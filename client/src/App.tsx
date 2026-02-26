@@ -33,6 +33,7 @@ import Onboarding from "@/pages/onboarding";
 import ForgotPassword from "@/pages/forgot-password";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
+import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { ViewportSelector } from "@/components/ViewportSelector";
 import { AlertTriangle, RefreshCw } from "lucide-react";
@@ -185,11 +186,12 @@ const pagesWithOwnBackground = ["/login", "/register", "/forgot-password", "/", 
 function GuestBanner() {
   const { exitGuestMode } = useGuest();
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   return (
     <div className="sticky top-0 z-50 w-full bg-gradient-to-r from-primary/90 to-accent/90 backdrop-blur-sm px-4 py-2 flex items-center justify-between gap-2" data-testid="guest-banner">
       <span className="text-xs text-white font-medium truncate">
-        Modalità Ospite — solo visualizzazione
+        {t("guest.banner")}
       </span>
       <Button
         size="sm"
@@ -202,7 +204,7 @@ function GuestBanner() {
         }}
         data-testid="button-guest-register-banner"
       >
-        Registrati
+        {t("guest.registerBtn")}
       </Button>
     </div>
   );
@@ -305,20 +307,22 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <GuestProvider>
-            {showSplash ? (
-              <SplashScreen onComplete={handleSplashComplete} />
-            ) : (
-              <ViewportSelector>
-                <AppContent />
-                <Toaster />
-              </ViewportSelector>
-            )}
-          </GuestProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <LanguageProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <GuestProvider>
+              {showSplash ? (
+                <SplashScreen onComplete={handleSplashComplete} />
+              ) : (
+                <ViewportSelector>
+                  <AppContent />
+                  <Toaster />
+                </ViewportSelector>
+              )}
+            </GuestProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

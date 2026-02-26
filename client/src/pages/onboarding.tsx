@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n/LanguageContext";
 import {
   Heart,
   MessageCircle,
@@ -20,90 +21,39 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-const features = [
-  {
-    icon: Heart,
-    title: "Scorri i Profili",
-    description: "Scorri a destra per mettere Like, a sinistra per passare. Se piaci anche tu, nasce un Match!",
-    color: "text-pink-400",
-    bg: "bg-pink-500/20",
-  },
-  {
-    icon: MessageCircle,
-    title: "Chat con i Match",
-    description: "Quando fai Match con qualcuno, potete chattare in privato. I bot rispondono automaticamente!",
-    color: "text-cyan-400",
-    bg: "bg-cyan-500/20",
-  },
-  {
-    icon: Users,
-    title: "Stanze Pubbliche",
-    description: "Entra nelle stanze tematiche per chattare con tutti gli utenti che condividono i tuoi interessi.",
-    color: "text-blue-400",
-    bg: "bg-blue-500/20",
-  },
-  {
-    icon: Lock,
-    title: "Stanze Private",
-    description: "Crea la tua stanza esclusiva (costa 45 punti). Solo chi approvi puo' entrare. Dura 12 ore.",
-    color: "text-purple-400",
-    bg: "bg-purple-500/20",
-  },
-  {
-    icon: Camera,
-    title: "Sfide Giornaliere",
-    description: "Completa le sfide fotografiche per guadagnare punti. Scatta, carica e attendi l'approvazione!",
-    color: "text-amber-400",
-    bg: "bg-amber-500/20",
-  },
-  {
-    icon: Gift,
-    title: "Regali Virtuali",
-    description: "Spendi i tuoi punti per inviare regali animati agli utenti che ti piacciono. Un gesto speciale!",
-    color: "text-rose-400",
-    bg: "bg-rose-500/20",
-  },
-  {
-    icon: Star,
-    title: "Prima Impressione",
-    description: "Attiva l'opzione nel profilo per ricevere voti da 1 a 10. Rispondi ai voti per creare un Match!",
-    color: "text-yellow-400",
-    bg: "bg-yellow-500/20",
-  },
-  {
-    icon: Zap,
-    title: "Sto Vibing Ora",
-    description: "Attivalo per 30 minuti e scopri chi e' attivo vicino a te (1-10 km). Connessioni in tempo reale!",
-    color: "text-green-400",
-    bg: "bg-green-500/20",
-  },
-  {
-    icon: MapPin,
-    title: "Mostra Dove Sei",
-    description: "Condividi la tua posizione con i tuoi Match. Loro vedono dove sei sulla mappa, tu controlli chi vede.",
-    color: "text-orange-400",
-    bg: "bg-orange-500/20",
-  },
-  {
-    icon: UserCheck,
-    title: "Il Tuo Profilo",
-    description: "Personalizza tutto: foto, bio, interessi, segno zodiacale, lingue e molto altro. Fatti notare!",
-    color: "text-teal-400",
-    bg: "bg-teal-500/20",
-  },
+const featureIcons = [Heart, MessageCircle, Users, Lock, Camera, Gift, Star, Zap, MapPin, UserCheck];
+const featureColors = [
+  { color: "text-pink-400", bg: "bg-pink-500/20" },
+  { color: "text-cyan-400", bg: "bg-cyan-500/20" },
+  { color: "text-blue-400", bg: "bg-blue-500/20" },
+  { color: "text-purple-400", bg: "bg-purple-500/20" },
+  { color: "text-amber-400", bg: "bg-amber-500/20" },
+  { color: "text-rose-400", bg: "bg-rose-500/20" },
+  { color: "text-yellow-400", bg: "bg-yellow-500/20" },
+  { color: "text-green-400", bg: "bg-green-500/20" },
+  { color: "text-orange-400", bg: "bg-orange-500/20" },
+  { color: "text-teal-400", bg: "bg-teal-500/20" },
 ];
 
 const ITEMS_PER_PAGE = 4;
-const totalPages = Math.ceil(features.length / ITEMS_PER_PAGE);
+const totalPages = Math.ceil(featureIcons.length / ITEMS_PER_PAGE);
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [page, setPage] = useState(0);
+  const { t } = useLanguage();
 
   const { data: existingProfile } = useQuery<any>({
     queryKey: ["/api/profiles/me"],
   });
   const hasProfile = !!existingProfile;
+
+  const features = featureIcons.map((icon, i) => ({
+    icon,
+    title: t(`onboarding.feature${i + 1}Title`),
+    description: t(`onboarding.feature${i + 1}Desc`),
+    ...featureColors[i],
+  }));
 
   const currentFeatures = features.slice(
     page * ITEMS_PER_PAGE,
@@ -144,10 +94,10 @@ export default function Onboarding() {
             className="text-3xl font-bold text-white drop-shadow-lg"
             data-testid="text-onboarding-title"
           >
-            Benvenuto su Vibra
+            {t("onboarding.welcome")}
           </h1>
           <p className="text-white/80 mt-1 text-base drop-shadow-md">
-            Ecco tutto quello che puoi fare
+            {t("onboarding.welcomeDesc")}
           </p>
           <div className="flex justify-center gap-2 mt-3">
             {Array.from({ length: totalPages }).map((_, i) => (
@@ -209,7 +159,7 @@ export default function Onboarding() {
               data-testid="button-onboarding-prev"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
-              Indietro
+              {t("onboarding.back")}
             </Button>
           )}
 
@@ -223,7 +173,7 @@ export default function Onboarding() {
                 data-testid="button-onboarding-start"
               >
                 <Rocket className="w-4 h-4 mr-2" />
-                {hasProfile ? "Torna al Profilo" : "Crea il tuo Profilo"}
+                {hasProfile ? t("onboarding.backToProfile") : t("onboarding.createProfile")}
               </Button>
               <span className="text-white/40 text-[11px] italic" data-testid="text-created-by">
                 Created by Fabio Mattoni
@@ -235,7 +185,7 @@ export default function Onboarding() {
               className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6"
               data-testid="button-onboarding-next"
             >
-              Avanti
+              {t("onboarding.next")}
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           )}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useGuest } from "@/hooks/use-guest";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface GuestBlockerProps {
   show: boolean;
@@ -14,6 +15,7 @@ interface GuestBlockerProps {
 
 export function GuestBlocker({ show, onClose, action }: GuestBlockerProps) {
   const { exitGuestMode } = useGuest();
+  const { t } = useLanguage();
 
   return (
     <AnimatePresence>
@@ -39,13 +41,11 @@ export function GuestBlocker({ show, onClose, action }: GuestBlockerProps) {
             </div>
 
             <h3 className="text-lg font-bold text-foreground mb-2">
-              Funzione riservata agli iscritti
+              {t("guest.title")}
             </h3>
 
             <p className="text-sm text-muted-foreground mb-6">
-              {action
-                ? `Per ${action}, devi creare un account gratuito. Ci vogliono solo 30 secondi!`
-                : "Per interagire con gli altri utenti, devi creare un account gratuito. Ci vogliono solo 30 secondi!"}
+              {t("guest.desc")}
             </p>
 
             <div className="flex flex-col gap-3">
@@ -55,13 +55,13 @@ export function GuestBlocker({ show, onClose, action }: GuestBlockerProps) {
                   data-testid="button-guest-register"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Crea Account Gratuito
+                  {t("guest.createAccount")}
                 </Button>
               </Link>
 
               <Link href="/login" onClick={() => exitGuestMode()}>
                 <Button variant="outline" className="w-full" data-testid="button-guest-login">
-                  Ho già un account
+                  {t("guest.haveAccount")}
                 </Button>
               </Link>
 
@@ -71,7 +71,7 @@ export function GuestBlocker({ show, onClose, action }: GuestBlockerProps) {
                 onClick={onClose}
                 data-testid="button-guest-continue"
               >
-                Continua a esplorare
+                {t("guest.continueExploring")}
               </Button>
             </div>
           </motion.div>

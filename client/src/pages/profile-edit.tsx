@@ -54,54 +54,47 @@ import {
   worldCities,
   phonePrefixes,
 } from "@/lib/profile-options";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile } from "@shared/schema";
 
 const TOTAL_STEPS = 7;
 
-const stepTitles = [
-  "Info di Base",
-  "Aspetto Fisico",
-  "Preferenze Partner",
-  "Personalità e Stile",
-  "Cosa Cerchi",
-  "Lingue e Bio",
-  "Interessi",
-];
-
 
 const optionalNumField = z.union([z.literal(""), z.coerce.number()]).optional();
 
-const profileFormSchema = z.object({
-  name: z.string().min(2, "Il nome deve avere almeno 2 caratteri"),
-  age: z.coerce.number().min(18, "Devi avere almeno 18 anni").max(120, "Età massima 120"),
-  bio: z.string().max(500, "Massimo 500 caratteri").optional().or(z.literal("")),
-  location: z.string().optional().or(z.literal("")),
-  alienType: z.string().min(1, "Seleziona un tipo"),
-  imageUrl: z.string().min(1, "Seleziona un'immagine"),
-  gender: z.string().optional(),
-  preferredGender: z.string().optional(),
-  hairColor: z.string().optional(),
-  eyeColor: z.string().optional(),
-  bodyType: z.string().optional(),
-  height: optionalNumField,
-  preferredHeightMin: optionalNumField,
-  preferredHeightMax: optionalNumField,
-  preferredAgeMin: optionalNumField,
-  preferredAgeMax: optionalNumField,
-  education: z.string().optional(),
-  preferredEducation: z.string().optional(),
-  relationshipType: z.string().optional(),
-  wantsChildren: z.string().optional(),
-  zodiacSign: z.string().optional(),
-  loveLanguage: z.string().optional(),
-  communicationStyle: z.string().optional(),
-  lifestyle: z.string().optional(),
-  accessMotivation: z.string().optional(),
-  phonePrefix: z.string().optional().or(z.literal("")),
-  phoneNumber: z.string().max(15, "Numero troppo lungo").optional().or(z.literal("")),
-});
+function createProfileFormSchema(t: (key: string) => string) {
+  return z.object({
+    name: z.string().min(2, t("profileEdit.validationNameMin")),
+    age: z.coerce.number().min(18, t("profileEdit.validationAgeMin")).max(120, t("profileEdit.validationAgeMax")),
+    bio: z.string().max(500, t("profileEdit.validationBioMax")).optional().or(z.literal("")),
+    location: z.string().optional().or(z.literal("")),
+    alienType: z.string().min(1, t("profileEdit.selectType")),
+    imageUrl: z.string().min(1, t("profileEdit.selectImage")),
+    gender: z.string().optional(),
+    preferredGender: z.string().optional(),
+    hairColor: z.string().optional(),
+    eyeColor: z.string().optional(),
+    bodyType: z.string().optional(),
+    height: optionalNumField,
+    preferredHeightMin: optionalNumField,
+    preferredHeightMax: optionalNumField,
+    preferredAgeMin: optionalNumField,
+    preferredAgeMax: optionalNumField,
+    education: z.string().optional(),
+    preferredEducation: z.string().optional(),
+    relationshipType: z.string().optional(),
+    wantsChildren: z.string().optional(),
+    zodiacSign: z.string().optional(),
+    loveLanguage: z.string().optional(),
+    communicationStyle: z.string().optional(),
+    lifestyle: z.string().optional(),
+    accessMotivation: z.string().optional(),
+    phonePrefix: z.string().optional().or(z.literal("")),
+    phoneNumber: z.string().max(15, t("profileEdit.validationPhoneTooLong")).optional().or(z.literal("")),
+  });
+}
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type ProfileFormValues = z.infer<ReturnType<typeof createProfileFormSchema>>;
 
 function SelectField({ control, name, label, options, placeholder, testId }: {
   control: any;
@@ -111,6 +104,7 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
   placeholder?: string;
   testId: string;
 }) {
+  const { t } = useLanguage();
   return (
     <FormField
       control={control}
@@ -121,7 +115,7 @@ function SelectField({ control, name, label, options, placeholder, testId }: {
           <Select onValueChange={field.onChange} value={field.value || undefined}>
             <FormControl>
               <SelectTrigger className="bg-white/5 backdrop-blur-sm border-white/20 text-white [&>span[data-placeholder]]:text-white/90" data-testid={testId}>
-                <SelectValue placeholder={placeholder || "Seleziona"} />
+                <SelectValue placeholder={placeholder || t("profileEdit.select")} />
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-black/80 backdrop-blur-xl border-white/20">
@@ -161,7 +155,18 @@ export default function ProfileEdit() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
+
+  const stepTitles = [
+    t("profileEdit.step1"),
+    t("profileEdit.step2"),
+    t("profileEdit.step3"),
+    t("profileEdit.step4"),
+    t("profileEdit.step5"),
+    t("profileEdit.step6"),
+    t("profileEdit.step7"),
+  ];
   const [interests, setInterests] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [communicationStyles, setCommunicationStyles] = useState<string[]>([]);
@@ -184,7 +189,7 @@ export default function ProfileEdit() {
   });
 
   const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+    resolver: zodResolver(createProfileFormSchema(t)),
     defaultValues: {
       name: "",
       age: 25,
@@ -277,16 +282,16 @@ export default function ProfileEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
-      toast({ title: "Profilo Creato!", description: "Il tuo profilo è pronto per essere scoperto." });
+      toast({ title: t("profileEdit.profileCreated"), description: t("profileEdit.profileCreatedDesc") });
       setLocation("/");
     },
     onError: (error: any) => {
-      let msg = "Non è stato possibile creare il profilo.";
+      let msg = t("profileEdit.createError");
       try {
         const parsed = JSON.parse(error?.message?.split(": ").slice(1).join(": ") || "{}");
         if (parsed.error) msg = parsed.error;
       } catch {}
-      toast({ title: "Errore", description: msg, variant: "destructive" });
+      toast({ title: t("common.error"), description: msg, variant: "destructive" });
     },
   });
 
@@ -305,16 +310,16 @@ export default function ProfileEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
-      toast({ title: "Profilo Aggiornato!", description: "Le tue modifiche sono state salvate." });
+      toast({ title: t("profileEdit.profileUpdated"), description: t("profileEdit.profileUpdatedDesc") });
       setLocation("/profile");
     },
     onError: (error: any) => {
-      let msg = "Non è stato possibile aggiornare il profilo.";
+      let msg = t("profileEdit.updateError");
       try {
         const parsed = JSON.parse(error?.message?.split(": ").slice(1).join(": ") || "{}");
         if (parsed.error) msg = parsed.error;
       } catch {}
-      toast({ title: "Errore", description: msg, variant: "destructive" });
+      toast({ title: t("common.error"), description: msg, variant: "destructive" });
     },
   });
 
@@ -340,7 +345,7 @@ export default function ProfileEdit() {
     } else if (interests.length < 10) {
       setInterests([...interests, interest]);
     } else {
-      toast({ title: "Massimo 10 interessi", description: "Rimuovi un interesse prima di aggiungerne altri.", variant: "destructive" });
+      toast({ title: t("profileEdit.maxInterests"), description: t("profileEdit.maxInterestsDesc"), variant: "destructive" });
     }
   };
 
@@ -378,20 +383,20 @@ export default function ProfileEdit() {
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowedTypes.includes(file.type)) {
-      toast({ title: "Formato non supportato", description: "Usa JPG, PNG, WebP o GIF.", variant: "destructive" });
+      toast({ title: t("profileEdit.unsupportedFormat"), description: t("profileEdit.unsupportedFormatDesc"), variant: "destructive" });
       if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
 
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast({ title: "File troppo grande", description: `La foto deve essere massimo 5 MB. La tua è ${(file.size / (1024 * 1024)).toFixed(1)} MB.`, variant: "destructive" });
+      toast({ title: t("profileEdit.fileTooLarge"), description: `${(file.size / (1024 * 1024)).toFixed(1)} MB`, variant: "destructive" });
       if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
 
     if (uploadedPhotos.length >= 6) {
-      toast({ title: "Massimo 6 foto", description: "Rimuovi una foto prima di aggiungerne altre", variant: "destructive" });
+      toast({ title: t("profileEdit.maxPhotos"), description: t("profileEdit.maxPhotosDesc"), variant: "destructive" });
       return;
     }
 
@@ -411,10 +416,10 @@ export default function ProfileEdit() {
       const data = await response.json();
       setUploadedPhotos(data.photos);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      toast({ title: "Foto caricata!", description: "La tua foto è stata aggiunta al profilo." });
+      toast({ title: t("profileEdit.photoUploaded"), description: t("profileEdit.photoUploadedDesc") });
     } catch (err: any) {
-      const msg = err?.message || "Impossibile caricare la foto";
-      toast({ title: "Errore", description: msg, variant: "destructive" });
+      const msg = err?.message || t("profileEdit.uploadError");
+      toast({ title: t("common.error"), description: msg, variant: "destructive" });
     } finally {
       setIsUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = "";
@@ -434,7 +439,7 @@ export default function ProfileEdit() {
       setUploadedPhotos(data.photos);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
     } catch {
-      toast({ title: "Errore", description: "Impossibile rimuovere la foto", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("profileEdit.photoRemoveError"), variant: "destructive" });
     }
   };
 
@@ -449,9 +454,9 @@ export default function ProfileEdit() {
       if (!response.ok) throw new Error("Failed");
       form.setValue("imageUrl", photoUrl);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      toast({ title: "Foto profilo aggiornata!", description: "Questa foto è ora la tua immagine del profilo." });
+      toast({ title: t("profileEdit.profilePhotoUpdated"), description: t("profileEdit.profilePhotoUpdatedDesc") });
     } catch {
-      toast({ title: "Errore", description: "Impossibile impostare la foto del profilo", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("profileEdit.profilePhotoError"), variant: "destructive" });
     }
   };
 
@@ -464,7 +469,7 @@ export default function ProfileEdit() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-pulse text-white/60">Caricamento...</div>
+        <div className="animate-pulse text-white/60">{t("common.loading")}</div>
       </div>
     );
   }
@@ -505,7 +510,7 @@ export default function ProfileEdit() {
         </Button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-white" data-testid="text-step-title">
-            {existingProfile ? "Modifica Profilo" : "Crea il Tuo Profilo"}
+            {existingProfile ? t("profileEdit.title") : t("profileEdit.createProfile")}
           </h1>
           <p className="text-sm text-white/80" data-testid="text-step-subtitle">
             {stepTitles[step]} — {step + 1}/{TOTAL_STEPS}
@@ -520,7 +525,7 @@ export default function ProfileEdit() {
             data-testid="button-logout-from-create"
           >
             <LogOut className="w-4 h-4" />
-            Esci
+            {t("profileEdit.logout")}
           </Button>
         )}
       </div>
@@ -541,7 +546,7 @@ export default function ProfileEdit() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-xl font-semibold text-white">
                     <User className="w-5 h-5 text-primary" />
-                    Info di Base
+                    {t("profileEdit.step1")}
                   </div>
                     <FormField
                       control={form.control}
@@ -550,7 +555,7 @@ export default function ProfileEdit() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                             <Camera className="w-4 h-4" />
-                            Foto Profilo
+                            {t("profileEdit.profilePhoto")}
                           </FormLabel>
                           <FormControl>
                             <div className="grid grid-cols-5 gap-2">
@@ -579,7 +584,7 @@ export default function ProfileEdit() {
                     <div>
                       <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase mb-3">
                         <ImagePlus className="w-4 h-4" />
-                        Le Tue Foto ({uploadedPhotos.length}/6)
+                        {t("profileEdit.yourPhotos")} ({uploadedPhotos.length}/6)
                       </FormLabel>
                       <input
                         ref={photoInputRef}
@@ -605,7 +610,7 @@ export default function ProfileEdit() {
                               </button>
                               {isProfilePhoto ? (
                                 <div className="absolute bottom-0 left-0 right-0 bg-primary/80 py-0.5 text-center">
-                                  <span className="text-[10px] font-bold text-white">PROFILO</span>
+                                  <span className="text-[10px] font-bold text-white">{t("profileEdit.profileLabel")}</span>
                                 </div>
                               ) : (
                                 <button
@@ -633,7 +638,7 @@ export default function ProfileEdit() {
                             ) : (
                               <>
                                 <Camera className="w-6 h-6" />
-                                <span className="text-xs font-medium">Aggiungi</span>
+                                <span className="text-xs font-medium">{t("profileEdit.add")}</span>
                               </>
                             )}
                           </button>
@@ -647,9 +652,9 @@ export default function ProfileEdit() {
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Nome</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.name")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90 placeholder:text-sm" placeholder="Il tuo nome" {...field} data-testid="input-name" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90 placeholder:text-sm" placeholder={t("profileEdit.namePlaceholder")} {...field} data-testid="input-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -660,9 +665,9 @@ export default function ProfileEdit() {
                         name="age"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.age")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="La tua età (es. 25)" {...field} data-testid="input-age" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.agePlaceholder")} {...field} data-testid="input-age" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -671,8 +676,8 @@ export default function ProfileEdit() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <SelectField control={form.control} name="gender" label="Genere" options={genderOptions} placeholder="Il tuo genere" testId="select-gender" />
-                      <SelectField control={form.control} name="preferredGender" label="Cerco" options={preferredGenderOptions} placeholder="Chi ti attrae" testId="select-preferred-gender" />
+                      <SelectField control={form.control} name="gender" label={t("profileEdit.gender")} options={genderOptions} placeholder={t("profileEdit.genderPlaceholder")} testId="select-gender" />
+                      <SelectField control={form.control} name="preferredGender" label={t("profileEdit.lookingFor")} options={preferredGenderOptions} placeholder={t("profileEdit.lookingForPlaceholder")} testId="select-preferred-gender" />
                     </div>
 
                     <FormField
@@ -691,13 +696,13 @@ export default function ProfileEdit() {
                           <FormItem className="relative">
                             <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                               <MapPin className="w-4 h-4" />
-                              Città
+                              {t("profileEdit.city")}
                             </FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Input
                                   className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
-                                  placeholder="Cerca la tua città nel mondo..."
+                                  placeholder={t("profileEdit.cityPlaceholder")}
                                   value={citySearch}
                                   onChange={(e) => {
                                     setCitySearch(e.target.value);
@@ -745,7 +750,7 @@ export default function ProfileEdit() {
                     <div className="space-y-3">
                       <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                         <Compass className="w-4 h-4" />
-                        Distanza Massima
+                        {t("profileEdit.maxDistance")}
                       </FormLabel>
                       <div className="flex items-center gap-3">
                         <button
@@ -758,7 +763,7 @@ export default function ProfileEdit() {
                               : "bg-white/5 border-white/20 text-white/80 hover:border-white/40"
                           }`}
                         >
-                          {maxDistanceKm === 0 ? "🌍 Tutto il Mondo" : "🌍 Ovunque"}
+                          {maxDistanceKm === 0 ? t("profileEdit.worldwide") : t("profileEdit.anywhere")}
                         </button>
                         {maxDistanceKm > 0 && (
                           <>
@@ -777,15 +782,15 @@ export default function ProfileEdit() {
                       </div>
                       <p className="text-xs text-white/80">
                         {maxDistanceKm === 0
-                          ? "Nessun limite di distanza — vedrai profili da tutto il mondo"
-                          : "Mostra solo profili entro questo raggio dalla tua posizione"}
+                          ? t("profileEdit.noDistanceLimit")
+                          : t("profileEdit.distanceLimit")}
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <FormLabel className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase">
                         <Phone className="w-4 h-4" />
-                        Telefono
+                        {t("profileEdit.phone")}
                       </FormLabel>
                       <div className="flex gap-2">
                         <FormField
@@ -820,7 +825,7 @@ export default function ProfileEdit() {
                                 <Input
                                   className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
                                   type="tel"
-                                  placeholder="Numero di telefono"
+                                  placeholder={t("profileEdit.phonePlaceholder")}
                                   {...field}
                                   data-testid="input-phone-number"
                                 />
@@ -832,11 +837,11 @@ export default function ProfileEdit() {
                       </div>
                       <p className="text-xs text-amber-300/90 flex items-center gap-1 mt-1" data-testid="text-phone-privacy">
                         <Phone className="w-3 h-3 shrink-0" />
-                        Il numero non sara' visibile nel profilo. Usato solo per verifica interna. (Opzionale)
+                        {t("profileEdit.phonePrivacy")}
                       </p>
                     </div>
 
-                    <SelectField control={form.control} name="alienType" label="Tipo Cosmico" options={alienTypes} testId="select-alien-type" placeholder="La tua specie cosmica" />
+                    <SelectField control={form.control} name="alienType" label={t("profileEdit.cosmicType")} options={alienTypes} testId="select-alien-type" placeholder={t("profileEdit.cosmicTypePlaceholder")} />
                 </div>
               )}
 
@@ -844,23 +849,23 @@ export default function ProfileEdit() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-xl font-semibold text-white">
                     <Ruler className="w-5 h-5 text-accent" />
-                    Aspetto Fisico
+                    {t("profileEdit.step2")}
                   </div>
-                  <p className="text-white/90 text-sm">Descrivi il tuo aspetto fisico per trovare la tua anima gemella</p>
+                  <p className="text-white/90 text-sm">{t("profileEdit.appearanceDesc")}</p>
                     <div className="grid grid-cols-2 gap-4">
-                      <SelectField control={form.control} name="hairColor" label="Capelli" options={hairColorOptions} placeholder="Colore capelli" testId="select-hair-color" />
-                      <SelectField control={form.control} name="eyeColor" label="Occhi" options={eyeColorOptions} placeholder="Colore occhi" testId="select-eye-color" />
+                      <SelectField control={form.control} name="hairColor" label={t("profileEdit.hair")} options={hairColorOptions} placeholder={t("profileEdit.hairPlaceholder")} testId="select-hair-color" />
+                      <SelectField control={form.control} name="eyeColor" label={t("profileEdit.eyes")} options={eyeColorOptions} placeholder={t("profileEdit.eyesPlaceholder")} testId="select-eye-color" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <SelectField control={form.control} name="bodyType" label="Corporatura" options={bodyTypeOptions} placeholder="Il tuo fisico" testId="select-body-type" />
+                      <SelectField control={form.control} name="bodyType" label={t("profileEdit.bodyType")} options={bodyTypeOptions} placeholder={t("profileEdit.bodyTypePlaceholder")} testId="select-body-type" />
                       <FormField
                         control={form.control}
                         name="height"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Altezza (cm)</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.heightCm")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="La tua altezza (es. 175)" {...field} data-testid="input-height" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.heightPlaceholder")} {...field} data-testid="input-height" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -875,7 +880,7 @@ export default function ProfileEdit() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xl font-semibold text-white">
                       <Heart className="w-5 h-5 text-primary" />
-                      Preferenze Partner
+                      {t("profileEdit.step3")}
                     </div>
                     <Button
                       type="button"
@@ -894,10 +899,10 @@ export default function ProfileEdit() {
                         setProfileLatitude(null);
                         setProfileLongitude(null);
                         setLocationSharingEnabled(false);
-                        toast({ title: "Preferenze azzerate", description: "Tutte le preferenze di ricerca sono state rimosse." });
+                        toast({ title: t("profileEdit.prefsCleared"), description: t("profileEdit.prefsClearedDesc") });
                       }}
                     >
-                      Azzera Tutto
+                      {t("profileEdit.clearAll")}
                     </Button>
                   </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -906,9 +911,9 @@ export default function ProfileEdit() {
                         name="preferredAgeMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Min. Partner</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.partnerAgeMin")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Età minima (es. 18)" {...field} data-testid="input-age-min" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.ageMinPlaceholder")} {...field} data-testid="input-age-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -919,9 +924,9 @@ export default function ProfileEdit() {
                         name="preferredAgeMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Età Max. Partner</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.partnerAgeMax")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Età massima (es. 40)" {...field} data-testid="input-age-max" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.ageMaxPlaceholder")} {...field} data-testid="input-age-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -934,9 +939,9 @@ export default function ProfileEdit() {
                         name="preferredHeightMin"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Min. Partner</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.partnerHeightMin")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Altezza minima (es. 150)" {...field} data-testid="input-height-min" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.heightMinPlaceholder")} {...field} data-testid="input-height-min" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -947,17 +952,17 @@ export default function ProfileEdit() {
                         name="preferredHeightMax"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">Alt. Max. Partner</FormLabel>
+                            <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.partnerHeightMax")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder="Altezza massima (es. 190)" {...field} data-testid="input-height-max" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.heightMaxPlaceholder")} {...field} data-testid="input-height-max" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                    <SelectField control={form.control} name="education" label="Istruzione" options={educationOptions} placeholder="Il tuo livello di studi" testId="select-education" />
-                    <SelectField control={form.control} name="preferredEducation" label="Istruzione Preferita" options={preferredEducationOptions} placeholder="Studi del partner ideale" testId="select-preferred-education" />
+                    <SelectField control={form.control} name="education" label={t("profileEdit.education")} options={educationOptions} placeholder={t("profileEdit.educationPlaceholder")} testId="select-education" />
+                    <SelectField control={form.control} name="preferredEducation" label={t("profileEdit.preferredEducation")} options={preferredEducationOptions} placeholder={t("profileEdit.preferredEducationPlaceholder")} testId="select-preferred-education" />
                 </div>
               )}
 
@@ -965,12 +970,12 @@ export default function ProfileEdit() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-xl font-semibold text-white">
                     <Star className="w-5 h-5 text-accent" />
-                    Personalità e Stile
+                    {t("profileEdit.step4")}
                   </div>
-                    <SelectField control={form.control} name="zodiacSign" label="Segno Zodiacale" options={zodiacSignOptions} placeholder="Il tuo segno" testId="select-zodiac" />
-                    <SelectField control={form.control} name="loveLanguage" label="Come Esprimi il Tuo Amore" options={loveLanguageOptions} placeholder="Il tuo linguaggio d'amore" testId="select-love-language" />
+                    <SelectField control={form.control} name="zodiacSign" label={t("profileEdit.zodiac")} options={zodiacSignOptions} placeholder={t("profileEdit.zodiacPlaceholder")} testId="select-zodiac" />
+                    <SelectField control={form.control} name="loveLanguage" label={t("profileEdit.loveLanguage")} options={loveLanguageOptions} placeholder={t("profileEdit.loveLanguagePlaceholder")} testId="select-love-language" />
                     <div>
-                      <FormLabel className="mb-3 block text-white font-semibold text-sm tracking-wide uppercase">Come Preferisci Comunicare</FormLabel>
+                      <FormLabel className="mb-3 block text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.commPref")}</FormLabel>
                       <div className="flex flex-wrap gap-2">
                         {communicationStyleOptions.map((style) => (
                           <Badge
@@ -985,7 +990,7 @@ export default function ProfileEdit() {
                         ))}
                       </div>
                     </div>
-                    <SelectField control={form.control} name="lifestyle" label="Stile di Vita" options={lifestyleOptions} placeholder="Come vivi la vita" testId="select-lifestyle" />
+                    <SelectField control={form.control} name="lifestyle" label={t("profileEdit.lifestyle")} options={lifestyleOptions} placeholder={t("profileEdit.lifestylePlaceholder")} testId="select-lifestyle" />
                 </div>
               )}
 
@@ -993,15 +998,15 @@ export default function ProfileEdit() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-xl font-semibold text-white">
                     <Search className="w-5 h-5 text-primary" />
-                    Cosa Cerchi
+                    {t("profileEdit.step5")}
                   </div>
-                    <SelectField control={form.control} name="relationshipType" label="Tipo di Relazione" options={relationshipTypeOptions} placeholder="Cosa stai cercando" testId="select-relationship" />
-                    <SelectField control={form.control} name="wantsChildren" label="Figli" options={wantsChildrenOptions} placeholder="Il tuo desiderio" testId="select-children" />
-                    <SelectField control={form.control} name="accessMotivation" label="Perché Sei Qui" options={accessMotivationOptions} placeholder="La tua motivazione" testId="select-motivation" />
+                    <SelectField control={form.control} name="relationshipType" label={t("profileEdit.relationship")} options={relationshipTypeOptions} placeholder={t("profileEdit.relationshipPlaceholder")} testId="select-relationship" />
+                    <SelectField control={form.control} name="wantsChildren" label={t("profileEdit.children")} options={wantsChildrenOptions} placeholder={t("profileEdit.childrenPlaceholder")} testId="select-children" />
+                    <SelectField control={form.control} name="accessMotivation" label={t("profileEdit.whyHere")} options={accessMotivationOptions} placeholder={t("profileEdit.whyHerePlaceholder")} testId="select-motivation" />
 
                     <div className="mt-6 pt-4 border-t border-white/15">
-                      <p className="text-white font-semibold text-sm tracking-wide uppercase mb-3">Funzioni Extra</p>
-                      <p className="text-white/90 text-sm mb-4">Attiva o disattiva queste funzioni opzionali per personalizzare la tua esperienza</p>
+                      <p className="text-white font-semibold text-sm tracking-wide uppercase mb-3">{t("profileEdit.extraFeatures")}</p>
+                      <p className="text-white/90 text-sm mb-4">{t("profileEdit.extraFeaturesDesc")}</p>
                     </div>
 
                     <button
@@ -1022,10 +1027,10 @@ export default function ProfileEdit() {
                         </div>
                         <div className="flex-1 min-w-0 text-left">
                           <p className={`font-bold text-base mb-1 transition-colors ${ratingEnabled ? "text-white" : "text-white/80"}`}>
-                            Prima Impressione
+                            {t("profile.primaImpressione")}
                           </p>
                           <p className="text-white/90 text-sm leading-relaxed">
-                            Attiva per permettere agli altri di votarti da 1 a 5 sulla tua card. Vedrai tutti i voti ricevuti nella sezione dedicata "Prima Impressione".
+                            {t("profileEdit.piDesc")}
                           </p>
                         </div>
                         <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${
@@ -1039,7 +1044,7 @@ export default function ProfileEdit() {
                       {ratingEnabled && (
                         <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                          <span className="text-xs text-green-400 font-medium">Attivo - Gli altri vedranno il pulsante "Vota" sulla tua card</span>
+                          <span className="text-xs text-green-400 font-medium">{t("profileEdit.piActiveDesc")}</span>
                         </div>
                       )}
                     </button>
@@ -1062,10 +1067,10 @@ export default function ProfileEdit() {
                         </div>
                         <div className="flex-1 min-w-0 text-left">
                           <p className={`font-bold text-base mb-1 transition-colors ${locationSharingEnabled ? "text-white" : "text-white/80"}`}>
-                            Mostra Dove Sei
+                            {t("profileEdit.locationTitle")}
                           </p>
                           <p className="text-white/90 text-sm leading-relaxed">
-                            Condividi la tua posizione con i tuoi Match. Solo chi ha un match con te e ha attivato questa opzione potrà vedere dove ti trovi su una mappa.
+                            {t("profileEdit.showLocationDesc")}
                           </p>
                         </div>
                         <div className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 ${
@@ -1080,15 +1085,15 @@ export default function ProfileEdit() {
                         <div className="mt-3 pt-3 border-t border-white/10">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                            <span className="text-xs text-cyan-400 font-medium">Attivo - I tuoi match potranno vederti sulla mappa</span>
+                            <span className="text-xs text-cyan-400 font-medium">{t("profileEdit.locationActive")}</span>
                           </div>
                           <div className="bg-white/5 rounded-lg p-3 space-y-1">
-                            <p className="text-white/80 text-xs font-medium">Come funziona:</p>
-                            <p className="text-white/80 text-xs">1. Attiva questa opzione nel tuo profilo</p>
-                            <p className="text-white/80 text-xs">2. Vai nella sezione "Dove Sei" dal menu</p>
-                            <p className="text-white/80 text-xs">3. Tocca "Condividi Posizione" per iniziare</p>
-                            <p className="text-white/80 text-xs">4. Solo i tuoi match con questa opzione attiva vedranno la tua posizione</p>
-                            <p className="text-white/80 text-xs">5. Puoi interrompere la condivisione in qualsiasi momento</p>
+                            <p className="text-white/80 text-xs font-medium">{t("profileEdit.howItWorks")}</p>
+                            <p className="text-white/80 text-xs">{t("profileEdit.locationStep1")}</p>
+                            <p className="text-white/80 text-xs">{t("profileEdit.locationStep2")}</p>
+                            <p className="text-white/80 text-xs">{t("profileEdit.locationStep3")}</p>
+                            <p className="text-white/80 text-xs">{t("profileEdit.locationStep4")}</p>
+                            <p className="text-white/80 text-xs">{t("profileEdit.locationStep5")}</p>
                           </div>
                         </div>
                       )}
@@ -1100,11 +1105,11 @@ export default function ProfileEdit() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-xl font-semibold text-white">
                     <Languages className="w-5 h-5 text-secondary" />
-                    Lingue e Bio
+                    {t("profileEdit.step6")}
                   </div>
                     <div>
-                      <FormLabel className="mb-1 block text-white font-semibold text-sm tracking-wide uppercase">Lingue Parlate</FormLabel>
-                      <p className="text-white/90 text-sm mb-3">Seleziona tutte le lingue che parli per trovare persone compatibili</p>
+                      <FormLabel className="mb-1 block text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.spokenLanguages")}</FormLabel>
+                      <p className="text-white/90 text-sm mb-3">{t("profileEdit.spokenLanguagesDesc")}</p>
                       <div className="flex flex-wrap gap-2">
                         {languageOptions.map((lang) => (
                           <Badge
@@ -1125,10 +1130,10 @@ export default function ProfileEdit() {
                       name="bio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">La Tua Bio</FormLabel>
+                          <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.yourBio")}</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Racconta qualcosa di te..."
+                              placeholder={t("profileEdit.bioPlaceholder")}
                               className="resize-none min-h-[120px] bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
                               {...field}
                               data-testid="input-bio"
@@ -1148,10 +1153,10 @@ export default function ProfileEdit() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-xl font-semibold text-white">
                     <Sparkles className="w-5 h-5 text-accent" />
-                    Interessi
+                    {t("profileEdit.step7")}
                   </div>
                     <p className="text-sm text-white/90">
-                      Seleziona fino a 10 interessi che ti rappresentano ({interests.length}/10)
+                      {t("profileEdit.selectInterests")} ({interests.length}/10)
                     </p>
 
                     {interests.length > 0 && (
@@ -1174,7 +1179,7 @@ export default function ProfileEdit() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/80" />
                       <Input
-                        placeholder="Cerca interessi..."
+                        placeholder={t("profileEdit.searchInterests")}
                         value={interestSearch}
                         onChange={(e) => setInterestSearch(e.target.value)}
                         className="pl-9 bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90"
@@ -1218,7 +1223,7 @@ export default function ProfileEdit() {
                 data-testid="button-prev-step"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Indietro
+                {t("profileEdit.back")}
               </Button>
             ) : (
               <div />
@@ -1233,7 +1238,7 @@ export default function ProfileEdit() {
                   className="text-white/90"
                   data-testid="button-skip-step"
                 >
-                  Salta
+                  {t("profileEdit.skip")}
                 </Button>
               )}
 
@@ -1244,7 +1249,7 @@ export default function ProfileEdit() {
                   className="gap-2"
                   data-testid="button-next-step"
                 >
-                  Avanti
+                  {t("profileEdit.next")}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               ) : (
@@ -1258,7 +1263,7 @@ export default function ProfileEdit() {
                       onClick={() => { submitClickedRef.current = true; }}
                       data-testid="button-skip-save-profile"
                     >
-                      Salta e Salva
+                      {t("profileEdit.skipAndSave")}
                     </Button>
                   )}
                   <Button
@@ -1273,7 +1278,7 @@ export default function ProfileEdit() {
                     ) : (
                       <Save className="w-4 h-4" />
                     )}
-                    {existingProfile ? "Salva Modifiche" : "Crea Profilo"}
+                    {existingProfile ? t("profileEdit.saveChanges") : t("profileEdit.createProfile")}
                   </Button>
                 </div>
               )}

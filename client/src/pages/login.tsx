@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Login() {
@@ -19,6 +21,7 @@ export default function Login() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { enterGuestMode } = useGuest();
+  const { t } = useLanguage();
 
   const isAdminLogin = new URLSearchParams(window.location.search).get("admin") === "true";
 
@@ -36,7 +39,7 @@ export default function Login() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Credenziali non valide");
+        throw new Error(data.message || t("login.invalidCredentials"));
       }
 
       const userData = await res.json();
@@ -45,29 +48,29 @@ export default function Login() {
 
       if (isAdminLogin && userData.user?.isAdmin) {
         toast({
-          title: "Benvenuto Admin!",
-          description: "Accesso alla dashboard di controllo",
+          title: t("login.welcomeAdmin"),
+          description: t("login.welcomeAdminDesc"),
         });
         setLocation("/admin");
       } else if (isAdminLogin && !userData.user?.isAdmin) {
         toast({
-          title: "Accesso negato",
-          description: "Questo account non ha i permessi di amministratore.",
+          title: t("login.accessDenied"),
+          description: t("login.accessDeniedDesc"),
           variant: "destructive",
         });
         setLocation("/");
       } else {
         toast({
-          title: "Benvenuto!",
-          description: "Accesso effettuato con successo",
+          title: t("login.welcome"),
+          description: t("login.welcomeDesc"),
         });
         setLocation("/");
       }
     } catch (error: any) {
       console.error("[LOGIN] Failed:", error.message, "| email:", email, "| pass length:", password.length);
       toast({
-        title: "Errore",
-        description: error.message || "Credenziali non valide",
+        title: t("common.error"),
+        description: error.message || t("login.invalidCredentials"),
         variant: "destructive",
       });
     } finally {
@@ -91,6 +94,10 @@ export default function Login() {
         <ArrowLeft className="w-5 h-5" />
       </Button>
 
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSelector />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -101,10 +108,10 @@ export default function Login() {
           {isAdminLogin ? (
             <div className="flex items-center gap-2 mt-1">
               <Shield className="w-4 h-4 text-yellow-400" />
-              <p className="text-yellow-400 font-medium">Accesso Amministratore</p>
+              <p className="text-yellow-400 font-medium">{t("login.adminTitle")}</p>
             </div>
           ) : (
-            <p className="text-white/70 mt-1">Accedi al tuo account</p>
+            <p className="text-white/70 mt-1">{t("login.subtitle")}</p>
           )}
         </div>
 
@@ -112,7 +119,7 @@ export default function Login() {
           <CardContent className="p-6 space-y-6">
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white/90">Email</Label>
+                <Label htmlFor="email" className="text-white/90">{t("login.email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <Input
@@ -129,7 +136,7 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-white/90">Password</Label>
+                <Label htmlFor="password" className="text-white/90">{t("login.password")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <Input
@@ -158,26 +165,26 @@ export default function Login() {
                 disabled={isLoading}
                 data-testid="button-login"
               >
-                {isLoading ? "Accesso in corso..." : "Accedi"}
+                {isLoading ? t("login.loading") : t("login.submit")}
               </Button>
 
               <div className="text-right">
                 <Link href="/forgot-password" className="text-xs text-white/50 hover:text-primary hover:underline" data-testid="link-forgot-password">
-                  Password dimenticata?
+                  {t("login.forgot")}
                 </Link>
               </div>
             </form>
 
             <p className="text-center text-sm text-white/60">
-              Non hai un account?{" "}
+              {t("login.noAccount")}{" "}
               <Link href="/register" className="text-primary hover:underline">
-                Registrati
+                {t("login.register")}
               </Link>
             </p>
 
             <div className="relative flex items-center gap-3 pt-2">
               <div className="flex-1 h-px bg-white/20" />
-              <span className="text-xs text-white/40">oppure</span>
+              <span className="text-xs text-white/40">{t("login.or")}</span>
               <div className="flex-1 h-px bg-white/20" />
             </div>
 
@@ -192,20 +199,20 @@ export default function Login() {
               data-testid="button-guest-explore-login"
             >
               <Binoculars className="w-4 h-4 mr-2" />
-              Esplora senza registrarti
+              {t("login.guest")}
             </Button>
           </CardContent>
         </Card>
 
         <div className="mt-6 text-center text-xs text-white/50">
           <p>
-            Continuando accetti i nostri{" "}
+            {t("login.terms")}{" "}
             <Link href="/terms" className="text-primary hover:underline">
-              Termini di Servizio
+              {t("login.termsLink")}
             </Link>{" "}
-            e la{" "}
+            {t("login.and")}{" "}
             <Link href="/privacy" className="text-primary hover:underline">
-              Privacy Policy
+              {t("login.privacyLink")}
             </Link>
           </p>
         </div>

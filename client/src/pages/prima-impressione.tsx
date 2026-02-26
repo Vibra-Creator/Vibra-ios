@@ -12,17 +12,10 @@ import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile, ProfileRating, Match } from "@shared/schema";
 
 type RatingWithRater = ProfileRating & { rater: Profile };
-
-const ratingLabels: Record<number, string> = {
-  1: "Preferisco non pronunciarmi",
-  2: "Non sei il mio tipo",
-  3: "Qualcosa in te mi attrae",
-  4: "Sei il mio tipo ideale",
-  5: "Sei fantastico/a!",
-};
 
 const ratingIcons: Record<number, typeof Star> = {
   1: Star,
@@ -37,6 +30,7 @@ export default function PrimaImpressione() {
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
   const [showInfoBanner, setShowInfoBanner] = useState(false);
 
@@ -68,8 +62,8 @@ export default function PrimaImpressione() {
               <Eye className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-white" data-testid="text-page-title">Prima Impressione</h1>
-              <p className="text-white/50 text-xs">Scopri cosa pensano gli altri di te</p>
+              <h1 className="text-xl font-bold text-white" data-testid="text-page-title">{t("pi.title")}</h1>
+              <p className="text-white/50 text-xs">{t("pi.subtitle")}</p>
             </div>
           </div>
         </div>
@@ -78,19 +72,19 @@ export default function PrimaImpressione() {
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
               <Eye className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2" data-testid="text-guest-prima-title">Mettiti in Gioco!</h2>
+            <h2 className="text-xl font-bold text-white mb-2" data-testid="text-guest-prima-title">{t("pi.getInGame")}</h2>
             <p className="text-white/60 text-sm mb-2" data-testid="text-guest-prima-description">
-              Attiva Prima Impressione e scopri cosa pensano gli altri di te. Chi ti vota potrà anche scriverti un messaggio!
+              {t("pi.guestDesc")}
             </p>
             <p className="text-white/40 text-xs mb-4">
-              Registrati per attivare questa funzione e iniziare a ricevere voti e messaggi.
+              {t("pi.guestRegisterHint")}
             </p>
             <div className="flex flex-col gap-3">
               <Link href="/register">
                 <Button className="w-full bg-gradient-to-r from-primary to-accent" data-testid="button-guest-register-prima"
-                  onClick={() => blockIfGuest("votare i profili")}>
+                  onClick={() => blockIfGuest(t("pi.voteProfiles"))}>
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Registrati Gratis
+                  {t("pi.registerFree")}
                 </Button>
               </Link>
             </div>
@@ -114,9 +108,9 @@ export default function PrimaImpressione() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center">
           <Eye className="w-12 h-12 text-white/30 mx-auto mb-3" />
-          <p className="text-white/60 text-sm">Crea il tuo profilo per iniziare</p>
+          <p className="text-white/60 text-sm">{t("pi.createProfileFirst")}</p>
           <Button className="mt-4" onClick={() => setLocation("/profile/edit")} data-testid="button-create-profile">
-            Crea Profilo
+            {t("pi.createProfile")}
           </Button>
         </div>
       </div>
@@ -130,15 +124,15 @@ export default function PrimaImpressione() {
           <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
             <Eye className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Mettiti in Gioco!</h2>
+          <h2 className="text-xl font-bold text-white mb-2">{t("pi.getInGame")}</h2>
           <p className="text-white/60 text-sm mb-2">
-            Attiva Prima Impressione e scopri cosa pensano gli altri di te.
+            {t("pi.activateDesc")}
           </p>
           <p className="text-white/40 text-xs mb-4">
-            Sulla tua card apparirà il pulsante che permette agli altri di votarti da 1 a 5. Chi ti vota potrà anche scriverti un messaggio e aprire una conversazione con te!
+            {t("pi.activateCardDesc")}
           </p>
           <Button onClick={() => setLocation("/profile")} data-testid="button-enable-rating">
-            Attiva dal Profilo
+            {t("pi.activateFromProfile")}
           </Button>
         </div>
       </div>
@@ -156,11 +150,11 @@ export default function PrimaImpressione() {
             <Eye className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-white" data-testid="text-page-title">Impressioni Ricevute</h1>
+            <h1 className="text-xl font-bold text-white" data-testid="text-page-title">{t("pi.received")}</h1>
             <p className="text-white/50 text-xs">
               {ratings && ratings.length > 0
-                ? `${ratings.length} ${ratings.length === 1 ? "impressione ricevuta" : "impressioni ricevute"}`
-                : "Nessuna impressione ancora"}
+                ? `${ratings.length} ${ratings.length === 1 ? t("pi.impressionSingular") : t("pi.impressionPlural")}`
+                : t("pi.noImpressions")}
             </p>
           </div>
         </div>
@@ -178,7 +172,7 @@ export default function PrimaImpressione() {
               <div className="flex items-start gap-2.5">
                 <Info className="w-4 h-4 text-pink-400 mt-0.5 shrink-0" />
                 <p className="text-white/60 text-xs leading-relaxed flex-1">
-                  Qui trovi le impressioni che gli altri utenti ti hanno lasciato. Puoi rispondere con un messaggio per aprire una chat!
+                  {t("pi.infoBanner")}
                 </p>
                 <Button
                   variant="ghost"
@@ -200,8 +194,8 @@ export default function PrimaImpressione() {
           <div className="flex-1 flex items-center justify-center py-16">
             <div className="text-center px-4">
               <Sparkles className="w-12 h-12 text-white/20 mx-auto mb-3" />
-              <p className="text-white/50 text-sm">Nessuna impressione ricevuta ancora</p>
-              <p className="text-white/30 text-xs mt-1">Quando qualcuno ti voterà, apparirà qui</p>
+              <p className="text-white/50 text-sm">{t("pi.noImpressionsYet")}</p>
+              <p className="text-white/30 text-xs mt-1">{t("pi.whenVoted")}</p>
             </div>
           </div>
         ) : (
@@ -221,6 +215,7 @@ function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; m
   const [isExpanded, setIsExpanded] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const replyMutation = useMutation({
     mutationFn: async (reply: string) => {
@@ -236,10 +231,10 @@ function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; m
         queryClient.invalidateQueries({ queryKey: ["/api/ratings/received"] });
         queryClient.invalidateQueries({ queryKey: ["/api/ratings/count"] });
       }, 500);
-      toast({ title: "Chat aperta!", description: `Conversazione con ${rating.rater.name} avviata.` });
+      toast({ title: t("pi.chatOpened"), description: `${t("pi.convoStarted")} ${rating.rater.name}.` });
     },
     onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile inviare il messaggio.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("pi.sendError"), variant: "destructive" });
     },
   });
 
@@ -249,10 +244,18 @@ function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; m
     }
   };
 
+  const ratingLabels: Record<number, string> = {
+    1: t("pi.rating1"),
+    2: t("pi.rating2"),
+    3: t("pi.rating3"),
+    4: t("pi.rating4"),
+    5: t("pi.rating5"),
+  };
+
   const ratingColor = rating.rating >= 4 ? "text-green-400" : rating.rating >= 3 ? "text-yellow-400" : "text-orange-400";
   const ratingBgColor = rating.rating >= 4 ? "bg-green-500/20" : rating.rating >= 3 ? "bg-yellow-500/20" : "bg-orange-500/20";
   const IconComponent = ratingIcons[rating.rating] || Star;
-  const timeAgo = getTimeAgo(new Date(rating.createdAt));
+  const timeAgo = getTimeAgo(new Date(rating.createdAt), t);
   const hasReplied = !!rating.ratedReply;
 
   return (
@@ -286,7 +289,7 @@ function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; m
             <span className="text-white font-medium text-sm" data-testid={`rating-rater-name-${rating.id}`}>
               {rating.rater.name}
             </span>
-            <span className="text-white/30 text-[11px]">{rating.rater.age} anni</span>
+            <span className="text-white/30 text-[11px]">{rating.rater.age} {t("pi.years")}</span>
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <IconComponent className={`w-3 h-3 ${ratingColor}`} />
@@ -294,7 +297,7 @@ function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; m
           </div>
           {hasReplied && (
             <p className="text-white/40 text-xs truncate mt-0.5">
-              Hai risposto: {rating.ratedReply}
+              {t("pi.replied")}: {rating.ratedReply}
             </p>
           )}
         </div>
@@ -315,13 +318,13 @@ function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; m
         >
           <div className="bg-white/5 rounded-lg p-3 border border-white/10">
             <p className="text-white/40 text-[11px] mb-2">
-              Scrivi un messaggio per iniziare a chattare con {rating.rater.name}
+              {t("pi.writeMessageTo")} {rating.rater.name}
             </p>
             <div className="flex gap-2">
               <Input
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder={`Scrivi a ${rating.rater.name}...`}
+                placeholder={`${t("pi.writeTo")} ${rating.rater.name}...`}
                 className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/30 text-sm"
                 onKeyDown={(e) => { if (e.key === "Enter") handleReply(); }}
                 disabled={replyMutation.isPending}
@@ -344,16 +347,16 @@ function RatingItem({ rating, myProfileId, index }: { rating: RatingWithRater; m
   );
 }
 
-function getTimeAgo(date: Date): string {
+function getTimeAgo(date: Date, t: (key: string) => string): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffMin < 1) return "ora";
+  if (diffMin < 1) return t("pi.timeNow");
   if (diffMin < 60) return `${diffMin}m`;
   if (diffHour < 24) return `${diffHour}h`;
-  if (diffDay < 7) return `${diffDay}g`;
-  return date.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+  if (diffDay < 7) return `${diffDay}${t("pi.timeDays")}`;
+  return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }

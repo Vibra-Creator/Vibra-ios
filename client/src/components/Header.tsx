@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/i18n/LanguageContext";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export function Header() {
@@ -22,6 +23,7 @@ export function Header() {
 export function BottomNav() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const isAdmin = !!user?.isAdmin;
 
@@ -41,16 +43,16 @@ export function BottomNav() {
   const unrepliedRatingCount = ratingCount?.count || 0;
 
   const navItems = [
-    { path: "/", icon: Home, label: "Scopri", badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
-    { path: "/matches", icon: Heart, label: "Match", badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
-    { path: "/rooms", icon: Users, label: "Stanze", badge: 0, color: "text-cyan-400", activeBg: "bg-cyan-600" },
-    { path: "/challenges", icon: Trophy, label: "Sfide", badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
-    { path: "/vibing", icon: Zap, label: "Vibing", badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
-    { path: "/dove-sei", icon: MapPin, label: "Dove Sei", badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
-    { path: "/private-rooms", icon: Lock, label: "Private", badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
-    { path: "/prima-impressione", icon: Eye, label: "Impression", badge: unrepliedRatingCount, color: "text-rose-400", activeBg: "bg-rose-500" },
-    { path: "/profile", icon: User, label: "Profilo", badge: 0, color: "text-emerald-400", activeBg: "bg-emerald-500" },
-    ...(isAdmin ? [{ path: "/admin", icon: Shield, label: "Admin", badge: 0, color: "text-red-400", activeBg: "bg-red-500" }] : []),
+    { path: "/", icon: Home, label: t("nav.discover"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
+    { path: "/matches", icon: Heart, label: t("nav.matches"), badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
+    { path: "/rooms", icon: Users, label: t("nav.rooms"), badge: 0, color: "text-cyan-400", activeBg: "bg-cyan-600" },
+    { path: "/challenges", icon: Trophy, label: t("nav.challenges"), badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
+    { path: "/vibing", icon: Zap, label: t("nav.vibing"), badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
+    { path: "/dove-sei", icon: MapPin, label: t("nav.location"), badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
+    { path: "/private-rooms", icon: Lock, label: t("nav.private"), badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
+    { path: "/prima-impressione", icon: Eye, label: t("nav.impression"), badge: unrepliedRatingCount, color: "text-rose-400", activeBg: "bg-rose-500" },
+    { path: "/profile", icon: User, label: t("nav.profile"), badge: 0, color: "text-emerald-400", activeBg: "bg-emerald-500" },
+    ...(isAdmin ? [{ path: "/admin", icon: Shield, label: t("nav.admin"), badge: 0, color: "text-red-400", activeBg: "bg-red-500" }] : []),
   ];
 
   const topRow = navItems.slice(0, 5);

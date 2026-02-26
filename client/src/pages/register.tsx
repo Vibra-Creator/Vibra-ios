@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Register() {
@@ -26,6 +28,7 @@ export default function Register() {
   const [referralName, setReferralName] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   const validateReferralCode = async (code: string) => {
     if (!code || code.length < 4) { setReferralValid(null); return; }
@@ -42,8 +45,8 @@ export default function Register() {
 
     if (password !== confirmPassword) {
       toast({
-        title: "Errore",
-        description: "Le password non corrispondono",
+        title: t("common.error"),
+        description: t("register.passwordMismatch"),
         variant: "destructive",
       });
       return;
@@ -51,8 +54,8 @@ export default function Register() {
 
     if (!acceptTerms) {
       toast({
-        title: "Errore",
-        description: "Devi accettare i termini di servizio",
+        title: t("common.error"),
+        description: t("register.mustAcceptTerms"),
         variant: "destructive",
       });
       return;
@@ -60,8 +63,8 @@ export default function Register() {
 
     if (!confirmAge) {
       toast({
-        title: "Errore",
-        description: "Devi confermare di avere almeno 18 anni",
+        title: t("common.error"),
+        description: t("register.mustConfirmAge"),
         variant: "destructive",
       });
       return;
@@ -69,8 +72,8 @@ export default function Register() {
 
     if (referralCode && referralValid === false) {
       toast({
-        title: "Errore",
-        description: "Il codice invito inserito non è valido",
+        title: t("common.error"),
+        description: t("register.referralInvalid"),
         variant: "destructive",
       });
       return;
@@ -78,8 +81,8 @@ export default function Register() {
 
     if (referralCode && referralValid === null) {
       toast({
-        title: "Errore",
-        description: "Attendere la verifica del codice invito",
+        title: t("common.error"),
+        description: t("register.referralChecking"),
         variant: "destructive",
       });
       return;
@@ -97,7 +100,7 @@ export default function Register() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Impossibile creare l'account");
+        throw new Error(data.message || t("register.createError"));
       }
 
       sessionStorage.removeItem("vibra-guest-mode");
@@ -113,14 +116,14 @@ export default function Register() {
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
-        title: "Benvenuto su Vibra!",
-        description: "Account creato con successo",
+        title: t("register.welcomeTitle"),
+        description: t("register.welcomeDesc"),
       });
       setLocation("/onboarding");
     } catch (error: any) {
       toast({
-        title: "Errore",
-        description: error.message || "Impossibile creare l'account",
+        title: t("common.error"),
+        description: error.message || t("register.createError"),
         variant: "destructive",
       });
     } finally {
@@ -144,6 +147,10 @@ export default function Register() {
         <ArrowLeft className="w-5 h-5" />
       </Button>
 
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSelector />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -151,7 +158,7 @@ export default function Register() {
       >
         <div className="flex flex-col items-center mb-6">
           <img src={vibraLogo} alt="Vibra" className="w-28 h-28 aspect-square object-cover rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-register" />
-          <p className="text-white/70 mt-1">Crea il tuo account</p>
+          <p className="text-white/70 mt-1">{t("register.subtitle")}</p>
         </div>
 
         <Card className="bg-white/10 backdrop-blur-xl border-white/10">
@@ -159,13 +166,13 @@ export default function Register() {
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-white/90">Nome</Label>
+                  <Label htmlFor="name" className="text-white/90">{t("register.name")}</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                     <Input
                       id="name"
                       type="text"
-                      placeholder="Nome"
+                      placeholder={t("register.name")}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
@@ -175,13 +182,13 @@ export default function Register() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-white/90">Cognome</Label>
+                  <Label htmlFor="lastName" className="text-white/90">{t("register.lastName")}</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                     <Input
                       id="lastName"
                       type="text"
-                      placeholder="Cognome"
+                      placeholder={t("register.lastName")}
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
@@ -193,7 +200,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white/90">Email</Label>
+                <Label htmlFor="email" className="text-white/90">{t("register.email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <Input
@@ -209,12 +216,12 @@ export default function Register() {
                 </div>
                 <p className="text-xs text-amber-300/90 flex items-center gap-1" data-testid="text-email-privacy">
                   <Lock className="w-3 h-3 shrink-0" />
-                  La tua email non sara' visibile nel profilo. Viene usata solo per accesso e recupero account.
+                  {t("register.emailHint")}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-white/90">Password</Label>
+                <Label htmlFor="password" className="text-white/90">{t("register.password")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <Input
@@ -239,7 +246,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-white/90">Conferma Password</Label>
+                <Label htmlFor="confirmPassword" className="text-white/90">{t("register.confirmPassword")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <Input
@@ -256,13 +263,13 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="referralCode" className="text-white/90">Codice Invito (opzionale)</Label>
+                <Label htmlFor="referralCode" className="text-white/90">{t("register.referralCode")}</Label>
                 <div className="relative">
                   <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <Input
                     id="referralCode"
                     type="text"
-                    placeholder="Es: VBR-ABC123"
+                    placeholder={t("register.referralPlaceholder")}
                     value={referralCode}
                     onChange={(e) => {
                       const val = e.target.value.toUpperCase();
@@ -275,11 +282,11 @@ export default function Register() {
                 </div>
                 {referralValid === true && (
                   <p className="text-xs text-green-400 flex items-center gap-1" data-testid="text-referral-valid">
-                    <CheckCircle className="w-3 h-3" /> Invitato da {referralName}
+                    <CheckCircle className="w-3 h-3" /> {t("register.referralValid")} {referralName}
                   </p>
                 )}
                 {referralValid === false && referralCode.length >= 4 && (
-                  <p className="text-xs text-red-400" data-testid="text-referral-invalid">Codice non valido</p>
+                  <p className="text-xs text-red-400" data-testid="text-referral-invalid">{t("register.referralInvalid")}</p>
                 )}
               </div>
 
@@ -291,7 +298,7 @@ export default function Register() {
                   data-testid="checkbox-age"
                 />
                 <label htmlFor="age" className="text-sm text-white/60 leading-tight">
-                  Confermo di avere almeno 18 anni
+                  {t("register.confirmAge")}
                 </label>
               </div>
 
@@ -303,14 +310,7 @@ export default function Register() {
                   data-testid="checkbox-terms"
                 />
                 <label htmlFor="terms" className="text-sm text-white/60 leading-tight">
-                  Accetto i{" "}
-                  <Link href="/terms" className="text-primary hover:underline">
-                    Termini di Servizio
-                  </Link>{" "}
-                  e la{" "}
-                  <Link href="/privacy" className="text-primary hover:underline">
-                    Privacy Policy
-                  </Link>
+                  {t("register.acceptTerms")}
                 </label>
               </div>
 
@@ -320,14 +320,14 @@ export default function Register() {
                 disabled={isLoading || !acceptTerms || !confirmAge}
                 data-testid="button-register"
               >
-                {isLoading ? "Creazione account..." : "Crea Account"}
+                {isLoading ? t("register.loading") : t("register.submit")}
               </Button>
             </form>
 
             <p className="text-center text-sm text-white/60">
-              Hai già un account?{" "}
+              {t("register.haveAccount")}{" "}
               <Link href="/login" className="text-primary hover:underline">
-                Accedi
+                {t("register.login")}
               </Link>
             </p>
           </CardContent>

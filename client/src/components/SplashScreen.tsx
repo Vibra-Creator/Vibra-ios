@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, Shield } from "lucide-react";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -10,6 +11,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   const [phase, setPhase] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
   const [showCopyright, setShowCopyright] = useState(false);
+  const { t } = useLanguage();
 
   const dismiss = useCallback(() => {
     if (fadeOut || showCopyright) return;
@@ -100,7 +102,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         zIndex: 3,
         marginTop: "16px",
       }}>
-        Incontri Cosmici
+        {t("splash.tagline")}
       </p>
 
       <button
@@ -191,7 +193,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}>
-                Copyright & Proprietà Intellettuale
+                {t("splash.copyright")}
               </h3>
             </div>
 
@@ -202,13 +204,13 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               color: "rgba(255, 255, 255, 0.75)",
             }}>
               <p style={{ fontWeight: 600, color: "#c084fc", marginBottom: "12px", fontSize: "0.9rem" }}>
-                © 2026 Vibra. Tutti i diritti riservati.
+                © 2026 Vibra. {t("splash.allRights")}
               </p>
               <p style={{ marginBottom: "12px" }}>
-                Vibra è un marchio di proprietà del suo titolare. L'app Vibra, inclusi design, codice sorgente, contenuti grafici, loghi, nomi e interfaccia utente, sono protetti dalle leggi sul diritto d'autore e sulla proprietà intellettuale applicabili.
+                {t("splash.trademarkNotice")}
               </p>
               <p style={{ marginBottom: "12px" }}>
-                È vietata la riproduzione, distribuzione, modifica o utilizzo non autorizzato di qualsiasi parte dell'app senza il consenso scritto del titolare.
+                {t("splash.reproductionNotice")}
               </p>
               <div style={{
                 marginTop: "16px",
@@ -218,9 +220,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 border: "1px solid rgba(139, 92, 246, 0.15)",
               }}>
                 <p style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)", margin: 0 }}>
-                  <strong style={{ color: "rgba(255,255,255,0.65)" }}>App:</strong> Vibra<br />
+                  <strong style={{ color: "rgba(255,255,255,0.65)" }}>{t("splash.app")}</strong> Vibra<br />
                   <strong style={{ color: "rgba(255,255,255,0.65)" }}>Bundle ID:</strong> com.vibraalienmatch<br />
-                  <strong style={{ color: "rgba(255,255,255,0.65)" }}>Sviluppatore:</strong> VibraAlienMatch
+                  <strong style={{ color: "rgba(255,255,255,0.65)" }}>{t("splash.developer")}</strong> VibraAlienMatch
                 </p>
               </div>
             </div>

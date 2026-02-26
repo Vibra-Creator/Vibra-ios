@@ -9,6 +9,7 @@ import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import GiftPicker from "@/components/GiftPicker";
 import GiftAnimation from "@/components/GiftAnimation";
 import type { Message, Profile, Match, VirtualGift, SentGift, ProfileRating } from "@shared/schema";
@@ -32,6 +33,7 @@ export default function Chat() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [messageText, setMessageText] = useState("");
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -150,7 +152,7 @@ export default function Chat() {
       await apiRequest("POST", "/api/block", { blockedId: otherProfile.id });
     },
     onSuccess: () => {
-      toast({ title: "Utente bloccato", description: "Non vedrai più questo profilo" });
+      toast({ title: t("chat.userBlocked"), description: t("chat.userBlockedDesc") });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       if (myProfile) {
         queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile.id] });
@@ -165,7 +167,7 @@ export default function Chat() {
       await apiRequest("POST", "/api/reports", { reportedId: otherProfile.id, reason });
     },
     onSuccess: () => {
-      toast({ title: "Segnalazione inviata", description: "Grazie, il nostro team esaminerà la segnalazione." });
+      toast({ title: t("chat.reportSent"), description: t("chat.reportSentDesc") });
       setShowReportMenu(false);
     },
   });
@@ -175,7 +177,7 @@ export default function Chat() {
       await apiRequest("DELETE", `/api/matches/${matchId}`);
     },
     onSuccess: () => {
-      toast({ title: "Match rimosso", description: `Hai rimosso il match con ${otherProfile?.name || "questo utente"}` });
+      toast({ title: t("chat.matchRemoved"), description: `${t("chat.matchRemovedDesc")} ${otherProfile?.name || t("chat.thisUser")}` });
       queryClient.invalidateQueries({ predicate: (query) => {
         const key = query.queryKey[0];
         return typeof key === "string" && key.startsWith("/api/matches");
@@ -183,17 +185,17 @@ export default function Chat() {
       setLocation("/matches");
     },
     onError: () => {
-      toast({ title: "Errore", description: "Impossibile rimuovere il match", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("chat.removeMatchError"), variant: "destructive" });
     },
   });
 
   const reportReasons = [
-    "Contenuto inappropriato",
-    "Profilo falso",
-    "Comportamento molesto",
-    "Spam",
-    "Minacce o violenza",
-    "Altro",
+    t("chat.reportInappropriate"),
+    t("chat.reportFake"),
+    t("chat.reportHarassing"),
+    t("chat.reportSpam"),
+    t("chat.reportThreats"),
+    t("chat.reportOther"),
   ];
 
   const handleSend = () => {
@@ -222,9 +224,9 @@ export default function Chat() {
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (d.toDateString() === today.toDateString()) {
-      return "Oggi";
+      return t("chat.today");
     } else if (d.toDateString() === yesterday.toDateString()) {
-      return "Ieri";
+      return t("chat.yesterday");
     }
     return d.toLocaleDateString("it-IT", { day: "numeric", month: "long" });
   };
@@ -242,7 +244,7 @@ export default function Chat() {
   if (!otherProfile && !messagesLoading && !matchesLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-white/60">Chat non trovata</p>
+        <p className="text-white/60">{t("chat.notFound")}</p>
       </div>
     );
   }
@@ -308,30 +310,30 @@ export default function Chat() {
                 data-testid="button-report-user"
               >
                 <Flag className="w-4 h-4" />
-                Segnala utente
+                {t("chat.reportUser")}
               </button>
               <button
                 className="flex items-center gap-2 w-full px-4 py-3 text-sm text-orange-400 hover-elevate text-left"
-                onClick={() => { if (confirm("Sei sicuro di voler rimuovere il match?")) { unmatchUser.mutate(); } setShowMenu(false); }}
+                onClick={() => { if (confirm(t("chat.confirmUnmatch"))) { unmatchUser.mutate(); } setShowMenu(false); }}
                 data-testid="button-unmatch-user"
               >
                 <UserX className="w-4 h-4" />
-                Rimuovi match
+                {t("chat.removeMatch")}
               </button>
               <button
                 className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-400 hover-elevate text-left"
-                onClick={() => { if (confirm("Sei sicuro di voler bloccare questo utente?")) { blockUser.mutate(); } setShowMenu(false); }}
+                onClick={() => { if (confirm(t("chat.confirmBlock"))) { blockUser.mutate(); } setShowMenu(false); }}
                 data-testid="button-block-user"
               >
                 <Ban className="w-4 h-4" />
-                Blocca utente
+                {t("chat.blockUser")}
               </button>
             </div>
           )}
           {showMenu && showReportMenu && (
             <div className="absolute right-0 top-full mt-1 w-56 bg-black/90 backdrop-blur-xl border border-white/10 rounded-md shadow-lg overflow-hidden z-50">
               <div className="px-4 py-2 text-xs text-white/50 font-semibold uppercase tracking-wider border-b border-white/10">
-                Motivo segnalazione
+                {t("chat.reportReason")}
               </div>
               {reportReasons.map((reason) => (
                 <button
@@ -347,7 +349,7 @@ export default function Chat() {
                 className="flex items-center gap-2 w-full px-4 py-2 text-xs text-white/40 hover-elevate text-left border-t border-white/10"
                 onClick={() => setShowReportMenu(false)}
               >
-                Indietro
+                {t("common.back")}
               </button>
             </div>
           )}
@@ -365,10 +367,10 @@ export default function Chat() {
               <Send className="w-10 h-10 text-primary/60" />
             </div>
             <h3 className="text-lg font-medium text-white mb-2">
-              Inizia la conversazione!
+              {t("chat.startConversation")}
             </h3>
             <p className="text-sm text-white/60 max-w-xs">
-              Fai il primo passo e invia un messaggio a {otherProfile?.name}
+              {t("chat.sendFirstMessage")} {otherProfile?.name}
             </p>
           </div>
         ) : (
@@ -407,7 +409,7 @@ export default function Chat() {
                       )}
                       <div className={`flex flex-col max-w-[70%] ${isMe ? "items-end" : "items-start"}`}>
                         <p className={`text-sm mb-1 font-semibold ${isMe ? "text-white/70" : "text-cyan-300"}`}>
-                          {isMe ? "Tu" : otherProfile?.name}
+                          {isMe ? t("chat.you") : otherProfile?.name}
                         </p>
                         <div
                           className={`px-4 py-2.5 rounded-2xl ${
@@ -445,7 +447,7 @@ export default function Chat() {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
               <Gift className="w-3.5 h-3.5 text-yellow-400" />
               <span className="text-xs text-white/70">
-                {giftsFromThisUser.length} {giftsFromThisUser.length === 1 ? "regalo ricevuto" : "regali ricevuti"}
+                {giftsFromThisUser.length} {giftsFromThisUser.length === 1 ? t("chat.giftReceived") : t("chat.giftsReceived")}
               </span>
             </div>
           </div>
@@ -459,7 +461,7 @@ export default function Chat() {
           <div className="flex items-center justify-center gap-2 py-2" data-testid="sending-blocked-notice">
             <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
             <p className="text-white/50 text-sm text-center">
-              In attesa della risposta di {otherProfile?.name}...
+              {t("chat.waitingReply")} {otherProfile?.name}...
             </p>
           </div>
         ) : (
@@ -480,7 +482,7 @@ export default function Chat() {
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Scrivi un messaggio..."
+              placeholder={t("chat.placeholder")}
               className="flex-1 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
               disabled={sendMessage.isPending}
               data-testid="input-message"

@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile, Match } from "@shared/schema";
 
 interface SwipableResponse {
@@ -26,6 +27,7 @@ export default function Home() {
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const { data: myProfile, isLoading: profileLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -93,8 +95,8 @@ export default function Home() {
         return;
       }
       toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante lo swipe. Riprova.",
+        title: t("common.error"),
+        description: t("home.swipeError"),
         variant: "destructive",
       });
     },
@@ -110,7 +112,7 @@ export default function Home() {
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
     if (isGuest) {
-      blockIfGuest(direction === "right" ? "mettere like" : "scartare un profilo");
+      blockIfGuest(direction === "right" ? t("home.like") : t("home.dislike"));
       return;
     }
 
@@ -142,10 +144,10 @@ export default function Home() {
       setSwipedProfiles(new Set());
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
       refetch();
-      toast({ title: "Profili ripristinati!", description: "Tutti i profili sono di nuovo disponibili (i match restano)." });
+      toast({ title: t("home.profilesRestored"), description: t("home.profilesRestoredDesc") });
     },
     onError: () => {
-      toast({ title: "Errore", description: "Non è stato possibile ripristinare i profili.", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("home.restoreError"), variant: "destructive" });
     },
   });
 
@@ -192,16 +194,16 @@ export default function Home() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
               <Sparkles className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Benvenuto su Vibra!</h2>
+            <h2 className="text-xl font-bold text-white mb-2">{t("home.welcome")}</h2>
             <p className="text-white/70 text-sm mb-6">
-              Per iniziare a scoprire profili e fare match, devi prima creare il tuo profilo.
+              {t("home.createProfilePrompt")}
             </p>
             <Button
               className="w-full mb-3"
               onClick={() => window.location.href = "/profile/edit"}
               data-testid="button-create-profile"
             >
-              Crea il Tuo Profilo
+              {t("home.createProfile")}
             </Button>
             <Button
               variant="ghost"
@@ -209,7 +211,7 @@ export default function Home() {
               onClick={() => logoutFn()}
               data-testid="button-logout-home"
             >
-              Torna al Login
+              {t("home.backToLogin")}
             </Button>
           </div>
         </div>

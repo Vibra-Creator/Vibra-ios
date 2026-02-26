@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Room } from "@shared/schema";
 
 const ROOM_BANNERS: Record<string, string> = {
@@ -36,6 +37,7 @@ export default function Rooms() {
   const { user } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
+  const { t } = useLanguage();
 
   const { data: rooms, isLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
@@ -81,8 +83,8 @@ export default function Rooms() {
             <Users className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white" data-testid="text-rooms-title">Stanze</h1>
-            <p className="text-sm text-white/60" data-testid="text-rooms-subtitle">Entra in stanze basate sui tuoi interessi</p>
+            <h1 className="text-2xl font-bold text-white" data-testid="text-rooms-title">{t("rooms.title")}</h1>
+            <p className="text-sm text-white/60" data-testid="text-rooms-subtitle">{t("rooms.subtitle")}</p>
           </div>
         </div>
       </motion.div>
@@ -103,7 +105,7 @@ export default function Rooms() {
                 <div
                   className="rounded-xl overflow-hidden cursor-pointer group shadow-md hover-elevate backdrop-blur-md bg-white/5 border border-white/10"
                   onClick={() => {
-                    if (blockIfGuest("entrare nelle stanze")) return;
+                    if (blockIfGuest(t("rooms.joinAction"))) return;
                     setLocation(`/room/${room.id}`);
                   }}
                   data-testid={`card-room-${room.id}`}
@@ -128,10 +130,10 @@ export default function Rooms() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
                         <Users className="w-4 h-4 text-cyan-400" />
-                        <span className="text-cyan-400 font-medium">{(room as any).memberCount || Math.floor(Math.random() * 50 + 10)} membri</span>
+                        <span className="text-cyan-400 font-medium">{(room as any).memberCount || Math.floor(Math.random() * 50 + 10)} {t("rooms.members")}</span>
                       </div>
                       <Button size="sm" variant="ghost" className="gap-1 text-white/80" data-testid={`button-enter-room-${room.id}`}>
-                        Entra <ArrowRight className="w-4 h-4" />
+                        {t("rooms.enter")} <ArrowRight className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>

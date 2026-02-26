@@ -1,13 +1,17 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { Smartphone, Tablet, Monitor } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type ViewMode = "mobile" | "tablet" | "desktop";
 
-const viewModes: { id: ViewMode; label: string; icon: typeof Smartphone; width: number }[] = [
-  { id: "mobile", label: "Cellulare", icon: Smartphone, width: 390 },
-  { id: "tablet", label: "Tablet", icon: Tablet, width: 768 },
-  { id: "desktop", label: "Computer", icon: Monitor, width: 0 },
-];
+function useViewModes() {
+  const { t } = useLanguage();
+  return [
+    { id: "mobile" as ViewMode, label: t("viewport.mobile"), icon: Smartphone, width: 390 },
+    { id: "tablet" as ViewMode, label: t("viewport.tablet"), icon: Tablet, width: 768 },
+    { id: "desktop" as ViewMode, label: t("viewport.desktop"), icon: Monitor, width: 0 },
+  ];
+}
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -22,6 +26,7 @@ function useIsDesktop() {
 
 export function ViewportSelector({ children }: { children: ReactNode }) {
   const isDesktop = useIsDesktop();
+  const viewModes = useViewModes();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 1024) {
       return (localStorage.getItem("vibra-view-mode") as ViewMode) || "mobile";

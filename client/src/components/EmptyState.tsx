@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Sparkles, Heart, Rocket, RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface EmptyStateProps {
   type: "no-profiles" | "no-matches" | "loading" | "error";
@@ -10,30 +11,32 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ type, onRetry, onResetDislikes, isResetting }: EmptyStateProps) {
+  const { t } = useLanguage();
+
   const content = {
     "no-profiles": {
       icon: Rocket,
-      title: "Nessun profilo disponibile",
-      description: "Hai esplorato tutti i profili disponibili nella galassia. Ricarica per rivedere i profili scartati e scoprire nuovi arrivi!",
-      action: "Ricarica Profili",
+      title: t("empty.noProfiles"),
+      description: t("empty.noProfilesDesc"),
+      action: t("empty.reload"),
     },
     "no-matches": {
       icon: Heart,
-      title: "Nessun match ancora",
-      description: "Continua a esplorare per trovare la tua connessione cosmica. Le stelle potrebbero allinearsi presto!",
-      action: "Esplora",
+      title: t("empty.noMatches"),
+      description: t("empty.noMatchesDesc"),
+      action: t("empty.explore"),
     },
     "loading": {
       icon: Sparkles,
-      title: "Caricamento in corso...",
-      description: "Stiamo cercando profili compatibili nella galassia.",
+      title: t("empty.loading"),
+      description: t("empty.loadingDesc"),
       action: null,
     },
     "error": {
       icon: RefreshCw,
-      title: "Ops! Qualcosa è andato storto",
-      description: "Si è verificato un errore durante il caricamento. Per favore riprova.",
-      action: "Riprova",
+      title: t("empty.error"),
+      description: t("empty.errorDesc"),
+      action: t("empty.retry"),
     },
   };
 
@@ -61,7 +64,7 @@ export function EmptyState({ type, onRetry, onResetDislikes, isResetting }: Empt
         {action && onRetry && (
           <Button onClick={onRetry} disabled={isResetting} data-testid="button-retry">
             <RefreshCw className={`w-4 h-4 mr-2 ${isResetting ? "animate-spin" : ""}`} />
-            {isResetting ? "Ripristino..." : action}
+            {isResetting ? t("empty.resetting") : action}
           </Button>
         )}
       </div>

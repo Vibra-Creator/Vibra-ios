@@ -11,6 +11,7 @@ import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { DailyChallenge, ChallengeSubmission, Profile } from "@shared/schema";
 
 function ChallengeSkeleton() {
@@ -80,6 +81,7 @@ export default function Challenges() {
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
   const [uploadingChallengeId, setUploadingChallengeId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -125,8 +127,8 @@ export default function Challenges() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Foto inviata!",
-        description: "La tua foto e' in attesa di approvazione dall'admin. Riceverai i punti dopo l'approvazione.",
+        title: t("challenges.photoSent"),
+        description: t("challenges.photoSentDesc"),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/challenges/submissions/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
@@ -135,8 +137,8 @@ export default function Challenges() {
     onError: (error: Error) => {
       const isAiRejection = error.message?.includes("non approvata") || error.message?.includes("non sembra");
       toast({
-        title: isAiRejection ? "Foto non valida" : "Errore",
-        description: error.message || "Impossibile caricare la foto",
+        title: isAiRejection ? t("challenges.photoInvalid") : t("common.error"),
+        description: error.message || t("challenges.uploadError"),
         variant: "destructive",
       });
       resetUpload();
@@ -161,11 +163,11 @@ export default function Challenges() {
   };
 
   const handleSelectPhoto = (challengeId: string) => {
-    if (blockIfGuest("partecipare alle sfide")) return;
+    if (blockIfGuest(t("challenges.participateAction"))) return;
     if (!myProfile) {
       toast({
-        title: "Profilo richiesto",
-        description: "Devi prima completare il tuo profilo per partecipare alle sfide.",
+        title: t("challenges.profileRequired"),
+        description: t("challenges.profileRequiredDesc"),
         variant: "destructive",
       });
       setLocation("/profile-edit");
@@ -185,8 +187,8 @@ export default function Challenges() {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowedTypes.includes(file.type)) {
       toast({
-        title: "Formato non supportato",
-        description: "Usa JPG, PNG, WebP o GIF.",
+        title: t("challenges.unsupportedFormat"),
+        description: t("challenges.unsupportedFormatDesc"),
         variant: "destructive",
       });
       return;
@@ -195,8 +197,8 @@ export default function Challenges() {
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
-        title: "File troppo grande",
-        description: `La foto deve essere massimo 5 MB. La tua è ${(file.size / (1024 * 1024)).toFixed(1)} MB.`,
+        title: t("challenges.fileTooLarge"),
+        description: `${t("challenges.fileTooLargeDesc")} ${(file.size / (1024 * 1024)).toFixed(1)} MB.`,
         variant: "destructive",
       });
       return;
@@ -261,8 +263,8 @@ export default function Challenges() {
               <Trophy className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white" data-testid="text-challenges-title">Sfide Giornaliere</h1>
-              <p className="text-sm text-white/60" data-testid="text-challenges-subtitle">Completa le sfide per guadagnare punti!</p>
+              <h1 className="text-2xl font-bold text-white" data-testid="text-challenges-title">{t("challenges.title")}</h1>
+              <p className="text-sm text-white/60" data-testid="text-challenges-subtitle">{t("challenges.subtitle")}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-400/20 backdrop-blur-sm">
@@ -278,9 +280,9 @@ export default function Challenges() {
         <div className="flex items-center gap-3">
           <Star className="w-8 h-8 text-accent" />
           <div>
-            <p className="font-bold text-lg text-white" data-testid="text-points-label">I tuoi punti</p>
+            <p className="font-bold text-lg text-white" data-testid="text-points-label">{t("challenges.yourPoints")}</p>
             <p className="text-sm text-white/70">
-              {approvedSubmissions.length} approvate{pendingSubmissions.length > 0 ? ` - ${pendingSubmissions.length} in attesa` : ""}
+              {approvedSubmissions.length} {t("challenges.approved")}{pendingSubmissions.length > 0 ? ` - ${pendingSubmissions.length} ${t("challenges.pending")}` : ""}
             </p>
           </div>
         </div>
@@ -295,7 +297,7 @@ export default function Challenges() {
         >
           <div className="rounded-xl p-4 bg-white/10 backdrop-blur-sm" data-testid="card-photo-preview">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-white">Anteprima Foto</h3>
+              <h3 className="font-bold text-white">{t("challenges.photoPreview")}</h3>
               <Button size="icon" variant="ghost" onClick={resetUpload} data-testid="button-cancel-upload">
                 <X className="w-4 h-4" />
               </Button>
@@ -316,7 +318,7 @@ export default function Challenges() {
                 disabled={submitMutation.isPending}
                 data-testid="button-change-photo"
               >
-                Cambia foto
+                {t("challenges.changePhoto")}
               </Button>
               <Button
                 className="flex-1"
@@ -327,12 +329,12 @@ export default function Challenges() {
                 {submitMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Caricamento...
+                    {t("challenges.uploading")}
                   </>
                 ) : (
                   <>
                     <Camera className="w-4 h-4 mr-2" />
-                    Invia Foto
+                    {t("challenges.submitPhoto")}
                   </>
                 )}
               </Button>
@@ -382,17 +384,17 @@ export default function Challenges() {
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <Badge variant="secondary" className="bg-accent/20 text-accent">
                         <Star className="w-3 h-3 mr-1" />
-                        {challenge.points} punti
+                        {challenge.points} {t("challenges.points")}
                       </Badge>
                       {isCompleted ? (
                         <Badge variant="secondary" className="bg-green-500/20 text-green-400">
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          Completata
+                          {t("challenges.completed")}
                         </Badge>
                       ) : isPending ? (
                         <Badge variant="secondary" className="bg-amber-500/20 text-amber-400">
                           <Clock className="w-3 h-3 mr-1" />
-                          In attesa di approvazione
+                          {t("challenges.awaitingApproval")}
                         </Badge>
                       ) : (
                         <ChallengeCountdownBadge expiresAt={(challenge as any).expiresAt} />
@@ -431,7 +433,7 @@ export default function Challenges() {
                           data-testid={`button-submit-challenge-${challenge.id}`}
                         >
                           <ImagePlus className="w-4 h-4" />
-                          Carica Foto
+                          {t("challenges.uploadPhoto")}
                         </Button>
                       )}
                     </div>

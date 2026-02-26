@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useCallback } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile } from "@shared/schema";
 
 interface MatchCardProps {
@@ -20,6 +21,7 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showConfirm, setShowConfirm] = useState(false);
+  const { t } = useLanguage();
 
   const unmatchMutation = useMutation({
     mutationFn: async () => {
@@ -31,14 +33,14 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
         return typeof key === "string" && key.startsWith("/api/matches");
       }});
       toast({
-        title: "Match rimosso",
-        description: `Hai rimosso il match con ${profile.name}`,
+        title: t("matchCard.removed"),
+        description: `${t("matchCard.removedDesc")} ${profile.name}`,
       });
     },
     onError: () => {
       toast({
-        title: "Errore",
-        description: "Impossibile rimuovere il match",
+        title: t("common.error"),
+        description: t("matchCard.removeError"),
         variant: "destructive",
       });
     },
@@ -113,7 +115,7 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
         <div className="p-3 flex items-center justify-between gap-1 flex-wrap">
           <div className="flex items-center gap-2 text-muted-foreground text-xs">
             <Heart className="w-4 h-4 text-accent fill-accent" />
-            <span>Match</span>
+            <span>{t("matchCard.match")}</span>
           </div>
           {matchDate && (
             <span className="text-xs text-muted-foreground">
@@ -129,7 +131,7 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
           onClick={(e) => e.stopPropagation()}
         >
           <p className="text-white text-sm text-center font-medium">
-            Rimuovere il match con {profile.name}?
+            {t("matchCard.removeConfirm")} {profile.name}?
           </p>
           <div className="flex gap-2">
             <Button
@@ -141,7 +143,7 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
               }}
               data-testid={`button-cancel-unmatch-${profile.id}`}
             >
-              Annulla
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -152,7 +154,7 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
               disabled={unmatchMutation.isPending}
               data-testid={`button-confirm-unmatch-${profile.id}`}
             >
-              {unmatchMutation.isPending ? "..." : "Rimuovi"}
+              {unmatchMutation.isPending ? "..." : t("matchCard.remove")}
             </Button>
           </div>
         </div>
