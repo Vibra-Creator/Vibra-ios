@@ -50,18 +50,35 @@ export default function Rooms() {
   });
 
   const defaultRooms = [
-    { id: "1", name: "Tecnologia Spaziale", interest: "Tecnologia Spaziale", description: "Per gli amanti dello spazio e delle stelle", memberCount: 42 },
-    { id: "2", name: "Musica Cosmica", interest: "Musica Cosmica", description: "Condividi la tua musica preferita", memberCount: 38 },
-    { id: "3", name: "Filosofia Galattica", interest: "Filosofia Galattica", description: "Discussioni profonde sull'universo", memberCount: 25 },
-    { id: "4", name: "Arte Cristallina", interest: "Arte Cristallina", description: "Creatività e ispirazione artistica", memberCount: 31 },
-    { id: "5", name: "Viaggi Dimensionali", interest: "Viaggi Dimensionali", description: "Avventure e viaggi cosmici", memberCount: 56 },
-    { id: "6", name: "Meditazione Cosmica", interest: "Meditazione Cosmica", description: "Pace interiore e benessere", memberCount: 19 },
-    { id: "7", name: "Amanti dei Gatti", interest: "Amanti dei Gatti", description: "Per chi ama i gatti cosmici e le loro avventure", memberCount: 33 },
-    { id: "8", name: "Ti va un caffè in amicizia", interest: "Caffè in Amicizia", description: "Un caffè cosmico tra amici, senza impegno", memberCount: 27 },
+    { id: "1", name: t("rooms.room1Name"), interest: t("rooms.room1Name"), description: t("rooms.room1Desc"), memberCount: 42 },
+    { id: "2", name: t("rooms.room2Name"), interest: t("rooms.room2Name"), description: t("rooms.room2Desc"), memberCount: 38 },
+    { id: "3", name: t("rooms.room3Name"), interest: t("rooms.room3Name"), description: t("rooms.room3Desc"), memberCount: 25 },
+    { id: "4", name: t("rooms.room4Name"), interest: t("rooms.room4Name"), description: t("rooms.room4Desc"), memberCount: 31 },
+    { id: "5", name: t("rooms.room5Name"), interest: t("rooms.room5Name"), description: t("rooms.room5Desc"), memberCount: 56 },
+    { id: "6", name: t("rooms.room6Name"), interest: t("rooms.room6Name"), description: t("rooms.room6Desc"), memberCount: 19 },
+    { id: "7", name: t("rooms.room7Name"), interest: t("rooms.room7Name"), description: t("rooms.room7Desc"), memberCount: 33 },
+    { id: "8", name: t("rooms.room8Name"), interest: t("rooms.room8Name"), description: t("rooms.room8Desc"), memberCount: 27 },
   ];
 
+  const roomItNames = [
+    "Tecnologia Spaziale", "Musica Cosmica", "Filosofia Galattica", "Arte Cristallina",
+    "Viaggi Dimensionali", "Meditazione Cosmica", "Amanti dei Gatti", "Ti va un caffè in amicizia",
+  ];
+
+  const translateRooms = (items: Room[]): Room[] => {
+    const translationMap: Record<string, { name: string; description: string | null }> = {};
+    roomItNames.forEach((itName, i) => {
+      translationMap[itName] = { name: t(`rooms.room${i + 1}Name`), description: t(`rooms.room${i + 1}Desc`) };
+    });
+    return items.map(room => {
+      const mapped = translationMap[room.name];
+      return mapped ? { ...room, name: mapped.name, description: mapped.description } : room;
+    });
+  };
+
   const activeRooms = isGuest ? guestRooms : rooms;
-  const displayRooms = activeRooms?.length ? activeRooms : defaultRooms;
+  const rawRooms = activeRooms?.length ? activeRooms : defaultRooms;
+  const displayRooms = translateRooms(rawRooms);
   const activeLoading = isGuest ? guestLoading : isLoading;
 
   return (

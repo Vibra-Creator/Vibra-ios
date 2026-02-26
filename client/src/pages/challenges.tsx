@@ -25,12 +25,13 @@ function ChallengeSkeleton() {
 }
 
 function ChallengeCountdownBadge({ expiresAt }: { expiresAt?: string | Date | null }) {
-  const timeLeft = useCountdown(expiresAt);
-  if (!timeLeft || timeLeft === "Scaduta") {
+  const { t } = useLanguage();
+  const timeLeft = useCountdown(expiresAt, t);
+  if (!timeLeft || timeLeft === t("challenges.expired")) {
     return (
       <Badge variant="outline" className="text-xs text-red-400 border-red-400/30">
         <Clock className="w-3 h-3 mr-1" />
-        Scaduta
+        {t("challenges.expired")}
       </Badge>
     );
   }
@@ -43,28 +44,32 @@ function ChallengeCountdownBadge({ expiresAt }: { expiresAt?: string | Date | nu
 }
 
 const STATIC_DATE = new Date("2026-01-01T00:00:00Z");
-const DEFAULT_CHALLENGES: DailyChallenge[] = [
-  { id: "1", title: "Truccato/a da Donna", description: "Scatta una foto di te stesso truccato da donna - mostra il tuo lato divertente!", points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "2", title: "Pulizia Bagno", description: "Fotografati mentre pulisci il bagno - dimostra che sai essere responsabile!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "3", title: "Chef per un Giorno", description: "Prepara un piatto e fotografalo - mostra le tue abilita' culinarie!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "4", title: "Animale Domestico", description: "Scatta un selfie con un animale - mostra il tuo lato dolce!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "5", title: "Tramonto Romantico", description: "Fotografa un tramonto dalla tua posizione - condividi la bellezza!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "6", title: "Talento Nascosto", description: "Mostra un tuo talento nascosto in foto - sorprendici!", points: 25, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "7", title: "Look del Mattino", description: "Selfie appena sveglio/a senza filtri - sii autentico/a!", points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "8", title: "Outfit Creativo", description: "Indossa qualcosa di creativo o divertente e fotografati!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "9", title: "Angolo Relax", description: "Quale e' il posto dove ti senti a casa? Mostraci il tuo angolo di pace!", points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "10", title: "Outfit del \"Ma Anche No\"", description: "Indossa l'abbinamento piu' assurdo che hai e sfoggialo con orgoglio!", points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "11", title: "Healthy Snack", description: "Mostraci il tuo spuntino o colazione salutare di oggi!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-  { id: "12", title: "Caffeina Check", description: "Mostraci la tua tazza piu' originale dove bevi il caffe'!", points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
-];
 
-function useCountdown(expiresAt: string | Date | null | undefined) {
+function getDefaultChallenges(t: (key: string) => string): DailyChallenge[] {
+  return [
+    { id: "1", title: t("challenges.ch1Title"), description: t("challenges.ch1Desc"), points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "2", title: t("challenges.ch2Title"), description: t("challenges.ch2Desc"), points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "3", title: t("challenges.ch3Title"), description: t("challenges.ch3Desc"), points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "4", title: t("challenges.ch4Title"), description: t("challenges.ch4Desc"), points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "5", title: t("challenges.ch5Title"), description: t("challenges.ch5Desc"), points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "6", title: t("challenges.ch6Title"), description: t("challenges.ch6Desc"), points: 25, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "7", title: t("challenges.ch7Title"), description: t("challenges.ch7Desc"), points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "8", title: t("challenges.ch8Title"), description: t("challenges.ch8Desc"), points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "9", title: t("challenges.ch9Title"), description: t("challenges.ch9Desc"), points: 15, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "10", title: t("challenges.ch10Title"), description: t("challenges.ch10Desc"), points: 20, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "11", title: t("challenges.ch11Title"), description: t("challenges.ch11Desc"), points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+    { id: "12", title: t("challenges.ch12Title"), description: t("challenges.ch12Desc"), points: 10, isActive: true, imageExample: null, createdAt: STATIC_DATE, expiresAt: null },
+  ];
+}
+
+function useCountdown(expiresAt: string | Date | null | undefined, t?: (key: string) => string) {
   const [timeLeft, setTimeLeft] = useState("");
   useEffect(() => {
     if (!expiresAt) { setTimeLeft(""); return; }
+    const expiredLabel = t ? t("challenges.expired") : "Expired";
     const update = () => {
       const diff = new Date(expiresAt).getTime() - Date.now();
-      if (diff <= 0) { setTimeLeft("Scaduta"); return; }
+      if (diff <= 0) { setTimeLeft(expiredLabel); return; }
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       setTimeLeft(`${h}h ${m}m`);
@@ -145,17 +150,36 @@ export default function Challenges() {
     },
   });
 
-  const defaultChallenges: DailyChallenge[] = DEFAULT_CHALLENGES;
+  const defaultChallenges: DailyChallenge[] = getDefaultChallenges(t);
+
+  const challengeItTitles = [
+    "Truccato/a da Donna", "Pulizia Bagno", "Chef per un Giorno", "Animale Domestico",
+    "Tramonto Romantico", "Talento Nascosto", "Look del Mattino", "Outfit Creativo",
+    "Angolo Relax", "Outfit del \"Ma Anche No\"", "Healthy Snack", "Caffeina Check",
+  ];
+
+  const translateChallenges = (items: DailyChallenge[]): DailyChallenge[] => {
+    const translationMap: Record<string, { title: string; description: string }> = {};
+    challengeItTitles.forEach((itTitle, i) => {
+      const key = `ch${i + 1}`;
+      translationMap[itTitle] = { title: t(`challenges.${key}Title`), description: t(`challenges.${key}Desc`) };
+    });
+    return items.map(ch => {
+      const mapped = translationMap[ch.title];
+      return mapped ? { ...ch, title: mapped.title, description: mapped.description } : ch;
+    });
+  };
 
   const activeChallenges = isGuest ? guestChallenges : challenges;
-  const displayChallenges = activeChallenges?.length ? activeChallenges : defaultChallenges;
+  const rawChallenges = activeChallenges?.length ? activeChallenges : defaultChallenges;
+  const displayChallenges = translateChallenges(rawChallenges);
   const activeLoading = isGuest ? guestLoading : isLoading;
 
   const challengeBannerConfig: Record<string, { icon: any; gradient: string }> = {
-    "Angolo Relax": { icon: Sofa, gradient: "from-teal-200 to-cyan-100" },
-    "Outfit del \"Ma Anche No\"": { icon: Shirt, gradient: "from-pink-200 to-rose-100" },
-    "Healthy Snack": { icon: Apple, gradient: "from-green-200 to-lime-100" },
-    "Caffeina Check": { icon: Coffee, gradient: "from-amber-200 to-yellow-100" },
+    [t("challenges.ch9Title")]: { icon: Sofa, gradient: "from-teal-200 to-cyan-100" },
+    [t("challenges.ch10Title")]: { icon: Shirt, gradient: "from-pink-200 to-rose-100" },
+    [t("challenges.ch11Title")]: { icon: Apple, gradient: "from-green-200 to-lime-100" },
+    [t("challenges.ch12Title")]: { icon: Coffee, gradient: "from-amber-200 to-yellow-100" },
   };
 
   const getSubmissionForChallenge = (challengeId: string) => {
@@ -305,7 +329,7 @@ export default function Challenges() {
             <div className="aspect-square rounded-lg overflow-hidden mb-4 max-w-xs mx-auto">
               <img
                 src={previewUrl}
-                alt="Anteprima"
+                alt={t("challenges.preview")}
                 className="w-full h-full object-cover"
                 data-testid="img-photo-preview"
               />
@@ -406,7 +430,7 @@ export default function Challenges() {
                         <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
                           <img
                             src={submission!.imageUrl}
-                            alt="Submission"
+                            alt={t("challenges.submission")}
                             className="w-full h-full object-cover"
                             data-testid={`img-submission-${challenge.id}`}
                           />
@@ -415,7 +439,7 @@ export default function Challenges() {
                         <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 relative">
                           <img
                             src={submission!.imageUrl}
-                            alt="In attesa"
+                            alt={t("challenges.pendingAlt")}
                             className="w-full h-full object-cover opacity-60"
                             data-testid={`img-pending-${challenge.id}`}
                           />
