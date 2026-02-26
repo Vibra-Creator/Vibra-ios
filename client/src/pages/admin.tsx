@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2 } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -122,6 +122,59 @@ export default function Admin() {
       toast({ title: "Errore", description: "Impossibile creare il backup", variant: "destructive" });
     },
   });
+
+  const downloadCSV = (filename: string, content: string) => {
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + content], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const generateFullReport = () => {
+    if (!referralStats || referralStats.length === 0) return;
+    const discountPct = appSettingsData?.referral_discount_percent || "10";
+    const commissionPct = appSettingsData?.referral_commission_percent || "15";
+    let csv = "REPORT REFERRAL VIBRA\n";
+    csv += `Data Report;${new Date().toLocaleString("it-IT")}\n`;
+    csv += `Sconto Invitato;${discountPct}%\n`;
+    csv += `Commissione Procacciatore;${commissionPct}%\n\n`;
+    csv += "Procacciatore;Codice;Tot. Invitati;Abbonati;Commissione Dovuta\n";
+    for (const r of referralStats) {
+      csv += `${r.name};${r.code};${r.totalReferred};${r.paidReferred};Da calcolare\n`;
+    }
+    csv += `\n\nDETTAGLIO PER PROCACCIATORE\n`;
+    for (const r of referralStats) {
+      csv += `\n--- ${r.name} (${r.code}) ---\n`;
+      csv += "Nome Invitato;Email;Data Registrazione;Ha Pagato\n";
+      for (const u of r.referredUsers) {
+        csv += `${u.name || "N/A"};${u.email};${new Date(u.createdAt).toLocaleDateString("it-IT")};${u.hasPaid ? "Si" : "No"}\n`;
+      }
+    }
+    downloadCSV(`report-referral-vibra-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    toast({ title: "Report scaricato!", description: "Il file CSV è stato generato con successo." });
+  };
+
+  const generateSingleReport = (referrer: any) => {
+    const discountPct = appSettingsData?.referral_discount_percent || "10";
+    const commissionPct = appSettingsData?.referral_commission_percent || "15";
+    let csv = `REPORT PROCACCIATORE - ${referrer.name}\n`;
+    csv += `Data Report;${new Date().toLocaleString("it-IT")}\n`;
+    csv += `Codice Referral;${referrer.code}\n`;
+    csv += `Totale Invitati;${referrer.totalReferred}\n`;
+    csv += `Abbonati;${referrer.paidReferred}\n`;
+    csv += `Sconto Invitato;${discountPct}%\n`;
+    csv += `Commissione Procacciatore;${commissionPct}%\n\n`;
+    csv += "Nome Invitato;Email;Data Registrazione;Ha Pagato\n";
+    for (const u of referrer.referredUsers) {
+      csv += `${u.name || "N/A"};${u.email};${new Date(u.createdAt).toLocaleDateString("it-IT")};${u.hasPaid ? "Si" : "No"}\n`;
+    }
+    downloadCSV(`report-${referrer.name.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    toast({ title: "Report scaricato!", description: `Report di ${referrer.name} generato.` });
+  };
 
   const deleteProfileMutation = useMutation({
     mutationFn: async (profileId: string) => apiRequest("DELETE", `/api/admin/profiles/${profileId}`),
@@ -931,7 +984,16 @@ export default function Admin() {
             )}
 
             <Card>
-              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Procacciatori & Referral</CardTitle></CardHeader>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Procacciatori & Referral</CardTitle>
+                  {referralStats && referralStats.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={generateFullReport} data-testid="button-download-full-report">
+                      <FileText className="w-4 h-4 mr-1" /> Scarica Report Completo
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
               <CardContent>
                 {referralStats && referralStats.length > 0 ? (
                   <div className="space-y-4">
@@ -956,9 +1018,14 @@ export default function Admin() {
                             <p className="font-bold text-lg">{referrer.name}</p>
                             <p className="text-sm text-muted-foreground">Codice: <span className="font-mono font-bold">{referrer.code}</span></p>
                           </div>
-                          <div className="text-right">
-                            <Badge variant="secondary" className="mb-1">{referrer.totalReferred} invitati</Badge>
-                            {referrer.paidReferred > 0 && <Badge variant="default" className="ml-1">{referrer.paidReferred} abbonati</Badge>}
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <Badge variant="secondary" className="mb-1">{referrer.totalReferred} invitati</Badge>
+                              {referrer.paidReferred > 0 && <Badge variant="default" className="ml-1">{referrer.paidReferred} abbonati</Badge>}
+                            </div>
+                            <Button size="sm" variant="ghost" onClick={() => generateSingleReport(referrer)} title="Scarica report" data-testid={`button-report-${referrer.profileId}`}>
+                              <FileText className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                         {referrer.referredUsers.length > 0 && (
