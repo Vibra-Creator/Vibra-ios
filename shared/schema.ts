@@ -50,6 +50,7 @@ export const profiles = pgTable("profiles", {
   profileLongitude: doublePrecision("profile_longitude"),
   maxDistanceKm: integer("max_distance_km"),
   lastActiveAt: timestamp("last_active_at"),
+  referralCode: varchar("referral_code"),
 });
 
 export const swipes = pgTable("swipes", {
@@ -322,3 +323,16 @@ export const locationShares = pgTable("location_shares", {
 });
 
 export type LocationShare = typeof locationShares.$inferSelect;
+
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerProfileId: varchar("referrer_profile_id").notNull(),
+  referredUserId: varchar("referred_user_id").notNull(),
+  referralCode: varchar("referral_code").notNull(),
+  hasPaid: boolean("has_paid").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Referral = typeof referrals.$inferSelect;
+export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true, hasPaid: true });
+export type InsertReferral = z.infer<typeof insertReferralSchema>;

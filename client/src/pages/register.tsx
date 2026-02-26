@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, User, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, UserPlus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,8 +21,21 @@ export default function Register() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [confirmAge, setConfirmAge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+  const [referralName, setReferralName] = useState("");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  const validateReferralCode = async (code: string) => {
+    if (!code || code.length < 4) { setReferralValid(null); return; }
+    try {
+      const res = await fetch(`/api/referral/validate/${encodeURIComponent(code)}`);
+      const data = await res.json();
+      setReferralValid(data.valid);
+      setReferralName(data.referrerName || "");
+    } catch { setReferralValid(null); }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +67,24 @@ export default function Register() {
       return;
     }
 
+    if (referralCode && referralValid === false) {
+      toast({
+        title: "Errore",
+        description: "Il codice invito inserito non è valido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (referralCode && referralValid === null) {
+      toast({
+        title: "Errore",
+        description: "Attendere la verifica del codice invito",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -70,6 +101,16 @@ export default function Register() {
       }
 
       sessionStorage.removeItem("vibra-guest-mode");
+      if (referralCode && referralValid) {
+        try {
+          await fetch("/api/referral/apply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: referralCode }),
+            credentials: "include",
+          });
+        } catch {}
+      }
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Benvenuto su Vibra!",
@@ -212,6 +253,34 @@ export default function Register() {
                     data-testid="input-confirm-password"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="referralCode" className="text-white/90">Codice Invito (opzionale)</Label>
+                <div className="relative">
+                  <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                  <Input
+                    id="referralCode"
+                    type="text"
+                    placeholder="Es: VBR-ABC123"
+                    value={referralCode}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      setReferralCode(val);
+                      validateReferralCode(val);
+                    }}
+                    className={`pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60 uppercase ${referralValid === true ? 'border-green-400' : referralValid === false ? 'border-red-400' : ''}`}
+                    data-testid="input-referral-code"
+                  />
+                </div>
+                {referralValid === true && (
+                  <p className="text-xs text-green-400 flex items-center gap-1" data-testid="text-referral-valid">
+                    <CheckCircle className="w-3 h-3" /> Invitato da {referralName}
+                  </p>
+                )}
+                {referralValid === false && referralCode.length >= 4 && (
+                  <p className="text-xs text-red-400" data-testid="text-referral-invalid">Codice non valido</p>
+                )}
               </div>
 
               <div className="flex items-start space-x-2">

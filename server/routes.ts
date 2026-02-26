@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -352,11 +352,19 @@ export async function registerRoutes(
         });
         return res.json(updated);
       }
+      let refCode = "";
+      for (let i = 0; i < 10; i++) {
+        const candidate = "VBR-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const [existing] = await db.select().from(profiles).where(eq(profiles.referralCode, candidate));
+        if (!existing) { refCode = candidate; break; }
+      }
+      if (!refCode) refCode = "VBR-" + Date.now().toString(36).toUpperCase();
       const profile = await storage.createProfile({
         ...validatedData,
         userId,
         isBot: false,
         points: 0,
+        referralCode: refCode,
       });
       res.status(201).json(profile);
     } catch (error) {
@@ -754,6 +762,117 @@ export async function registerRoutes(
       res.status(500).json({ error: "Server error" });
     }
   };
+
+  app.get("/api/referral/my-code", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      if (!profile.referralCode) {
+        let code = "";
+        for (let i = 0; i < 10; i++) {
+          const candidate = "VBR-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+          const [existing] = await db.select().from(profiles).where(eq(profiles.referralCode, candidate));
+          if (!existing) { code = candidate; break; }
+        }
+        if (!code) code = "VBR-" + Date.now().toString(36).toUpperCase();
+        await db.update(profiles).set({ referralCode: code }).where(eq(profiles.id, profile.id));
+        return res.json({ code, referrals: 0, paidReferrals: 0 });
+      }
+      const myReferrals = await db.select().from(referrals).where(eq(referrals.referrerProfileId, profile.id));
+      const paidCount = myReferrals.filter(r => r.hasPaid).length;
+      res.json({ code: profile.referralCode, referrals: myReferrals.length, paidReferrals: paidCount });
+    } catch (error) {
+      console.error("Error fetching referral code:", error);
+      res.status(500).json({ error: "Failed to fetch referral code" });
+    }
+  });
+
+  app.get("/api/referral/validate/:code", async (req, res) => {
+    try {
+      const code = req.params.code.toUpperCase();
+      const [profile] = await db.select().from(profiles).where(eq(profiles.referralCode, code));
+      if (!profile) return res.json({ valid: false });
+      res.json({ valid: true, referrerName: profile.name });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to validate code" });
+    }
+  });
+
+  app.post("/api/referral/apply", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: "Code is required" });
+      const upperCode = code.toUpperCase();
+      const [referrerProfile] = await db.select().from(profiles).where(eq(profiles.referralCode, upperCode));
+      if (!referrerProfile) return res.status(404).json({ error: "Codice non valido" });
+      const existing = await db.select().from(referrals).where(eq(referrals.referredUserId, userId));
+      if (existing.length > 0) return res.status(400).json({ error: "Hai già usato un codice invito" });
+      if (referrerProfile.userId === userId) return res.status(400).json({ error: "Non puoi usare il tuo codice" });
+      await db.insert(referrals).values({
+        referrerProfileId: referrerProfile.id,
+        referredUserId: userId,
+        referralCode: upperCode,
+      });
+      res.json({ success: true, referrerName: referrerProfile.name });
+    } catch (error) {
+      console.error("Error applying referral:", error);
+      res.status(500).json({ error: "Failed to apply referral code" });
+    }
+  });
+
+  app.get("/api/admin/referrals", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allReferrals = await db.select().from(referrals);
+      const allProfiles = await storage.getProfiles();
+      const allUsers = await storage.getAllUsers();
+      const profileMap = new Map(allProfiles.map(p => [p.id, p]));
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+      const referrerStats = new Map<string, { profileId: string; name: string; code: string; totalReferred: number; paidReferred: number; referredUsers: any[] }>();
+      for (const r of allReferrals) {
+        const referrer = profileMap.get(r.referrerProfileId);
+        if (!referrer) continue;
+        if (!referrerStats.has(r.referrerProfileId)) {
+          referrerStats.set(r.referrerProfileId, {
+            profileId: r.referrerProfileId,
+            name: referrer.name,
+            code: referrer.referralCode || r.referralCode,
+            totalReferred: 0,
+            paidReferred: 0,
+            referredUsers: [],
+          });
+        }
+        const stat = referrerStats.get(r.referrerProfileId)!;
+        stat.totalReferred++;
+        if (r.hasPaid) stat.paidReferred++;
+        const referredUser = userMap.get(r.referredUserId);
+        stat.referredUsers.push({
+          userId: r.referredUserId,
+          email: referredUser?.email || "N/A",
+          name: referredUser ? `${referredUser.firstName || ""} ${referredUser.lastName || ""}`.trim() : "N/A",
+          hasPaid: r.hasPaid,
+          createdAt: r.createdAt,
+        });
+      }
+      res.json(Array.from(referrerStats.values()));
+    } catch (error) {
+      console.error("Error fetching admin referrals:", error);
+      res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
+  app.patch("/api/admin/referrals/:id/paid", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { hasPaid } = req.body;
+      await db.update(referrals).set({ hasPaid: !!hasPaid }).where(eq(referrals.id, req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update referral" });
+    }
+  });
 
   app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

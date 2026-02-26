@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -154,6 +154,61 @@ function PrimaImpressioneToggle({ profile }: { profile: Profile }) {
         </div>
       )}
     </button>
+  );
+}
+
+function ReferralSection() {
+  const { toast } = useToast();
+  const { data: referralData, isLoading } = useQuery<{ code: string; referrals: number; paidReferrals: number }>({
+    queryKey: ["/api/referral/my-code"],
+  });
+
+  const shareCode = () => {
+    const code = referralData?.code || "";
+    const shareText = `Unisciti a Vibra! Usa il mio codice invito: ${code}\nhttps://vibraalienmatch.com/register`;
+    if (navigator.share) {
+      navigator.share({ title: "Vibra - Codice Invito", text: shareText }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast({ title: "Copiato!", description: "Il tuo codice invito è stato copiato negli appunti" });
+    }
+  };
+
+  if (isLoading) return null;
+  if (!referralData) return null;
+
+  return (
+    <div className="p-5 rounded-xl bg-gradient-to-r from-cyan-500/20 via-primary/20 to-pink-500/20 border-2 border-primary/30 backdrop-blur-md" data-testid="referral-section">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center shrink-0">
+          <UserPlus className="w-6 h-6 text-primary" />
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-white text-lg">Invita Amici</p>
+          <p className="text-xs text-white/60">Condividi il tuo codice e guadagna ricompense</p>
+        </div>
+      </div>
+      <div className="bg-black/40 rounded-lg p-3 mb-3 flex items-center justify-between">
+        <div>
+          <p className="text-[10px] text-white/40 uppercase tracking-wider">Il tuo codice</p>
+          <p className="text-xl font-bold text-white tracking-widest" data-testid="text-referral-code">{referralData.code}</p>
+        </div>
+        <Button size="sm" variant="outline" className="text-white border-white/30" onClick={shareCode} data-testid="button-share-referral">
+          <Gift className="w-4 h-4 mr-1" />
+          Condividi
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-white/5 rounded-lg p-2 text-center">
+          <p className="text-2xl font-bold text-white" data-testid="text-referral-count">{referralData.referrals}</p>
+          <p className="text-[10px] text-white/50">Amici Invitati</p>
+        </div>
+        <div className="bg-white/5 rounded-lg p-2 text-center">
+          <p className="text-2xl font-bold text-white" data-testid="text-referral-paid">{referralData.paidReferrals}</p>
+          <p className="text-[10px] text-white/50">Abbonati</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -540,6 +595,8 @@ export default function ProfilePage() {
         </div>
 
         <PrimaImpressioneToggle profile={profile} />
+
+        <ReferralSection />
 
         <div className="space-y-2">
           <Button 

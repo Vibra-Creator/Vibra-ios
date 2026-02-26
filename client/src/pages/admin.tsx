@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -82,6 +82,10 @@ export default function Admin() {
 
   const { data: submissions } = useQuery<ChallengeSubmission[]>({
     queryKey: ["/api/admin/challenge-submissions"],
+  });
+
+  const { data: referralStats } = useQuery<any[]>({
+    queryKey: ["/api/admin/referrals"],
   });
 
   const deleteProfileMutation = useMutation({
@@ -320,6 +324,10 @@ export default function Admin() {
               Foto {pendingSubmissions.length > 0 && <Badge variant="destructive" className="ml-1">{pendingSubmissions.length}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="words" data-testid="tab-words">Filtro Parole</TabsTrigger>
+            <TabsTrigger value="referrals" data-testid="tab-referrals">
+              <UserPlus className="w-3 h-3 mr-1" />
+              Referral {referralStats && referralStats.length > 0 && <Badge variant="secondary" className="ml-1">{referralStats.reduce((a: number, r: any) => a + r.totalReferred, 0)}</Badge>}
+            </TabsTrigger>
           </TabsList>
 
           {/* PROFILI TAB */}
@@ -799,6 +807,66 @@ export default function Admin() {
                   ))}
                   {(!bannedWordsList || bannedWordsList.length === 0) && <p className="text-sm text-muted-foreground">Nessuna parola nella lista</p>}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="referrals">
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Procacciatori & Referral</CardTitle></CardHeader>
+              <CardContent>
+                {referralStats && referralStats.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="bg-muted/50 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold">{referralStats.length}</p>
+                        <p className="text-xs text-muted-foreground">Procacciatori</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold">{referralStats.reduce((a: number, r: any) => a + r.totalReferred, 0)}</p>
+                        <p className="text-xs text-muted-foreground">Totale Invitati</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold">{referralStats.reduce((a: number, r: any) => a + r.paidReferred, 0)}</p>
+                        <p className="text-xs text-muted-foreground">Abbonati</p>
+                      </div>
+                    </div>
+                    {referralStats.map((referrer: any) => (
+                      <div key={referrer.profileId} className="border rounded-lg p-4 space-y-3" data-testid={`referrer-${referrer.profileId}`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-lg">{referrer.name}</p>
+                            <p className="text-sm text-muted-foreground">Codice: <span className="font-mono font-bold">{referrer.code}</span></p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="secondary" className="mb-1">{referrer.totalReferred} invitati</Badge>
+                            {referrer.paidReferred > 0 && <Badge variant="default" className="ml-1">{referrer.paidReferred} abbonati</Badge>}
+                          </div>
+                        </div>
+                        {referrer.referredUsers.length > 0 && (
+                          <div className="space-y-2 pl-4 border-l-2 border-primary/30">
+                            {referrer.referredUsers.map((u: any, idx: number) => (
+                              <div key={idx} className="flex items-center justify-between text-sm py-1">
+                                <div>
+                                  <span className="font-medium">{u.name || "N/A"}</span>
+                                  <span className="text-muted-foreground ml-2">{u.email}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString("it-IT")}</span>
+                                  <Badge variant={u.hasPaid ? "default" : "outline"} className="text-xs">
+                                    {u.hasPaid ? "Pagato" : "Non pagato"}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">Nessun referral registrato</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
