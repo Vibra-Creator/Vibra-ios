@@ -1558,8 +1558,18 @@ export async function seedDatabase() {
     await db.execute(sql`UPDATE profiles SET points = 0 WHERE points != 0`);
 
     const botProfiles = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.isBot, true));
-    for (const bot of botProfiles) {
-      const randomMinutesAgo = Math.floor(Math.random() * 1440);
+    for (let i = 0; i < botProfiles.length; i++) {
+      const bot = botProfiles[i];
+      let randomMinutesAgo: number;
+      if (i < 5) {
+        randomMinutesAgo = Math.floor(Math.random() * 3);
+      } else if (i < 15) {
+        randomMinutesAgo = Math.floor(Math.random() * 30) + 3;
+      } else if (i < 30) {
+        randomMinutesAgo = Math.floor(Math.random() * 120) + 30;
+      } else {
+        randomMinutesAgo = Math.floor(Math.random() * 1440) + 120;
+      }
       const lastActive = new Date(Date.now() - randomMinutesAgo * 60000);
       await db.update(profiles).set({ lastActiveAt: lastActive }).where(eq(profiles.id, bot.id));
     }

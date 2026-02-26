@@ -372,6 +372,9 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(roomMembers.roomId, roomId), eq(roomMembers.profileId, profileId)));
     if (existing.length === 0) {
       await db.insert(roomMembers).values({ roomId, profileId });
+    } else {
+      await db.update(roomMembers).set({ joinedAt: new Date() })
+        .where(and(eq(roomMembers.roomId, roomId), eq(roomMembers.profileId, profileId)));
     }
   }
 

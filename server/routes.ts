@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ne } from "drizzle-orm";
+import { eq, or, and, ne, sql, lt } from "drizzle-orm";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import multer from "multer";
@@ -132,6 +132,37 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   registerObjectStorageRoutes(app);
 
+  const activityCache = new Map<string, number>();
+  app.use(async (req: any, _res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (userId) {
+        const now = Date.now();
+        const lastUpdate = activityCache.get(userId) || 0;
+        if (now - lastUpdate > 60000) {
+          activityCache.set(userId, now);
+          const profile = await storage.getProfileByUserId(userId);
+          if (profile) {
+            db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, profile.id)).execute().catch(() => {});
+          }
+        }
+      }
+    } catch {}
+    next();
+  });
+
+  async function cleanExpiredRoomMembers() {
+    try {
+      const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000);
+      const result = await db.delete(roomMembers).where(lt(roomMembers.joinedAt, cutoff));
+      console.log(`[room-cleanup] Cleaned expired room members`);
+    } catch (e) {
+      console.error("[room-cleanup] Error:", e);
+    }
+  }
+  cleanExpiredRoomMembers();
+  setInterval(cleanExpiredRoomMembers, 30 * 60 * 1000);
+
   app.get("/api/auth/social-config", (req, res) => {
     res.json({
       googleClientId: process.env.GOOGLE_CLIENT_ID || null,
@@ -247,8 +278,12 @@ export async function registerRoutes(
 
   app.get("/api/guest/rooms", async (_req, res) => {
     try {
-      const rooms = await storage.getRooms();
-      res.json(rooms);
+      const allRooms = await storage.getRooms();
+      const roomsWithCounts = await Promise.all(allRooms.map(async (room) => {
+        const members = await db.select().from(roomMembers).where(eq(roomMembers.roomId, room.id));
+        return { ...room, memberCount: members.length };
+      }));
+      res.json(roomsWithCounts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch rooms" });
     }
@@ -1408,8 +1443,12 @@ export async function registerRoutes(
   // Rooms API
   app.get("/api/rooms", isAuthenticated, async (req, res) => {
     try {
-      const rooms = await storage.getRooms();
-      res.json(rooms);
+      const allRooms = await storage.getRooms();
+      const roomsWithCounts = await Promise.all(allRooms.map(async (room) => {
+        const members = await db.select().from(roomMembers).where(eq(roomMembers.roomId, room.id));
+        return { ...room, memberCount: members.length };
+      }));
+      res.json(roomsWithCounts);
     } catch (error) {
       console.error("Error fetching rooms:", error);
       res.status(500).json({ error: "Failed to fetch rooms" });

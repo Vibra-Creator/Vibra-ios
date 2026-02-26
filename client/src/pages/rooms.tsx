@@ -50,14 +50,14 @@ export default function Rooms() {
   });
 
   const defaultRooms = [
-    { id: "1", name: t("rooms.room1Name"), interest: t("rooms.room1Name"), description: t("rooms.room1Desc"), memberCount: 42 },
-    { id: "2", name: t("rooms.room2Name"), interest: t("rooms.room2Name"), description: t("rooms.room2Desc"), memberCount: 38 },
-    { id: "3", name: t("rooms.room3Name"), interest: t("rooms.room3Name"), description: t("rooms.room3Desc"), memberCount: 25 },
-    { id: "4", name: t("rooms.room4Name"), interest: t("rooms.room4Name"), description: t("rooms.room4Desc"), memberCount: 31 },
-    { id: "5", name: t("rooms.room5Name"), interest: t("rooms.room5Name"), description: t("rooms.room5Desc"), memberCount: 56 },
-    { id: "6", name: t("rooms.room6Name"), interest: t("rooms.room6Name"), description: t("rooms.room6Desc"), memberCount: 19 },
-    { id: "7", name: t("rooms.room7Name"), interest: t("rooms.room7Name"), description: t("rooms.room7Desc"), memberCount: 33 },
-    { id: "8", name: t("rooms.room8Name"), interest: t("rooms.room8Name"), description: t("rooms.room8Desc"), memberCount: 27 },
+    { id: "1", name: t("rooms.room1Name"), interest: t("rooms.room1Name"), description: t("rooms.room1Desc"), memberCount: 0 },
+    { id: "2", name: t("rooms.room2Name"), interest: t("rooms.room2Name"), description: t("rooms.room2Desc"), memberCount: 0 },
+    { id: "3", name: t("rooms.room3Name"), interest: t("rooms.room3Name"), description: t("rooms.room3Desc"), memberCount: 0 },
+    { id: "4", name: t("rooms.room4Name"), interest: t("rooms.room4Name"), description: t("rooms.room4Desc"), memberCount: 0 },
+    { id: "5", name: t("rooms.room5Name"), interest: t("rooms.room5Name"), description: t("rooms.room5Desc"), memberCount: 0 },
+    { id: "6", name: t("rooms.room6Name"), interest: t("rooms.room6Name"), description: t("rooms.room6Desc"), memberCount: 0 },
+    { id: "7", name: t("rooms.room7Name"), interest: t("rooms.room7Name"), description: t("rooms.room7Desc"), memberCount: 0 },
+    { id: "8", name: t("rooms.room8Name"), interest: t("rooms.room8Name"), description: t("rooms.room8Desc"), memberCount: 0 },
   ];
 
   const roomItNames = [
@@ -147,7 +147,7 @@ export default function Rooms() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
                         <Users className="w-4 h-4 text-cyan-400" />
-                        <span className="text-cyan-400 font-medium">{(room as any).memberCount || Math.floor(Math.random() * 50 + 10)} {t("rooms.members")}</span>
+                        <span className="text-cyan-400 font-medium">{(room as any).memberCount ?? 0} {t("rooms.members")}</span>
                       </div>
                       <Button size="sm" variant="ghost" className="gap-1 text-white/80" data-testid={`button-enter-room-${room.id}`}>
                         {t("rooms.enter")} <ArrowRight className="w-4 h-4" />
