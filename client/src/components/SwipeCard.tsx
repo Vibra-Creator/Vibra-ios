@@ -9,6 +9,24 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Profile } from "@shared/schema";
 
+function getActivityStatus(lastActiveAt: string | Date | null | undefined): { label: string; color: string; isOnline: boolean } {
+  if (!lastActiveAt) return { label: "", color: "", isOnline: false };
+  const now = new Date();
+  const lastActive = new Date(lastActiveAt);
+  const diffMs = now.getTime() - lastActive.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 5) return { label: "Attivo ora", color: "bg-green-500", isOnline: true };
+  if (diffMin < 60) return { label: `${diffMin} min fa`, color: "bg-green-400", isOnline: true };
+  if (diffHours < 2) return { label: "1 ora fa", color: "bg-yellow-400", isOnline: false };
+  if (diffHours < 6) return { label: `${diffHours} ore fa`, color: "bg-yellow-500", isOnline: false };
+  if (diffHours < 24) return { label: `${diffHours} ore fa`, color: "bg-orange-400", isOnline: false };
+  if (diffDays < 3) return { label: `${diffDays}g fa`, color: "bg-orange-500", isOnline: false };
+  return { label: "", color: "", isOnline: false };
+}
+
 interface ProfileDetailModalProps {
   profile: Profile;
   isOpen: boolean;
@@ -110,9 +128,21 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                     <BadgeCheck className="w-6 h-6 text-blue-400" />
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-white/80">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{profile.location}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 text-white/80">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm">{profile.location}</span>
+                  </div>
+                  {(() => {
+                    const activity = getActivityStatus((profile as any).lastActiveAt);
+                    if (!activity.label) return null;
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${activity.color} ${activity.isOnline ? 'animate-pulse shadow-[0_0_6px_rgba(34,197,94,0.8)]' : ''}`} />
+                        <span className="text-xs text-white/70 font-medium">{activity.label}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -469,9 +499,21 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   )}
                 </div>
                 
-                <div className="flex items-center gap-1 text-white/80 mb-3">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{profile.location}</span>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-1 text-white/80">
+                    <MapPin className="w-4 h-4" />
+                    <span className="text-sm">{profile.location}</span>
+                  </div>
+                  {(() => {
+                    const activity = getActivityStatus((profile as any).lastActiveAt);
+                    if (!activity.label) return null;
+                    return (
+                      <div className="flex items-center gap-1.5" data-testid={`activity-status-${profile.id}`}>
+                        <span className={`w-2 h-2 rounded-full ${activity.color} ${activity.isOnline ? 'animate-pulse shadow-[0_0_6px_rgba(34,197,94,0.8)]' : ''}`} />
+                        <span className="text-xs text-white/70 font-medium">{activity.label}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 
                 <p className="text-white/90 text-sm line-clamp-2 mb-3" data-testid={`profile-bio-${profile.id}`}>

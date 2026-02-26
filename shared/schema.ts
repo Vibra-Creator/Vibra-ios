@@ -49,6 +49,7 @@ export const profiles = pgTable("profiles", {
   profileLatitude: doublePrecision("profile_latitude"),
   profileLongitude: doublePrecision("profile_longitude"),
   maxDistanceKm: integer("max_distance_km"),
+  lastActiveAt: timestamp("last_active_at"),
 });
 
 export const swipes = pgTable("swipes", {

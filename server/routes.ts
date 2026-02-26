@@ -150,6 +150,7 @@ export async function registerRoutes(
       const profile = await storage.getProfileByUserId(userId);
       if (profile) {
         console.log(`[/api/profiles/me] userId=${userId} profileId=${profile.id} points=${profile.points}`);
+        db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, profile.id)).execute().catch(() => {});
       } else {
         console.log(`[/api/profiles/me] userId=${userId} NO PROFILE FOUND`);
       }
@@ -575,6 +576,7 @@ export async function registerRoutes(
       const validatedData = insertSwipeSchema.parse(req.body);
       
       console.log(`[SWIPE] ${validatedData.swiperId} -> ${validatedData.swipedId}, liked: ${validatedData.liked}`);
+      db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, validatedData.swiperId)).execute().catch(() => {});
       
       const existingSwipe = await storage.getSwipe(validatedData.swiperId, validatedData.swipedId);
       if (existingSwipe) {
