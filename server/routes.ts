@@ -875,6 +875,30 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/all-codes", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allProfiles = await storage.getProfiles();
+      const allUsers = await storage.getAllUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+      const result = allProfiles
+        .filter(p => !p.isBot && p.referralCode)
+        .map(p => {
+          const user = userMap.get(p.userId || "");
+          return {
+            profileId: p.id,
+            name: p.name,
+            email: user?.email || "N/A",
+            referralCode: p.referralCode,
+            isBot: p.isBot,
+          };
+        });
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching all codes:", error);
+      res.status(500).json({ error: "Failed to fetch codes" });
+    }
+  });
+
   app.get("/api/admin/backups", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const backups = await getBackupList();

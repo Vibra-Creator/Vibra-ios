@@ -88,6 +88,10 @@ export default function Admin() {
     queryKey: ["/api/admin/referrals"],
   });
 
+  const { data: allCodes } = useQuery<any[]>({
+    queryKey: ["/api/admin/all-codes"],
+  });
+
   const { data: backups, isLoading: backupsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/backups"],
   });
