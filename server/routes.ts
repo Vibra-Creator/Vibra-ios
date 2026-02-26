@@ -13,6 +13,7 @@ import fs from "fs";
 import { randomUUID } from "crypto";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import OpenAI from "openai";
+import { createBackup, getBackupList, startAutoBackup } from "./backup";
 
 const OFFENSIVE_WORDS = [
   "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
@@ -871,6 +872,26 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to update referral" });
+    }
+  });
+
+  app.get("/api/admin/backups", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const backups = await getBackupList();
+      res.json(backups);
+    } catch (error) {
+      console.error("Error listing backups:", error);
+      res.status(500).json({ error: "Failed to list backups" });
+    }
+  });
+
+  app.post("/api/admin/backups/create", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const result = await createBackup();
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      res.status(500).json({ error: "Failed to create backup" });
     }
   });
 

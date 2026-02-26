@@ -26,6 +26,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
 - **Distance Filtering**: Profiles filtered by distance (5-200km slider). City coordinates auto-set from Italian cities database. Haversine formula calculates real distances between users.
 - **Guest Mode (Modalità Ospite)**: Browse the entire app without registering. See all profiles, rooms, challenges, and features in read-only mode. Interactions (swipe, chat, join rooms) blocked with registration prompt modal. Guest state stored in sessionStorage, public API endpoints at /api/guest/*
 - **Referral System (Procacciatore)**: Users get auto-generated VBR-XXXXX invite codes, can share via profile page. New users enter code during registration. Admin dashboard shows all referrers, their invited users, and paid status. Prepared for future subscription commissions/discounts.
+- **Auto Backup**: Automatic daily database backup to Object Storage. Exports all 22 tables as JSON. Admin can trigger manual backups and view backup history from dashboard. Keeps last 7 backups, auto-deletes older ones.
 
 ## Tech Stack
 - **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion

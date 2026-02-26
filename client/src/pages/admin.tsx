@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -86,6 +86,21 @@ export default function Admin() {
 
   const { data: referralStats } = useQuery<any[]>({
     queryKey: ["/api/admin/referrals"],
+  });
+
+  const { data: backups, isLoading: backupsLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/backups"],
+  });
+
+  const createBackupMutation = useMutation({
+    mutationFn: async () => apiRequest("POST", "/api/admin/backups/create"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/backups"] });
+      toast({ title: "Backup completato!", description: "Il backup del database è stato creato con successo." });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile creare il backup", variant: "destructive" });
+    },
   });
 
   const deleteProfileMutation = useMutation({
@@ -327,6 +342,10 @@ export default function Admin() {
             <TabsTrigger value="referrals" data-testid="tab-referrals">
               <UserPlus className="w-3 h-3 mr-1" />
               Referral {referralStats && referralStats.length > 0 && <Badge variant="secondary" className="ml-1">{referralStats.reduce((a: number, r: any) => a + r.totalReferred, 0)}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="backups" data-testid="tab-backups">
+              <Database className="w-3 h-3 mr-1" />
+              Backup
             </TabsTrigger>
           </TabsList>
 
@@ -866,6 +885,55 @@ export default function Admin() {
                   </div>
                 ) : (
                   <p className="text-center text-muted-foreground py-8">Nessun referral registrato</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="backups">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2"><Database className="w-5 h-5" /> Backup Database</CardTitle>
+                  <Button onClick={() => createBackupMutation.mutate()} disabled={createBackupMutation.isPending} data-testid="button-create-backup">
+                    {createBackupMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
+                    {createBackupMutation.isPending ? "Creazione..." : "Crea Backup Ora"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Il backup automatico viene eseguito ogni 24 ore. I dati vengono salvati nell'Object Storage cloud. Vengono mantenuti gli ultimi 7 backup.
+                </p>
+                {backupsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : backups && backups.length > 0 ? (
+                  <div className="space-y-2">
+                    {backups.map((backup: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border" data-testid={`backup-item-${idx}`}>
+                        <div className="flex items-center gap-3">
+                          <Database className="w-5 h-5 text-primary" />
+                          <div>
+                            <p className="font-medium text-sm">{backup.name.split("/").pop()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {backup.date !== "unknown" ? new Date(backup.date).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short" }) : "Data sconosciuta"}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {backup.size ? `${(backup.size / 1024 / 1024).toFixed(2)} MB` : "N/A"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Database className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">Nessun backup disponibile</p>
+                    <p className="text-xs text-muted-foreground mt-1">Il primo backup automatico verrà creato entro 1 minuto dall'avvio</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
