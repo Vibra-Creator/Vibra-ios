@@ -92,6 +92,22 @@ export default function Admin() {
     queryKey: ["/api/admin/all-codes"],
   });
 
+  const { data: appSettingsData } = useQuery<Record<string, string>>({
+    queryKey: ["/api/admin/settings"],
+  });
+
+  const updateSettingMutation = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: number }) =>
+      apiRequest("PUT", "/api/admin/settings", { key, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      toast({ title: "Impostazione salvata!", description: "La percentuale è stata aggiornata." });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile salvare l'impostazione", variant: "destructive" });
+    },
+  });
+
   const { data: backups, isLoading: backupsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/backups"],
   });
@@ -835,6 +851,85 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="referrals">
+            <Card className="mb-4">
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Gift className="w-5 h-5" /> Impostazioni Percentuali</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Imposta le percentuali per il sistema referral. Le modifiche hanno effetto immediato.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4 space-y-3" data-testid="setting-discount">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="secondary" className="text-xs">Invitato</Badge>
+                      <p className="font-semibold">Sconto Utente Invitato</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Chi si registra con un codice referral riceve questo sconto sull'abbonamento</p>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={appSettingsData?.referral_discount_percent || "10"}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val >= 0 && val <= 100) {
+                            updateSettingMutation.mutate({ key: "referral_discount_percent", value: val });
+                          }
+                        }}
+                        className="w-24 text-center font-bold text-lg"
+                        data-testid="input-discount-percent"
+                      />
+                      <span className="text-2xl font-bold text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-4 space-y-3" data-testid="setting-commission">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="default" className="text-xs">Procacciatore</Badge>
+                      <p className="font-semibold">Commissione Procacciatore</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Chi invita altri utenti guadagna questa percentuale su ogni abbonamento</p>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={appSettingsData?.referral_commission_percent || "15"}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val >= 0 && val <= 100) {
+                            updateSettingMutation.mutate({ key: "referral_commission_percent", value: val });
+                          }
+                        }}
+                        className="w-24 text-center font-bold text-lg"
+                        data-testid="input-commission-percent"
+                      />
+                      <span className="text-2xl font-bold text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {allCodes && allCodes.length > 0 && (
+              <Card className="mb-4">
+                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="w-5 h-5" /> Codici Utenti ({allCodes.length})</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {allCodes.map((user: any) => (
+                      <div key={user.profileId} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg text-sm" data-testid={`code-${user.profileId}`}>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{user.name}</span>
+                          <span className="text-muted-foreground">{user.email}</span>
+                        </div>
+                        <span className="font-mono font-bold text-primary">{user.referralCode}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader><CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Procacciatori & Referral</CardTitle></CardHeader>
               <CardContent>

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -872,6 +872,41 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to update referral" });
+    }
+  });
+
+  app.get("/api/admin/settings", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const settings = await db.select().from(appSettings);
+      const result: Record<string, string> = {};
+      for (const s of settings) { result[s.key] = s.value; }
+      if (!result["referral_discount_percent"]) result["referral_discount_percent"] = "10";
+      if (!result["referral_commission_percent"]) result["referral_commission_percent"] = "15";
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.put("/api/admin/settings", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { key, value } = req.body;
+      if (!key || value === undefined) return res.status(400).json({ error: "key and value required" });
+      const allowedKeys = ["referral_discount_percent", "referral_commission_percent"];
+      if (!allowedKeys.includes(key)) return res.status(400).json({ error: "Invalid setting key" });
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue < 0 || numValue > 100) return res.status(400).json({ error: "Value must be between 0 and 100" });
+      const [existing] = await db.select().from(appSettings).where(eq(appSettings.key, key));
+      if (existing) {
+        await db.update(appSettings).set({ value: String(numValue), updatedAt: new Date() }).where(eq(appSettings.key, key));
+      } else {
+        await db.insert(appSettings).values({ key, value: String(numValue) });
+      }
+      res.json({ success: true, key, value: numValue });
+    } catch (error) {
+      console.error("Error updating setting:", error);
+      res.status(500).json({ error: "Failed to update setting" });
     }
   });
 
