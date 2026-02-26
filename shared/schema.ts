@@ -336,3 +336,12 @@ export const referrals = pgTable("referrals", {
 export type Referral = typeof referrals.$inferSelect;
 export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true, hasPaid: true });
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
+
+export const appSettings = pgTable("app_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key").notNull(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
