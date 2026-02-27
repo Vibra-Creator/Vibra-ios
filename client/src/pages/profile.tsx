@@ -435,7 +435,7 @@ export default function ProfilePage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "vibra-dati-personali.json";
+      a.download = "vibra-personal-data.json";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -547,7 +547,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-3 gap-2" data-testid="gallery-photos">
             {profile.photos.map((photo, idx) => (
               <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-white/10">
-                <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-gallery-photo-${idx}`} />
+                <img src={photo} alt={`${t("profileEdit.photo")} ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-gallery-photo-${idx}`} />
               </div>
             ))}
           </div>

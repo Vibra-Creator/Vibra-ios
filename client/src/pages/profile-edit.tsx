@@ -599,7 +599,7 @@ export default function ProfileEdit() {
                           const isProfilePhoto = existingProfile?.imageUrl === photo;
                           return (
                             <div key={idx} className={`relative aspect-square rounded-xl overflow-hidden border-2 ${isProfilePhoto ? 'border-primary' : 'border-white/20'}`}>
-                              <img src={photo} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-profile-photo-${idx}`} />
+                              <img src={photo} alt={`${t("profileEdit.photo")} ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-profile-photo-${idx}`} />
                               <button
                                 type="button"
                                 onClick={() => handleRemovePhoto(photo)}

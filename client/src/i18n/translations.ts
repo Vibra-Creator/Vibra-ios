@@ -367,6 +367,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // MatchModal
     "matchModal.you": "Tu",
+    "matchModal.and": "e",
     "matchModal.liked": "vi siete piaciuti!",
     "matchModal.sendMessage": "Invia un Messaggio",
     "matchModal.keepExploring": "Continua a Esplorare",
@@ -566,6 +567,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "profileEdit.add": "Aggiungi",
     "profileEdit.profileLabel": "PROFILO",
     "profileEdit.active": "Attivo",
+    "profileEdit.photo": "Foto",
+    "profileEdit.showLocationDesc": "Condividi la tua posizione con i tuoi Match. Solo chi ha un match con te e ha attivato questa opzione potrà vedere dove ti trovi su una mappa.",
+    "profileEdit.locationActive": "Attivo - I tuoi match potranno vederti sulla mappa",
+    "profileEdit.howItWorks": "Come funziona:",
+    "profileEdit.spokenLanguages": "Lingue Parlate",
+    "profileEdit.spokenLanguagesDesc": "Seleziona tutte le lingue che parli per trovare persone compatibili",
+    "profileEdit.selectInterests": "Seleziona fino a 10 interessi che ti rappresentano",
 
     // Profile extra
     "profile.bio": "Bio",
@@ -1117,6 +1125,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // MatchModal
     "matchModal.you": "You",
+    "matchModal.and": "and",
     "matchModal.liked": "you liked each other!",
     "matchModal.sendMessage": "Send a Message",
     "matchModal.keepExploring": "Keep Exploring",
@@ -1316,6 +1325,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "profileEdit.add": "Add",
     "profileEdit.profileLabel": "PROFILE",
     "profileEdit.active": "Active",
+    "profileEdit.photo": "Photo",
+    "profileEdit.showLocationDesc": "Share your location with your Matches. Only those who matched with you and enabled this option can see where you are on a map.",
+    "profileEdit.locationActive": "Active - Your matches can see you on the map",
+    "profileEdit.howItWorks": "How it works:",
+    "profileEdit.spokenLanguages": "Spoken Languages",
+    "profileEdit.spokenLanguagesDesc": "Select all languages you speak to find compatible people",
+    "profileEdit.selectInterests": "Select up to 10 interests that represent you",
 
     // Profile extra
     "profile.bio": "Bio",
@@ -1867,6 +1883,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // MatchModal
     "matchModal.you": "Tú",
+    "matchModal.and": "y",
     "matchModal.liked": "¡se gustaron mutuamente!",
     "matchModal.sendMessage": "Enviar un Mensaje",
     "matchModal.keepExploring": "Seguir Explorando",
@@ -2066,6 +2083,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "profileEdit.add": "Añadir",
     "profileEdit.profileLabel": "PERFIL",
     "profileEdit.active": "Activo",
+    "profileEdit.photo": "Foto",
+    "profileEdit.showLocationDesc": "Comparte tu ubicación con tus Matches. Solo quienes tengan match contigo y hayan activado esta opción podrán ver dónde estás en un mapa.",
+    "profileEdit.locationActive": "Activo - Tus matches podrán verte en el mapa",
+    "profileEdit.howItWorks": "Cómo funciona:",
+    "profileEdit.spokenLanguages": "Idiomas Hablados",
+    "profileEdit.spokenLanguagesDesc": "Selecciona todos los idiomas que hablas para encontrar personas compatibles",
+    "profileEdit.selectInterests": "Selecciona hasta 10 intereses que te representen",
 
     // Profile extra
     "profile.bio": "Bio",

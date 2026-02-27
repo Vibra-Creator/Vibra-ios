@@ -627,7 +627,7 @@ export function MatchModal({ isOpen, onClose, matchedProfile, currentProfile, ma
                     </motion.div>
                   </div>
                   <p className="text-white/80 mb-6 text-base">
-                    {t("matchModal.you")} e <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400"
+                    {t("matchModal.you")} {t("matchModal.and")} <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-cyan-400"
                                 style={{ filter: "drop-shadow(0 0 6px rgba(255,0,136,0.5))" }}>
                       {matchedProfile.name}
                     </span> {t("matchModal.liked")}
