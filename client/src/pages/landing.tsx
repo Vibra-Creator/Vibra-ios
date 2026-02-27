@@ -89,13 +89,8 @@ export default function Landing() {
           className={`w-full h-full object-cover ${videoPlaying ? 'opacity-100' : 'opacity-0'}`}
           style={{ transition: 'opacity 0.5s ease-in' }}
           data-testid="video-landing-background"
-        >
-          <source src="/videos/vibra-landing-new.mp4" type="video/mp4" />
-          <source src="/videos/vibra-landing.mov" type="video/quicktime" />
-        </video>
-        <div className="absolute bottom-0 left-0 w-1/2 h-1/4 bg-gradient-to-tr from-black via-black/80 to-transparent" />
-        <div className="absolute bottom-0 right-0 w-1/3 h-1/4 bg-gradient-to-tl from-black via-black/80 to-transparent" />
-        <div className="absolute top-0 right-0 w-1/3 h-16 bg-gradient-to-bl from-black/80 to-transparent" />
+          src="/backgrounds/vibra-landing.mp4"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
       </div>
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { X, Shield } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { X, Shield, Volume2, VolumeX } from "lucide-react";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -8,32 +8,56 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
-  const [phase, setPhase] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
   const [showCopyright, setShowCopyright] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { t } = useLanguage();
 
   const dismiss = useCallback(() => {
     if (fadeOut || showCopyright) return;
     setFadeOut(true);
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
     setTimeout(onComplete, 600);
   }, [onComplete, fadeOut, showCopyright]);
 
   useEffect(() => {
-    const t0 = setTimeout(() => setPhase(1), 50);
-    const t1 = setTimeout(() => setPhase(2), 600);
-    const t2 = setTimeout(() => setPhase(3), 1200);
-    const t3 = setTimeout(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.play().catch(() => {});
+
+    const onEnded = () => {
+      dismiss();
+    };
+    video.addEventListener("ended", onEnded);
+
+    const timeout = setTimeout(() => {
       if (!showCopyright) dismiss();
-    }, 3000);
+    }, 30000);
 
     return () => {
-      clearTimeout(t0);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      video.removeEventListener("ended", onEnded);
+      clearTimeout(timeout);
     };
   }, [dismiss, showCopyright]);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    if (muted) {
+      video.muted = false;
+      setMuted(false);
+    } else {
+      video.muted = true;
+      setMuted(true);
+    }
+  };
 
   return (
     <div
@@ -54,56 +78,152 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         cursor: "pointer",
       }}
     >
+      <video
+        ref={videoRef}
+        playsInline
+        webkit-playsinline=""
+        preload="auto"
+        onCanPlay={() => setVideoReady(true)}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          zIndex: 1,
+          opacity: videoReady ? 1 : 0,
+          transition: "opacity 0.5s ease-in",
+        }}
+        data-testid="splash-video"
+      >
+        <source src="/videos/vibra-landing-new.mp4" type="video/mp4" />
+        <source src="/videos/vibra-landing.mov" type="video/quicktime" />
+      </video>
+
       <div style={{
         position: "absolute",
         inset: 0,
-        background: "radial-gradient(ellipse at 50% 40%, rgba(139, 92, 246, 0.25) 0%, rgba(168, 85, 247, 0.08) 40%, transparent 70%)",
-        opacity: phase >= 1 ? 1 : 0,
-        transition: "opacity 0.8s ease-in",
-        zIndex: 1,
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.5) 100%)",
+        zIndex: 2,
       }} />
 
-      <img
-        src={vibraLogo}
-        alt="Vibra"
-        style={{
-          width: "180px",
-          height: "180px",
-          objectFit: "contain",
-          borderRadius: "50%",
-          opacity: phase >= 1 ? 1 : 0,
-          transform: phase >= 1 ? "scale(1)" : "scale(0.5)",
-          transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
-          filter: phase >= 2
-            ? "drop-shadow(0 0 25px rgba(139, 92, 246, 0.6)) drop-shadow(0 0 50px rgba(168, 85, 247, 0.3))"
-            : "drop-shadow(0 0 10px rgba(139, 92, 246, 0.2))",
-          position: "relative",
-          zIndex: 3,
-        }}
-      />
+      <div style={{
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: "30%",
+        background: "linear-gradient(to top, rgba(10,1,24,0.9), transparent)",
+        zIndex: 2,
+      }} />
 
-      <p style={{
-        fontFamily: "'Space Grotesk', sans-serif",
-        fontSize: "1.1rem",
-        fontWeight: 600,
-        letterSpacing: "0.3em",
-        textTransform: "uppercase",
-        background: phase >= 3
-          ? "linear-gradient(90deg, #c084fc, #f472b6, #67e8f9, #c084fc)"
-          : "transparent",
-        backgroundSize: "200% 100%",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: phase >= 3 ? "transparent" : "rgba(192, 132, 252, 0)",
-        animation: phase >= 3 ? "splash-text-shimmer 3s linear infinite" : "none",
-        opacity: phase >= 2 ? 1 : 0,
-        transform: phase >= 2 ? "translateY(0)" : "translateY(10px)",
-        transition: "all 0.6s ease-out",
-        position: "relative",
+      <div style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
         zIndex: 3,
-        marginTop: "16px",
+        opacity: videoReady ? 0 : 1,
+        transition: "opacity 0.5s ease-out",
+        pointerEvents: "none",
       }}>
-        {t("splash.tagline")}
-      </p>
+        <img
+          src={vibraLogo}
+          alt="Vibra"
+          style={{
+            width: "180px",
+            height: "180px",
+            objectFit: "contain",
+            borderRadius: "50%",
+            filter: "drop-shadow(0 0 25px rgba(139, 92, 246, 0.6)) drop-shadow(0 0 50px rgba(168, 85, 247, 0.3))",
+          }}
+        />
+        <p style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: "1.1rem",
+          fontWeight: 600,
+          letterSpacing: "0.3em",
+          textTransform: "uppercase",
+          background: "linear-gradient(90deg, #c084fc, #f472b6, #67e8f9, #c084fc)",
+          backgroundSize: "200% 100%",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          animation: "splash-text-shimmer 3s linear infinite",
+          marginTop: "16px",
+        }}>
+          {t("splash.tagline")}
+        </p>
+      </div>
+
+      <button
+        data-testid="button-unmute"
+        onClick={toggleMute}
+        style={{
+          position: "absolute",
+          top: "16px",
+          right: "16px",
+          zIndex: 10,
+          width: "44px",
+          height: "44px",
+          borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,0.3)",
+          background: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(8px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: "white",
+        }}
+      >
+        {muted ? <VolumeX style={{ width: 20, height: 20 }} /> : <Volume2 style={{ width: 20, height: 20 }} />}
+      </button>
+
+      <div style={{
+        position: "absolute",
+        bottom: "80px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 10,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "8px",
+      }}>
+        <img
+          src={vibraLogo}
+          alt="Vibra"
+          style={{
+            width: "60px",
+            height: "60px",
+            objectFit: "contain",
+            borderRadius: "50%",
+            filter: "drop-shadow(0 0 15px rgba(139, 92, 246, 0.5))",
+          }}
+        />
+        <p style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: "0.75rem",
+          fontWeight: 600,
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
+          color: "rgba(255,255,255,0.7)",
+          textShadow: "0 0 10px rgba(0,0,0,0.8)",
+        }}>
+          {t("splash.tagline")}
+        </p>
+        <p style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: "0.65rem",
+          color: "rgba(255,255,255,0.4)",
+          textShadow: "0 0 10px rgba(0,0,0,0.8)",
+        }}>
+          Tap to skip
+        </p>
+      </div>
 
       <button
         data-testid="button-copyright"
@@ -113,26 +233,24 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         }}
         style={{
           position: "absolute",
-          bottom: "32px",
+          bottom: "12px",
           zIndex: 10,
           display: "flex",
           alignItems: "center",
           gap: "6px",
-          padding: "8px 16px",
+          padding: "6px 14px",
           borderRadius: "20px",
           border: "1px solid rgba(139, 92, 246, 0.3)",
           background: "rgba(10, 1, 24, 0.6)",
           backdropFilter: "blur(8px)",
           color: "rgba(192, 132, 252, 0.8)",
-          fontSize: "0.75rem",
+          fontSize: "0.7rem",
           fontFamily: "'Space Grotesk', sans-serif",
           letterSpacing: "0.05em",
           cursor: "pointer",
-          opacity: phase >= 3 ? 1 : 0,
-          transition: "opacity 0.4s ease, border-color 0.3s ease",
         }}
       >
-        <Shield style={{ width: 14, height: 14 }} />
+        <Shield style={{ width: 12, height: 12 }} />
         © 2026 Vibra
       </button>
 
