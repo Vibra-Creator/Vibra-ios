@@ -1,4 +1,4 @@
-import { useState, forwardRef, useRef } from "react";
+import { useState, forwardRef, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
 import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -360,9 +360,27 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [showRating, setShowRating] = useState(false);
     const [selectedRating, setSelectedRating] = useState<number | null>(null);
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
     const dragDistanceRef = useRef(0);
     const { toast } = useToast();
     const { t } = useLanguage();
+
+    useEffect(() => {
+      setImageLoaded(false);
+      setImageError(false);
+      if (profile.imageUrl) {
+        const img = new window.Image();
+        img.onload = () => setImageLoaded(true);
+        img.onerror = () => setImageError(true);
+        img.src = profile.imageUrl;
+      }
+      const extras = profile.photos || [];
+      extras.forEach((url: string) => {
+        const img = new window.Image();
+        img.src = url;
+      });
+    }, [profile.imageUrl, profile.photos]);
 
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {
@@ -442,11 +460,20 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         >
           <div className="relative rounded-2xl overflow-hidden bg-card shadow-2xl border border-card-border h-full">
             <div className="relative h-full overflow-hidden">
+              {!imageLoaded && !imageError && (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-purple-900/50 to-black/80 animate-pulse" data-testid={`image-loading-${profile.id}`}>
+                  <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                    <User className="w-8 h-8 text-white/40" />
+                  </div>
+                </div>
+              )}
               <img
-                src={profile.imageUrl}
+                src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
                 alt={profile.name}
-                className="w-full h-full object-cover cursor-pointer"
+                className={`w-full h-full object-cover cursor-pointer transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                 onClick={handleImageTap}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
                 data-testid={`profile-image-${profile.id}`}
               />
               

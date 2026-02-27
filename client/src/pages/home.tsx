@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
@@ -108,6 +108,20 @@ export default function Home() {
   );
   const currentProfile = availableProfiles[0];
   const nextProfile = availableProfiles[1];
+
+  useEffect(() => {
+    const upcoming = availableProfiles.slice(1, 5);
+    upcoming.forEach(p => {
+      if (p.imageUrl) {
+        const img = new window.Image();
+        img.src = p.imageUrl;
+      }
+      (p.photos || []).forEach((url: string) => {
+        const img = new window.Image();
+        img.src = url;
+      });
+    });
+  }, [availableProfiles.map(p => p.id).slice(0, 5).join(",")]);
 
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
