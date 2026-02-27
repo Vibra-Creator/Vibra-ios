@@ -360,7 +360,7 @@ export default function Vibing() {
                         <img
                           src={vber.profile.imageUrl}
                           alt={vber.profile.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-top"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                         <div className="absolute top-2 right-2">

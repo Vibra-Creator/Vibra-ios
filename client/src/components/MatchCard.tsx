@@ -68,7 +68,7 @@ export function MatchCard({ profile, matchId, matchDate, index = 0 }: MatchCardP
           <img
             src={profile.imageUrl}
             alt={profile.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
           

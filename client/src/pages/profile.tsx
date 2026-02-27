@@ -509,7 +509,7 @@ export default function ProfilePage() {
             <img
               src={profile.imageUrl}
               alt={profile.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
               data-testid="user-profile-image"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -547,7 +547,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-3 gap-2" data-testid="gallery-photos">
             {profile.photos.map((photo, idx) => (
               <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-white/10">
-                <img src={photo} alt={`${t("profileEdit.photo")} ${idx + 1}`} className="w-full h-full object-cover" data-testid={`img-gallery-photo-${idx}`} />
+                <img src={photo} alt={`${t("profileEdit.photo")} ${idx + 1}`} className="w-full h-full object-cover object-top" data-testid={`img-gallery-photo-${idx}`} />
               </div>
             ))}
           </div>

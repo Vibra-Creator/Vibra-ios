@@ -212,7 +212,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                         onClick={() => setViewingPhotoIndex(idx + 1)}
                         data-testid={`detail-photo-${idx}`}
                       >
-                        <img src={photo} alt={`${t("swipe.photos")} ${idx + 1}`} className="w-full h-full object-cover" />
+                        <img src={photo} alt={`${t("swipe.photos")} ${idx + 1}`} className="w-full h-full object-cover object-top" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
