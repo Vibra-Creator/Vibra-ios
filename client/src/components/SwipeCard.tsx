@@ -102,7 +102,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
-                className="w-full aspect-[3/4] object-cover"
+                className="w-full aspect-[3/4] object-cover object-top"
                 data-testid="detail-profile-image"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -470,7 +470,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               <img
                 src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
                 alt={profile.name}
-                className={`w-full h-full object-cover cursor-pointer transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                className={`w-full h-full object-cover object-top cursor-pointer transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                 onClick={handleImageTap}
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageError(true)}
