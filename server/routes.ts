@@ -135,7 +135,7 @@ export async function registerRoutes(
   const activityCache = new Map<string, number>();
   app.use(async (req: any, _res, next) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.session?.userId;
       if (userId) {
         const now = Date.now();
         const lastUpdate = activityCache.get(userId) || 0;
