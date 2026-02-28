@@ -187,7 +187,18 @@ export default function Landing() {
               </Button>
             </div>
 
-            <div className="flex items-center justify-center gap-6 text-sm text-white/60 flex-wrap">
+            <Link href="/onboarding">
+              <Button
+                variant="ghost"
+                className="text-white/70 hover:text-white hover:bg-white/10 text-base"
+                data-testid="button-know-vibra"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {t("landing.knowVibra")}
+              </Button>
+            </Link>
+
+            <div className="flex items-center justify-center gap-6 text-sm text-white/60 flex-wrap mt-2">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-green-400" />
                 <span>{t("landing.free")}</span>
