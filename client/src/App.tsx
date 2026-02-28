@@ -175,6 +175,7 @@ function UnauthenticatedRouter() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/" component={Landing} />
       <Route component={Landing} />
     </Switch>
