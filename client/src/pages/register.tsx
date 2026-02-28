@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, UserPlus, CheckCircle, Sparkles } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, UserPlus, CheckCircle, Sparkles, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
@@ -20,6 +21,8 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [gender, setGender] = useState("");
+  const [age, setAge] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [confirmAge, setConfirmAge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,6 +84,24 @@ export default function Register() {
       return;
     }
 
+    if (!gender) {
+      toast({
+        title: t("common.error"),
+        description: t("register.genderRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!age || Number(age) < 18 || Number(age) > 120) {
+      toast({
+        title: t("common.error"),
+        description: t("register.ageRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (referralCode && referralValid === null) {
       toast({
         title: t("common.error"),
@@ -96,7 +117,7 @@ export default function Register() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, lastName }),
+        body: JSON.stringify({ email, password, name, lastName, gender, age: age ? Number(age) : undefined }),
         credentials: "include",
       });
 
@@ -121,7 +142,7 @@ export default function Register() {
         title: t("register.welcomeTitle"),
         description: t("register.welcomeDesc"),
       });
-      setLocation("/onboarding");
+      setLocation("/");
     } catch (error: any) {
       toast({
         title: t("common.error"),
@@ -261,6 +282,41 @@ export default function Register() {
                     required
                     data-testid="input-confirm-password"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-white/90">{t("register.gender")}</Label>
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger className="h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white" data-testid="select-gender-register">
+                      <SelectValue placeholder={t("register.genderPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Uomo">{t("register.genderMale")}</SelectItem>
+                      <SelectItem value="Donna">{t("register.genderFemale")}</SelectItem>
+                      <SelectItem value="Non-binario">{t("register.genderNonBinary")}</SelectItem>
+                      <SelectItem value="Altro">{t("register.genderOther")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="age" className="text-white/90">{t("register.age")}</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                    <Input
+                      id="age"
+                      type="number"
+                      min={18}
+                      max={120}
+                      placeholder="18+"
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                      className="pl-10 h-12 bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/60"
+                      required
+                      data-testid="input-age-register"
+                    />
+                  </div>
                 </div>
               </div>
 

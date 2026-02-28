@@ -219,8 +219,6 @@ function AppContent() {
   const isGuestPublicPage = guestPublicPages.includes(location);
   const hideVideoBackground = pagesWithOwnBackground.includes(location) || (!isAuthenticated && !isGuest);
 
-  const profileAllowedPages = ["/profile/edit", "/onboarding", "/privacy", "/terms", "/support"];
-
   const { data: myProfile, isLoading: profileLoading } = useQuery({
     queryKey: ["/api/profiles/me"],
     queryFn: async () => {
@@ -232,11 +230,6 @@ function AppContent() {
     retry: false,
   });
 
-  useEffect(() => {
-    if (isAuthenticated && !isGuest && !profileLoading && !myProfile && !profileAllowedPages.includes(location)) {
-      setLocation("/profile/edit");
-    }
-  }, [isAuthenticated, isGuest, profileLoading, myProfile, location]);
 
   if (isLoading) {
     return (

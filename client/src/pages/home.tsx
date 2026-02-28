@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { Sparkles, UserPen, X } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
@@ -11,6 +11,7 @@ import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { Link } from "wouter";
 import type { Profile, Match } from "@shared/schema";
 
 interface SwipableResponse {
@@ -168,6 +169,14 @@ export default function Home() {
   const handleSwipeLeft = useCallback(() => handleSwipe("left"), [handleSwipe]);
   const handleSwipeRight = useCallback(() => handleSwipe("right"), [handleSwipe]);
 
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const isProfileIncomplete = myProfile && !isGuest && (
+    myProfile.imageUrl === "/images/avatar-1.png" || 
+    !myProfile.bio || 
+    !myProfile.location || 
+    (myProfile.interests || []).length === 0
+  );
+
   const bgLayer = (
     <div className="fixed inset-0 z-0">
       <img src="/backgrounds/vibra-dance.png" alt="" className="w-full h-full object-cover" />
@@ -266,7 +275,23 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col items-center p-4 relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: 'calc(100dvh - 170px)' }}>
+      {isProfileIncomplete && !bannerDismissed && (
+        <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 mb-2">
+          <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary/80 to-accent/80 backdrop-blur-sm px-3 py-2 border border-white/20 shadow-lg">
+            <UserPen className="w-4 h-4 text-white shrink-0" />
+            <span className="text-white text-xs font-medium flex-1">{t("home.profileIncomplete")}</span>
+            <Link href="/profile/edit">
+              <Button size="sm" variant="secondary" className="h-7 text-xs px-3" data-testid="button-complete-profile">
+                {t("home.completeProfile")}
+              </Button>
+            </Link>
+            <button onClick={() => setBannerDismissed(true)} className="text-white/60 hover:text-white ml-1" data-testid="button-dismiss-banner">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: isProfileIncomplete && !bannerDismissed ? 'calc(100dvh - 210px)' : 'calc(100dvh - 170px)' }}>
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}

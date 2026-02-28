@@ -37,7 +37,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, name, lastName: reqLastName } = req.body;
+      const { email, password, name, lastName: reqLastName, gender, age } = req.body;
 
       if (!email || !password || !name) {
         return res.status(400).json({ message: "Email, password e nome sono obbligatori" });
@@ -50,6 +50,10 @@ export async function setupAuth(app: Express) {
       const existingUser = await authStorage.getUserByEmail(email);
       if (existingUser && existingUser.password) {
         return res.status(409).json({ message: "Un account con questa email esiste già" });
+      }
+
+      if (age !== undefined && (isNaN(Number(age)) || Number(age) < 18 || Number(age) > 120)) {
+        return res.status(400).json({ message: "L'età deve essere tra 18 e 120 anni" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -73,6 +77,44 @@ export async function setupAuth(app: Express) {
       }
 
       (req.session as any).userId = user.id;
+
+      try {
+        const { db } = await import("../../db");
+        const { profiles } = await import("../../../shared/schema");
+        const { eq, sql } = await import("drizzle-orm");
+        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, String(user.id))).limit(1);
+        if (!existingProfile.length) {
+          const alienTypes = ["Nebulare", "Cristallino", "Biotico", "Dimensionale", "Solare", "Viaggiatore Stellare", "Quantico", "Etereo"];
+          const randomAlienType = alienTypes[Math.floor(Math.random() * alienTypes.length)];
+          let refCode = "";
+          for (let i = 0; i < 10; i++) {
+            const candidate = "VBR-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const [existing] = await db.select().from(profiles).where(eq(profiles.referralCode, candidate));
+            if (!existing) { refCode = candidate; break; }
+          }
+          if (!refCode) refCode = "VBR-" + Date.now().toString(36).toUpperCase();
+
+          await db.insert(profiles).values({
+            id: sql`gen_random_uuid()`,
+            userId: String(user.id),
+            name: firstName,
+            age: age ? Number(age) : 25,
+            bio: "",
+            imageUrl: "/images/avatar-1.png",
+            location: "",
+            interests: [],
+            alienType: randomAlienType,
+            isBot: false,
+            isVerified: false,
+            gender: gender || null,
+            points: 0,
+            referralCode: refCode,
+          });
+        }
+      } catch (profileErr) {
+        console.error("Auto-create profile error (non-fatal):", profileErr);
+      }
+
       res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
     } catch (error) {
       console.error("Registration error:", error);
