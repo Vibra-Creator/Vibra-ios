@@ -63,7 +63,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
 
   if (!isOpen) return null;
 
-  const allPhotos = [profile.imageUrl, ...(profile.photos || [])].filter(Boolean) as string[];
+  const allPhotos = [...new Set([profile.imageUrl, ...(profile.photos || [])].filter(Boolean))] as string[];
 
   const detailItems = [
     { label: t("swipe.alienType"), value: profile.alienType, icon: Sparkles },
@@ -106,10 +106,12 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                 data-testid="detail-profile-image"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-              <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1.5 pointer-events-none">
-                <ZoomIn className="w-3.5 h-3.5 text-white/80" />
-                <span className="text-xs text-white/80">{allPhotos.length}</span>
-              </div>
+              {allPhotos.length > 1 && (
+                <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1.5 pointer-events-none">
+                  <ZoomIn className="w-3.5 h-3.5 text-white/80" />
+                  <span className="text-xs text-white/80">{allPhotos.length}</span>
+                </div>
+              )}
 
               <Button
                 size="icon"
