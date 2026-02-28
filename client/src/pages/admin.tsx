@@ -358,7 +358,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="flex-1 p-4 md:p-6 max-w-7xl mx-auto overflow-y-auto">
+    <div className="flex-1 p-2 sm:p-4 md:p-6 w-full max-w-7xl mx-auto overflow-y-auto overflow-x-hidden">
       <div className="fixed inset-0 z-0">
         <img src="/backgrounds/vibra-couple-rose.png" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
@@ -460,15 +460,15 @@ export default function Admin() {
                               {profileUser?.email && <span className="text-xs text-cyan-400">{profileUser.email}</span>}
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-0 shrink-0">
                             {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                            <Button variant="ghost" size="icon" className={profile.isVerified ? "text-blue-500" : "text-muted-foreground"} onClick={(e) => { e.stopPropagation(); verifyProfileMutation.mutate({ profileId: profile.id, isVerified: !profile.isVerified }); }} data-testid={`button-verify-${profile.id}`}>
+                            <Button variant="ghost" size="icon" className={`h-8 w-8 ${profile.isVerified ? "text-blue-500" : "text-muted-foreground"}`} onClick={(e) => { e.stopPropagation(); verifyProfileMutation.mutate({ profileId: profile.id, isVerified: !profile.isVerified }); }} data-testid={`button-verify-${profile.id}`}>
                               <BadgeCheck className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className={profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "text-yellow-400" : "text-muted-foreground"} onClick={(e) => { e.stopPropagation(); const isHighlighted = profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date(); highlightProfileMutation.mutate({ profileId: profile.id, days: isHighlighted ? 0 : 7 }); }} data-testid={`button-highlight-${profile.id}`} title={profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "Rimuovi evidenziazione" : "Evidenzia per 7 giorni"}>
+                            <Button variant="ghost" size="icon" className={`h-8 w-8 ${profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "text-yellow-400" : "text-muted-foreground"}`} onClick={(e) => { e.stopPropagation(); const isHighlighted = profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date(); highlightProfileMutation.mutate({ profileId: profile.id, days: isHighlighted ? 0 : 7 }); }} data-testid={`button-highlight-${profile.id}`} title={profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "Rimuovi evidenziazione" : "Evidenzia per 7 giorni"}>
                               <Crown className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
