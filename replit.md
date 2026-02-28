@@ -29,6 +29,7 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
   - Admin can set discount % for invited users and commission % for referrers via admin dashboard (Impostazioni Percentuali)
   - All user referral codes visible in admin "Codici Utenti" section
   - Settings stored in app_settings table (key-value)
+- **Profilo in Evidenza**: Winning a challenge worth 60+ points automatically highlights the profile for 7 days with golden glowing border and "In Evidenza" badge. Highlighted profiles appear first in swipe queue. Admin can manually highlight/unhighlight any profile (Crown button in admin dashboard).
 - **Auto Backup**: Automatic daily database backup to Object Storage. Exports all 22 tables as JSON. Admin can trigger manual backups and view backup history from dashboard. Keeps last 7 backups, auto-deletes older ones.
 
 ## Tech Stack

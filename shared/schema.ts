@@ -51,6 +51,8 @@ export const profiles = pgTable("profiles", {
   maxDistanceKm: integer("max_distance_km"),
   lastActiveAt: timestamp("last_active_at"),
   referralCode: varchar("referral_code"),
+  highlightedUntil: timestamp("highlighted_until"),
+  highlightReason: text("highlight_reason"),
 });
 
 export const swipes = pgTable("swipes", {

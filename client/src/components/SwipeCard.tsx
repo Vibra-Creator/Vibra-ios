@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -460,7 +460,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           data-testid={`swipe-card-${profile.id}`}
         >
-          <div className="relative rounded-2xl overflow-hidden bg-card shadow-2xl border border-card-border h-full">
+          <div className={`relative rounded-2xl overflow-hidden bg-card shadow-2xl h-full ${
+            profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date()
+              ? "border-2 border-yellow-400"
+              : "border border-card-border"
+          }`}
+          style={
+            profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date()
+              ? { boxShadow: "0 0 15px rgba(250, 204, 21, 0.5), 0 0 30px rgba(250, 204, 21, 0.3), 0 0 45px rgba(250, 204, 21, 0.15), inset 0 0 15px rgba(250, 204, 21, 0.05)" }
+              : undefined
+          }>
             <div className="relative h-full overflow-hidden">
               {!imageLoaded && !imageError && (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-purple-900/50 to-black/80 animate-pulse" data-testid={`image-loading-${profile.id}`}>
@@ -514,6 +523,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <Sparkles className="w-3 h-3 mr-1" />
                     {profile.alienType}
                   </Badge>
+                  {profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() && (
+                    <Badge variant="secondary" className="bg-yellow-500/90 text-white backdrop-blur-sm animate-pulse" data-testid={`badge-highlighted-${profile.id}`}>
+                      <Crown className="w-3 h-3 mr-1" />
+                      {t("swipe.highlighted")}
+                    </Badge>
+                  )}
                   {hasPrivateRoom && (
                     <Badge variant="secondary" className="bg-amber-500/80 text-white backdrop-blur-sm" data-testid={`badge-private-room-${profile.id}`}>
                       <Lock className="w-3 h-3 mr-1" />

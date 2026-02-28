@@ -269,6 +269,13 @@ export async function registerRoutes(
 
       console.log(`[SWIPABLE] user=${myProfile?.name} total=${allProfiles.length} afterSelf=${afterSelf} afterSwiped=${afterSwiped} afterBlocked=${afterBlocked} afterGender=${afterGender} afterAge=${afterAge} afterDist=${afterDist} final=${swipable.length} | prefs: gender=${myProfile?.preferredGender} ageMin=${myProfile?.preferredAgeMin} ageMax=${myProfile?.preferredAgeMax} maxDist=${myProfile?.maxDistanceKm}`);
 
+      const now = new Date();
+      swipable.sort((a, b) => {
+        const aHL = a.highlightedUntil && new Date(a.highlightedUntil) > now ? 1 : 0;
+        const bHL = b.highlightedUntil && new Date(b.highlightedUntil) > now ? 1 : 0;
+        return bHL - aHL;
+      });
+
       res.json({ profiles: swipable, likedIds });
     } catch (error) {
       console.error("Error fetching swipable profiles:", error);
@@ -1057,6 +1064,26 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/profiles/:id/highlight", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { days } = req.body;
+      const profileId = req.params.id;
+      if (days && days > 0) {
+        const highlightedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        await db.update(profiles).set({ highlightedUntil, highlightReason: "admin" }).where(eq(profiles.id, profileId));
+        const profile = await storage.getProfile(profileId);
+        res.json(profile);
+      } else {
+        await db.update(profiles).set({ highlightedUntil: null, highlightReason: null }).where(eq(profiles.id, profileId));
+        const profile = await storage.getProfile(profileId);
+        res.json(profile);
+      }
+    } catch (error) {
+      console.error("Error updating profile highlight:", error);
+      res.status(500).json({ error: "Failed to update profile highlight" });
+    }
+  });
+
   app.get("/api/admin/challenge-submissions", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const submissions = await storage.getAllChallengeSubmissions();
@@ -1082,6 +1109,16 @@ export async function registerRoutes(
         const challenge = challenges.find(c => c.id === submission.challengeId);
         const pointsToAward = challenge?.points ?? 10;
         await storage.addPoints(submission.profileId, pointsToAward);
+
+        const highlightThreshold = 60;
+        if (pointsToAward >= highlightThreshold) {
+          const highlightDays = 7;
+          const highlightedUntil = new Date(Date.now() + highlightDays * 24 * 60 * 60 * 1000);
+          await db.update(profiles).set({
+            highlightedUntil,
+            highlightReason: `challenge_winner`,
+          }).where(eq(profiles.id, submission.profileId));
+        }
       }
 
       if (status === "rejected" && submission.imageUrl) {
