@@ -11,7 +11,17 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   const [phase, setPhase] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
   const [showCopyright, setShowCopyright] = useState(false);
+  const [activeFlash, setActiveFlash] = useState(-1);
   const { t } = useLanguage();
+
+  const flashPhrases = [
+    { text: t("splash.flash1"), color: "#f472b6", glow: "rgba(244, 114, 182, 0.6)" },
+    { text: t("splash.flash2"), color: "#67e8f9", glow: "rgba(103, 232, 249, 0.6)" },
+    { text: t("splash.flash3"), color: "#c084fc", glow: "rgba(192, 132, 252, 0.6)" },
+    { text: t("splash.flash4"), color: "#fb923c", glow: "rgba(251, 146, 60, 0.6)" },
+    { text: t("splash.flash5"), color: "#34d399", glow: "rgba(52, 211, 153, 0.6)" },
+    { text: t("splash.flash6"), color: "#f9a8d4", glow: "rgba(249, 168, 212, 0.6)" },
+  ];
 
   const dismiss = useCallback(() => {
     if (fadeOut || showCopyright) return;
@@ -23,17 +33,36 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     const t0 = setTimeout(() => setPhase(1), 50);
     const t1 = setTimeout(() => setPhase(2), 600);
     const t2 = setTimeout(() => setPhase(3), 1200);
+
+    const flashStart = 1600;
+    const flashDuration = 700;
+    const flashTimers: ReturnType<typeof setTimeout>[] = [];
+
+    for (let i = 0; i < flashPhrases.length; i++) {
+      flashTimers.push(setTimeout(() => setActiveFlash(i), flashStart + i * flashDuration));
+    }
+
     const t3 = setTimeout(() => {
       if (!showCopyright) dismiss();
-    }, 3000);
+    }, flashStart + flashPhrases.length * flashDuration + 800);
 
     return () => {
       clearTimeout(t0);
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
+      flashTimers.forEach(clearTimeout);
     };
   }, [dismiss, showCopyright]);
+
+  const flashPositions = [
+    { top: "18%", left: "50%", transform: "translateX(-50%)" },
+    { top: "26%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "38%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "30%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "22%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "14%", left: "50%", transform: "translateX(-50%)" },
+  ];
 
   return (
     <div
@@ -63,6 +92,48 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         zIndex: 1,
       }} />
 
+      {flashPhrases.map((phrase, i) => {
+        const isActive = activeFlash >= i;
+        const isCurrent = activeFlash === i;
+        const pos = flashPositions[i];
+        return (
+          <div
+            key={i}
+            data-testid={`splash-flash-${i}`}
+            style={{
+              position: "absolute",
+              ...pos,
+              zIndex: 5,
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: isCurrent ? "1.3rem" : "1.05rem",
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: phrase.color,
+              textShadow: isActive
+                ? `0 0 20px ${phrase.glow}, 0 0 40px ${phrase.glow}, 0 0 60px ${phrase.glow}`
+                : "none",
+              opacity: isActive ? (isCurrent ? 1 : 0.5) : 0,
+              transform: `${pos.transform || ""} scale(${isCurrent ? 1.05 : isActive ? 0.95 : 0.7})`,
+              transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}
+          >
+            {isCurrent && (
+              <span style={{
+                position: "absolute",
+                inset: "-8px -16px",
+                background: `radial-gradient(ellipse, ${phrase.glow.replace("0.6", "0.15")} 0%, transparent 70%)`,
+                borderRadius: "20px",
+                zIndex: -1,
+              }} />
+            )}
+            {phrase.text}
+          </div>
+        );
+      })}
+
       <img
         src={vibraLogo}
         alt="Vibra"
@@ -88,9 +159,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         fontWeight: 600,
         letterSpacing: "0.3em",
         textTransform: "uppercase",
-        background: phase >= 3
+        backgroundImage: phase >= 3
           ? "linear-gradient(90deg, #c084fc, #f472b6, #67e8f9, #c084fc)"
-          : "transparent",
+          : "none",
+        backgroundColor: phase >= 3 ? "transparent" : "transparent",
         backgroundSize: "200% 100%",
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: phase >= 3 ? "transparent" : "rgba(192, 132, 252, 0)",

@@ -429,6 +429,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "gift.tapToClose": "Tocca per chiudere",
 
     // SplashScreen
+    "splash.flash1": "💘 Swipe & Match",
+    "splash.flash2": "💬 Chat in Tempo Reale",
+    "splash.flash3": "🔥 Incontri Unici",
+    "splash.flash4": "⚡ Match Illimitati",
+    "splash.flash5": "📍 Persone Vicino a Te",
+    "splash.flash6": "💜 Inizia a Vibrare",
     "splash.tagline": "Incontri Cosmici",
     "splash.copyright": "Copyright & Proprietà Intellettuale",
     "splash.allRights": "Tutti i diritti riservati.",
@@ -1205,6 +1211,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "gift.tapToClose": "Tap to close",
 
     // SplashScreen
+    "splash.flash1": "💘 Swipe & Match",
+    "splash.flash2": "💬 Real-Time Chat",
+    "splash.flash3": "🔥 Unique Connections",
+    "splash.flash4": "⚡ Unlimited Matches",
+    "splash.flash5": "📍 People Near You",
+    "splash.flash6": "💜 Start Vibing",
     "splash.tagline": "Cosmic Dating",
     "splash.copyright": "Copyright & Intellectual Property",
     "splash.allRights": "All rights reserved.",
@@ -1981,6 +1993,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "gift.tapToClose": "Toca para cerrar",
 
     // SplashScreen
+    "splash.flash1": "💘 Swipe & Match",
+    "splash.flash2": "💬 Chat en Tiempo Real",
+    "splash.flash3": "🔥 Encuentros Únicos",
+    "splash.flash4": "⚡ Matches Ilimitados",
+    "splash.flash5": "📍 Personas Cerca de Ti",
+    "splash.flash6": "💜 Empieza a Vibrar",
     "splash.tagline": "Citas Cósmicas",
     "splash.copyright": "Copyright y Propiedad Intelectual",
     "splash.allRights": "Todos los derechos reservados.",
