@@ -52,12 +52,12 @@ const seedProfiles = [
     loveLanguage: "Atti di servizio", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
   },
   {
-    id: "19", name: "Sofia", age: 24,
-    bio: "Studentessa di infermieristica. Amo gli animali e fare trekking nel weekend. Cerco una persona genuina con cui costruire qualcosa di bello.",
+    id: "19", name: "Matteo", age: 26,
+    bio: "Studente di infermieristica. Amo gli animali e fare trekking nel weekend. Cerco una persona genuina con cui costruire qualcosa di bello.",
     imageUrl: "/images/bots/bot19_main.jpg", photos: ["/images/bots/bot19_extra1.jpg", "/images/bots/bot19_extra2.jpg"],
     location: "Trento", interests: ["Animali", "Montagna", "Yoga"], alienType: "Biotico",
-    gender: "Donna", preferredGender: "Tutti", hairColor: "Biondo", eyeColor: "Azzurro",
-    bodyType: "Atletica", height: 172, preferredAgeMin: 18, preferredAgeMax: 99,
+    gender: "Uomo", preferredGender: "Tutti", hairColor: "Castano", eyeColor: "Azzurro",
+    bodyType: "Atletico", height: 180, preferredAgeMin: 18, preferredAgeMax: 99,
     education: "Università", languages: ["Italiano", "Inglese"],
     relationshipType: "Relazione seria", wantsChildren: "In futuro", zodiacSign: "Cancro",
     loveLanguage: "Tempo di qualità", communicationStyle: "Aperto e diretto", lifestyle: "Attivo e sociale"
@@ -672,7 +672,7 @@ const botAccountCredentials = [
   { profileId: "16", email: "giulia@vibra.com", password: "Vibra2024!", firstName: "Giulia", lastName: "Romani" },
   { profileId: "17", email: "martina@vibra.com", password: "Vibra2024!", firstName: "Martina", lastName: "Bianchi" },
   { profileId: "18", email: "valentina@vibra.com", password: "Vibra2024!", firstName: "Valentina", lastName: "Esposito" },
-  { profileId: "19", email: "sofia@vibra.com", password: "Vibra2024!", firstName: "Sofia", lastName: "Moretti" },
+  { profileId: "19", email: "matteo.t@vibra.com", password: "Vibra2024!", firstName: "Matteo", lastName: "Moretti" },
   { profileId: "20", email: "alessia@vibra.com", password: "Vibra2024!", firstName: "Alessia", lastName: "Colombo" },
   { profileId: "21", email: "chiara@vibra.com", password: "Vibra2024!", firstName: "Chiara", lastName: "Ricci" },
   { profileId: "22", email: "francesca@vibra.com", password: "Vibra2024!", firstName: "Francesca", lastName: "Marino" },
