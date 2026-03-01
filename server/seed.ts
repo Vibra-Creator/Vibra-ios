@@ -503,12 +503,12 @@ const seedProfiles = [
     loveLanguage: "Tempo di qualità", communicationStyle: "Creativo e spontaneo", lifestyle: "Attivo e sociale"
   },
   {
-    id: "63", name: "Patrizia", age: 35,
-    bio: "Maestra elementare. I bambini mi danno energia ogni giorno. Amo leggere, il cinema e i gatti. Cerco un compagno maturo e affidabile.",
+    id: "63", name: "Massimo", age: 35,
+    bio: "Maestro elementare. I bambini mi danno energia ogni giorno. Amo leggere, il cinema e i gatti. Cerco una compagna matura e affidabile.",
     imageUrl: "/images/bots/bot63_main.jpg", photos: ["/images/bots/bot63_extra1.jpg", "/images/bots/bot63_extra2.jpg"],
     location: "Perugia", interests: ["Lettura", "Cinema", "Gatti"], alienType: "Etereo",
-    gender: "Donna", preferredGender: "Tutti", hairColor: "Castano scuro", eyeColor: "Marrone",
-    bodyType: "Media", height: 163, preferredAgeMin: 18, preferredAgeMax: 99,
+    gender: "Uomo", preferredGender: "Tutti", hairColor: "Castano scuro", eyeColor: "Marrone",
+    bodyType: "Medio", height: 178, preferredAgeMin: 18, preferredAgeMax: 99,
     education: "Laurea", languages: ["Italiano", "Inglese"],
     relationshipType: "Relazione seria", wantsChildren: "In futuro", zodiacSign: "Cancro",
     loveLanguage: "Atti di servizio", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
@@ -569,12 +569,12 @@ const seedProfiles = [
     loveLanguage: "Tempo di qualità", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
   },
   {
-    id: "69", name: "Giuliana", age: 31,
-    bio: "Parrucchiera con il mio piccolo salone. Amo ballare la salsa, andare in palestra e le serate karaoke. Energia e sorriso sempre!",
+    id: "69", name: "Salvatore", age: 31,
+    bio: "Parrucchiere con il mio piccolo salone. Amo ballare la salsa, andare in palestra e le serate karaoke. Energia e sorriso sempre!",
     imageUrl: "/images/bots/bot69_main.jpg", photos: ["/images/bots/bot69_extra1.jpg", "/images/bots/bot69_extra2.jpg"],
     location: "Catania", interests: ["Ballo", "Fitness", "Karaoke"], alienType: "Solare",
-    gender: "Donna", preferredGender: "Tutti", hairColor: "Nero", eyeColor: "Marrone scuro",
-    bodyType: "Atletica", height: 168, preferredAgeMin: 18, preferredAgeMax: 99,
+    gender: "Uomo", preferredGender: "Tutti", hairColor: "Nero", eyeColor: "Marrone scuro",
+    bodyType: "Atletico", height: 180, preferredAgeMin: 18, preferredAgeMax: 99,
     education: "Diploma professionale", languages: ["Italiano"],
     relationshipType: "Conoscersi prima", wantsChildren: "In futuro", zodiacSign: "Leone",
     loveLanguage: "Contatto fisico", communicationStyle: "Creativo e spontaneo", lifestyle: "Attivo e sociale"
@@ -1177,13 +1177,13 @@ const botAccountCredentials = [
   { profileId: "60", email: "giovanni@vibra.com", password: "Vibra2024!", firstName: "Giovanni", lastName: "Messina" },
   { profileId: "61", email: "serenag@vibra.com", password: "Vibra2024!", firstName: "Serena", lastName: "Grasso" },
   { profileId: "62", email: "simone@vibra.com", password: "Vibra2024!", firstName: "Simone", lastName: "Monti" },
-  { profileId: "63", email: "patrizia@vibra.com", password: "Vibra2024!", firstName: "Patrizia", lastName: "Benedetti" },
+  { profileId: "63", email: "massimo@vibra.com", password: "Vibra2024!", firstName: "Massimo", lastName: "Benedetti" },
   { profileId: "64", email: "marcoa@vibra.com", password: "Vibra2024!", firstName: "Marco", lastName: "Riva" },
   { profileId: "65", email: "arianna@vibra.com", password: "Vibra2024!", firstName: "Arianna", lastName: "Longo" },
   { profileId: "66", email: "franco@vibra.com", password: "Vibra2024!", firstName: "Franco", lastName: "Donati" },
   { profileId: "67", email: "riccardo@vibra.com", password: "Vibra2024!", firstName: "Riccardo", lastName: "Sala" },
   { profileId: "68", email: "giacomo@vibra.com", password: "Vibra2024!", firstName: "Giacomo", lastName: "Testa" },
-  { profileId: "69", email: "giuliana@vibra.com", password: "Vibra2024!", firstName: "Giuliana", lastName: "D'Angelo" },
+  { profileId: "69", email: "salvatore@vibra.com", password: "Vibra2024!", firstName: "Salvatore", lastName: "D'Angelo" },
   { profileId: "70", email: "piero@vibra.com", password: "Vibra2024!", firstName: "Piero", lastName: "Sartori" },
   // English-speaking bots
   { profileId: "71", email: "emily@vibra.com", password: "Vibra2024!", firstName: "Emily", lastName: "Clarke" },
