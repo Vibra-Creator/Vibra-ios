@@ -277,49 +277,50 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center p-4 relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
+    <div className="flex-1 flex flex-col items-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
-      {!isGuest && <OnlineBanner />}
-      {!isGuest && <VibrationActivity />}
-      {isProfileIncomplete && !bannerDismissed && (
-        <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 mb-2">
-          <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary/80 to-accent/80 backdrop-blur-sm px-3 py-2 border border-white/20 shadow-lg">
-            <UserPen className="w-4 h-4 text-white shrink-0" />
-            <span className="text-white text-xs font-medium flex-1">{t("home.profileIncomplete")}</span>
-            <Link href="/profile/edit">
-              <Button size="sm" variant="secondary" className="h-7 text-xs px-3" data-testid="button-complete-profile">
-                {t("home.completeProfile")}
-              </Button>
-            </Link>
-            <button onClick={() => setBannerDismissed(true)} className="text-white/60 hover:text-white ml-1" data-testid="button-dismiss-banner">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-      {!isGuest && !challengeBannerDismissed && (
-        <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 mb-2">
-          <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500/90 via-yellow-500/90 to-orange-500/90 backdrop-blur-sm px-3 py-2 border border-yellow-300/30 shadow-lg shadow-amber-500/20" data-testid="banner-challenge-promo">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Trophy className="w-4 h-4 text-white" />
+      <div className="w-full flex flex-col items-center shrink-0 px-4 pt-3 pb-1 gap-1.5 relative z-20">
+        {!isGuest && <OnlineBanner />}
+        {isProfileIncomplete && !bannerDismissed && (
+          <div className="w-full max-w-sm md:max-w-md lg:max-w-lg">
+            <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary/80 to-accent/80 backdrop-blur-sm px-3 py-1.5 border border-white/20 shadow-lg">
+              <UserPen className="w-3.5 h-3.5 text-white shrink-0" />
+              <span className="text-white text-[11px] font-medium flex-1">{t("home.profileIncomplete")}</span>
+              <Link href="/profile/edit">
+                <Button size="sm" variant="secondary" className="h-6 text-[10px] px-2" data-testid="button-complete-profile">
+                  {t("home.completeProfile")}
+                </Button>
+              </Link>
+              <button onClick={() => setBannerDismissed(true)} className="text-white/60 hover:text-white ml-1" data-testid="button-dismiss-banner">
+                <X className="w-3 h-3" />
+              </button>
             </div>
-            <span className="text-white text-xs font-semibold flex-1 leading-tight">{t("home.challengePromo")}</span>
-            <Link href="/challenges">
-              <Button size="sm" className="h-7 text-xs px-3 bg-white/20 hover:bg-white/30 text-white border border-white/30" data-testid="button-go-challenges">
-                {t("home.goToChallenge")}
-              </Button>
-            </Link>
-            <button 
-              onClick={() => { setChallengeBannerDismissed(true); try { sessionStorage.setItem("challengeBannerDismissed", "true"); } catch {} }}
-              className="text-white/60 hover:text-white ml-1" 
-              data-testid="button-dismiss-challenge-banner"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
           </div>
-        </div>
-      )}
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: isGuest ? 'calc(100dvh - 210px)' : (isProfileIncomplete && !bannerDismissed) || !challengeBannerDismissed ? 'calc(100dvh - 340px)' : 'calc(100dvh - 290px)' }}>
+        )}
+        {!isGuest && !challengeBannerDismissed && (
+          <div className="w-full max-w-sm md:max-w-md lg:max-w-lg">
+            <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500/90 via-yellow-500/90 to-orange-500/90 backdrop-blur-sm px-3 py-1.5 border border-yellow-300/30 shadow-lg shadow-amber-500/20" data-testid="banner-challenge-promo">
+              <Trophy className="w-4 h-4 text-white shrink-0" />
+              <span className="text-white text-[11px] font-semibold flex-1 leading-tight">{t("home.challengePromo")}</span>
+              <Link href="/challenges">
+                <Button size="sm" className="h-6 text-[10px] px-2 bg-white/20 hover:bg-white/30 text-white border border-white/30" data-testid="button-go-challenges">
+                  {t("home.goToChallenge")}
+                </Button>
+              </Link>
+              <button 
+                onClick={() => { setChallengeBannerDismissed(true); try { sessionStorage.setItem("challengeBannerDismissed", "true"); } catch {} }}
+                className="text-white/60 hover:text-white ml-1" 
+                data-testid="button-dismiss-challenge-banner"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+        {!isGuest && <VibrationActivity />}
+      </div>
+
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0 px-4">
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}
@@ -342,7 +343,7 @@ export default function Home() {
         )}
       </div>
 
-      <div className="relative z-10 shrink-0 pb-safe">
+      <div className="relative z-10 shrink-0 pb-safe px-4">
         <ActionButtons
           onSwipeLeft={handleSwipeLeft}
           onSwipeRight={handleSwipeRight}
