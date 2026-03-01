@@ -347,6 +347,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "onboarding.feature9Desc": "Condividi la tua posizione con i tuoi Match. Loro vedono dove sei sulla mappa, tu controlli chi vede.",
     "onboarding.feature10Title": "Il Tuo Profilo",
     "onboarding.feature10Desc": "Personalizza tutto: foto, bio, interessi, segno zodiacale, lingue e molto altro. Fatti notare!",
+    "onboarding.createdBy": "Creato da Fabio Mattoni",
 
     // SwipeCard
     "swipe.activeNow": "Attivo ora",
@@ -1151,6 +1152,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "onboarding.feature9Desc": "Share your location with your Matches. They see where you are on the map, you control who sees.",
     "onboarding.feature10Title": "Your Profile",
     "onboarding.feature10Desc": "Customize everything: photos, bio, interests, zodiac sign, languages and much more. Stand out!",
+    "onboarding.createdBy": "Created by Fabio Mattoni",
 
     // SwipeCard
     "swipe.activeNow": "Active now",
@@ -1955,6 +1957,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "onboarding.feature9Desc": "Comparte tu ubicación con tus Matches. Ellos ven dónde estás en el mapa, tú controlas quién ve.",
     "onboarding.feature10Title": "Tu Perfil",
     "onboarding.feature10Desc": "Personaliza todo: fotos, bio, intereses, signo zodiacal, idiomas y mucho más. ¡Destaca!",
+    "onboarding.createdBy": "Creado por Fabio Mattoni",
 
     // SwipeCard
     "swipe.activeNow": "Activo ahora",

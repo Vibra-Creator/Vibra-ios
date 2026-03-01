@@ -181,7 +181,7 @@ export default function Onboarding() {
                  hasProfile ? t("onboarding.backToProfile") : t("onboarding.createProfile")}
               </Button>
               <span className="text-white/40 text-[11px] italic" data-testid="text-created-by">
-                Created by Fabio Mattoni
+                {t("onboarding.createdBy")}
               </span>
             </div>
           ) : (
