@@ -213,9 +213,9 @@ export function ActivityToastSystem() {
   useEffect(() => {
     if (eventQueue.length === 0) return;
     if (activeToast) return;
+    if (toastIndex >= 4) return;
 
-    const gaps = [2000, 8000, 12000, 15000, 18000];
-    const delay = toastIndex < gaps.length ? gaps[toastIndex] : 18000;
+    const delay = toastIndex === 0 ? 5000 : 15000;
 
     const timeout = setTimeout(showNext, delay);
     return () => clearTimeout(timeout);

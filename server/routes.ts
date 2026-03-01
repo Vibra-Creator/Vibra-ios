@@ -2551,59 +2551,53 @@ REGOLE IMPORTANTI:
       const onlineCount = Math.max(8, onlineBase + timeVariation + vibingNearby);
 
       const events: any[] = [];
-      const seed = Math.floor(now / 30000);
+      const seed = Math.floor(now / 60000);
 
-      const visitBot = botProfiles[seed % botProfiles.length];
-      if (visitBot) {
+      const shuffled = [...botProfiles].sort((a, b) => {
+        const ha = ((parseInt(a.id, 36) || 0) * 2654435761 + seed) % 1000;
+        const hb = ((parseInt(b.id, 36) || 0) * 2654435761 + seed) % 1000;
+        return ha - hb;
+      });
+
+      if (shuffled[0]) {
         events.push({
           id: `visit-${seed}`,
           type: "profile_visit",
-          profileName: visitBot.name,
-          profileImage: visitBot.imageUrl,
+          profileName: shuffled[0].name,
+          profileImage: shuffled[0].imageUrl,
         });
       }
 
-      const compatBot = botProfiles[(seed + 7) % botProfiles.length];
-      if (compatBot) {
+      if (shuffled[1]) {
         const shared = (userProfile.interests || []).filter(
-          (i: string) => (compatBot.interests || []).includes(i)
+          (i: string) => (shuffled[1].interests || []).includes(i)
         );
         events.push({
           id: `compat-${seed}`,
           type: "compatibility",
-          profileName: compatBot.name,
-          profileImage: compatBot.imageUrl,
+          profileName: shuffled[1].name,
+          profileImage: shuffled[1].imageUrl,
           sharedCount: shared.length,
         });
       }
 
-      const interactBot = botProfiles[(seed + 13) % botProfiles.length];
-      if (interactBot) {
+      if (shuffled[2]) {
         events.push({
           id: `interact-${seed}`,
           type: "interaction",
-          profileName: interactBot.name,
-          profileImage: interactBot.imageUrl,
+          profileName: shuffled[2].name,
+          profileImage: shuffled[2].imageUrl,
         });
       }
 
       if (activeRoomsList.length > 0) {
         const room = activeRoomsList[seed % activeRoomsList.length];
-        const memberCount = Math.floor(Math.random() * 8) + 3;
+        const memberCount = 3 + (seed % 6);
         events.push({
           id: `room-${seed}`,
           type: "room_active",
           roomName: room.name,
           count: memberCount,
-        });
-      }
-
-      if (vibingNearby > 0 || Math.random() > 0.3) {
-        const vCount = vibingNearby > 0 ? vibingNearby : Math.floor(Math.random() * 5) + 2;
-        events.push({
-          id: `vibe-${seed}`,
-          type: "vibing_nearby",
-          count: vCount,
         });
       }
 
