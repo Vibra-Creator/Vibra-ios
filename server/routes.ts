@@ -2553,11 +2553,18 @@ REGOLE IMPORTANTI:
       const events: any[] = [];
       const seed = Math.floor(now / 60000);
 
-      const shuffled = [...botProfiles].sort((a, b) => {
+      const hashSort = (arr: typeof botProfiles) => [...arr].sort((a, b) => {
         const ha = ((parseInt(a.id, 36) || 0) * 2654435761 + seed) % 1000;
         const hb = ((parseInt(b.id, 36) || 0) * 2654435761 + seed) % 1000;
         return ha - hb;
       });
+
+      const shuffled = hashSort(botProfiles);
+      const prefGender = userProfile.preferredGender;
+      const hasGenderPref = prefGender && prefGender !== "Tutti";
+      const genderMatchBots = hasGenderPref
+        ? hashSort(botProfiles.filter(p => p.gender === prefGender))
+        : shuffled;
 
       if (shuffled[0]) {
         events.push({
@@ -2568,25 +2575,26 @@ REGOLE IMPORTANTI:
         });
       }
 
-      if (shuffled[1]) {
+      if (genderMatchBots[0]) {
+        const bot = genderMatchBots[0];
         const shared = (userProfile.interests || []).filter(
-          (i: string) => (shuffled[1].interests || []).includes(i)
+          (i: string) => (bot.interests || []).includes(i)
         );
         events.push({
           id: `compat-${seed}`,
           type: "compatibility",
-          profileName: shuffled[1].name,
-          profileImage: shuffled[1].imageUrl,
+          profileName: bot.name,
+          profileImage: bot.imageUrl,
           sharedCount: shared.length,
         });
       }
 
-      if (shuffled[2]) {
+      if (shuffled[1]) {
         events.push({
           id: `interact-${seed}`,
           type: "interaction",
-          profileName: shuffled[2].name,
-          profileImage: shuffled[2].imageUrl,
+          profileName: shuffled[1].name,
+          profileImage: shuffled[1].imageUrl,
         });
       }
 
