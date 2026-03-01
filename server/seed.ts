@@ -525,12 +525,12 @@ const seedProfiles = [
     loveLanguage: "Atti di servizio", communicationStyle: "Riflessivo e profondo", lifestyle: "Tranquillo e casalingo"
   },
   {
-    id: "67", name: "Beatrice", age: 29,
-    bio: "Pasticcera in una pasticceria artigianale. La mia specialità sono le crostate! Amo il mercato del sabato e le cene con le amiche.",
+    id: "67", name: "Riccardo", age: 29,
+    bio: "Pasticcere in una pasticceria artigianale. La mia specialità sono le crostate! Amo il mercato del sabato e le cene con gli amici.",
     imageUrl: "/images/bots/bot67_main.jpg", photos: ["/images/bots/bot67_extra1.jpg", "/images/bots/bot67_extra2.jpg"],
     location: "Modena", interests: ["Dolci", "Cucina", "Mercatini"], alienType: "Cristallino",
-    gender: "Donna", preferredGender: "Tutti", hairColor: "Castano chiaro", eyeColor: "Nocciola",
-    bodyType: "Media", height: 162, preferredAgeMin: 18, preferredAgeMax: 99,
+    gender: "Uomo", preferredGender: "Tutti", hairColor: "Castano chiaro", eyeColor: "Nocciola",
+    bodyType: "Medio", height: 178, preferredAgeMin: 18, preferredAgeMax: 99,
     education: "Scuola alberghiera", languages: ["Italiano"],
     relationshipType: "Relazione seria", wantsChildren: "Sì", zodiacSign: "Toro",
     loveLanguage: "Atti di servizio", communicationStyle: "Aperto e diretto", lifestyle: "Equilibrato"
@@ -715,7 +715,7 @@ const botAccountCredentials = [
   { profileId: "64", email: "marcoa@vibra.com", password: "Vibra2024!", firstName: "Marco", lastName: "Riva" },
   { profileId: "65", email: "arianna@vibra.com", password: "Vibra2024!", firstName: "Arianna", lastName: "Longo" },
   { profileId: "66", email: "franco@vibra.com", password: "Vibra2024!", firstName: "Franco", lastName: "Donati" },
-  { profileId: "67", email: "beatrice@vibra.com", password: "Vibra2024!", firstName: "Beatrice", lastName: "Sala" },
+  { profileId: "67", email: "riccardo@vibra.com", password: "Vibra2024!", firstName: "Riccardo", lastName: "Sala" },
   { profileId: "68", email: "giacomo@vibra.com", password: "Vibra2024!", firstName: "Giacomo", lastName: "Testa" },
   { profileId: "69", email: "giuliana@vibra.com", password: "Vibra2024!", firstName: "Giuliana", lastName: "D'Angelo" },
   { profileId: "70", email: "piero@vibra.com", password: "Vibra2024!", firstName: "Piero", lastName: "Sartori" },
