@@ -4,7 +4,7 @@ import { Sparkles, UserPen, X, Trophy } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
-import { OnlineBanner, ActivityToastSystem } from "@/components/ActivityFeed";
+import { OnlineBanner, ActivityToastSystem, VibrationActivity } from "@/components/ActivityFeed";
 import { Button } from "@/components/ui/button";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -280,6 +280,7 @@ export default function Home() {
     <div className="flex-1 flex flex-col items-center p-4 relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
       {!isGuest && <OnlineBanner />}
+      {!isGuest && <VibrationActivity />}
       {isProfileIncomplete && !bannerDismissed && (
         <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 mb-2">
           <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary/80 to-accent/80 backdrop-blur-sm px-3 py-2 border border-white/20 shadow-lg">
@@ -318,7 +319,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: (isProfileIncomplete && !bannerDismissed) || (!isGuest && !challengeBannerDismissed) ? 'calc(100dvh - 250px)' : 'calc(100dvh - 210px)' }}>
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: isGuest ? 'calc(100dvh - 210px)' : (isProfileIncomplete && !bannerDismissed) || !challengeBannerDismissed ? 'calc(100dvh - 340px)' : 'calc(100dvh - 290px)' }}>
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}

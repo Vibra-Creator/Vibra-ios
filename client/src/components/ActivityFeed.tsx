@@ -11,6 +11,8 @@ import {
   Zap,
   Sparkles,
   Radio,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 interface ActivityEvent {
@@ -235,5 +237,136 @@ export function ActivityToastSystem() {
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+interface VibrationData {
+  vibrations: number;
+  compatible: number;
+  shown: number;
+  newCompat: number;
+}
+
+export function VibrationActivity() {
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const [expanded, setExpanded] = useState(true);
+
+  const { data, isLoading } = useQuery<VibrationData>({
+    queryKey: ["/api/activity/vibration"],
+    refetchInterval: 120000,
+    enabled: !!user,
+  });
+
+  if (isLoading || !data) return null;
+
+  const items = [
+    {
+      icon: Eye,
+      color: "text-cyan-400",
+      bg: "bg-cyan-400/15",
+      glow: "shadow-cyan-400/20",
+      value: data.vibrations,
+      label: t("vibration.perceived"),
+    },
+    {
+      icon: Zap,
+      color: "text-yellow-400",
+      bg: "bg-yellow-400/15",
+      glow: "shadow-yellow-400/20",
+      value: data.compatible,
+      label: t("vibration.compatible"),
+    },
+    {
+      icon: Sparkles,
+      color: "text-purple-400",
+      bg: "bg-purple-400/15",
+      glow: "shadow-purple-400/20",
+      value: data.shown,
+      label: t("vibration.shown"),
+    },
+    ...(data.newCompat > 0
+      ? [
+          {
+            icon: Heart,
+            color: "text-pink-400",
+            bg: "bg-pink-400/15",
+            glow: "shadow-pink-400/20",
+            value: data.newCompat,
+            label: t("vibration.newCompat"),
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 mb-2"
+      data-testid="vibration-activity"
+    >
+      <div className="rounded-xl bg-gradient-to-br from-purple-900/60 via-indigo-900/50 to-cyan-900/40 backdrop-blur-md border border-purple-500/20 shadow-lg shadow-purple-500/10 overflow-hidden">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full flex items-center justify-between px-3 py-2"
+          data-testid="button-toggle-vibration"
+        >
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Radio className="w-4 h-4 text-purple-300" />
+              <motion.div
+                className="absolute inset-0 rounded-full bg-purple-400/30"
+                animate={{ scale: [1, 1.8, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            </div>
+            <span className="text-xs font-semibold text-purple-200 tracking-wide">
+              {t("vibration.title")}
+            </span>
+          </div>
+          {expanded ? (
+            <ChevronUp className="w-3.5 h-3.5 text-purple-400" />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5 text-purple-400" />
+          )}
+        </button>
+
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+                {items.map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.08 }}
+                    className={`flex items-center gap-2 rounded-lg ${item.bg} px-2.5 py-2 shadow-sm ${item.glow}`}
+                    data-testid={`vibration-item-${i}`}
+                  >
+                    <item.icon className={`w-4 h-4 ${item.color} shrink-0`} />
+                    <div className="min-w-0">
+                      <span className={`text-sm font-bold ${item.color}`}>
+                        {item.value}
+                      </span>
+                      <p className="text-[10px] text-white/60 leading-tight truncate">
+                        {item.label}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }
