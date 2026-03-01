@@ -13,7 +13,6 @@ import type { Room, RoomMessage } from "@shared/schema";
 const ROOM_BACKGROUNDS: Record<string, { type: "image"; src: string } | { type: "video"; src: string }> = {
   "1": { type: "image", src: "/images/room-tecnologia-spaziale.png" },
   "2": { type: "image", src: "/images/room-musica-cosmica.png" },
-  "4": { type: "image", src: "/images/room-arte-cristallina.png" },
   "5": { type: "image", src: "/images/room-viaggi-dimensionali.png" },
   "6": { type: "image", src: "/images/room-meditazione-cosmica.png" },
   "7": { type: "image", src: "/images/room-amanti-gatti.png" },
