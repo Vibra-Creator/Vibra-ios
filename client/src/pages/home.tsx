@@ -269,7 +269,11 @@ export default function Home() {
     <div className="flex-1 flex flex-col items-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
 
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0 px-4 pt-2">
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 shrink-0 px-4">
+        {!isGuest && <VibrationActivity />}
+      </div>
+
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0 px-4">
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}
@@ -290,10 +294,6 @@ export default function Home() {
             alreadyLiked={likedIdsSet.has(currentProfile.id)}
           />
         )}
-      </div>
-
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 shrink-0 px-4">
-        {!isGuest && <VibrationActivity />}
       </div>
 
       <div className="relative z-10 shrink-0 pb-safe px-4">
