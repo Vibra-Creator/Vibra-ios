@@ -217,7 +217,7 @@ export function ActivityToastSystem() {
     if (activeToast) return;
     if (toastIndex >= 4) return;
 
-    const delay = toastIndex === 0 ? 5000 : 15000;
+    const delay = toastIndex === 0 ? 30000 : 15000;
 
     const timeout = setTimeout(showNext, delay);
     return () => clearTimeout(timeout);
