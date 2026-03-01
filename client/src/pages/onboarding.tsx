@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Heart,
   MessageCircle,
@@ -42,9 +43,11 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [page, setPage] = useState(0);
   const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
 
   const { data: existingProfile } = useQuery<any>({
     queryKey: ["/api/profiles/me"],
+    enabled: isAuthenticated,
   });
   const hasProfile = !!existingProfile;
 
@@ -74,17 +77,15 @@ export default function Onboarding() {
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col p-5 pb-8 overflow-y-auto">
-        {hasProfile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLocation("/profile")}
-            className="absolute top-4 left-4 z-20 text-white"
-            data-testid="button-back-from-onboarding"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation(isAuthenticated ? "/profile" : "/landing")}
+          className="absolute top-4 left-4 z-20 text-white bg-black/30 backdrop-blur-sm"
+          data-testid="button-back-from-onboarding"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -168,12 +169,16 @@ export default function Onboarding() {
           {isLastPage ? (
             <div className="flex flex-col items-end gap-2">
               <Button
-                onClick={() => setLocation(hasProfile ? "/profile" : "/profile/edit")}
+                onClick={() => setLocation(
+                  !isAuthenticated ? "/register" : 
+                  hasProfile ? "/profile" : "/profile/edit"
+                )}
                 className="bg-gradient-to-r from-primary to-accent text-white px-6"
                 data-testid="button-onboarding-start"
               >
                 <Rocket className="w-4 h-4 mr-2" />
-                {hasProfile ? t("onboarding.backToProfile") : t("onboarding.createProfile")}
+                {!isAuthenticated ? t("onboarding.registerNow") : 
+                 hasProfile ? t("onboarding.backToProfile") : t("onboarding.createProfile")}
               </Button>
               <span className="text-white/40 text-[11px] italic" data-testid="text-created-by">
                 Created by Fabio Mattoni
