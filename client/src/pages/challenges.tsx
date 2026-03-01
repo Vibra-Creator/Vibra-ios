@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins, Sofa, Shirt, Apple, Coffee, ArrowLeft } from "lucide-react";
+import { Trophy, Camera, Star, CheckCircle, Clock, ImagePlus, X, Loader2, Coins, Sofa, Shirt, Apple, Coffee, ArrowLeft, Medal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
@@ -13,6 +14,14 @@ import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { DailyChallenge, ChallengeSubmission, Profile } from "@shared/schema";
+
+type LeaderboardEntry = {
+  profileId: string;
+  name: string;
+  imageUrl: string;
+  totalPoints: number;
+  submissionCount: number;
+};
 
 function ChallengeSkeleton() {
   return (
@@ -113,6 +122,10 @@ export default function Challenges() {
   const { data: submissions } = useQuery<ChallengeSubmission[]>({
     queryKey: ["/api/challenges/submissions/me"],
     enabled: !!user && !isGuest,
+  });
+
+  const { data: leaderboard } = useQuery<LeaderboardEntry[]>({
+    queryKey: ["/api/challenges/leaderboard"],
   });
 
   const submitMutation = useMutation({
@@ -312,6 +325,79 @@ export default function Challenges() {
         </div>
         <div className="text-3xl font-bold text-accent" data-testid="text-points-value">{totalPoints}</div>
       </div>
+
+      {leaderboard && leaderboard.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <div className="rounded-xl p-4 bg-white/10 backdrop-blur-sm" data-testid="card-leaderboard">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-5 h-5 text-yellow-400" />
+              <h2 className="font-bold text-lg text-white" data-testid="text-leaderboard-title">{t("challenges.leaderboardTitle")}</h2>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-3 mb-3 scrollbar-hide">
+              {leaderboard.slice(0, 3).map((entry, index) => {
+                const medalColors = ["text-yellow-400", "text-gray-300", "text-amber-600"];
+                const isCurrentUser = myProfile?.id === entry.profileId;
+                return (
+                  <div
+                    key={entry.profileId}
+                    className={`flex flex-col items-center min-w-[90px] p-3 rounded-xl ${isCurrentUser ? "bg-accent/20 ring-1 ring-accent/40" : "bg-white/5"}`}
+                    data-testid={`card-leaderboard-top-${index + 1}`}
+                  >
+                    <div className="relative mb-2">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={entry.imageUrl} alt={entry.name} />
+                        <AvatarFallback>{entry.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className={`absolute -top-1 -right-1 ${medalColors[index]}`}>
+                        <Medal className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold text-white truncate max-w-[80px] text-center" data-testid={`text-leaderboard-name-${index + 1}`}>
+                      {isCurrentUser ? t("challenges.leaderboardYou") : entry.name}
+                    </span>
+                    <span className="text-xs text-yellow-400 font-bold" data-testid={`text-leaderboard-points-${index + 1}`}>
+                      {entry.totalPoints} {t("challenges.leaderboardPoints")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {leaderboard.length > 3 && (
+              <div className="space-y-2">
+                {leaderboard.slice(3).map((entry, index) => {
+                  const rank = index + 4;
+                  const isCurrentUser = myProfile?.id === entry.profileId;
+                  return (
+                    <div
+                      key={entry.profileId}
+                      className={`flex items-center gap-3 p-2 rounded-lg ${isCurrentUser ? "bg-accent/20 ring-1 ring-accent/40" : "bg-white/5"}`}
+                      data-testid={`row-leaderboard-${rank}`}
+                    >
+                      <span className="text-sm font-bold text-white/60 w-6 text-center">{rank}</span>
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={entry.imageUrl} alt={entry.name} />
+                        <AvatarFallback>{entry.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-white flex-1 truncate" data-testid={`text-leaderboard-name-${rank}`}>
+                        {isCurrentUser ? t("challenges.leaderboardYou") : entry.name}
+                      </span>
+                      <span className="text-sm font-bold text-yellow-400" data-testid={`text-leaderboard-points-${rank}`}>
+                        {entry.totalPoints} {t("challenges.leaderboardPoints")}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {previewUrl && uploadingChallengeId && (
         <motion.div

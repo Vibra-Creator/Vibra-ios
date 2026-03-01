@@ -202,6 +202,10 @@ function ReferralSection() {
           {t("profile.share")}
         </Button>
       </div>
+      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3 flex items-center gap-2">
+        <Coins className="w-5 h-5 text-yellow-400 shrink-0" />
+        <p className="text-sm text-yellow-200 font-medium" data-testid="text-referral-reward-info">{t("referral.rewardExplain")}</p>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-white/5 rounded-lg p-2 text-center">
           <p className="text-2xl font-bold text-white" data-testid="text-referral-count">{referralData.referrals}</p>

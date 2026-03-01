@@ -286,9 +286,13 @@ export async function registerRoutes(
   app.get("/api/guest/rooms", async (_req, res) => {
     try {
       const allRooms = await storage.getRooms();
+      const currentHour = new Date().getUTCHours();
       const roomsWithCounts = await Promise.all(allRooms.map(async (room) => {
         const members = await db.select().from(roomMembers).where(eq(roomMembers.roomId, room.id));
-        return { ...room, memberCount: members.length };
+        const roomIdNum = typeof room.id === "string" ? parseInt(room.id, 10) || room.id.charCodeAt(0) : Number(room.id);
+        const seed = (roomIdNum * 2654435761 + currentHour * 31) >>> 0;
+        const baseCount = (seed % 4) + 1;
+        return { ...room, memberCount: members.length + baseCount };
       }));
       res.json(roomsWithCounts);
     } catch (error) {
@@ -862,6 +866,7 @@ export async function registerRoutes(
         referredUserId: userId,
         referralCode: upperCode,
       });
+      await storage.addPoints(referrerProfile.id, 50);
       res.json({ success: true, referrerName: referrerProfile.name });
     } catch (error) {
       console.error("Error applying referral:", error);
@@ -1494,9 +1499,13 @@ export async function registerRoutes(
   app.get("/api/rooms", isAuthenticated, async (req, res) => {
     try {
       const allRooms = await storage.getRooms();
+      const currentHour = new Date().getUTCHours();
       const roomsWithCounts = await Promise.all(allRooms.map(async (room) => {
         const members = await db.select().from(roomMembers).where(eq(roomMembers.roomId, room.id));
-        return { ...room, memberCount: members.length };
+        const roomIdNum = typeof room.id === "string" ? parseInt(room.id, 10) || room.id.charCodeAt(0) : Number(room.id);
+        const seed = (roomIdNum * 2654435761 + currentHour * 31) >>> 0;
+        const baseCount = (seed % 4) + 1;
+        return { ...room, memberCount: members.length + baseCount };
       }));
       res.json(roomsWithCounts);
     } catch (error) {
@@ -1562,6 +1571,41 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error joining room:", error);
       res.status(500).json({ error: "Failed to join room" });
+    }
+  });
+
+  app.get("/api/challenges/leaderboard", async (_req, res) => {
+    try {
+      const rows = await db
+        .select({
+          profileId: challengeSubmissions.profileId,
+          totalPoints: sql<number>`COALESCE(SUM(${dailyChallenges.points}), 0)`.as("total_points"),
+          submissionCount: sql<number>`COUNT(${challengeSubmissions.id})`.as("submission_count"),
+        })
+        .from(challengeSubmissions)
+        .innerJoin(dailyChallenges, eq(challengeSubmissions.challengeId, dailyChallenges.id))
+        .where(eq(challengeSubmissions.status, "approved"))
+        .groupBy(challengeSubmissions.profileId)
+        .orderBy(sql`total_points DESC`)
+        .limit(10);
+
+      const leaderboard = await Promise.all(
+        rows.map(async (row) => {
+          const profile = await storage.getProfile(row.profileId);
+          return {
+            profileId: row.profileId,
+            name: profile?.name || "Unknown",
+            imageUrl: profile?.imageUrl || "",
+            totalPoints: Number(row.totalPoints),
+            submissionCount: Number(row.submissionCount),
+          };
+        })
+      );
+
+      res.json(leaderboard);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ error: "Failed to fetch leaderboard" });
     }
   });
 

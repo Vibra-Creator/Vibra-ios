@@ -147,8 +147,32 @@ export default function Rooms() {
                     <p className="text-sm text-white/70 mb-3">{room.description}</p>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
-                        <Users className="w-4 h-4 text-cyan-400" />
-                        <span className="text-cyan-400 font-medium">{(room as any).memberCount ?? 0} {t("rooms.members")}</span>
+                        {(() => {
+                          const count = (room as any).memberCount ?? 0;
+                          if (count === 0) {
+                            return (
+                              <Badge variant="secondary" className="bg-amber-500/20 text-amber-300 border-amber-500/30" data-testid={`badge-room-empty-${room.id}`}>
+                                <Sparkles className="w-3 h-3 mr-1" />
+                                {t("rooms.activeBeFirst")}
+                              </Badge>
+                            );
+                          }
+                          return (
+                            <motion.div
+                              className="flex items-center gap-1.5"
+                              animate={count > 3 ? { scale: [1, 1.05, 1] } : undefined}
+                              transition={count > 3 ? { duration: 2, repeat: Infinity, ease: "easeInOut" } : undefined}
+                            >
+                              <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                              </span>
+                              <span className="text-green-400 font-medium" data-testid={`text-room-active-count-${room.id}`}>
+                                {count} {t("rooms.activeNow")}
+                              </span>
+                            </motion.div>
+                          );
+                        })()}
                       </div>
                       <Button size="sm" variant="ghost" className="gap-1 text-white/80" data-testid={`button-enter-room-${room.id}`}>
                         {t("rooms.enter")} <ArrowRight className="w-4 h-4" />
