@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles, UserPen, X } from "lucide-react";
+import { Sparkles, UserPen, X, Trophy } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
@@ -171,6 +171,9 @@ export default function Home() {
   const handleSwipeRight = useCallback(() => handleSwipe("right"), [handleSwipe]);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [challengeBannerDismissed, setChallengeBannerDismissed] = useState(() => {
+    try { return sessionStorage.getItem("challengeBannerDismissed") === "true"; } catch { return false; }
+  });
   const isProfileIncomplete = myProfile && !isGuest && (
     myProfile.imageUrl === "/images/avatar-1.png" || 
     !myProfile.bio || 
@@ -293,7 +296,29 @@ export default function Home() {
           </div>
         </div>
       )}
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: isProfileIncomplete && !bannerDismissed ? 'calc(100dvh - 250px)' : 'calc(100dvh - 210px)' }}>
+      {!isGuest && !challengeBannerDismissed && (
+        <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 mb-2">
+          <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500/90 via-yellow-500/90 to-orange-500/90 backdrop-blur-sm px-3 py-2 border border-yellow-300/30 shadow-lg shadow-amber-500/20" data-testid="banner-challenge-promo">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Trophy className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-white text-xs font-semibold flex-1 leading-tight">{t("home.challengePromo")}</span>
+            <Link href="/challenges">
+              <Button size="sm" className="h-7 text-xs px-3 bg-white/20 hover:bg-white/30 text-white border border-white/30" data-testid="button-go-challenges">
+                {t("home.goToChallenge")}
+              </Button>
+            </Link>
+            <button 
+              onClick={() => { setChallengeBannerDismissed(true); try { sessionStorage.setItem("challengeBannerDismissed", "true"); } catch {} }}
+              className="text-white/60 hover:text-white ml-1" 
+              data-testid="button-dismiss-challenge-banner"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0" style={{ maxHeight: (isProfileIncomplete && !bannerDismissed) || (!isGuest && !challengeBannerDismissed) ? 'calc(100dvh - 250px)' : 'calc(100dvh - 210px)' }}>
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}
