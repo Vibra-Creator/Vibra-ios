@@ -1000,21 +1000,32 @@ export async function registerRoutes(
 
   app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      const [users, profiles, matches, messages] = await Promise.all([
+      const [users, profiles, allMatches, allMessages] = await Promise.all([
         storage.getAllUsers(),
         storage.getAllProfiles(),
         storage.getAllMatches(),
         storage.getAllMessages(),
       ]);
+
+      const botProfileIds = new Set(
+        profiles.filter(p => p.isBot).map(p => p.id)
+      );
+      const realProfiles = profiles.filter(p => !p.isBot);
+      const realMatches = allMatches.filter(
+        m => !botProfileIds.has(m.profile1Id) && !botProfileIds.has(m.profile2Id)
+      );
+      const realMessages = allMessages.filter(
+        m => !botProfileIds.has(m.senderId)
+      );
       
       const sanitizedUsers = users.map(({ password, ...u }) => u);
       res.json({
         totalUsers: users.length,
-        totalProfiles: profiles.length,
-        totalMatches: matches.length,
-        totalMessages: messages.length,
+        totalProfiles: realProfiles.length,
+        totalMatches: realMatches.length,
+        totalMessages: realMessages.length,
         recentUsers: sanitizedUsers.slice(0, 10),
-        recentMatches: matches.slice(0, 10),
+        recentMatches: realMatches.slice(0, 10),
       });
     } catch (error) {
       console.error("Error fetching admin stats:", error);
