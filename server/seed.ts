@@ -15,6 +15,28 @@ const cityCoords: Record<string, { lat: number; lng: number }> = {
   Ancona: { lat: 43.62, lng: 13.52 }, Trieste: { lat: 45.65, lng: 13.78 }, Lecce: { lat: 40.35, lng: 18.17 },
   Livorno: { lat: 43.55, lng: 10.31 }, Siena: { lat: 43.32, lng: 11.33 }, Taranto: { lat: 40.47, lng: 17.24 },
   Arezzo: { lat: 43.46, lng: 11.88 },
+  // UK cities
+  Manchester: { lat: 53.48, lng: -2.24 }, London: { lat: 51.51, lng: -0.13 },
+  Brighton: { lat: 50.82, lng: -0.14 }, Birmingham: { lat: 52.49, lng: -1.89 },
+  Edinburgh: { lat: 55.95, lng: -3.19 }, Cotswolds: { lat: 51.83, lng: -1.68 },
+  Cornwall: { lat: 50.27, lng: -5.05 }, Oxford: { lat: 51.75, lng: -1.25 },
+  Bristol: { lat: 51.45, lng: -2.58 },
+  // US cities
+  "New York": { lat: 40.71, lng: -74.01 }, Austin: { lat: 30.27, lng: -97.74 },
+  Portland: { lat: 45.52, lng: -122.68 }, "San Francisco": { lat: 37.77, lng: -122.42 },
+  Chicago: { lat: 41.88, lng: -87.63 }, Denver: { lat: 39.74, lng: -104.99 },
+  Seattle: { lat: 47.61, lng: -122.33 }, Boston: { lat: 42.36, lng: -71.06 },
+  "Los Angeles": { lat: 34.05, lng: -118.24 }, Philadelphia: { lat: 39.95, lng: -75.17 },
+  // Spanish-speaking cities
+  "Ciudad de México": { lat: 19.43, lng: -99.13 }, Barcelona: { lat: 41.39, lng: 2.17 },
+  "Buenos Aires": { lat: -34.60, lng: -58.38 }, Madrid: { lat: 40.42, lng: -3.70 },
+  Bogotá: { lat: 4.71, lng: -74.07 }, Santiago: { lat: -33.45, lng: -70.67 },
+  Lima: { lat: -12.05, lng: -77.04 }, Guadalajara: { lat: 20.67, lng: -103.35 },
+  Montevideo: { lat: -34.88, lng: -56.16 }, Mendoza: { lat: -32.89, lng: -68.83 },
+  Medellín: { lat: 6.25, lng: -75.56 }, Sevilla: { lat: 37.39, lng: -5.98 },
+  Valencia: { lat: 39.47, lng: -0.38 }, Quito: { lat: -0.18, lng: -78.47 },
+  "Punta del Este": { lat: -34.97, lng: -54.95 }, "San José": { lat: 9.93, lng: -84.08 },
+  Logroño: { lat: 42.47, lng: -2.45 },
 };
 
 const seedProfiles = [
