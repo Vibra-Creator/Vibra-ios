@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Shield, Binoculars } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
@@ -79,9 +78,9 @@ export default function Login() {
   };
 
   return (
-    <div className="relative h-full flex flex-col items-center justify-center p-6 overflow-y-auto">
+    <div className="relative h-full flex flex-col items-center justify-start p-6 overflow-y-auto">
       <div className="fixed inset-0 z-0">
-        <img src="/images/vibra-alien-hero.gif" alt="" className="w-full h-full object-cover" />
+        <img src="/images/vibra-alien-hero.gif" alt="" className="w-full h-full object-cover" style={{ imageRendering: "auto" }} />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
       <Button
@@ -98,11 +97,7 @@ export default function Login() {
         <LanguageSelector />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-md"
-      >
+      <div className="relative z-10 w-full max-w-md mt-8">
         <div className="flex flex-col items-center mb-6">
           <img src={vibraLogo} alt="Vibra" className="w-28 h-28 aspect-square object-cover rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-login" />
           {isAdminLogin ? (
@@ -216,7 +211,7 @@ export default function Login() {
             </Link>
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
