@@ -795,6 +795,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "challenges.ch11Desc": "Mostraci il tuo spuntino o colazione salutare di oggi!",
     "challenges.ch12Title": "Caffeina Check",
     "challenges.ch12Desc": "Mostraci la tua tazza più originale dove bevi il caffè!",
+    "activity.onlineNow": "vibrazioni attive ora",
+    "activity.activeVibes": "l'app è viva",
+    "activity.profileVisit": "{name} ha visitato il tuo profilo",
+    "activity.compatibilityShared": "Nuova compatibilità con {name}! {count} interessi in comune",
+    "activity.compatibilityGeneric": "{name} potrebbe piacerti!",
+    "activity.interaction": "{name} ha interagito con la tua vibrazione",
+    "activity.roomActive": "La stanza \"{room}\" è attiva con {count} partecipanti",
+    "activity.vibingNearby": "{count} persone stanno vibrando vicino a te",
   },
 
   en: {
@@ -1591,6 +1599,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "challenges.ch11Desc": "Show us your healthy snack or breakfast of the day!",
     "challenges.ch12Title": "Caffeine Check",
     "challenges.ch12Desc": "Show us your most original mug for your coffee!",
+    "activity.onlineNow": "active vibes right now",
+    "activity.activeVibes": "the app is alive",
+    "activity.profileVisit": "{name} visited your profile",
+    "activity.compatibilityShared": "New compatibility with {name}! {count} interests in common",
+    "activity.compatibilityGeneric": "{name} might be your match!",
+    "activity.interaction": "{name} interacted with your vibe",
+    "activity.roomActive": "Room \"{room}\" is active with {count} members",
+    "activity.vibingNearby": "{count} people are vibing near you",
   },
 
   es: {
@@ -2387,5 +2403,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "challenges.ch11Desc": "¡Muéstranos tu snack o desayuno saludable de hoy!",
     "challenges.ch12Title": "Check de Cafeína",
     "challenges.ch12Desc": "¡Muéstranos tu taza más original donde tomas el café!",
+    "activity.onlineNow": "vibraciones activas ahora",
+    "activity.activeVibes": "la app está viva",
+    "activity.profileVisit": "{name} visitó tu perfil",
+    "activity.compatibilityShared": "¡Nueva compatibilidad con {name}! {count} intereses en común",
+    "activity.compatibilityGeneric": "¡{name} podría gustarte!",
+    "activity.interaction": "{name} interactuó con tu vibración",
+    "activity.roomActive": "La sala \"{room}\" está activa con {count} participantes",
+    "activity.vibingNearby": "{count} personas están vibrando cerca de ti",
   },
 };

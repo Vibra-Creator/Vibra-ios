@@ -2524,5 +2524,95 @@ REGOLE IMPORTANTI:
     }
   }, 5 * 60 * 1000);
 
+  app.get("/api/activity/feed", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json({ onlineCount: 0, events: [] });
+
+      const allProfiles = await storage.getAllProfiles();
+      const botProfiles = allProfiles.filter(p => p.isBot && p.id !== userProfile.id);
+      const activeRooms = await storage.getRooms();
+      const activeRoomsList = activeRooms.filter(r => r.isActive);
+
+      const now = Date.now();
+      const vibingCount = await db.select({ count: sql<number>`count(*)` })
+        .from(vibingSessions)
+        .where(and(
+          eq(vibingSessions.active, true),
+          sql`${vibingSessions.expiresAt} > NOW()`
+        ));
+      const vibingNearby = Number(vibingCount[0]?.count || 0);
+
+      const onlineBase = Math.min(botProfiles.length, 30);
+      const timeVariation = Math.floor(Math.sin(now / 60000) * 5);
+      const onlineCount = Math.max(8, onlineBase + timeVariation + vibingNearby);
+
+      const events: any[] = [];
+      const seed = Math.floor(now / 30000);
+
+      const visitBot = botProfiles[seed % botProfiles.length];
+      if (visitBot) {
+        events.push({
+          id: `visit-${seed}`,
+          type: "profile_visit",
+          profileName: visitBot.name,
+          profileImage: visitBot.imageUrl,
+        });
+      }
+
+      const compatBot = botProfiles[(seed + 7) % botProfiles.length];
+      if (compatBot) {
+        const shared = (userProfile.interests || []).filter(
+          (i: string) => (compatBot.interests || []).includes(i)
+        );
+        events.push({
+          id: `compat-${seed}`,
+          type: "compatibility",
+          profileName: compatBot.name,
+          profileImage: compatBot.imageUrl,
+          sharedCount: shared.length,
+        });
+      }
+
+      const interactBot = botProfiles[(seed + 13) % botProfiles.length];
+      if (interactBot) {
+        events.push({
+          id: `interact-${seed}`,
+          type: "interaction",
+          profileName: interactBot.name,
+          profileImage: interactBot.imageUrl,
+        });
+      }
+
+      if (activeRoomsList.length > 0) {
+        const room = activeRoomsList[seed % activeRoomsList.length];
+        const memberCount = Math.floor(Math.random() * 8) + 3;
+        events.push({
+          id: `room-${seed}`,
+          type: "room_active",
+          roomName: room.name,
+          count: memberCount,
+        });
+      }
+
+      if (vibingNearby > 0 || Math.random() > 0.3) {
+        const vCount = vibingNearby > 0 ? vibingNearby : Math.floor(Math.random() * 5) + 2;
+        events.push({
+          id: `vibe-${seed}`,
+          type: "vibing_nearby",
+          count: vCount,
+        });
+      }
+
+      res.json({ onlineCount, events });
+    } catch (error) {
+      console.error("Error fetching activity feed:", error);
+      res.status(500).json({ error: "Failed to fetch activity feed" });
+    }
+  });
+
   return httpServer;
 }

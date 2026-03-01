@@ -32,6 +32,8 @@ Vibra is a Tinder-like dating app with a unique alien/space theme. Users can swi
   - Settings stored in app_settings table (key-value)
 - **Profilo in Evidenza**: Winning a challenge worth 60+ points automatically highlights the profile for 7 days with golden glowing border and "In Evidenza" badge. Highlighted profiles appear first in swipe queue. Admin can manually highlight/unhighlight any profile (Crown button in admin dashboard).
 - **Auto Backup**: Automatic daily database backup to Object Storage. Exports all 22 tables as JSON. Admin can trigger manual backups and view backup history from dashboard. Keeps last 7 backups, auto-deletes older ones.
+- **Activity Feed (Engagement System)**: Live activity notifications on home page to make the app feel alive. Includes: (1) OnlineBanner showing animated count of active users, (2) ActivityToastSystem with timed toast notifications about profile visits, compatibility matches, room activity, and nearby vibers. Events generated using bot profiles. Fully translated IT/EN/ES.
+- **Admin Stats (Real Only)**: Admin dashboard counters exclude bot data - shows only real user profiles, matches, and messages.
 
 ## Tech Stack
 - **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion
