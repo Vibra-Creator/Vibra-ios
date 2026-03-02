@@ -79,11 +79,15 @@ export default function Login() {
   return (
     <div className="relative h-full flex flex-col items-center justify-start p-6 overflow-y-auto" style={{ background: "#0a0118" }}>
       <div className="fixed inset-0 z-0" style={{ background: "#0a0118" }}>
-        <img
-          src="/images/vibra-alien-hero.gif"
-          alt=""
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
           className="w-full h-full object-cover"
-          data-testid="img-login-bg"
+          src="/backgrounds/vibra-login-bg.mp4"
+          data-testid="video-login-bg"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>

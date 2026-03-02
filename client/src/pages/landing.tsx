@@ -73,8 +73,7 @@ export default function Landing() {
     <div className="relative h-full overflow-y-auto">
       <div className="fixed inset-0 z-0">
         {!videoPlaying && (
-          <div className="absolute inset-0">
-            <img src="/backgrounds/vibra-hero.jpg" alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "#0a0118" }}>
             <motion.div
               className="absolute inset-0"
               style={{

@@ -156,10 +156,14 @@ export default function Register() {
   return (
     <div className="relative flex-1 flex flex-col items-center p-6 py-16 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
       <div className="fixed inset-0 z-0" style={{ background: "#0a0118" }}>
-        <img
-          src="/images/vibra-alien-hero.gif"
-          alt=""
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
           className="w-full h-full object-cover"
+          src="/backgrounds/vibra-login-bg.mp4"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
