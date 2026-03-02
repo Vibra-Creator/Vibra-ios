@@ -30,12 +30,36 @@ export default function Home() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
-  const [showGlow, setShowGlow] = useState(true);
-
   useEffect(() => {
     try { if (navigator.vibrate) navigator.vibrate([40, 30, 40]); } catch {}
-    const timer = setTimeout(() => setShowGlow(false), 1500);
-    return () => clearTimeout(timer);
+    const playWelcomeSound = () => {
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(523, ctx.currentTime);
+        osc1.frequency.linearRampToValueAtTime(784, ctx.currentTime + 0.15);
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(659, ctx.currentTime + 0.12);
+        osc2.frequency.linearRampToValueAtTime(1047, ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.08);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+        osc1.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + 0.25);
+        osc2.start(ctx.currentTime + 0.12);
+        osc2.stop(ctx.currentTime + 0.4);
+        setTimeout(() => ctx.close().catch(() => {}), 600);
+      } catch {}
+    };
+    playWelcomeSound();
   }, []);
 
   const { data: myProfile, isLoading: profileLoading } = useQuery<Profile | null>({
@@ -277,22 +301,6 @@ export default function Home() {
     <div className="flex-1 flex flex-col items-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
 
-      {showGlow && (
-        <div
-          className="fixed inset-0 z-50 pointer-events-none"
-          style={{
-            background: "radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.25) 30%, rgba(236, 72, 153, 0.15) 50%, transparent 70%)",
-            animation: "homeGlow 1.2s ease-out forwards",
-          }}
-        />
-      )}
-      <style>{`
-        @keyframes homeGlow {
-          0% { opacity: 0; transform: scale(0.8); }
-          30% { opacity: 1; transform: scale(1.1); }
-          100% { opacity: 0; transform: scale(1.3); }
-        }
-      `}</style>
 
       <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 shrink-0 px-4">
         {!isGuest && <VibrationActivity />}
