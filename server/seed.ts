@@ -1333,11 +1333,19 @@ export async function seedDatabase() {
     const missingProfiles = seedProfiles.filter(p => !existingIds.has(p.id));
     const existingBotProfiles = seedProfiles.filter(p => existingIds.has(p.id));
     
+    const jitter = (id: string) => {
+      const seed = parseInt(id, 36) || 1;
+      const a = ((seed * 2654435761) % 1000) / 1000 - 0.5;
+      const b = ((seed * 1597334677) % 1000) / 1000 - 0.5;
+      return { dlat: a * 0.12, dlng: b * 0.12 };
+    };
+
     if (missingProfiles.length > 0) {
       console.log(`Seeding ${missingProfiles.length} new bot profiles...`);
       for (const profile of missingProfiles) {
         const coords = cityCoords[profile.location] || null;
-        await db.insert(profiles).values({ ...profile, isBot: true, points: 0, ratingEnabled: false, profileLatitude: coords?.lat || null, profileLongitude: coords?.lng || null });
+        const j = jitter(profile.id);
+        await db.insert(profiles).values({ ...profile, isBot: true, points: 0, ratingEnabled: false, profileLatitude: coords ? coords.lat + j.dlat : null, profileLongitude: coords ? coords.lng + j.dlng : null });
       }
       console.log("Bot profiles seeded successfully!");
     }
@@ -1346,12 +1354,13 @@ export async function seedDatabase() {
       console.log(`Updating ${existingBotProfiles.length} existing bot profiles with new data...`);
       for (const profile of existingBotProfiles) {
         const coords = cityCoords[profile.location] || null;
+        const j = jitter(profile.id);
         const { id, ...updateData } = profile;
         await db.update(profiles).set({
           ...updateData,
           isBot: true,
-          profileLatitude: coords?.lat || null,
-          profileLongitude: coords?.lng || null,
+          profileLatitude: coords ? coords.lat + j.dlat : null,
+          profileLongitude: coords ? coords.lng + j.dlng : null,
         }).where(eq(profiles.id, id));
       }
       console.log("Bot profiles updated successfully!");
