@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, Shield } from "lucide-react";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 interface SplashScreenProps {
@@ -56,12 +55,12 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   }, [dismiss, showCopyright]);
 
   const flashPositions = [
-    { top: "18%", left: "50%", transform: "translateX(-50%)" },
-    { top: "26%", left: "50%", transform: "translateX(-50%)" },
-    { bottom: "38%", left: "50%", transform: "translateX(-50%)" },
-    { bottom: "30%", left: "50%", transform: "translateX(-50%)" },
-    { bottom: "22%", left: "50%", transform: "translateX(-50%)" },
-    { bottom: "14%", left: "50%", transform: "translateX(-50%)" },
+    { top: "12%", left: "50%", transform: "translateX(-50%)" },
+    { top: "20%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "32%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "24%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "16%", left: "50%", transform: "translateX(-50%)" },
+    { bottom: "8%", left: "50%", transform: "translateX(-50%)" },
   ];
 
   return (
@@ -135,18 +134,19 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       })}
 
       <img
-        src={vibraLogo}
-        alt="Vibra"
+        src="/images/vibra-alien-hero.gif"
+        alt="Vibra Alien"
+        data-testid="splash-alien-gif"
         style={{
-          width: "180px",
-          height: "180px",
+          width: "220px",
+          height: "220px",
           objectFit: "contain",
           borderRadius: "50%",
           opacity: phase >= 1 ? 1 : 0,
           transform: phase >= 1 ? "scale(1)" : "scale(0.5)",
           transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
           filter: phase >= 2
-            ? "drop-shadow(0 0 25px rgba(139, 92, 246, 0.6)) drop-shadow(0 0 50px rgba(168, 85, 247, 0.3))"
+            ? "drop-shadow(0 0 30px rgba(139, 92, 246, 0.7)) drop-shadow(0 0 60px rgba(168, 85, 247, 0.4))"
             : "drop-shadow(0 0 10px rgba(139, 92, 246, 0.2))",
           position: "relative",
           zIndex: 3,

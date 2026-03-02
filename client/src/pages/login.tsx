@@ -10,7 +10,6 @@ import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -78,10 +77,9 @@ export default function Login() {
   };
 
   return (
-    <div className="relative h-full flex flex-col items-center justify-start p-6 overflow-y-auto">
-      <div className="fixed inset-0 z-0">
-        <img src="/images/vibra-alien-hero.gif" alt="" className="w-full h-full object-cover" style={{ imageRendering: "auto" }} />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
+    <div className="relative h-full flex flex-col items-center justify-start p-6 overflow-y-auto" style={{ background: "#0a0118" }}>
+      <div className="fixed inset-0 z-0" style={{ background: "#0a0118" }}>
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-transparent to-black/40" />
       </div>
       <Button
         variant="ghost"
@@ -97,9 +95,9 @@ export default function Login() {
         <LanguageSelector />
       </div>
 
-      <div className="relative z-10 w-full max-w-md mt-8">
-        <div className="flex flex-col items-center mb-6">
-          <img src={vibraLogo} alt="Vibra" className="w-28 h-28 aspect-square object-cover rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-login" />
+      <div className="relative z-10 w-full max-w-md mt-4">
+        <div className="flex flex-col items-center mb-4">
+          <img src="/images/vibra-alien-hero.gif" alt="Vibra" className="w-32 h-32 object-contain rounded-full" style={{ filter: "drop-shadow(0 0 25px rgba(139, 92, 246, 0.7))" }} data-testid="vibra-alien-login" />
           {isAdminLogin ? (
             <div className="flex items-center gap-2 mt-1">
               <Shield className="w-4 h-4 text-yellow-400" />
