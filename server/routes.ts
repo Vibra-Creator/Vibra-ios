@@ -116,7 +116,14 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
+  app.get("/sw.js", (req, res, next) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+  });
+
   app.get("/download/upload_certificate.pem", (req, res) => {
     const pemPath = path.join(process.cwd(), "client", "public", "upload_certificate.pem");
     if (fs.existsSync(pemPath)) {
