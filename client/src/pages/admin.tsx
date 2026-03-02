@@ -429,6 +429,10 @@ export default function Admin() {
               <Database className="w-3 h-3 mr-1" />
               Backup
             </TabsTrigger>
+            <TabsTrigger value="positions" data-testid="tab-positions">
+              <MapPin className="w-3 h-3 mr-1" />
+              Posizioni
+            </TabsTrigger>
           </TabsList>
 
           {/* PROFILI TAB */}
@@ -1113,6 +1117,79 @@ export default function Admin() {
                     <p className="text-xs text-muted-foreground mt-1">Il primo backup automatico verrà creato entro 1 minuto dall'avvio</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="positions">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><MapPin className="w-5 h-5" /> Posizioni Utenti</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {profilesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (() => {
+                  const locatedProfiles = (profiles || []).filter(
+                    (p: Profile) => p.profileLatitude && p.profileLongitude && !p.isBot
+                  );
+                  const allWithLocation = (profiles || []).filter(
+                    (p: Profile) => p.profileLatitude && p.profileLongitude
+                  );
+                  return (
+                    <div>
+                      <div className="flex items-center gap-4 mb-4">
+                        <Badge variant="outline" className="text-sm">
+                          {locatedProfiles.length} utenti reali con posizione
+                        </Badge>
+                        <Badge variant="secondary" className="text-sm">
+                          {allWithLocation.length} totali (inclusi bot)
+                        </Badge>
+                      </div>
+                      {locatedProfiles.length === 0 ? (
+                        <div className="text-center py-8">
+                          <MapPin className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
+                          <p className="text-muted-foreground">Nessun utente reale ha attivato la posizione</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                          {locatedProfiles.map((p: Profile) => (
+                            <div key={p.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border" data-testid={`position-item-${p.id}`}>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="w-10 h-10">
+                                  <AvatarImage src={p.imageUrl || ""} />
+                                  <AvatarFallback>{(p.name || "?")[0]}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-sm flex items-center gap-1">
+                                    {p.name}{p.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">{p.location || "Città non impostata"}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs font-mono text-muted-foreground">
+                                  {Number(p.profileLatitude).toFixed(4)}, {Number(p.profileLongitude).toFixed(4)}
+                                </p>
+                                <a
+                                  href={`https://www.google.com/maps?q=${p.profileLatitude},${p.profileLongitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline flex items-center justify-end gap-1 mt-0.5"
+                                  data-testid={`map-link-${p.id}`}
+                                >
+                                  <Globe className="w-3 h-3" /> Apri in Google Maps
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
