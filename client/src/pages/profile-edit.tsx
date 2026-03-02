@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, Phone, ImagePlus, X, Loader2, UserCircle, Eye, Compass } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, CheckCircle, Phone, ImagePlus, X, Loader2, UserCircle, Eye, Compass } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1051,7 +1051,31 @@ export default function ProfileEdit() {
 
                     <button
                       type="button"
-                      onClick={() => setLocationSharingEnabled(!locationSharingEnabled)}
+                      onClick={() => {
+                        const newVal = !locationSharingEnabled;
+                        setLocationSharingEnabled(newVal);
+                        if (newVal && navigator.geolocation) {
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              setProfileLatitude(pos.coords.latitude);
+                              setProfileLongitude(pos.coords.longitude);
+                              toast({ title: t("profileEdit.locationAcquired") || "Posizione acquisita!", description: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` });
+                            },
+                            (err) => {
+                              console.error("Geolocation error:", err);
+                              setLocationSharingEnabled(false);
+                              toast({ title: t("common.error"), description: t("profileEdit.locationError") || "Impossibile ottenere la posizione. Controlla i permessi del browser.", variant: "destructive" });
+                            },
+                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                          );
+                        } else if (newVal && !navigator.geolocation) {
+                          setLocationSharingEnabled(false);
+                          toast({ title: t("common.error"), description: t("profileEdit.locationNotSupported") || "Geolocalizzazione non supportata dal browser.", variant: "destructive" });
+                        } else {
+                          setProfileLatitude(null);
+                          setProfileLongitude(null);
+                        }
+                      }}
                       className={`mt-3 w-full p-5 rounded-xl border-2 transition-all ${
                         locationSharingEnabled
                           ? "bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border-secondary shadow-lg shadow-secondary/20"
@@ -1087,6 +1111,24 @@ export default function ProfileEdit() {
                             <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                             <span className="text-xs text-cyan-400 font-medium">{t("profileEdit.locationActive")}</span>
                           </div>
+                          {profileLatitude && profileLongitude ? (
+                            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-2">
+                              <p className="text-green-400 text-xs font-medium flex items-center gap-1">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                {t("profileEdit.locationAcquired")}
+                              </p>
+                              <p className="text-white/60 text-xs mt-1 font-mono">
+                                {profileLatitude.toFixed(4)}, {profileLongitude.toFixed(4)}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-2">
+                              <p className="text-yellow-400 text-xs font-medium flex items-center gap-1">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Acquisizione posizione in corso...
+                              </p>
+                            </div>
+                          )}
                           <div className="bg-white/5 rounded-lg p-3 space-y-1">
                             <p className="text-white/80 text-xs font-medium">{t("profileEdit.howItWorks")}</p>
                             <p className="text-white/80 text-xs">{t("profileEdit.locationStep1")}</p>
