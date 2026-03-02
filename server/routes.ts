@@ -2584,14 +2584,16 @@ REGOLE IMPORTANTI:
       if (!userProfile) return res.json(null);
 
       const now = Date.now();
-      const dayOfYear = Math.floor(now / 86400000);
+      const hourBlock = Math.floor(now / 3600000);
+      const minuteJitter = Math.floor(now / 300000);
       const profileSeed = (parseInt(userProfile.id, 36) || 1);
-      const todaySeed = profileSeed * 2654435761 + dayOfYear;
+      const baseSeed = Math.abs(profileSeed * 2654435761 + hourBlock);
+      const visitSeed = Math.abs(profileSeed * 1597334677 + minuteJitter);
 
-      const vibrations = 2 + (todaySeed % 7);
-      const compatible = 1 + ((todaySeed * 3) % 4);
-      const shown = 5 + ((todaySeed * 7) % 20);
-      const newCompat = ((todaySeed * 11) % 3);
+      const vibrations = 2 + (baseSeed % 7) + (visitSeed % 3);
+      const compatible = 1 + ((baseSeed * 3) % 4) + (visitSeed % 2);
+      const shown = 8 + ((baseSeed * 7) % 15) + (visitSeed % 8);
+      const newCompat = ((baseSeed * 11) % 3) + (visitSeed % 2);
 
       const realSwipes = await db.select({ count: sql<number>`count(*)` })
         .from(swipes)
