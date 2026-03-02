@@ -134,12 +134,12 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       })}
 
       <img
-        src="/images/vibra-alien-hero.gif"
-        alt="Vibra Alien"
-        data-testid="splash-alien-gif"
+        src="/vibra-logo.png"
+        alt="Vibra"
+        data-testid="splash-vibra-logo"
         style={{
-          width: "220px",
-          height: "220px",
+          width: "180px",
+          height: "180px",
           objectFit: "contain",
           borderRadius: "50%",
           opacity: phase >= 1 ? 1 : 0,
