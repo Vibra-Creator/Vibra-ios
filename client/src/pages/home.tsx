@@ -35,6 +35,18 @@ export default function Home() {
       try {
         if (navigator.vibrate) {
           navigator.vibrate([40, 30, 40]);
+        } else {
+          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = 150;
+          gain.gain.value = 0.01;
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.08);
+          setTimeout(() => ctx.close().catch(() => {}), 200);
         }
       } catch {}
     }
