@@ -1132,31 +1132,77 @@ export default function Admin() {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (() => {
-                  const locatedProfiles = (profiles || []).filter(
-                    (p: Profile) => p.profileLatitude && p.profileLongitude && !p.isBot
-                  );
                   const allWithLocation = (profiles || []).filter(
                     (p: Profile) => p.profileLatitude && p.profileLongitude
                   );
+                  const realProfiles = allWithLocation.filter((p: Profile) => !p.isBot);
+                  const botProfiles = allWithLocation.filter((p: Profile) => p.isBot);
                   return (
                     <div>
                       <div className="flex items-center gap-4 mb-4">
                         <Badge variant="outline" className="text-sm">
-                          {locatedProfiles.length} utenti reali con posizione
+                          {realProfiles.length} utenti reali
                         </Badge>
                         <Badge variant="secondary" className="text-sm">
-                          {allWithLocation.length} totali (inclusi bot)
+                          {botProfiles.length} bot
+                        </Badge>
+                        <Badge className="text-sm">
+                          {allWithLocation.length} totali
                         </Badge>
                       </div>
-                      {locatedProfiles.length === 0 ? (
-                        <div className="text-center py-8">
-                          <MapPin className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-                          <p className="text-muted-foreground">Nessun utente reale ha attivato la posizione</p>
+
+                      {realProfiles.length > 0 && (
+                        <div className="mb-4">
+                          <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-1"><Users className="w-4 h-4" /> Utenti Reali</h3>
+                          <div className="space-y-2">
+                            {realProfiles.map((p: Profile) => (
+                              <div key={p.id} className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20" data-testid={`position-real-${p.id}`}>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="w-10 h-10">
+                                    <AvatarImage src={p.imageUrl || ""} />
+                                    <AvatarFallback>{(p.name || "?")[0]}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium text-sm flex items-center gap-1">
+                                      {p.name}{p.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{p.location || "Città non impostata"}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs font-mono text-muted-foreground">
+                                    {Number(p.profileLatitude).toFixed(4)}, {Number(p.profileLongitude).toFixed(4)}
+                                  </p>
+                                  <a
+                                    href={`https://www.google.com/maps?q=${p.profileLatitude},${p.profileLongitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline flex items-center justify-end gap-1 mt-0.5"
+                                    data-testid={`map-link-${p.id}`}
+                                  >
+                                    <Globe className="w-3 h-3" /> Apri in Google Maps
+                                  </a>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                          {locatedProfiles.map((p: Profile) => (
-                            <div key={p.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border" data-testid={`position-item-${p.id}`}>
+                      )}
+
+                      {realProfiles.length === 0 && (
+                        <div className="text-center py-4 mb-4 bg-muted/20 rounded-lg">
+                          <p className="text-muted-foreground text-sm">Nessun utente reale ha attivato la posizione</p>
+                        </div>
+                      )}
+
+                      <details className="group">
+                        <summary className="text-sm font-semibold text-white mb-2 flex items-center gap-1 cursor-pointer list-none">
+                          <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
+                          Bot con posizione ({botProfiles.length})
+                        </summary>
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto mt-2">
+                          {botProfiles.map((p: Profile) => (
+                            <div key={p.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border" data-testid={`position-bot-${p.id}`}>
                               <div className="flex items-center gap-3">
                                 <Avatar className="w-10 h-10">
                                   <AvatarImage src={p.imageUrl || ""} />
@@ -1164,7 +1210,7 @@ export default function Admin() {
                                 </Avatar>
                                 <div>
                                   <p className="font-medium text-sm flex items-center gap-1">
-                                    {p.name}{p.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />}
+                                    {p.name} <Badge variant="outline" className="text-[10px] py-0 px-1">BOT</Badge>
                                   </p>
                                   <p className="text-xs text-muted-foreground">{p.location || "Città non impostata"}</p>
                                 </div>
@@ -1178,15 +1224,14 @@ export default function Admin() {
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-xs text-primary hover:underline flex items-center justify-end gap-1 mt-0.5"
-                                  data-testid={`map-link-${p.id}`}
                                 >
-                                  <Globe className="w-3 h-3" /> Apri in Google Maps
+                                  <Globe className="w-3 h-3" /> Maps
                                 </a>
                               </div>
                             </div>
                           ))}
                         </div>
-                      )}
+                      </details>
                     </div>
                   );
                 })()}
