@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Shield, Binoculars } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
@@ -22,23 +22,6 @@ export default function Login() {
   const { t } = useLanguage();
 
   const isAdminLogin = new URLSearchParams(window.location.search).get("admin") === "true";
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = true;
-    video.setAttribute("muted", "");
-    video.setAttribute("playsinline", "");
-    const tryPlay = () => { video.play().catch(() => {}); };
-    tryPlay();
-    document.addEventListener("touchstart", tryPlay, { once: true });
-    document.addEventListener("click", tryPlay, { once: true });
-    return () => {
-      document.removeEventListener("touchstart", tryPlay);
-      document.removeEventListener("click", tryPlay);
-    };
-  }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,17 +79,13 @@ export default function Login() {
   return (
     <div className="relative h-full flex flex-col items-center justify-start p-6 overflow-y-auto" style={{ background: "#0a0118" }}>
       <div className="fixed inset-0 z-0" style={{ background: "#0a0118" }}>
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
+        <img
+          src="/images/vibra-alien-hero.gif"
+          alt=""
           className="w-full h-full object-cover"
-          src="/backgrounds/vibra-landing.mp4"
+          data-testid="img-login-bg"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
       <Button
         variant="ghost"
@@ -122,16 +101,15 @@ export default function Login() {
         <LanguageSelector />
       </div>
 
-      <div className="relative z-10 w-full max-w-md mt-4">
+      <div className="relative z-10 w-full max-w-md mt-8">
         <div className="flex flex-col items-center mb-4">
-          <img src="/images/vibra-alien-hero.gif" alt="Vibra" className="w-28 h-28 object-contain rounded-full" style={{ filter: "drop-shadow(0 0 25px rgba(139, 92, 246, 0.7))" }} data-testid="vibra-alien-login" />
           {isAdminLogin ? (
             <div className="flex items-center gap-2 mt-1">
               <Shield className="w-4 h-4 text-yellow-400" />
               <p className="text-yellow-400 font-medium">{t("login.adminTitle")}</p>
             </div>
           ) : (
-            <p className="text-white/70 mt-1">{t("login.subtitle")}</p>
+            <p className="text-white/70 mt-1 text-lg font-semibold drop-shadow-lg">{t("login.subtitle")}</p>
           )}
         </div>
 

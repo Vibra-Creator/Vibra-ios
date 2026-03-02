@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, UserPlus, CheckCircle, Sparkles, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,24 +33,6 @@ export default function Register() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = true;
-    video.setAttribute("muted", "");
-    video.setAttribute("playsinline", "");
-    const tryPlay = () => { video.play().catch(() => {}); };
-    tryPlay();
-    document.addEventListener("touchstart", tryPlay, { once: true });
-    document.addEventListener("click", tryPlay, { once: true });
-    return () => {
-      document.removeEventListener("touchstart", tryPlay);
-      document.removeEventListener("click", tryPlay);
-    };
-  }, []);
-
   const validateReferralCode = async (code: string) => {
     if (!code || code.length < 4) { setReferralValid(null); return; }
     try {
@@ -174,17 +156,12 @@ export default function Register() {
   return (
     <div className="relative flex-1 flex flex-col items-center p-6 py-16 overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
       <div className="fixed inset-0 z-0" style={{ background: "#0a0118" }}>
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
+        <img
+          src="/images/vibra-alien-hero.gif"
+          alt=""
           className="w-full h-full object-cover"
-          src="/backgrounds/vibra-landing.mp4"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
       <Button
         variant="ghost"
