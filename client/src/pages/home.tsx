@@ -30,6 +30,16 @@ export default function Home() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
+  useEffect(() => {
+    if (user || isGuest) {
+      try {
+        if (navigator.vibrate) {
+          navigator.vibrate([40, 30, 40]);
+        }
+      } catch {}
+    }
+  }, []);
+
   const { data: myProfile, isLoading: profileLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
     enabled: !!user && !isGuest,
