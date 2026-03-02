@@ -30,25 +30,14 @@ export default function Home() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
+  const [showGlow, setShowGlow] = useState(false);
+
   useEffect(() => {
     if (user || isGuest) {
-      try {
-        if (navigator.vibrate) {
-          navigator.vibrate([40, 30, 40]);
-        } else {
-          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.value = 150;
-          gain.gain.value = 0.01;
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.08);
-          setTimeout(() => ctx.close().catch(() => {}), 200);
-        }
-      } catch {}
+      setShowGlow(true);
+      try { if (navigator.vibrate) navigator.vibrate([40, 30, 40]); } catch {}
+      const timer = setTimeout(() => setShowGlow(false), 1200);
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -290,6 +279,23 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col items-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
+
+      {showGlow && (
+        <div
+          className="fixed inset-0 z-50 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.25) 30%, rgba(236, 72, 153, 0.15) 50%, transparent 70%)",
+            animation: "homeGlow 1.2s ease-out forwards",
+          }}
+        />
+      )}
+      <style>{`
+        @keyframes homeGlow {
+          0% { opacity: 0; transform: scale(0.8); }
+          30% { opacity: 1; transform: scale(1.1); }
+          100% { opacity: 0; transform: scale(1.3); }
+        }
+      `}</style>
 
       <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 shrink-0 px-4">
         {!isGuest && <VibrationActivity />}
