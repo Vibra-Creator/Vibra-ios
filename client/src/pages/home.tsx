@@ -30,15 +30,12 @@ export default function Home() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
-  const [showGlow, setShowGlow] = useState(false);
+  const [showGlow, setShowGlow] = useState(true);
 
   useEffect(() => {
-    if (user || isGuest) {
-      setShowGlow(true);
-      try { if (navigator.vibrate) navigator.vibrate([40, 30, 40]); } catch {}
-      const timer = setTimeout(() => setShowGlow(false), 1200);
-      return () => clearTimeout(timer);
-    }
+    try { if (navigator.vibrate) navigator.vibrate([40, 30, 40]); } catch {}
+    const timer = setTimeout(() => setShowGlow(false), 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const { data: myProfile, isLoading: profileLoading } = useQuery<Profile | null>({
