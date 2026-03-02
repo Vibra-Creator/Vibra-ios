@@ -283,7 +283,15 @@ export async function registerRoutes(
         return bHL - aHL;
       });
 
-      res.json({ profiles: swipable, likedIds });
+      const profilesWithDistance = swipable.map(p => {
+        if (myProfile?.profileLatitude && myProfile?.profileLongitude && p.profileLatitude && p.profileLongitude) {
+          const dist = haversineKm(myProfile.profileLatitude, myProfile.profileLongitude, p.profileLatitude, p.profileLongitude);
+          return { ...p, distanceKm: Math.round(dist) };
+        }
+        return p;
+      });
+
+      res.json({ profiles: profilesWithDistance, likedIds });
     } catch (error) {
       console.error("Error fetching swipable profiles:", error);
       res.status(500).json({ error: "Failed to fetch profiles" });

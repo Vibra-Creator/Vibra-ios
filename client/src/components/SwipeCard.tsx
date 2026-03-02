@@ -132,11 +132,16 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                     <BadgeCheck className="w-6 h-6 text-blue-400" />
                   )}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-1 text-white/80">
                     <MapPin className="w-4 h-4" />
                     <span className="text-sm">{profile.location}</span>
                   </div>
+                  {(profile as any).distanceKm !== undefined && (
+                    <div className="flex items-center gap-1 bg-cyan-500/20 px-2 py-0.5 rounded-full" data-testid="distance-badge">
+                      <span className="text-xs text-cyan-300 font-medium">📍 {(profile as any).distanceKm} km</span>
+                    </div>
+                  )}
                   {(() => {
                     const activity = getActivityStatus((profile as any).lastActiveAt, t);
                     if (!activity.label) return null;
@@ -546,11 +551,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   )}
                 </div>
                 
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 flex-wrap mb-3">
                   <div className="flex items-center gap-1 text-white/80">
                     <MapPin className="w-4 h-4" />
                     <span className="text-sm">{profile.location}</span>
                   </div>
+                  {(profile as any).distanceKm !== undefined && (
+                    <div className="flex items-center gap-1 bg-cyan-500/20 px-2 py-0.5 rounded-full">
+                      <span className="text-xs text-cyan-300 font-medium">📍 {(profile as any).distanceKm} km</span>
+                    </div>
+                  )}
                   {(() => {
                     const activity = getActivityStatus((profile as any).lastActiveAt, t);
                     if (!activity.label) return null;
