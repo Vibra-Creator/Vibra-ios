@@ -186,10 +186,18 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
-      const profile = await storage.getProfileByUserId(userId);
+      let profile = await storage.getProfileByUserId(userId);
       if (profile) {
+        const photos = profile.photos as string[] | null;
+        const isDefaultAvatar = !profile.imageUrl || profile.imageUrl.startsWith('/images/avatar') || profile.imageUrl.startsWith('/images/profile-');
+        if (photos && photos.length > 0 && isDefaultAvatar) {
+          await db.update(profiles).set({ imageUrl: photos[0], lastActiveAt: new Date() }).where(eq(profiles.id, profile.id));
+          profile = { ...profile, imageUrl: photos[0] };
+          console.log(`[/api/profiles/me] Auto-fixed profile photo for "${profile.name}" -> ${photos[0]}`);
+        } else {
+          db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, profile.id)).execute().catch(() => {});
+        }
         console.log(`[/api/profiles/me] userId=${userId} profileId=${profile.id} points=${profile.points}`);
-        db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, profile.id)).execute().catch(() => {});
       } else {
         console.log(`[/api/profiles/me] userId=${userId} NO PROFILE FOUND`);
       }

@@ -1502,6 +1502,23 @@ export async function seedDatabase() {
       }
     } catch (e) {}
 
+    const realProfiles = await db.select().from(profiles).where(eq(profiles.isBot, false));
+    let fixedCount = 0;
+    for (const p of realProfiles) {
+      const photos = p.photos as string[] | null;
+      if (photos && photos.length > 0) {
+        const isDefaultAvatar = !p.imageUrl || p.imageUrl.startsWith('/images/avatar') || p.imageUrl.startsWith('/images/profile-');
+        if (isDefaultAvatar) {
+          await db.update(profiles).set({ imageUrl: photos[0] }).where(eq(profiles.id, p.id));
+          fixedCount++;
+          console.log(`Auto-fixed profile photo for "${p.name}" (id: ${p.id}) -> ${photos[0]}`);
+        }
+      }
+    }
+    if (fixedCount > 0) {
+      console.log(`Auto-fixed ${fixedCount} profile(s) with uploaded photos but default avatar.`);
+    }
+
   } catch (error) {
     console.error("Error seeding database:", error);
   }
