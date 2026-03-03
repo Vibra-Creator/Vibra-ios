@@ -98,7 +98,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
             onClick={(e) => e.stopPropagation()}
             data-testid="profile-detail-modal"
           >
-            <div className="relative shrink-0 cursor-pointer" onClick={() => setViewingPhotoIndex(0)}>
+            <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClose(); }}>
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
@@ -112,16 +112,6 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                   <span className="text-xs text-white/80">{allPhotos.length}</span>
                 </div>
               )}
-
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute top-4 left-4 text-white bg-black/60 backdrop-blur-md border border-white/20 z-10"
-                onClick={(e) => { e.stopPropagation(); onClose(); }}
-                data-testid="button-close-profile-detail"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
 
               <div className="absolute bottom-4 left-4 right-4">
                 <div className="flex items-center gap-2 mb-1">
