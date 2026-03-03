@@ -2868,6 +2868,8 @@ REGOLE IMPORTANTI:
 
     const profileId = userProfile.id;
 
+    socket.join(`user:${profileId}`);
+
     if (!vibrappOnlineUsers.has(profileId)) {
       vibrappOnlineUsers.set(profileId, new Set());
     }
@@ -2887,30 +2889,41 @@ REGOLE IMPORTANTI:
         if (!content) return;
 
         const filteredContent = filterOffensiveContent(content);
+
+        let replyToSenderId: string | null = null;
+        if (data.replyToId) {
+          try {
+            const [repliedMsg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, data.replyToId));
+            if (repliedMsg) {
+              replyToSenderId = repliedMsg.senderId;
+            }
+          } catch {}
+        }
+
         const [msg] = await db.insert(vibrappMessages).values({
           senderId: profileId,
           senderName: userProfile.name,
           senderImage: userProfile.imageUrl,
           content: filteredContent,
           replyToId: data.replyToId || null,
+          replyToSenderId: replyToSenderId,
           replyToName: data.replyToName || null,
           replyToContent: data.replyToContent ? data.replyToContent.substring(0, 100) : null,
         }).returning();
 
-        io.emit("vibrapp:new-message", msg);
+        if (data.replyToId && replyToSenderId) {
+          io.to(`user:${profileId}`).to(`user:${replyToSenderId}`).emit("vibrapp:new-message", msg);
 
-        if (data.replyToId) {
-          try {
-            const [repliedMsg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, data.replyToId));
-            if (repliedMsg && repliedMsg.senderId !== profileId) {
-              sendPushToProfile(repliedMsg.senderId, {
-                title: "Vibrapp",
-                body: `${userProfile.name}: ${filteredContent.substring(0, 100)}`,
-                icon: "/icons/icon-192.png",
-                url: "/vibrapp",
-              });
-            }
-          } catch {}
+          if (replyToSenderId !== profileId) {
+            sendPushToProfile(replyToSenderId, {
+              title: "Vibrapp",
+              body: `${userProfile.name}: ${filteredContent.substring(0, 100)}`,
+              icon: "/icons/icon-192.png",
+              url: "/vibrapp",
+            });
+          }
+        } else {
+          io.emit("vibrapp:new-message", msg);
         }
       } catch (err) {
         console.error("[vibrapp] message error:", err);
@@ -2931,8 +2944,15 @@ REGOLE IMPORTANTI:
     socket.on("vibrapp:read", async (data: { messageId: string }) => {
       try {
         if (!data.messageId || typeof data.messageId !== "string") return;
+        const [msg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, data.messageId));
+        if (!msg) return;
+        if (msg.replyToId && msg.senderId !== profileId && msg.replyToSenderId !== profileId) return;
         await db.execute(sql`UPDATE vibrapp_messages SET read_by = array_append(read_by, ${profileId}) WHERE id = ${data.messageId} AND NOT (${profileId} = ANY(read_by)) AND sender_id != ${profileId}`);
-        io.emit("vibrapp:message-read", { messageId: data.messageId, profileId });
+        if (msg.replyToId && msg.replyToSenderId) {
+          io.to(`user:${msg.senderId}`).to(`user:${msg.replyToSenderId}`).emit("vibrapp:message-read", { messageId: data.messageId, profileId });
+        } else {
+          io.emit("vibrapp:message-read", { messageId: data.messageId, profileId });
+        }
       } catch (err) {
         console.error("[vibrapp] read error:", err);
       }
@@ -2942,17 +2962,21 @@ REGOLE IMPORTANTI:
       try {
         if (!data.messageId || !data.emoji || !ALLOWED_REACTIONS.includes(data.emoji)) return;
         const [msg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, data.messageId));
-        if (msg) {
-          const reactions: Record<string, string[]> = JSON.parse(msg.reactions || "{}");
-          if (!reactions[data.emoji]) reactions[data.emoji] = [];
-          const idx = reactions[data.emoji].indexOf(profileId);
-          if (idx >= 0) {
-            reactions[data.emoji].splice(idx, 1);
-            if (reactions[data.emoji].length === 0) delete reactions[data.emoji];
-          } else {
-            reactions[data.emoji].push(profileId);
-          }
-          await db.update(vibrappMessages).set({ reactions: JSON.stringify(reactions) }).where(eq(vibrappMessages.id, data.messageId));
+        if (!msg) return;
+        if (msg.replyToId && msg.senderId !== profileId && msg.replyToSenderId !== profileId) return;
+        const reactions: Record<string, string[]> = JSON.parse(msg.reactions || "{}");
+        if (!reactions[data.emoji]) reactions[data.emoji] = [];
+        const idx = reactions[data.emoji].indexOf(profileId);
+        if (idx >= 0) {
+          reactions[data.emoji].splice(idx, 1);
+          if (reactions[data.emoji].length === 0) delete reactions[data.emoji];
+        } else {
+          reactions[data.emoji].push(profileId);
+        }
+        await db.update(vibrappMessages).set({ reactions: JSON.stringify(reactions) }).where(eq(vibrappMessages.id, data.messageId));
+        if (msg.replyToId && msg.replyToSenderId) {
+          io.to(`user:${msg.senderId}`).to(`user:${msg.replyToSenderId}`).emit("vibrapp:reaction-update", { messageId: data.messageId, reactions });
+        } else {
           io.emit("vibrapp:reaction-update", { messageId: data.messageId, reactions });
         }
       } catch (err) {
@@ -2976,24 +3000,37 @@ REGOLE IMPORTANTI:
 
   app.get("/api/vibrapp/messages", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.session?.userId;
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const profileId = profile.id;
       const limit = parseInt(req.query.limit as string) || 50;
       const before = req.query.before as string | undefined;
+
+      const visibilityFilter = or(
+        sql`${vibrappMessages.replyToId} IS NULL`,
+        eq(vibrappMessages.senderId, profileId),
+        eq(vibrappMessages.replyToSenderId, profileId)
+      );
 
       let query;
       if (before) {
         const [beforeMsg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, before));
         if (beforeMsg) {
           query = await db.select().from(vibrappMessages)
-            .where(lt(vibrappMessages.createdAt, beforeMsg.createdAt))
+            .where(and(lt(vibrappMessages.createdAt, beforeMsg.createdAt), visibilityFilter!))
             .orderBy(desc(vibrappMessages.createdAt))
             .limit(limit);
         } else {
           query = await db.select().from(vibrappMessages)
+            .where(visibilityFilter!)
             .orderBy(desc(vibrappMessages.createdAt))
             .limit(limit);
         }
       } else {
         query = await db.select().from(vibrappMessages)
+          .where(visibilityFilter!)
           .orderBy(desc(vibrappMessages.createdAt))
           .limit(limit);
       }

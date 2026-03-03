@@ -848,6 +848,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "vibrapp.newFeature": "Nuova funzione: Vibrapp! Una chat globale tipo WhatsApp per parlare con tutti.",
 
     // Push Notifications
+    "vibrapp.privateReply": "Risposta privata",
+
     "push.enable": "Attiva Notifiche",
     "push.enabled": "Notifiche Attive",
     "push.disable": "Disattiva Notifiche",
@@ -1702,6 +1704,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "vibrapp.welcome": "Welcome to Vibrapp!",
     "vibrapp.welcomeDesc": "Vibra's global chat. Chat with all users in real time!",
     "vibrapp.newFeature": "New feature: Vibrapp! A global WhatsApp-like chat to talk with everyone.",
+    "vibrapp.privateReply": "Private reply",
 
     // Push Notifications
     "push.enable": "Enable Notifications",
@@ -2558,6 +2561,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "vibrapp.welcome": "¡Bienvenido a Vibrapp!",
     "vibrapp.welcomeDesc": "El chat global de Vibra. ¡Chatea con todos los usuarios en tiempo real!",
     "vibrapp.newFeature": "Nueva función: ¡Vibrapp! Un chat global tipo WhatsApp para hablar con todos.",
+    "vibrapp.privateReply": "Respuesta privada",
 
     // Push Notifications
     "push.enable": "Activar Notificaciones",

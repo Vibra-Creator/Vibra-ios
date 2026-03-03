@@ -355,6 +355,7 @@ export const vibrappMessages = pgTable("vibrapp_messages", {
   senderImage: text("sender_image"),
   content: text("content").notNull(),
   replyToId: varchar("reply_to_id"),
+  replyToSenderId: varchar("reply_to_sender_id"),
   replyToName: text("reply_to_name"),
   replyToContent: text("reply_to_content"),
   reactions: text("reactions").default("{}"),

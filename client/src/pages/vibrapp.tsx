@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle } from "lucide-react";
+import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +13,7 @@ interface VibrappMsg {
   senderImage: string | null;
   content: string;
   replyToId: string | null;
+  replyToSenderId: string | null;
   replyToName: string | null;
   replyToContent: string | null;
   reactions: string;
@@ -305,8 +306,11 @@ export default function Vibrapp() {
                       )}
 
                       {msg.replyToId && (
-                        <div className="bg-black/20 rounded px-2 py-1 mb-1 border-l-2 border-emerald-500">
-                          <p className="text-[10px] text-emerald-400 font-medium">{msg.replyToName}</p>
+                        <div className="bg-black/20 rounded px-2 py-1 mb-1 border-l-2 border-purple-400">
+                          <div className="flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5 text-purple-400" />
+                            <p className="text-[10px] text-purple-400 font-medium">{msg.replyToName}</p>
+                          </div>
                           <p className="text-[10px] text-white/50 truncate">{msg.replyToContent}</p>
                         </div>
                       )}
@@ -314,6 +318,9 @@ export default function Vibrapp() {
                       <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
 
                       <div className={`flex items-center gap-1 mt-0.5 ${mine ? "justify-end" : "justify-end"}`}>
+                        {msg.replyToId && (
+                          <Lock className="w-2.5 h-2.5 text-purple-400/60" />
+                        )}
                         <span className="text-[9px] text-white/40">{formatTime(msg.createdAt)}</span>
                         {mine && (
                           isRead
@@ -428,7 +435,10 @@ export default function Vibrapp() {
               className="px-4 py-2 bg-black/30 flex items-center justify-between border-b border-white/10"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-primary font-medium">{t("vibrapp.replyingTo")} {replyTo.senderName}</p>
+                <div className="flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-purple-400" />
+                  <p className="text-[10px] text-purple-400 font-medium">{t("vibrapp.privateReply")} → {replyTo.senderName}</p>
+                </div>
                 <p className="text-[11px] text-white/50 truncate">{replyTo.content}</p>
               </div>
               <button
