@@ -1,4 +1,4 @@
-const CACHE_VERSION = 18;
+const CACHE_VERSION = 19;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -34,11 +34,12 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: data.icon || '/icons/icon-192.png',
       badge: '/icons/icon-72.png',
-      vibrate: [200, 100, 200],
+      vibrate: [200, 100, 200, 100, 200],
       data: { url: data.url || '/' },
-      tag: 'vibra-notification',
+      tag: 'vibra-' + Date.now(),
       renotify: true,
       requireInteraction: false,
+      silent: false,
     };
     event.waitUntil(self.registration.showNotification(title, options));
   } catch (e) {

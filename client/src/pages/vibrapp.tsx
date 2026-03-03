@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock } from "lucide-react";
+import { playNotificationSound } from "@/lib/notification-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
@@ -77,6 +78,9 @@ export default function Vibrapp() {
       }
       if (msg.senderId !== profile.id) {
         socket.emit("vibrapp:read", { messageId: msg.id });
+        if (msg.replyToId && msg.replyToSenderId === profile.id) {
+          playNotificationSound();
+        }
       }
     });
 
