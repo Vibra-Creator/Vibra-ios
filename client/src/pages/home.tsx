@@ -298,15 +298,14 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
+    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
-
 
       <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 shrink-0 px-4">
         {!isGuest && <VibrationActivity />}
       </div>
 
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0 px-4">
+      <div className="w-full max-w-[380px] md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0 px-2 mx-auto">
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}
