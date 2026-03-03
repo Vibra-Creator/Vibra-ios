@@ -80,17 +80,16 @@ export default function Login() {
   return (
     <div className="relative h-full flex flex-col items-center justify-start p-6 overflow-y-auto" style={{ background: "#0a0118" }}>
       <LoginVideoBackground />
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-4 left-4 z-20 text-white bg-black/30 backdrop-blur-sm"
-        onClick={() => setLocation("/landing")}
-        data-testid="button-back"
-      >
-        <ArrowLeft className="w-5 h-5" />
-      </Button>
-
-      <div className="absolute top-4 left-16 z-20">
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white bg-black/30 backdrop-blur-sm"
+          onClick={() => setLocation("/landing")}
+          data-testid="button-back"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <LanguageSelector />
       </div>
 
@@ -152,7 +151,7 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-[shimmer_3s_linear_infinite] hover:opacity-90 shadow-lg shadow-primary/30"
+                className="w-full h-16 text-xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-[shimmer_3s_linear_infinite] hover:opacity-90 shadow-lg shadow-primary/30 rounded-xl"
                 disabled={isLoading}
                 data-testid="button-login"
               >
