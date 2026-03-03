@@ -13,6 +13,40 @@ export function Header() {
         <Link href="/" data-testid="link-home">
           <div className="flex items-center gap-2">
             <img src={vibraLogo} alt="Vibra" className="w-10 h-10 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
+            <motion.div
+              className="relative select-none"
+              animate={{ opacity: [1, 0.4, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              data-testid="text-match-vibration-banner"
+            >
+              <motion.span
+                className="absolute inset-0 text-sm font-extrabold tracking-wider uppercase blur-md"
+                style={{
+                  background: "linear-gradient(90deg, #a855f7, #06b6d4, #ec4899, #a855f7)",
+                  backgroundSize: "200% 100%",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                aria-hidden="true"
+              >
+                MATCH YOUR VIBRATION
+              </motion.span>
+              <motion.span
+                className="relative text-sm font-extrabold tracking-wider uppercase"
+                style={{
+                  background: "linear-gradient(90deg, #a855f7, #06b6d4, #ec4899, #a855f7)",
+                  backgroundSize: "200% 100%",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              >
+                MATCH YOUR VIBRATION
+              </motion.span>
+            </motion.div>
           </div>
         </Link>
       </div>
