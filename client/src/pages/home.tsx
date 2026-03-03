@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles, X } from "lucide-react";
+import { Sparkles, X, MessageCircle } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
@@ -12,6 +12,7 @@ import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useLocation } from "wouter";
 import type { Profile, Match } from "@shared/schema";
 
 interface SwipableResponse {
@@ -29,6 +30,10 @@ export default function Home() {
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const [, setLocation] = useLocation();
+  const [showVibrappBanner, setShowVibrappBanner] = useState(() => {
+    return !localStorage.getItem("vibra-vibrapp-seen");
+  });
 
   useEffect(() => {
     try { if (navigator.vibrate) navigator.vibrate([40, 30, 40]); } catch {}
@@ -302,6 +307,38 @@ export default function Home() {
       {bgLayer}
 
       <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 shrink-0 px-4">
+        {!isGuest && showVibrappBanner && (
+          <div className="mb-2 bg-gradient-to-r from-green-600/80 to-emerald-600/80 backdrop-blur-sm rounded-xl p-3 flex items-center gap-3 border border-green-400/30 shadow-lg" data-testid="vibrapp-banner">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-sm">{t("vibrapp.welcome")}</p>
+              <p className="text-white/80 text-xs">{t("vibrapp.welcomeDesc")}</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-white text-xs border border-white/30 px-2 h-7"
+                onClick={() => setLocation("/vibrapp")}
+                data-testid="button-vibrapp-go"
+              >
+                Go
+              </Button>
+              <button
+                onClick={() => {
+                  setShowVibrappBanner(false);
+                  localStorage.setItem("vibra-vibrapp-seen", "1");
+                }}
+                className="text-white/50 hover:text-white p-1"
+                data-testid="button-vibrapp-dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
         {!isGuest && <VibrationActivity />}
       </div>
 

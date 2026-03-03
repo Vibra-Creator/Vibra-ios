@@ -2,9 +2,9 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ne, sql, lt } from "drizzle-orm";
+import { eq, or, and, ne, sql, lt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import multer from "multer";
@@ -14,6 +14,8 @@ import { randomUUID } from "crypto";
 import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
 import OpenAI from "openai";
 import { createBackup, getBackupList, startAutoBackup } from "./backup";
+import { Server as SocketIOServer } from "socket.io";
+import { getSession } from "./replit_integrations/auth/replitAuth";
 
 const OFFENSIVE_WORDS = [
   "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
@@ -2736,6 +2738,170 @@ REGOLE IMPORTANTI:
       console.error("Error fetching activity feed:", error);
       res.status(500).json({ error: "Failed to fetch activity feed" });
     }
+  });
+
+  // ===================== VIBRAPP - Global Chat with Socket.io =====================
+
+  const io = new SocketIOServer(httpServer, {
+    path: "/vibrapp-socket",
+  });
+
+  const sessionMiddleware = getSession();
+  io.use((socket, next) => {
+    const req = socket.request as any;
+    const res = { end: () => {} } as any;
+    sessionMiddleware(req, res, () => {
+      if (!req.session?.userId) {
+        return next(new Error("Unauthorized"));
+      }
+      next();
+    });
+  });
+
+  const vibrappOnlineUsers = new Map<string, Set<string>>();
+  const vibrappUserProfiles = new Map<string, { name: string; image: string | null }>();
+  const vibrappTypingUsers = new Map<string, { name: string; timeout: NodeJS.Timeout }>();
+
+  const MAX_MSG_LENGTH = 2000;
+  const ALLOWED_REACTIONS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
+
+  io.on("connection", async (socket) => {
+    const userId = (socket.request as any).session?.userId;
+    if (!userId) { socket.disconnect(); return; }
+
+    let userProfile: any = null;
+    try {
+      userProfile = await storage.getProfileByUserId(userId);
+    } catch {}
+    if (!userProfile) { socket.disconnect(); return; }
+
+    const profileId = userProfile.id;
+
+    if (!vibrappOnlineUsers.has(profileId)) {
+      vibrappOnlineUsers.set(profileId, new Set());
+    }
+    vibrappOnlineUsers.get(profileId)!.add(socket.id);
+    vibrappUserProfiles.set(profileId, { name: userProfile.name, image: userProfile.imageUrl });
+    io.emit("vibrapp:online-count", vibrappOnlineUsers.size);
+
+    socket.on("vibrapp:message", async (data: {
+      content: string;
+      replyToId?: string;
+      replyToName?: string;
+      replyToContent?: string;
+    }) => {
+      try {
+        if (!data.content || typeof data.content !== "string") return;
+        const content = data.content.trim().substring(0, MAX_MSG_LENGTH);
+        if (!content) return;
+
+        const filteredContent = filterOffensiveContent(content);
+        const [msg] = await db.insert(vibrappMessages).values({
+          senderId: profileId,
+          senderName: userProfile.name,
+          senderImage: userProfile.imageUrl,
+          content: filteredContent,
+          replyToId: data.replyToId || null,
+          replyToName: data.replyToName || null,
+          replyToContent: data.replyToContent ? data.replyToContent.substring(0, 100) : null,
+        }).returning();
+
+        io.emit("vibrapp:new-message", msg);
+      } catch (err) {
+        console.error("[vibrapp] message error:", err);
+      }
+    });
+
+    socket.on("vibrapp:typing", () => {
+      const existing = vibrappTypingUsers.get(profileId);
+      if (existing) clearTimeout(existing.timeout);
+      const timeout = setTimeout(() => {
+        vibrappTypingUsers.delete(profileId);
+        io.emit("vibrapp:typing-update", Array.from(vibrappTypingUsers.entries()).map(([id, v]) => ({ profileId: id, name: v.name })));
+      }, 3000);
+      vibrappTypingUsers.set(profileId, { name: userProfile.name, timeout });
+      io.emit("vibrapp:typing-update", Array.from(vibrappTypingUsers.entries()).map(([id, v]) => ({ profileId: id, name: v.name })));
+    });
+
+    socket.on("vibrapp:read", async (data: { messageId: string }) => {
+      try {
+        if (!data.messageId || typeof data.messageId !== "string") return;
+        await db.execute(sql`UPDATE vibrapp_messages SET read_by = array_append(read_by, ${profileId}) WHERE id = ${data.messageId} AND NOT (${profileId} = ANY(read_by)) AND sender_id != ${profileId}`);
+        io.emit("vibrapp:message-read", { messageId: data.messageId, profileId });
+      } catch (err) {
+        console.error("[vibrapp] read error:", err);
+      }
+    });
+
+    socket.on("vibrapp:react", async (data: { messageId: string; emoji: string }) => {
+      try {
+        if (!data.messageId || !data.emoji || !ALLOWED_REACTIONS.includes(data.emoji)) return;
+        const [msg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, data.messageId));
+        if (msg) {
+          const reactions: Record<string, string[]> = JSON.parse(msg.reactions || "{}");
+          if (!reactions[data.emoji]) reactions[data.emoji] = [];
+          const idx = reactions[data.emoji].indexOf(profileId);
+          if (idx >= 0) {
+            reactions[data.emoji].splice(idx, 1);
+            if (reactions[data.emoji].length === 0) delete reactions[data.emoji];
+          } else {
+            reactions[data.emoji].push(profileId);
+          }
+          await db.update(vibrappMessages).set({ reactions: JSON.stringify(reactions) }).where(eq(vibrappMessages.id, data.messageId));
+          io.emit("vibrapp:reaction-update", { messageId: data.messageId, reactions });
+        }
+      } catch (err) {
+        console.error("[vibrapp] react error:", err);
+      }
+    });
+
+    socket.on("disconnect", () => {
+      const sockets = vibrappOnlineUsers.get(profileId);
+      if (sockets) {
+        sockets.delete(socket.id);
+        if (sockets.size === 0) {
+          vibrappOnlineUsers.delete(profileId);
+          vibrappUserProfiles.delete(profileId);
+        }
+      }
+      vibrappTypingUsers.delete(profileId);
+      io.emit("vibrapp:online-count", vibrappOnlineUsers.size);
+    });
+  });
+
+  app.get("/api/vibrapp/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const before = req.query.before as string | undefined;
+
+      let query;
+      if (before) {
+        const [beforeMsg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, before));
+        if (beforeMsg) {
+          query = await db.select().from(vibrappMessages)
+            .where(lt(vibrappMessages.createdAt, beforeMsg.createdAt))
+            .orderBy(desc(vibrappMessages.createdAt))
+            .limit(limit);
+        } else {
+          query = await db.select().from(vibrappMessages)
+            .orderBy(desc(vibrappMessages.createdAt))
+            .limit(limit);
+        }
+      } else {
+        query = await db.select().from(vibrappMessages)
+          .orderBy(desc(vibrappMessages.createdAt))
+          .limit(limit);
+      }
+
+      res.json(query.reverse());
+    } catch (err) {
+      console.error("[vibrapp] fetch messages error:", err);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.get("/api/vibrapp/online-count", isAuthenticated, async (req: any, res) => {
+    res.json({ count: vibrappOnlineUsers.size });
   });
 
   return httpServer;

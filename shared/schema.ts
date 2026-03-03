@@ -347,3 +347,21 @@ export const appSettings = pgTable("app_settings", {
 });
 
 export type AppSetting = typeof appSettings.$inferSelect;
+
+export const vibrappMessages = pgTable("vibrapp_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  senderId: varchar("sender_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderImage: text("sender_image"),
+  content: text("content").notNull(),
+  replyToId: varchar("reply_to_id"),
+  replyToName: text("reply_to_name"),
+  replyToContent: text("reply_to_content"),
+  reactions: text("reactions").default("{}"),
+  readBy: text("read_by").array().default(sql`'{}'::text[]`),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type VibrappMessage = typeof vibrappMessages.$inferSelect;
+export const insertVibrappMessageSchema = createInsertSchema(vibrappMessages).omit({ id: true, createdAt: true, readBy: true, reactions: true });
+export type InsertVibrappMessage = z.infer<typeof insertVibrappMessageSchema>;
