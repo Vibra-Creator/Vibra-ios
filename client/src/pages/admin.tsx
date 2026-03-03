@@ -621,34 +621,45 @@ export default function Admin() {
                           </div>
                         </div>
 
-                        {isExpanded && userProfile && (
+                        {isExpanded && (
                           <div className="px-4 pb-4 border-t border-border/50">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                              <div>
-                                <h4 className="text-sm font-semibold text-foreground mb-2">Informazioni Personali</h4>
+                            {!userProfile && (
+                              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                <p className="text-yellow-400 text-sm font-medium">Profilo non creato</p>
+                                <p className="text-yellow-400/70 text-xs mt-1">L'utente si è registrato ma non ha completato la creazione del profilo.</p>
                                 {renderProfileDetail("Email", u.email)}
-                                {renderProfileDetail("Telefono", userProfile.phoneNumber ? `${userProfile.phonePrefix || ""}${userProfile.phoneNumber}` : "Non inserito")}
-                                {renderProfileDetail("Città", userProfile.location || "Non inserita")}
-                                {renderProfileDetail("Genere", userProfile.gender || "Non specificato")}
-                                {renderProfileDetail("Età", userProfile.age ? `${userProfile.age} anni` : null)}
-                                {renderProfileDetail("Altezza", userProfile.height ? `${userProfile.height} cm` : null)}
-                                {renderProfileDetail("Tipo Alieno", userProfile.alienType)}
-                                {renderProfileDetail("Istruzione", userProfile.education)}
-                                {renderProfileDetail("Lingue", userProfile.languages?.join(", "))}
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-semibold text-foreground mb-2">Preferenze e Ricerca</h4>
-                                {renderProfileDetail("Cerca Genere", userProfile.preferredGender || "Indifferente")}
-                                {renderProfileDetail("Età cercata", (userProfile.preferredAgeMin || userProfile.preferredAgeMax) ? `${userProfile.preferredAgeMin || "?"} - ${userProfile.preferredAgeMax || "?"} anni` : null)}
-                                {renderProfileDetail("Tipo Relazione", userProfile.relationshipType)}
-                                {renderProfileDetail("Figli", userProfile.wantsChildren)}
-                                {renderProfileDetail("Motivazione", userProfile.accessMotivation)}
-                                {renderProfileDetail("Stile di Vita", userProfile.lifestyle)}
-                                {renderProfileDetail("Punti", userProfile.points?.toString())}
+                                {renderProfileDetail("Nome", u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : "Non inserito")}
                                 {renderProfileDetail("Registrato il", u.createdAt ? new Date(u.createdAt).toLocaleString("it-IT") : null)}
                               </div>
-                            </div>
-                            {userProfile.bio && (
+                            )}
+                            {userProfile && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                                <div>
+                                  <h4 className="text-sm font-semibold text-foreground mb-2">Informazioni Personali</h4>
+                                  {renderProfileDetail("Email", u.email)}
+                                  {renderProfileDetail("Telefono", userProfile.phoneNumber ? `${userProfile.phonePrefix || ""}${userProfile.phoneNumber}` : "Non inserito")}
+                                  {renderProfileDetail("Città", userProfile.location || "Non inserita")}
+                                  {renderProfileDetail("Genere", userProfile.gender || "Non specificato")}
+                                  {renderProfileDetail("Età", userProfile.age ? `${userProfile.age} anni` : null)}
+                                  {renderProfileDetail("Altezza", userProfile.height ? `${userProfile.height} cm` : null)}
+                                  {renderProfileDetail("Tipo Alieno", userProfile.alienType)}
+                                  {renderProfileDetail("Istruzione", userProfile.education)}
+                                  {renderProfileDetail("Lingue", userProfile.languages?.join(", "))}
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-foreground mb-2">Preferenze e Ricerca</h4>
+                                  {renderProfileDetail("Cerca Genere", userProfile.preferredGender || "Indifferente")}
+                                  {renderProfileDetail("Età cercata", (userProfile.preferredAgeMin || userProfile.preferredAgeMax) ? `${userProfile.preferredAgeMin || "?"} - ${userProfile.preferredAgeMax || "?"} anni` : null)}
+                                  {renderProfileDetail("Tipo Relazione", userProfile.relationshipType)}
+                                  {renderProfileDetail("Figli", userProfile.wantsChildren)}
+                                  {renderProfileDetail("Motivazione", userProfile.accessMotivation)}
+                                  {renderProfileDetail("Stile di Vita", userProfile.lifestyle)}
+                                  {renderProfileDetail("Punti", userProfile.points?.toString())}
+                                  {renderProfileDetail("Registrato il", u.createdAt ? new Date(u.createdAt).toLocaleString("it-IT") : null)}
+                                </div>
+                              </div>
+                            )}
+                            {userProfile?.bio && (
                               <div className="mt-3">
                                 <h4 className="text-sm font-semibold text-foreground mb-1">Bio</h4>
                                 <p className="text-xs text-foreground bg-accent/10 p-2 rounded">{userProfile.bio}</p>
