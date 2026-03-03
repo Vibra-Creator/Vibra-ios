@@ -581,7 +581,8 @@ export async function registerRoutes(
 
       const updatedPhotos = [...currentPhotos, objectPath];
       const updateData: any = { photos: updatedPhotos };
-      if (currentPhotos.length === 0 || userProfile.imageUrl === '/images/profile-1.png' || !userProfile.imageUrl) {
+      const isDefaultAvatar = !userProfile.imageUrl || userProfile.imageUrl.startsWith('/images/avatar') || userProfile.imageUrl.startsWith('/images/profile-');
+      if (currentPhotos.length === 0 || isDefaultAvatar) {
         updateData.imageUrl = objectPath;
       }
       await storage.updateProfile(userProfile.id, updateData);
