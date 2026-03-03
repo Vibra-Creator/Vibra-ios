@@ -20,7 +20,7 @@ export function Header() {
               data-testid="text-match-vibration-banner"
             >
               <motion.span
-                className="absolute inset-0 text-sm font-extrabold tracking-wider uppercase blur-md"
+                className="absolute inset-0 text-lg font-extrabold tracking-wider uppercase blur-md"
                 style={{
                   background: "linear-gradient(90deg, #a855f7, #06b6d4, #ec4899, #a855f7)",
                   backgroundSize: "200% 100%",
@@ -34,7 +34,7 @@ export function Header() {
                 MATCH YOUR VIBRATION
               </motion.span>
               <motion.span
-                className="relative text-sm font-extrabold tracking-wider uppercase"
+                className="relative text-lg font-extrabold tracking-wider uppercase"
                 style={{
                   background: "linear-gradient(90deg, #a855f7, #06b6d4, #ec4899, #a855f7)",
                   backgroundSize: "200% 100%",
