@@ -47,6 +47,8 @@ export default function Admin() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [resetPwUserId, setResetPwUserId] = useState<string | null>(null);
   const [resetPwValue, setResetPwValue] = useState("");
+  const [changeEmailUserId, setChangeEmailUserId] = useState<string | null>(null);
+  const [changeEmailValue, setChangeEmailValue] = useState("");
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -209,6 +211,20 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
       toast({ title: "Dati di test resettati!", description: `Eliminati: ${data.deleted.swipes} swipe, ${data.deleted.matches} match, ${data.deleted.messages} messaggi` });
+    },
+  });
+
+  const changeEmailMutation = useMutation({
+    mutationFn: async ({ userId, newEmail }: { userId: string; newEmail: string }) =>
+      apiRequest("POST", "/api/admin/change-email", { userId, newEmail }),
+    onSuccess: () => {
+      setChangeEmailUserId(null);
+      setChangeEmailValue("");
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Email aggiornata con successo!" });
+    },
+    onError: () => {
+      toast({ title: "Errore: email già in uso o non valida", variant: "destructive" });
     },
   });
 
@@ -638,7 +654,37 @@ export default function Admin() {
                                 <p className="text-xs text-foreground bg-accent/10 p-2 rounded">{userProfile.bio}</p>
                               </div>
                             )}
-                            <div className="mt-3 pt-3 border-t border-border/50">
+                            <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
+                              {changeEmailUserId === u.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    placeholder="Nuova email"
+                                    type="email"
+                                    value={changeEmailValue}
+                                    onChange={(e) => setChangeEmailValue(e.target.value)}
+                                    className="h-8 text-sm max-w-[250px]"
+                                    data-testid={`input-change-email-${u.id}`}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="h-8"
+                                    disabled={!changeEmailValue || changeEmailMutation.isPending}
+                                    onClick={() => changeEmailMutation.mutate({ userId: u.id, newEmail: changeEmailValue })}
+                                    data-testid={`button-confirm-change-email-${u.id}`}
+                                  >
+                                    {changeEmailMutation.isPending ? "..." : "Salva"}
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="h-8" onClick={() => { setChangeEmailUserId(null); setChangeEmailValue(""); }}>
+                                    Annulla
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setChangeEmailUserId(u.id); setChangeEmailValue(u.email || ""); }} data-testid={`button-change-email-${u.id}`}>
+                                    <Mail className="w-3 h-3 mr-1" /> Cambia Email
+                                  </Button>
+                                </div>
+                              )}
                               {resetPwUserId === u.id ? (
                                 <div className="flex items-center gap-2">
                                   <Input

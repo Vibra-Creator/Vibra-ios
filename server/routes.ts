@@ -1364,6 +1364,23 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/change-email", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId, newEmail } = req.body;
+      if (!userId || !newEmail) {
+        return res.status(400).json({ error: "userId and newEmail required" });
+      }
+      const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, newEmail.toLowerCase().trim()));
+      if (existing.length > 0) {
+        return res.status(400).json({ error: "Email già in uso da un altro utente" });
+      }
+      await db.update(users).set({ email: newEmail.toLowerCase().trim() }).where(eq(users.id, userId));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to change email" });
+    }
+  });
+
   // Message moderation
   app.get("/api/admin/room-messages", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
