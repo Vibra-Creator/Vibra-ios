@@ -90,7 +90,7 @@ export default function Login() {
         <ArrowLeft className="w-5 h-5" />
       </Button>
 
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 left-16 z-20">
         <LanguageSelector />
       </div>
 
@@ -152,11 +152,11 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full h-12 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                className="w-full h-14 text-lg font-bold bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-[shimmer_3s_linear_infinite] hover:opacity-90 shadow-lg shadow-primary/30"
                 disabled={isLoading}
                 data-testid="button-login"
               >
-                {isLoading ? t("login.loading") : t("login.submit")}
+                {isLoading ? t("login.loading") : t("login.submitCta")}
               </Button>
 
               <div className="text-right">
