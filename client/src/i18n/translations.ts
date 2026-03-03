@@ -846,6 +846,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     "vibrapp.welcome": "Benvenuto su Vibrapp!",
     "vibrapp.welcomeDesc": "La chat globale di Vibra. Chatta con tutti gli utenti in tempo reale!",
     "vibrapp.newFeature": "Nuova funzione: Vibrapp! Una chat globale tipo WhatsApp per parlare con tutti.",
+
+    // Push Notifications
+    "push.enable": "Attiva Notifiche",
+    "push.enabled": "Notifiche Attive",
+    "push.disable": "Disattiva Notifiche",
+    "push.description": "Ricevi avvisi per messaggi e risposte anche quando l'app è chiusa",
+    "push.denied": "Notifiche bloccate dal browser. Vai nelle impostazioni per abilitarle.",
+    "push.success": "Notifiche attivate!",
+    "push.successDesc": "Riceverai avvisi per messaggi privati e risposte in Vibrapp.",
   },
 
   en: {
@@ -1693,6 +1702,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     "vibrapp.welcome": "Welcome to Vibrapp!",
     "vibrapp.welcomeDesc": "Vibra's global chat. Chat with all users in real time!",
     "vibrapp.newFeature": "New feature: Vibrapp! A global WhatsApp-like chat to talk with everyone.",
+
+    // Push Notifications
+    "push.enable": "Enable Notifications",
+    "push.enabled": "Notifications Active",
+    "push.disable": "Disable Notifications",
+    "push.description": "Get alerts for messages and replies even when the app is closed",
+    "push.denied": "Notifications blocked by browser. Go to settings to enable them.",
+    "push.success": "Notifications enabled!",
+    "push.successDesc": "You'll receive alerts for private messages and Vibrapp replies.",
   },
 
   es: {
@@ -2540,5 +2558,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     "vibrapp.welcome": "¡Bienvenido a Vibrapp!",
     "vibrapp.welcomeDesc": "El chat global de Vibra. ¡Chatea con todos los usuarios en tiempo real!",
     "vibrapp.newFeature": "Nueva función: ¡Vibrapp! Un chat global tipo WhatsApp para hablar con todos.",
+
+    // Push Notifications
+    "push.enable": "Activar Notificaciones",
+    "push.enabled": "Notificaciones Activas",
+    "push.disable": "Desactivar Notificaciones",
+    "push.description": "Recibe alertas de mensajes y respuestas incluso con la app cerrada",
+    "push.denied": "Notificaciones bloqueadas por el navegador. Ve a ajustes para habilitarlas.",
+    "push.success": "¡Notificaciones activadas!",
+    "push.successDesc": "Recibirás alertas por mensajes privados y respuestas en Vibrapp.",
   },
 };

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import OpenAI from "openai";
 import { createBackup, getBackupList, startAutoBackup } from "./backup";
 import { Server as SocketIOServer } from "socket.io";
 import { getSession } from "./replit_integrations/auth/replitAuth";
+import webpush from "web-push";
 
 const OFFENSIVE_WORDS = [
   "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
@@ -1515,6 +1516,14 @@ export async function registerRoutes(
       res.status(201).json(message);
 
       const otherProfileId = match.profile1Id === userProfile.id ? match.profile2Id : match.profile1Id;
+
+      sendPushToProfile(otherProfileId, {
+        title: userProfile.name,
+        body: filteredContent.substring(0, 100),
+        icon: "/icons/icon-192.png",
+        url: `/chat/${matchId}`,
+      });
+
       const otherProfile = await storage.getProfile(otherProfileId);
       if (otherProfile && otherProfile.isBot) {
         const delay = 2000 + Math.random() * 4000;
@@ -2740,6 +2749,88 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // ===================== PUSH NOTIFICATIONS =====================
+
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+      "mailto:admin@vibra.app",
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+  }
+
+  async function sendPushToProfile(targetProfileId: string, payload: { title: string; body: string; icon?: string; url?: string }) {
+    try {
+      const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.profileId, targetProfileId));
+      for (const sub of subs) {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            JSON.stringify(payload)
+          );
+        } catch (err: any) {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[push] sendPushToProfile error:", err);
+    }
+  }
+
+  app.post("/api/push/subscribe", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({ error: "Invalid subscription" });
+      }
+
+      const existing = await db.select().from(pushSubscriptions)
+        .where(and(eq(pushSubscriptions.profileId, profile.id), eq(pushSubscriptions.endpoint, endpoint)));
+
+      if (existing.length === 0) {
+        await db.insert(pushSubscriptions).values({
+          profileId: profile.id,
+          endpoint,
+          p256dh: keys.p256dh,
+          auth: keys.auth,
+        });
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[push] subscribe error:", err);
+      res.status(500).json({ error: "Failed to subscribe" });
+    }
+  });
+
+  app.delete("/api/push/unsubscribe", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const { endpoint } = req.body;
+      if (endpoint) {
+        await db.delete(pushSubscriptions).where(
+          and(eq(pushSubscriptions.profileId, profile.id), eq(pushSubscriptions.endpoint, endpoint))
+        );
+      }
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to unsubscribe" });
+    }
+  });
+
+  app.get("/api/push/vapid-key", (req, res) => {
+    res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || "" });
+  });
+
   // ===================== VIBRAPP - Global Chat with Socket.io =====================
 
   const io = new SocketIOServer(httpServer, {
@@ -2807,6 +2898,20 @@ REGOLE IMPORTANTI:
         }).returning();
 
         io.emit("vibrapp:new-message", msg);
+
+        if (data.replyToId) {
+          try {
+            const [repliedMsg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, data.replyToId));
+            if (repliedMsg && repliedMsg.senderId !== profileId) {
+              sendPushToProfile(repliedMsg.senderId, {
+                title: "Vibrapp",
+                body: `${userProfile.name}: ${filteredContent.substring(0, 100)}`,
+                icon: "/icons/icon-192.png",
+                url: "/vibrapp",
+              });
+            }
+          } catch {}
+        }
       } catch (err) {
         console.error("[vibrapp] message error:", err);
       }

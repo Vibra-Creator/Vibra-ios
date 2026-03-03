@@ -365,3 +365,14 @@ export const vibrappMessages = pgTable("vibrapp_messages", {
 export type VibrappMessage = typeof vibrappMessages.$inferSelect;
 export const insertVibrappMessageSchema = createInsertSchema(vibrappMessages).omit({ id: true, createdAt: true, readBy: true, reactions: true });
 export type InsertVibrappMessage = z.infer<typeof insertVibrappMessageSchema>;
+
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;

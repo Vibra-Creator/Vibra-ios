@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2 } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +31,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useToast } from "@/hooks/use-toast";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -362,6 +363,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
   if (isGuest) {
     return (
@@ -627,6 +629,30 @@ export default function ProfilePage() {
             <HelpCircle className="w-5 h-5" />
             {t("profile.guide")}
           </Button>
+          {pushSupported && (
+            <Button 
+              variant="outline" 
+              className={`w-full justify-start gap-3 ${pushSubscribed ? "text-green-400 border-green-400/30" : ""}`}
+              onClick={async () => {
+                if (pushSubscribed) {
+                  await pushUnsubscribe();
+                } else {
+                  if (pushPermission === "denied") {
+                    toast({ title: t("push.denied"), variant: "destructive" });
+                    return;
+                  }
+                  const ok = await pushSubscribe();
+                  if (ok) {
+                    toast({ title: t("push.success"), description: t("push.successDesc") });
+                  }
+                }
+              }}
+              data-testid="button-push-notifications"
+            >
+              {pushSubscribed ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+              {pushSubscribed ? t("push.disable") : t("push.enable")}
+            </Button>
+          )}
           <Button 
             variant="outline" 
             className="w-full justify-start gap-3"
