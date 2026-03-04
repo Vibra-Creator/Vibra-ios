@@ -22,7 +22,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-const featureIcons = [Heart, MessageCircle, Users, Lock, Camera, Gift, Star, Zap, MapPin, UserCheck];
+const featureIcons = [Heart, MessageCircle, Users, Lock, Camera, Gift, Star, Zap, MapPin, UserCheck, MessageCircle];
 const featureColors = [
   { color: "text-pink-400", bg: "bg-pink-500/20" },
   { color: "text-cyan-400", bg: "bg-cyan-500/20" },
@@ -34,6 +34,7 @@ const featureColors = [
   { color: "text-green-400", bg: "bg-green-500/20" },
   { color: "text-orange-400", bg: "bg-orange-500/20" },
   { color: "text-teal-400", bg: "bg-teal-500/20" },
+  { color: "text-emerald-400", bg: "bg-emerald-500/20" },
 ];
 
 const ITEMS_PER_PAGE = 4;

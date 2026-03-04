@@ -357,6 +357,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "onboarding.feature9Desc": "Condividi la tua posizione con i tuoi Match. Loro vedono dove sei sulla mappa, tu controlli chi vede.",
     "onboarding.feature10Title": "Il Tuo Profilo",
     "onboarding.feature10Desc": "Personalizza tutto: foto, bio, interessi, segno zodiacale, lingue e molto altro. Fatti notare!",
+    "onboarding.feature11Title": "Vibrapp - Chat Globale",
+    "onboarding.feature11Desc": "La chat di gruppo dove tutti parlano con tutti! Scrivi messaggi visibili a tutti, oppure rispondi a qualcuno per una conversazione privata (solo voi due la vedete, con icona lucchetto viola). Ricevi notifiche sonore quando ti rispondono, anche fuori dall'app. Reazioni emoji, conferme di lettura e indicatore di chi sta scrivendo inclusi!",
     "onboarding.createdBy": "Creato da Fabio Mattoni",
 
     // SwipeCard
@@ -1215,6 +1217,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "onboarding.feature9Desc": "Share your location with your Matches. They see where you are on the map, you control who sees.",
     "onboarding.feature10Title": "Your Profile",
     "onboarding.feature10Desc": "Customize everything: photos, bio, interests, zodiac sign, languages and much more. Stand out!",
+    "onboarding.feature11Title": "Vibrapp - Global Chat",
+    "onboarding.feature11Desc": "The group chat where everyone talks to everyone! Write messages visible to all, or reply to someone for a private conversation (only you two can see it, with a purple lock icon). Get sound notifications when someone replies to you, even outside the app. Emoji reactions, read receipts and typing indicators included!",
     "onboarding.createdBy": "Created by Fabio Mattoni",
 
     // SwipeCard
@@ -2072,6 +2076,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "onboarding.feature9Desc": "Comparte tu ubicación con tus Matches. Ellos ven dónde estás en el mapa, tú controlas quién ve.",
     "onboarding.feature10Title": "Tu Perfil",
     "onboarding.feature10Desc": "Personaliza todo: fotos, bio, intereses, signo zodiacal, idiomas y mucho más. ¡Destaca!",
+    "onboarding.feature11Title": "Vibrapp - Chat Global",
+    "onboarding.feature11Desc": "¡El chat grupal donde todos hablan con todos! Escribe mensajes visibles para todos, o responde a alguien para una conversación privada (solo ustedes dos la ven, con icono de candado morado). Recibe notificaciones sonoras cuando te responden, incluso fuera de la app. ¡Reacciones emoji, confirmaciones de lectura e indicador de escritura incluidos!",
     "onboarding.createdBy": "Creado por Fabio Mattoni",
 
     // SwipeCard
