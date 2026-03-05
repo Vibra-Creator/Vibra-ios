@@ -3,6 +3,7 @@ import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import PushSoundHandler from "@/components/PushSoundHandler";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoBackground } from "@/components/VideoBackground";
 import { Header, BottomNav } from "@/components/Header";
@@ -313,6 +314,7 @@ function App() {
                 <ViewportSelector>
                   <AppContent />
                   <Toaster />
+                  <PushSoundHandler />
                 </ViewportSelector>
               )}
             </GuestProvider>

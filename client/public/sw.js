@@ -1,4 +1,4 @@
-const CACHE_VERSION = 19;
+const CACHE_VERSION = 20;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -41,7 +41,16 @@ self.addEventListener('push', (event) => {
       requireInteraction: false,
       silent: false,
     };
-    event.waitUntil(self.registration.showNotification(title, options));
+
+    event.waitUntil(
+      self.registration.showNotification(title, options).then(() => {
+        return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+          windowClients.forEach((client) => {
+            client.postMessage({ type: 'VIBRA_PUSH_RECEIVED', payload: data });
+          });
+        });
+      })
+    );
   } catch (e) {
     console.error('[sw] push parse error:', e);
   }
