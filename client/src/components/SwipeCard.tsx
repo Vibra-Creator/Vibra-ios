@@ -485,23 +485,23 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" style={{ height: '25%' }} />
 
               {topOverlay && (
-                <div className="absolute top-1 left-0 right-0 z-20 pointer-events-none px-2">
+                <div className="absolute top-0.5 left-0 right-0 z-20 pointer-events-none px-2">
                   {topOverlay}
                 </div>
               )}
 
               {alreadyLiked && (
-                <div className="absolute top-10 right-4 z-20 pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/90 backdrop-blur-sm shadow-lg">
-                    <Heart className="w-4 h-4 text-white fill-white" />
-                    <span className="text-white text-xs font-bold tracking-wide">{t("swipe.likeDone")}</span>
+                <div className="absolute top-8 right-3 z-20 pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-500/80 backdrop-blur-sm">
+                    <Heart className="w-3 h-3 text-white fill-white" />
+                    <span className="text-white text-[10px] font-bold">{t("swipe.likeDone")}</span>
                   </div>
                 </div>
               )}
               
               {!alreadyLiked && (
                 <motion.div 
-                  className="absolute top-12 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm pointer-events-none z-10"
+                  className="absolute top-1/3 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm pointer-events-none z-10"
                   style={{ opacity: likeOpacity }}
                 >
                   <span className="text-green-400 font-bold text-xl tracking-wider">LIKE</span>
@@ -510,7 +510,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               
               {!alreadyLiked && (
                 <motion.div 
-                  className="absolute top-12 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm pointer-events-none z-10"
+                  className="absolute top-1/3 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm pointer-events-none z-10"
                   style={{ opacity: nopeOpacity }}
                 >
                   <span className="text-red-400 font-bold text-xl tracking-wider">NOPE</span>
@@ -599,7 +599,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
         {profile.ratingEnabled && isTop && !showRating && (
           <motion.div
-            className="absolute top-10 left-4 z-30 pointer-events-auto"
+            className="absolute top-8 left-3 z-30 pointer-events-auto"
             style={{ x, rotate, opacity }}
           >
             <motion.button
