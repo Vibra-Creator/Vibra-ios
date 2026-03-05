@@ -318,32 +318,25 @@ export function GalacticRadar({ onEnter }: { onEnter?: () => void }) {
   const currentLiveEvent = data.liveEvents?.[currentEvent];
 
   return (
-    <div className="flex flex-col gap-1" data-testid="galactic-radar">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 text-[9px] text-green-300 font-medium">
-            <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400" /></span>
-            <span className="font-bold text-white">{data.soulsOnline}</span> {t("radar.soulsOnline")}
-          </div>
-          <div className="flex items-center gap-1 text-[9px] text-purple-300 font-medium">
-            <Heart className="w-2 h-2 fill-purple-400/50" />
-            <span className="font-bold text-white">{data.cosmicConnections}</span> {t("radar.cosmicConnections")}
-          </div>
+    <div className="flex flex-col gap-1.5" data-testid="galactic-radar">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 text-[9px] text-green-300 font-medium">
+          <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400" /></span>
+          <span className="font-bold text-white">{data.soulsOnline}</span> {t("radar.soulsOnline")}
         </div>
-        {onEnter && (
-          <button
-            onClick={onEnter}
-            className="pointer-events-auto text-[8px] font-semibold text-emerald-300 bg-emerald-500/20 px-1.5 py-px rounded-full border border-emerald-400/30 hover:bg-emerald-500/30 transition-colors"
-            data-testid="button-enter-galaxy"
-          >
-            {t("radar.enter")}
-          </button>
-        )}
+        <div className="flex items-center gap-1 text-[9px] text-cyan-300 font-medium">
+          <Sparkles className="w-2 h-2" />
+          <span className="font-bold text-white">{data.newAliens}</span> {t("radar.newAliens")}
+        </div>
       </div>
 
-      <div className="flex items-center gap-1 text-[9px] text-cyan-300 font-medium">
-        <Sparkles className="w-2 h-2" />
-        <span className="font-bold text-white">{data.newAliens}</span> {t("radar.newAliens")}
+      <div className="flex items-center gap-1.5 text-[9px] text-purple-300 font-medium">
+        <span className="relative flex items-center justify-center shrink-0" style={{ width: 18, height: 18 }}>
+          <span className="absolute inset-0 rounded-full border border-purple-400/40 animate-ping" style={{ animationDuration: "2.5s" }} />
+          <span className="absolute inset-[3px] rounded-full border border-purple-400/30 animate-ping" style={{ animationDuration: "2.5s", animationDelay: "0.8s" }} />
+          <Radio className="w-2.5 h-2.5 text-purple-300 relative z-10" />
+        </span>
+        <span className="font-bold text-white">{data.cosmicConnections}</span> {t("radar.cosmicConnections")}
       </div>
 
       {currentLiveEvent && (
@@ -362,6 +355,17 @@ export function GalacticRadar({ onEnter }: { onEnter?: () => void }) {
             </span>
           </motion.div>
         </AnimatePresence>
+      )}
+
+      {onEnter && (
+        <button
+          onClick={onEnter}
+          className="pointer-events-auto mt-0.5 self-start flex items-center gap-1.5 text-[10px] font-bold text-emerald-200 bg-emerald-500/25 backdrop-blur-sm px-3 py-1.5 rounded-full border border-emerald-400/40 hover:bg-emerald-500/40 active:scale-95 transition-all"
+          data-testid="button-enter-galaxy"
+        >
+          <Radio className="w-3 h-3" />
+          {t("radar.enter")}
+        </button>
       )}
     </div>
   );
