@@ -303,46 +303,39 @@ export default function Home() {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
+    <div className="flex-1 flex flex-col items-center relative overflow-hidden" style={{ height: 'calc(100dvh - 64px)' }}>
       {bgLayer}
 
-      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg relative z-20 shrink-0 px-4">
+      <div className="w-full relative z-20 shrink-0 px-2 pt-1">
         {!isGuest && showVibrappBanner && (
-          <div className="mb-2 bg-gradient-to-r from-green-600/80 to-emerald-600/80 backdrop-blur-sm rounded-xl p-3 flex items-center gap-3 border border-green-400/30 shadow-lg" data-testid="vibrapp-banner">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <MessageCircle className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm">{t("vibrapp.welcome")}</p>
-              <p className="text-white/80 text-xs">{t("vibrapp.welcomeDesc")}</p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-white text-xs border border-white/30 px-2 h-7"
-                onClick={() => setLocation("/vibrapp")}
-                data-testid="button-vibrapp-go"
-              >
-                Go
-              </Button>
-              <button
-                onClick={() => {
-                  setShowVibrappBanner(false);
-                  localStorage.setItem("vibra-vibrapp-seen", "1");
-                }}
-                className="text-white/50 hover:text-white p-1"
-                data-testid="button-vibrapp-dismiss"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+          <div className="mb-1 bg-gradient-to-r from-green-600/70 to-emerald-600/70 backdrop-blur-sm rounded-lg px-2.5 py-1.5 flex items-center gap-2 border border-green-400/20" data-testid="vibrapp-banner">
+            <MessageCircle className="w-4 h-4 text-white shrink-0" />
+            <p className="text-white font-semibold text-[11px] flex-1 min-w-0 truncate">{t("vibrapp.welcome")} - {t("vibrapp.welcomeDesc")}</p>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-white text-[10px] border border-white/30 px-1.5 h-5 shrink-0"
+              onClick={() => setLocation("/vibrapp")}
+              data-testid="button-vibrapp-go"
+            >
+              Go
+            </Button>
+            <button
+              onClick={() => {
+                setShowVibrappBanner(false);
+                localStorage.setItem("vibra-vibrapp-seen", "1");
+              }}
+              className="text-white/50 hover:text-white shrink-0"
+              data-testid="button-vibrapp-dismiss"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
         {!isGuest && <VibrationActivity />}
       </div>
 
-      <div className="w-full max-w-[380px] md:max-w-md lg:max-w-lg relative z-10 flex-1 min-h-0 px-2 mx-auto">
+      <div className="w-full relative z-10 flex-1 min-h-0 px-0 mx-auto">
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}

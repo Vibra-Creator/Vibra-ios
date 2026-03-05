@@ -263,12 +263,12 @@ export function VibrationActivity() {
     <motion.div
       initial={{ opacity: 0, y: -5 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full relative z-20 py-1.5"
+      className="w-full relative z-20 py-0.5"
       data-testid="vibration-activity"
     >
-      <div className="flex items-center justify-center gap-4">
+      <div className="flex items-center justify-center gap-3">
         <motion.div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full relative overflow-hidden"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full relative overflow-hidden"
           style={{ background: "linear-gradient(135deg, rgba(147,51,234,0.25), rgba(168,85,247,0.15))" }}
           animate={{
             boxShadow: [
@@ -289,9 +289,9 @@ export function VibrationActivity() {
             animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Sparkles className="w-4 h-4 text-purple-300 drop-shadow-[0_0_4px_rgba(168,85,247,0.8)]" />
+            <Sparkles className="w-3.5 h-3.5 text-purple-300 drop-shadow-[0_0_4px_rgba(168,85,247,0.8)]" />
           </motion.div>
-          <span className="text-[13px] text-purple-100 font-medium relative z-10">
+          <span className="text-[11px] text-purple-100 font-medium relative z-10">
             <span className="font-extrabold text-white drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]">{data.shown}</span>{" "}
             {t("vibration.shown")}
           </span>
@@ -299,7 +299,7 @@ export function VibrationActivity() {
 
         {data.newCompat > 0 && (
           <motion.div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full relative overflow-hidden"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full relative overflow-hidden"
             style={{ background: "linear-gradient(135deg, rgba(236,72,153,0.25), rgba(244,114,182,0.15))" }}
             animate={{
               boxShadow: [
