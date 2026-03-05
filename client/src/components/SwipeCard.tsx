@@ -129,7 +129,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                   </div>
                   {(profile as any).distanceKm !== undefined && (
                     <div className="flex items-center gap-1 bg-cyan-500/20 px-2 py-0.5 rounded-full" data-testid="distance-badge">
-                      <span className="text-xs text-cyan-300 font-medium">📍 {(profile as any).distanceKm} km</span>
+                      <MapPin className="w-3 h-3 text-cyan-300 inline mr-0.5" /><span className="text-xs text-cyan-300 font-medium">{(profile as any).distanceKm} km</span>
                     </div>
                   )}
                   {(() => {
@@ -348,10 +348,11 @@ interface SwipeCardProps {
   isTop?: boolean;
   hasPrivateRoom?: boolean;
   alreadyLiked?: boolean;
+  actionButtons?: React.ReactNode;
 }
 
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
-  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false }, ref) {
+  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons }, ref) {
     const [exitX, setExitX] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
     const [showRating, setShowRating] = useState(false);
@@ -439,7 +440,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       <>
         <motion.div
           ref={ref}
-          className="absolute w-full h-full cursor-grab active:cursor-grabbing"
+          className="absolute inset-0 cursor-grab active:cursor-grabbing"
           style={{ x, rotate, opacity }}
           drag={isTop ? "x" : false}
           dragConstraints={{ left: 0, right: 0 }}
@@ -455,14 +456,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           data-testid={`swipe-card-${profile.id}`}
         >
-          <div className={`relative rounded-2xl overflow-hidden bg-card shadow-2xl h-full ${
-            profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date()
-              ? "border-2 border-yellow-400"
-              : "border border-card-border"
-          }`}
+          <div className="relative overflow-hidden bg-black h-full"
           style={
             profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date()
-              ? { boxShadow: "0 0 15px rgba(250, 204, 21, 0.5), 0 0 30px rgba(250, 204, 21, 0.3), 0 0 45px rgba(250, 204, 21, 0.15), inset 0 0 15px rgba(250, 204, 21, 0.05)" }
+              ? { boxShadow: "inset 0 0 20px rgba(250, 204, 21, 0.4), 0 0 15px rgba(250, 204, 21, 0.3)" }
               : undefined
           }>
             <div className="relative h-full overflow-hidden">
@@ -483,7 +480,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 data-testid={`profile-image-${profile.id}`}
               />
               
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
 
               {alreadyLiked && (
                 <div className="absolute top-4 right-4 z-20 pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
@@ -512,72 +509,81 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 </motion.div>
               )}
               
-              <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    {profile.alienType}
-                  </Badge>
-                  {profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() && (
-                    <Badge variant="secondary" className="bg-yellow-500/90 text-white backdrop-blur-sm animate-pulse" data-testid={`badge-highlighted-${profile.id}`}>
-                      <Crown className="w-3 h-3 mr-1" />
-                      {t("swipe.highlighted")}
+              <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
+                <div className="px-4 pb-2">
+                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm text-[11px] px-2 py-0.5">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      {profile.alienType}
                     </Badge>
-                  )}
-                  {hasPrivateRoom && (
-                    <Badge variant="secondary" className="bg-amber-500/80 text-white backdrop-blur-sm" data-testid={`badge-private-room-${profile.id}`}>
-                      <Lock className="w-3 h-3 mr-1" />
-                      {t("swipe.vipRoom")}
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-3xl font-bold text-white" data-testid={`profile-name-${profile.id}`}>
-                    {profile.name}, {profile.age}
-                  </h2>
-                  {profile.isVerified && (
-                    <BadgeCheck className="w-6 h-6 text-blue-400" />
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-3 flex-wrap mb-3">
-                  <div className="flex items-center gap-1 text-white/80">
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-sm">{profile.location}</span>
+                    {profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() && (
+                      <Badge variant="secondary" className="bg-yellow-500/90 text-white backdrop-blur-sm animate-pulse text-[11px] px-2 py-0.5" data-testid={`badge-highlighted-${profile.id}`}>
+                        <Crown className="w-3 h-3 mr-1" />
+                        {t("swipe.highlighted")}
+                      </Badge>
+                    )}
+                    {hasPrivateRoom && (
+                      <Badge variant="secondary" className="bg-amber-500/80 text-white backdrop-blur-sm text-[11px] px-2 py-0.5" data-testid={`badge-private-room-${profile.id}`}>
+                        <Lock className="w-3 h-3 mr-1" />
+                        {t("swipe.vipRoom")}
+                      </Badge>
+                    )}
                   </div>
-                  {(profile as any).distanceKm !== undefined && (
-                    <div className="flex items-center gap-1 bg-cyan-500/20 px-2 py-0.5 rounded-full">
-                      <span className="text-xs text-cyan-300 font-medium">📍 {(profile as any).distanceKm} km</span>
+                  
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h2 className="text-2xl font-bold text-white" data-testid={`profile-name-${profile.id}`}>
+                      {profile.name}, {profile.age}
+                    </h2>
+                    {profile.isVerified && (
+                      <BadgeCheck className="w-5 h-5 text-blue-400" />
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                    <div className="flex items-center gap-1 text-white/80">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span className="text-xs">{profile.location}</span>
                     </div>
-                  )}
-                  {(() => {
-                    const activity = getActivityStatus((profile as any).lastActiveAt, t);
-                    if (!activity.label) return null;
-                    return (
-                      <div className="flex items-center gap-1.5" data-testid={`activity-status-${profile.id}`}>
-                        <span className={`w-2 h-2 rounded-full ${activity.color} ${activity.isOnline ? 'animate-pulse shadow-[0_0_6px_rgba(34,197,94,0.8)]' : ''}`} />
-                        <span className="text-xs text-white/70 font-medium">{activity.label}</span>
+                    {(profile as any).distanceKm !== undefined && (
+                      <div className="flex items-center gap-0.5">
+                        <MapPin className="w-3 h-3 text-cyan-300" />
+                        <span className="text-[11px] text-cyan-300 font-medium">{(profile as any).distanceKm} km</span>
                       </div>
-                    );
-                  })()}
+                    )}
+                    {(() => {
+                      const activity = getActivityStatus((profile as any).lastActiveAt, t);
+                      if (!activity.label) return null;
+                      return (
+                        <div className="flex items-center gap-1" data-testid={`activity-status-${profile.id}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${activity.color} ${activity.isOnline ? 'animate-pulse' : ''}`} />
+                          <span className="text-[11px] text-white/70">{activity.label}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  
+                  <p className="text-white/80 text-xs line-clamp-2 mb-1.5" data-testid={`profile-bio-${profile.id}`}>
+                    {profile.bio}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.interests.slice(0, 3).map((interest, idx) => (
+                      <Badge 
+                        key={idx} 
+                        variant="outline" 
+                        className="bg-white/10 border-white/20 text-white backdrop-blur-sm text-[10px] px-1.5 py-0"
+                      >
+                        {interest}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-                
-                <p className="text-white/90 text-sm line-clamp-2 mb-3" data-testid={`profile-bio-${profile.id}`}>
-                  {profile.bio}
-                </p>
-                
-                <div className="flex flex-wrap gap-2">
-                  {profile.interests.slice(0, 3).map((interest, idx) => (
-                    <Badge 
-                      key={idx} 
-                      variant="outline" 
-                      className="bg-white/10 border-white/30 text-white backdrop-blur-sm"
-                    >
-                      {interest}
-                    </Badge>
-                  ))}
-                </div>
+
+                {actionButtons && (
+                  <div className="pointer-events-auto pb-safe px-4">
+                    {actionButtons}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -593,7 +599,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
               onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold shadow-lg border border-white/20"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-[11px] font-semibold shadow-lg border border-white/20"
               style={{ touchAction: "none" }}
               data-testid={`button-rate-${profile.id}`}
             >
@@ -701,16 +707,16 @@ interface ActionButtonsProps {
 
 export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled, likeDisabled }: ActionButtonsProps) {
   return (
-    <div className="flex items-center justify-center gap-6 py-3">
+    <div className="flex items-center justify-center gap-6 py-2 pb-3">
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={onSwipeLeft}
         disabled={disabled}
-        className="w-16 h-16 rounded-full bg-card border border-destructive/50 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-sm border border-red-400/50 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         data-testid="button-swipe-left"
       >
-        <X className="w-8 h-8 text-destructive" />
+        <X className="w-7 h-7 text-red-400" />
       </motion.button>
       
       {onSuperLike && (
@@ -731,11 +737,11 @@ export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled
         whileTap={{ scale: 0.9 }}
         onClick={onSwipeRight}
         disabled={disabled || likeDisabled}
-        className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ boxShadow: "var(--glow-primary)" }}
+        className="w-14 h-14 rounded-full bg-primary/80 backdrop-blur-sm flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ boxShadow: "0 0 20px rgba(var(--primary-rgb, 168,85,247), 0.5)" }}
         data-testid="button-swipe-right"
       >
-        <Heart className="w-8 h-8 text-primary-foreground" />
+        <Heart className="w-7 h-7 text-primary-foreground" />
       </motion.button>
     </div>
   );
