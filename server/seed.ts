@@ -549,7 +549,7 @@ const seedProfiles = [
   {
     id: "67", name: "Riccardo", age: 29,
     bio: "Pasticcere in una pasticceria artigianale. La mia specialità sono le crostate! Amo il mercato del sabato e le cene con gli amici.",
-    imageUrl: "/images/bots/bot67_main.jpg", photos: ["/images/bots/bot67_extra1.jpg", "/images/bots/bot67_extra2.jpg"],
+    imageUrl: "/images/bots/bot67_main.png", photos: ["/images/bots/bot67_extra1.jpg", "/images/bots/bot67_extra2.jpg"],
     location: "Modena", interests: ["Dolci", "Cucina", "Mercatini"], alienType: "Cristallino",
     gender: "Uomo", preferredGender: "Tutti", hairColor: "Castano chiaro", eyeColor: "Nocciola",
     bodyType: "Medio", height: 178, preferredAgeMin: 18, preferredAgeMax: 99,
@@ -1037,7 +1037,7 @@ const seedProfiles = [
   {
     id: "111", name: "Sara", age: 22,
     bio: "Lavoro in un negozio di fiori e studio botanica la sera. Mi piace passeggiare nei parchi e scoprire posti nuovi dove mangiare. Cerco qualcuno con cui chiacchierare senza fretta.",
-    imageUrl: "/images/bots/bot111_main.jpg", photos: [],
+    imageUrl: "/images/bots/bot111_main.png", photos: [],
     location: "Roma", interests: ["Natura", "Cucina", "Passeggiate"], alienType: "Biotico",
     gender: "Donna", preferredGender: "Tutti", hairColor: "Castano chiaro", eyeColor: "Verde",
     bodyType: "Snella", height: 162, preferredAgeMin: 18, preferredAgeMax: 99,
