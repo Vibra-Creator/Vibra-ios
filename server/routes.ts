@@ -2749,6 +2749,74 @@ REGOLE IMPORTANTI:
     }
   });
 
+  app.get("/api/activity/radar", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.json(null);
+
+      const now = Date.now();
+      const seed = Math.floor(now / 60000);
+      const hourBlock = Math.floor(now / 3600000);
+
+      const allProfiles = await storage.getAllProfiles();
+      const botProfiles = allProfiles.filter(p => p.isBot && p.id !== userProfile.id);
+
+      const vibingCount = await db.select({ count: sql<number>`count(*)` })
+        .from(vibingSessions)
+        .where(and(eq(vibingSessions.active, true), sql`${vibingSessions.expiresAt} > NOW()`));
+      const vibingNearby = Number(vibingCount[0]?.count || 0);
+
+      const onlineBase = Math.min(botProfiles.length, 30);
+      const timeVariation = Math.floor(Math.sin(now / 60000) * 5);
+      const soulsOnline = Math.max(8, onlineBase + timeVariation + vibingNearby);
+
+      const realMatches = await db.select({ count: sql<number>`count(*)` }).from(matches);
+      const totalMatches = Number(realMatches[0]?.count || 0);
+      const cosmicConnections = Math.max(2, Math.min(totalMatches, 15) + (seed % 4));
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const profileSeed = (parseInt(userProfile.id, 36) || 1);
+      const newAliens = 3 + (Math.abs(profileSeed * 7 + hourBlock) % 12);
+
+      const shuffled = [...botProfiles].sort((a, b) => {
+        const ha = ((parseInt(a.id, 36) || 0) * 2654435761 + seed) % 1000;
+        const hb = ((parseInt(b.id, 36) || 0) * 2654435761 + seed) % 1000;
+        return ha - hb;
+      });
+
+      const liveEvents: any[] = [];
+      const cities = ["Milano", "Roma", "Madrid", "Barcelona", "Napoli", "Firenze", "Valencia", "Torino", "Palermo", "Siviglia"];
+
+      for (let i = 0; i < Math.min(6, shuffled.length); i++) {
+        const bot = shuffled[i];
+        const city = bot.location || cities[(seed + i) % cities.length];
+        const eventTypes = ["match", "join", "vibration", "superlike", "room"];
+        const eType = eventTypes[(seed + i * 3) % eventTypes.length];
+        liveEvents.push({
+          id: `live-${seed}-${i}`,
+          type: eType,
+          name: bot.name,
+          city: city,
+          image: bot.imageUrl,
+        });
+      }
+
+      res.json({
+        soulsOnline,
+        cosmicConnections,
+        newAliens,
+        liveEvents,
+      });
+    } catch (error) {
+      console.error("Error fetching radar data:", error);
+      res.status(500).json({ error: "Failed to fetch radar data" });
+    }
+  });
+
   // ===================== PUSH NOTIFICATIONS =====================
 
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {

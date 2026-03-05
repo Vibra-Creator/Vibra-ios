@@ -281,3 +281,88 @@ export function VibrationActivity() {
     </div>
   );
 }
+
+interface RadarData {
+  soulsOnline: number;
+  cosmicConnections: number;
+  newAliens: number;
+  liveEvents: { id: string; type: string; name: string; city: string; image: string }[];
+}
+
+export function GalacticRadar({ onEnter }: { onEnter?: () => void }) {
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const [currentEvent, setCurrentEvent] = useState(0);
+
+  const { data } = useQuery<RadarData>({
+    queryKey: ["/api/activity/radar"],
+    refetchInterval: 60000,
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (!data?.liveEvents?.length) return;
+    const interval = setInterval(() => {
+      setCurrentEvent(prev => (prev + 1) % data.liveEvents.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [data?.liveEvents?.length]);
+
+  if (!data) return null;
+
+  const formatLiveEvent = (ev: RadarData["liveEvents"][0]) => {
+    const key = `radar.live${ev.type.charAt(0).toUpperCase() + ev.type.slice(1)}` as string;
+    return t(key).replace("{name}", ev.name).replace("{city}", ev.city);
+  };
+
+  const currentLiveEvent = data.liveEvents?.[currentEvent];
+
+  return (
+    <div className="flex flex-col gap-1" data-testid="galactic-radar">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 text-[9px] text-green-300 font-medium">
+            <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400" /></span>
+            <span className="font-bold text-white">{data.soulsOnline}</span> {t("radar.soulsOnline")}
+          </div>
+          <div className="flex items-center gap-1 text-[9px] text-purple-300 font-medium">
+            <Heart className="w-2 h-2 fill-purple-400/50" />
+            <span className="font-bold text-white">{data.cosmicConnections}</span> {t("radar.cosmicConnections")}
+          </div>
+        </div>
+        {onEnter && (
+          <button
+            onClick={onEnter}
+            className="pointer-events-auto text-[8px] font-semibold text-emerald-300 bg-emerald-500/20 px-1.5 py-px rounded-full border border-emerald-400/30 hover:bg-emerald-500/30 transition-colors"
+            data-testid="button-enter-galaxy"
+          >
+            {t("radar.enter")}
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1 text-[9px] text-cyan-300 font-medium">
+        <Sparkles className="w-2 h-2" />
+        <span className="font-bold text-white">{data.newAliens}</span> {t("radar.newAliens")}
+      </div>
+
+      {currentLiveEvent && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentLiveEvent.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-1.5 overflow-hidden"
+          >
+            <Sparkles className="w-2 h-2 text-yellow-300 shrink-0" />
+            <span className="text-[8px] text-white/70 font-medium truncate italic">
+              {formatLiveEvent(currentLiveEvent)}
+            </span>
+          </motion.div>
+        </AnimatePresence>
+      )}
+    </div>
+  );
+}
