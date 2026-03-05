@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock } from "lucide-react";
+import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2 } from "lucide-react";
 import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -113,6 +113,10 @@ export default function Vibrapp() {
       }));
     });
 
+    socket.on("vibrapp:message-deleted", (data: { messageId: string }) => {
+      setMessages(prev => prev.filter(m => m.id !== data.messageId));
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
@@ -181,6 +185,12 @@ export default function Vibrapp() {
     socketRef.current.emit("vibrapp:react", { messageId, emoji });
     setShowReactionPicker(null);
   }, [profile]);
+
+  const handleDelete = useCallback((messageId: string) => {
+    if (!socketRef.current || !profile) return;
+    if (!window.confirm(t("vibrapp.deleteConfirm"))) return;
+    socketRef.current.emit("vibrapp:delete", { messageId });
+  }, [profile, t]);
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -351,7 +361,7 @@ export default function Vibrapp() {
                       </div>
                     )}
 
-                    <div className={`absolute top-0 ${mine ? "-left-16" : "-right-16"} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5`}>
+                    <div className={`absolute top-0 ${mine ? "-left-20" : "-right-20"} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5`}>
                       <button
                         onClick={() => setReplyTo(msg)}
                         className="p-1 rounded-full hover:bg-white/10 text-white/50"
@@ -367,6 +377,16 @@ export default function Vibrapp() {
                       >
                         <Smile className="w-3.5 h-3.5" />
                       </button>
+                      {mine && (
+                        <button
+                          onClick={() => handleDelete(msg.id)}
+                          className="p-1 rounded-full hover:bg-red-500/20 text-white/50 hover:text-red-400"
+                          title={t("vibrapp.delete")}
+                          data-testid={`button-delete-${msg.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
 
                     <AnimatePresence>

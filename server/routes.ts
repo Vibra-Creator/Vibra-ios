@@ -3052,6 +3052,19 @@ REGOLE IMPORTANTI:
       }
     });
 
+    socket.on("vibrapp:delete", async (data: { messageId: string }) => {
+      try {
+        if (!data.messageId) return;
+        const [msg] = await db.select().from(vibrappMessages).where(eq(vibrappMessages.id, data.messageId));
+        if (!msg) return;
+        if (msg.senderId !== profileId) return;
+        await db.delete(vibrappMessages).where(eq(vibrappMessages.id, data.messageId));
+        io.emit("vibrapp:message-deleted", { messageId: data.messageId });
+      } catch (err) {
+        console.error("[vibrapp] delete error:", err);
+      }
+    });
+
     socket.on("disconnect", () => {
       const sockets = vibrappOnlineUsers.get(profileId);
       if (sockets) {
