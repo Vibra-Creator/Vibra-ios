@@ -306,9 +306,9 @@ export default function Home() {
     <div className="flex-1 flex flex-col relative overflow-hidden">
       {bgLayer}
 
-      <div className="w-full relative z-20 shrink-0 px-2 pt-1">
-        {!isGuest && showVibrappBanner && (
-          <div className="mb-1 bg-gradient-to-r from-green-600/70 to-emerald-600/70 backdrop-blur-sm rounded-lg px-2.5 py-1.5 flex items-center gap-2 border border-green-400/20" data-testid="vibrapp-banner">
+      {!isGuest && showVibrappBanner && (
+        <div className="w-full relative z-20 shrink-0 px-2 pt-1">
+          <div className="bg-gradient-to-r from-green-600/70 to-emerald-600/70 backdrop-blur-sm rounded-lg px-2.5 py-1.5 flex items-center gap-2 border border-green-400/20" data-testid="vibrapp-banner">
             <MessageCircle className="w-4 h-4 text-white shrink-0" />
             <p className="text-white font-semibold text-[11px] flex-1 min-w-0 truncate">{t("vibrapp.welcome")} - {t("vibrapp.welcomeDesc")}</p>
             <Button
@@ -331,9 +331,8 @@ export default function Home() {
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
-        {!isGuest && <VibrationActivity />}
-      </div>
+        </div>
+      )}
 
       <div className="w-full relative z-10 flex-1 min-h-0">
         {nextProfile && (
@@ -362,6 +361,7 @@ export default function Home() {
                 likeDisabled={currentProfile ? likedIdsSet.has(currentProfile.id) : false}
               />
             }
+            topOverlay={!isGuest ? <VibrationActivity /> : undefined}
           />
         )}
       </div>
