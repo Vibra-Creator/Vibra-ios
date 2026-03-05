@@ -260,75 +260,24 @@ export function VibrationActivity() {
   if (isLoading || !data) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -5 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full relative z-20 py-0.5"
+    <div
+      className="flex items-center justify-center gap-2"
       data-testid="vibration-activity"
     >
-      <div className="flex items-center justify-center gap-3">
-        <motion.div
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full relative overflow-hidden"
-          style={{ background: "linear-gradient(135deg, rgba(147,51,234,0.25), rgba(168,85,247,0.15))" }}
-          animate={{
-            boxShadow: [
-              "0 0 8px rgba(168,85,247,0.3), 0 0 20px rgba(168,85,247,0.15)",
-              "0 0 14px rgba(168,85,247,0.5), 0 0 30px rgba(168,85,247,0.25)",
-              "0 0 8px rgba(168,85,247,0.3), 0 0 20px rgba(168,85,247,0.15)",
-            ],
-          }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          data-testid="vibration-item-0"
-        >
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-400/20 to-purple-500/0"
-            animate={{ x: ["-100%", "100%"] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-          />
-          <motion.div
-            animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-purple-300 drop-shadow-[0_0_4px_rgba(168,85,247,0.8)]" />
-          </motion.div>
-          <span className="text-[11px] text-purple-100 font-medium relative z-10">
-            <span className="font-extrabold text-white drop-shadow-[0_0_6px_rgba(168,85,247,0.8)]">{data.shown}</span>{" "}
-            {t("vibration.shown")}
-          </span>
-        </motion.div>
-
-        {data.newCompat > 0 && (
-          <motion.div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full relative overflow-hidden"
-            style={{ background: "linear-gradient(135deg, rgba(236,72,153,0.25), rgba(244,114,182,0.15))" }}
-            animate={{
-              boxShadow: [
-                "0 0 8px rgba(236,72,153,0.3), 0 0 20px rgba(236,72,153,0.15)",
-                "0 0 14px rgba(236,72,153,0.5), 0 0 30px rgba(236,72,153,0.25)",
-                "0 0 8px rgba(236,72,153,0.3), 0 0 20px rgba(236,72,153,0.15)",
-              ],
-            }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-            data-testid="vibration-item-1"
-          >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-400/20 to-pink-500/0"
-              animate={{ x: ["-100%", "100%"] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear", delay: 1 }}
-            />
-            <motion.div
-              animate={{ scale: [1, 1.3, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Heart className="w-4 h-4 text-pink-300 fill-pink-400/50 drop-shadow-[0_0_4px_rgba(236,72,153,0.8)]" />
-            </motion.div>
-            <span className="text-[13px] text-pink-100 font-medium relative z-10">
-              <span className="font-extrabold text-white drop-shadow-[0_0_6px_rgba(236,72,153,0.8)]">{data.newCompat}</span>{" "}
-              {t("vibration.newCompat")}
-            </span>
-          </motion.div>
-        )}
+      <div className="flex items-center gap-1 px-2 py-px rounded-full bg-purple-500/30 backdrop-blur-sm" data-testid="vibration-item-0">
+        <Sparkles className="w-2.5 h-2.5 text-purple-300" />
+        <span className="text-[9px] text-purple-100 font-medium leading-none">
+          <span className="font-bold text-white">{data.shown}</span> {t("vibration.shown")}
+        </span>
       </div>
-    </motion.div>
+      {data.newCompat > 0 && (
+        <div className="flex items-center gap-1 px-2 py-px rounded-full bg-pink-500/30 backdrop-blur-sm" data-testid="vibration-item-1">
+          <Heart className="w-2.5 h-2.5 text-pink-300 fill-pink-400/50" />
+          <span className="text-[9px] text-pink-100 font-medium leading-none">
+            <span className="font-bold text-white">{data.newCompat}</span> {t("vibration.newCompat")}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

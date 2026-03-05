@@ -484,20 +484,37 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" style={{ height: '25%' }} />
 
-              {topOverlay && (
-                <div className="absolute top-0.5 left-0 right-0 z-20 pointer-events-none px-2">
-                  {topOverlay}
-                </div>
-              )}
-
-              {alreadyLiked && (
-                <div className="absolute top-8 right-3 z-20 pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-500/80 backdrop-blur-sm">
-                    <Heart className="w-3 h-3 text-white fill-white" />
-                    <span className="text-white text-[10px] font-bold">{t("swipe.likeDone")}</span>
+              <div className="absolute top-0 left-0 right-0 z-20 flex flex-col gap-0.5 pt-0.5 px-2">
+                {topOverlay && (
+                  <div className="pointer-events-none">
+                    {topOverlay}
                   </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  {profile.ratingEnabled && isTop && !showRating ? (
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
+                      className="pointer-events-auto flex items-center gap-0.5 px-1.5 py-px rounded-full bg-gradient-to-r from-pink-500/70 to-purple-600/70 backdrop-blur-sm text-white text-[8px] font-semibold border border-white/15"
+                      style={{ touchAction: "none" }}
+                      data-testid={`button-rate-${profile.id}`}
+                    >
+                      <Eye className="w-2.5 h-2.5" />
+                      <span>{t("swipe.piButton")}</span>
+                    </motion.button>
+                  ) : <div />}
+
+                  {alreadyLiked && (
+                    <div className="pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
+                      <div className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm">
+                        <Heart className="w-2.5 h-2.5 text-white fill-white" />
+                        <span className="text-white text-[8px] font-bold">{t("swipe.likeDone")}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
               
               {!alreadyLiked && (
                 <motion.div 
@@ -597,28 +614,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           </div>
         </motion.div>
 
-        {profile.ratingEnabled && isTop && !showRating && (
-          <motion.div
-            className="absolute top-8 left-3 z-30 pointer-events-auto"
-            style={{ x, rotate, opacity }}
-          >
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-pink-500/90 to-purple-600/90 backdrop-blur-sm text-white text-[11px] font-semibold shadow-lg border border-white/20"
-              style={{ touchAction: "none" }}
-              data-testid={`button-rate-${profile.id}`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span className="flex flex-col items-start leading-tight">
-                <span>{t("swipe.piButton")}</span>
-                <span className="text-[9px] font-normal text-white/70">{t("swipe.piSubtitle")}</span>
-              </span>
-            </motion.button>
-          </motion.div>
-        )}
 
         <AnimatePresence>
           {showRating && profile.ratingEnabled && isTop && (
