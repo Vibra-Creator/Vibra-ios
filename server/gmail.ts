@@ -135,8 +135,7 @@ function buildWelcomeEmail(toEmail: string, userName: string): string {
               <p style="color:#a78bfa;font-size:14px;font-weight:bold;margin:0 0 8px;">Team Vibra</p>
               <p style="color:#9ca3af;font-size:12px;line-height:1.6;margin:0;">
                 Vibra - Connessioni Cosmiche<br>
-                Questa email &egrave; stata inviata a ${safeEmail}<br>
-                <a href="https://vibra-dating.replit.app/" style="color:#8b5cf6;text-decoration:none;">vibra-dating.replit.app</a>
+                Questa email &egrave; stata inviata a ${safeEmail}
               </p>
             </td>
           </tr>
