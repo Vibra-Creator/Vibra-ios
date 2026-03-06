@@ -123,7 +123,7 @@ function buildWelcomeEmail(toEmail: string, userName: string): string {
 
           <tr>
             <td style="padding:0 30px 30px;text-align:center;">
-              <a href="https://vibra-dating.replit.app/" 
+              <a href="https://vibraalienmatch.com/" 
                  style="display:inline-block;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:30px;font-size:16px;font-weight:bold;letter-spacing:0.5px;">
                 Entra nella Galassia
               </a>
