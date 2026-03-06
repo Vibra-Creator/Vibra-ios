@@ -19,6 +19,7 @@ interface AdminStats {
   totalProfiles: number;
   totalMatches: number;
   totalMessages: number;
+  realSubscriberCount: number;
   recentUsers: User[];
 }
 
@@ -353,8 +354,10 @@ export default function Admin() {
   const activeSuspensions = suspensions?.filter(s => s.isActive) || [];
   const pendingSubmissions = submissions?.filter(s => s.status === "pending") || [];
 
+  const realSubscriberCount = stats?.realSubscriberCount || 0;
+
   const statCards = [
-    { label: "Utenti", value: stats?.totalUsers || 0, icon: Users, color: "from-blue-500 to-cyan-500" },
+    { label: "Iscritti Reali", value: realSubscriberCount, icon: Users, color: "from-blue-500 to-cyan-500" },
     { label: "Profili", value: stats?.totalProfiles || 0, icon: UserCheck, color: "from-purple-500 to-pink-500" },
     { label: "Match", value: stats?.totalMatches || 0, icon: Heart, color: "from-pink-500 to-red-500" },
     { label: "Messaggi", value: stats?.totalMessages || 0, icon: MessageCircle, color: "from-green-500 to-emerald-500" },
@@ -460,7 +463,7 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="email" data-testid="tab-email">
               <Mail className="w-4 h-4 mr-1" />
-              Email
+              Email {realSubscriberCount > 0 && <Badge variant="secondary" className="ml-1">{realSubscriberCount}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="positions" data-testid="tab-positions">
               <MapPin className="w-3 h-3 mr-1" />
@@ -1196,34 +1199,89 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="email">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2"><Mail className="w-5 h-5" /> Email di Benvenuto</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-muted/30 rounded-lg border p-4">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Invia un'email di benvenuto a tema cosmico a tutti gli utenti reali registrati (esclusi bot e admin). Le email vengono inviate da <span className="font-medium text-foreground">privacyvibra@gmail.com</span>.
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Le email di benvenuto vengono anche inviate automaticamente a ogni nuovo utente al momento della registrazione.
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => sendWelcomeEmailsMutation.mutate()}
-                    disabled={sendWelcomeEmailsMutation.isPending}
-                    data-testid="button-send-welcome-emails"
-                    className="w-full"
-                  >
-                    {sendWelcomeEmailsMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-                    {sendWelcomeEmailsMutation.isPending ? "Invio in corso..." : "Invia Email di Benvenuto a Tutti"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {(() => {
+              const realProfileMap = new Map(
+                (profiles || []).filter((p: Profile) => !p.isBot).map((p: Profile) => [p.userId, p])
+              );
+              const emailRecipients = (users || []).filter((u: User) => {
+                return realProfileMap.has(String(u.id)) && u.email && !u.email.endsWith("@vibra.com") && !u.isAdmin;
+              });
+              return (
+                <>
+                  <Card className="mb-4">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2"><Mail className="w-5 h-5" /> Email di Benvenuto</CardTitle>
+                        <Badge className="text-sm bg-green-500/20 text-green-400 border-green-500/30">
+                          {realSubscriberCount} iscritti reali
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="bg-muted/30 rounded-lg border p-4">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Invia un'email di benvenuto a tema cosmico a tutti gli utenti reali registrati (esclusi bot e admin). Le email vengono inviate da <span className="font-medium text-foreground">privacyvibra@gmail.com</span>.
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Le email di benvenuto vengono anche inviate automaticamente a ogni nuovo utente al momento della registrazione.
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => sendWelcomeEmailsMutation.mutate()}
+                          disabled={sendWelcomeEmailsMutation.isPending}
+                          data-testid="button-send-welcome-emails"
+                          className="w-full"
+                        >
+                          {sendWelcomeEmailsMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                          {sendWelcomeEmailsMutation.isPending ? "Invio in corso..." : `Invia Email di Benvenuto a Tutti (${realSubscriberCount})`}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Users className="w-5 h-5" /> Lista Iscritti Reali ({emailRecipients.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {emailRecipients.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-4" data-testid="text-no-subscribers">Caricamento iscritti...</p>
+                      ) : (
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {emailRecipients.map((u: User, idx: number) => {
+                            const profile = realProfileMap.get(String(u.id));
+                            return (
+                              <div key={u.id} className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20" data-testid={`email-subscriber-${u.id}`}>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
+                                    {idx + 1}
+                                  </div>
+                                  <Avatar className="w-10 h-10">
+                                    <AvatarImage src={profile?.imageUrl || ""} />
+                                    <AvatarFallback>{(profile?.name || u.firstName || "?")[0].toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium text-sm text-foreground">{profile?.name || u.firstName || "Utente"}</p>
+                                    <p className="text-xs text-cyan-400">{u.email}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-muted-foreground">
+                                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString("it-IT") : ""}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              );
+            })()}
           </TabsContent>
 
           <TabsContent value="positions">

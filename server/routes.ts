@@ -1032,13 +1032,14 @@ export async function registerRoutes(
       const realUsers = allUsers
         .filter(u => {
           const profile = profileMap.get(String(u.id));
-          return profile && u.email && !u.email.endsWith("@vibra.com");
+          return profile && u.email && !u.email.endsWith("@vibra.com") && !u.isAdmin;
         })
         .map(u => ({
           email: u.email!,
           name: profileMap.get(String(u.id))?.name || u.firstName || "Esploratore",
         }));
 
+      console.log(`[email] Trovati ${realUsers.length} iscritti reali per invio email`);
       const result = await sendBulkWelcomeEmails(realUsers);
       res.json({ ...result, total: realUsers.length });
     } catch (error: any) {
@@ -1080,11 +1081,16 @@ export async function registerRoutes(
         profiles.filter(p => p.isBot).map(p => p.id)
       );
       const realProfiles = profiles.filter(p => !p.isBot);
+      const realProfileUserIds = new Set(realProfiles.map(p => p.userId));
       const realMatches = allMatches.filter(
         m => !botProfileIds.has(m.profile1Id) && !botProfileIds.has(m.profile2Id)
       );
       const realMessages = allMessages.filter(
         m => !botProfileIds.has(m.senderId)
+      );
+
+      const realSubscribers = users.filter(u => 
+        realProfileUserIds.has(String(u.id)) && u.email && !u.email.endsWith("@vibra.com") && !u.isAdmin
       );
       
       const sanitizedUsers = users.map(({ password, ...u }) => u);
@@ -1093,6 +1099,7 @@ export async function registerRoutes(
         totalProfiles: realProfiles.length,
         totalMatches: realMatches.length,
         totalMessages: realMessages.length,
+        realSubscriberCount: realSubscribers.length,
         recentUsers: sanitizedUsers.slice(0, 10),
         recentMatches: realMatches.slice(0, 10),
       });
