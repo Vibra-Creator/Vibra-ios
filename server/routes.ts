@@ -195,6 +195,13 @@ export async function registerRoutes(
 
   app.use("/uploads", express.static(uploadsDir));
 
+  app.get("/download/qrcode-vibra.png", (_req, res) => {
+    const qrPath = path.join(process.cwd(), "attached_assets", "vibra_qrcode.png");
+    res.setHeader("Content-Disposition", "attachment; filename=qrcode-vibra.png");
+    res.setHeader("Content-Type", "image/png");
+    res.sendFile(qrPath);
+  });
+
   app.get("/api/profiles/me", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
