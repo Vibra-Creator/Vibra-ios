@@ -139,6 +139,16 @@ export default function Admin() {
     },
   });
 
+  const handleSendEmails = () => {
+    if (sendWelcomeEmailsMutation.isPending) return;
+    const confirmed = window.confirm(
+      `Stai per inviare l'email di benvenuto a ${realSubscriberCount} iscritti reali. L'invio può richiedere fino a 30 secondi. Continuare?`
+    );
+    if (confirmed) {
+      sendWelcomeEmailsMutation.mutate();
+    }
+  };
+
   const downloadCSV = (filename: string, content: string) => {
     const bom = "\uFEFF";
     const blob = new Blob([bom + content], { type: "text/csv;charset=utf-8;" });
@@ -1228,14 +1238,19 @@ export default function Admin() {
                           </p>
                         </div>
                         <Button
-                          onClick={() => sendWelcomeEmailsMutation.mutate()}
+                          onClick={handleSendEmails}
                           disabled={sendWelcomeEmailsMutation.isPending}
                           data-testid="button-send-welcome-emails"
                           className="w-full"
                         >
                           {sendWelcomeEmailsMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-                          {sendWelcomeEmailsMutation.isPending ? "Invio in corso..." : `Invia Email di Benvenuto a Tutti (${realSubscriberCount})`}
+                          {sendWelcomeEmailsMutation.isPending ? "Invio in corso... attendere fino a 30 secondi" : `Invia Email di Benvenuto a Tutti (${realSubscriberCount})`}
                         </Button>
+                        {sendWelcomeEmailsMutation.isPending && (
+                          <p className="text-xs text-yellow-400 text-center animate-pulse">
+                            Invio email in corso a {realSubscriberCount} iscritti... non chiudere la pagina
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
