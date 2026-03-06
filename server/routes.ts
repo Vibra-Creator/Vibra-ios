@@ -1022,6 +1022,31 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/send-welcome-emails", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { sendBulkWelcomeEmails } = await import("./gmail");
+      const allUsers = await storage.getAllUsers();
+      const allProfiles = await storage.getProfiles();
+      const profileMap = new Map(allProfiles.filter(p => !p.isBot).map(p => [p.userId, p]));
+
+      const realUsers = allUsers
+        .filter(u => {
+          const profile = profileMap.get(String(u.id));
+          return profile && u.email && !u.email.endsWith("@vibra.com");
+        })
+        .map(u => ({
+          email: u.email!,
+          name: profileMap.get(String(u.id))?.name || u.firstName || "Esploratore",
+        }));
+
+      const result = await sendBulkWelcomeEmails(realUsers);
+      res.json({ ...result, total: realUsers.length });
+    } catch (error: any) {
+      console.error("Error sending welcome emails:", error);
+      res.status(500).json({ error: "Failed to send welcome emails", message: error.message });
+    }
+  });
+
   app.get("/api/admin/backups", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const backups = await getBackupList();

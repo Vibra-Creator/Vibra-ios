@@ -115,6 +115,15 @@ export async function setupAuth(app: Express) {
         console.error("Auto-create profile error (non-fatal):", profileErr);
       }
 
+      try {
+        const { sendWelcomeEmail } = await import("../../gmail");
+        sendWelcomeEmail(email, firstName).catch((err: any) =>
+          console.error("[welcome-email] async send error:", err.message)
+        );
+      } catch (emailErr) {
+        console.error("Welcome email error (non-fatal):", emailErr);
+      }
+
       res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
     } catch (error) {
       console.error("Registration error:", error);
