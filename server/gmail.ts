@@ -136,8 +136,7 @@ function buildWelcomeEmail(toEmail: string, userName: string): string {
               <p style="color:#9ca3af;font-size:12px;line-height:1.6;margin:0;">
                 <a href="https://vibraalienmatch.com" style="color:#8b5cf6;text-decoration:none;">https://vibraalienmatch.com</a><br>
                 Vibra - Connessioni Cosmiche<br>
-                Questa email &egrave; stata inviata a ${safeEmail}<br>
-                da: <a href="mailto:privacyvibra@gmail.com" style="color:#8b5cf6;text-decoration:none;">privacyvibra@gmail.com</a>
+                <a href="mailto:privacyvibra@gmail.com" style="color:#8b5cf6;text-decoration:none;">privacyvibra@gmail.com</a>
               </p>
             </td>
           </tr>
