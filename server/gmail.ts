@@ -49,7 +49,7 @@ function escapeHtml(str: string): string {
 }
 
 function buildWelcomeEmail(toEmail: string, userName: string): string {
-  const subject = "Benvenuto su Vibra! La tua avventura cosmica inizia ora";
+  const subject = "Entra nel mondo Vibra";
   const safeName = escapeHtml(userName);
   const safeEmail = escapeHtml(toEmail);
 
@@ -74,14 +74,11 @@ function buildWelcomeEmail(toEmail: string, userName: string): string {
           </tr>
 
           <tr>
-            <td style="padding:10px 30px 30px;text-align:center;">
-              <h2 style="color:#ffffff;font-size:24px;margin:0 0 15px;">Ciao ${safeName}!</h2>
+            <td style="padding:10px 30px 30px;">
+              <h2 style="color:#ffffff;font-size:24px;margin:0 0 15px;">Ciao ${safeName},</h2>
               <p style="color:#d1d5db;font-size:16px;line-height:1.6;margin:0 0 20px;">
-                Benvenuto nella galassia di <strong style="color:#a78bfa;">Vibra</strong>! Siamo felici di averti a bordo.
-              </p>
-              <p style="color:#d1d5db;font-size:15px;line-height:1.6;margin:0 0 25px;">
-                La tua avventura cosmica inizia adesso. Scopri persone affini, 
-                connettiti con anime vibrazionali e trova la tua frequenza perfetta.
+                grazie davvero per esserti unito alla galassia <strong style="color:#a78bfa;">Vibra</strong>.<br>
+                Qui le cose funzionano un po' diversamente dalle solite app di incontri&hellip; e l'avventura &egrave; appena iniziata. &#128640;
               </p>
             </td>
           </tr>
@@ -91,18 +88,36 @@ function buildWelcomeEmail(toEmail: string, userName: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:rgba(139,92,246,0.15);border-radius:12px;padding:20px;">
-                    <p style="color:#c4b5fd;font-size:14px;margin:0 0 12px;font-weight:bold;">Cosa puoi fare su Vibra:</p>
-                    <p style="color:#d1d5db;font-size:13px;line-height:1.8;margin:0;">
-                      &gt; Scopri profili compatibili con lo swipe<br>
-                      &gt; Chatta in tempo reale nella Vibrapp globale<br>
-                      &gt; Ricevi notifiche per match e messaggi<br>
-                      &gt; Partecipa alle sfide e guadagna punti<br>
-                      &gt; Risposte private e reazioni ai messaggi<br>
-                      &gt; Radar Galattico con attivita in tempo reale
+                    <p style="color:#c4b5fd;font-size:14px;margin:0 0 12px;font-weight:bold;">Su Vibra potresti imbatterti in:</p>
+                    <p style="color:#d1d5db;font-size:14px;line-height:2;margin:0;">
+                      &#128125; <strong>Radar Alieno</strong> che scansiona chi vibra vicino a te<br>
+                      &#10024; <strong>Match Cosmici</strong> quando due energie si allineano<br>
+                      &#128172; <strong>Chat intergalattica</strong> per iniziare subito la conversazione<br>
+                      &#127748; <strong>Segnali misteriosi</strong> che possono portarti a nuove connessioni<br>
+                      &#9889; <strong>Eventi cosmici</strong> che cambiano l'esperienza ogni giorno
                     </p>
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0 30px 20px;">
+              <p style="color:#d1d5db;font-size:15px;line-height:1.6;margin:0 0 10px;">
+                In poche parole: <strong style="color:#a78bfa;">meno noia, pi&ugrave; sorpresa.</strong>
+              </p>
+              <p style="color:#d1d5db;font-size:15px;line-height:1.6;margin:0 0 10px;">
+                Il progetto Vibra &egrave; in continua evoluzione e il tuo parere conta davvero.<br>
+                Se hai idee, suggerimenti o anche qualche critica costruttiva, scrivici quando vuoi:
+              </p>
+              <p style="margin:0 0 15px;">
+                <a href="mailto:privacyvibra@gmail.com" style="color:#8b5cf6;text-decoration:none;font-size:15px;">privacyvibra@gmail.com</a>
+              </p>
+              <p style="color:#d1d5db;font-size:15px;line-height:1.6;margin:0 0 10px;">
+                Grazie per essere parte di questa nuova galassia.<br>
+                Ora accendi il radar&hellip; potresti ricevere un segnale proprio adesso. &#127776;
+              </p>
             </td>
           </tr>
 
@@ -116,10 +131,11 @@ function buildWelcomeEmail(toEmail: string, userName: string): string {
           </tr>
 
           <tr>
-            <td style="padding:0 30px 30px;text-align:center;">
+            <td style="padding:10px 30px 30px;text-align:center;">
+              <p style="color:#a78bfa;font-size:14px;font-weight:bold;margin:0 0 8px;">Team Vibra</p>
               <p style="color:#9ca3af;font-size:12px;line-height:1.6;margin:0;">
                 Vibra - Connessioni Cosmiche<br>
-                Questa email e stata inviata a ${safeEmail}<br>
+                Questa email &egrave; stata inviata a ${safeEmail}<br>
                 <a href="https://vibra-dating.replit.app/" style="color:#8b5cf6;text-decoration:none;">vibra-dating.replit.app</a>
               </p>
             </td>
