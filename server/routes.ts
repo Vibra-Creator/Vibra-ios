@@ -1048,6 +1048,36 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/send-custom-email", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { subject, htmlBody } = req.body;
+      if (!subject || !htmlBody) {
+        return res.status(400).json({ error: "Subject and htmlBody are required" });
+      }
+      const { sendBulkCustomEmails } = await import("./gmail");
+      const allUsers = await storage.getAllUsers();
+      const allProfiles = await storage.getProfiles();
+      const profileMap = new Map(allProfiles.filter(p => !p.isBot).map(p => [p.userId, p]));
+
+      const realUsers = allUsers
+        .filter(u => {
+          const profile = profileMap.get(String(u.id));
+          return profile && u.email && !u.email.endsWith("@vibra.com") && !u.isAdmin;
+        })
+        .map(u => ({
+          email: u.email!,
+          name: profileMap.get(String(u.id))?.name || u.firstName || "Esploratore",
+        }));
+
+      console.log(`[custom-email] Sending to ${realUsers.length} users, subject: "${subject}"`);
+      const result = await sendBulkCustomEmails(realUsers, subject, htmlBody);
+      res.json({ ...result, total: realUsers.length });
+    } catch (error: any) {
+      console.error("Error sending custom email:", error);
+      res.status(500).json({ error: "Failed to send custom email", message: error.message });
+    }
+  });
+
   app.get("/api/admin/backups", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const backups = await getBackupList();

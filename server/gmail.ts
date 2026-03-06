@@ -205,3 +205,64 @@ export async function sendBulkWelcomeEmails(
   console.log(`[welcome-email] Bulk send complete: ${sent} sent, ${failed} failed`);
   return { sent, failed };
 }
+
+function buildCustomEmail(toEmail: string, subject: string, htmlBody: string): string {
+  const raw = [
+    `From: Vibra <privacyvibra@gmail.com>`,
+    `To: ${toEmail}`,
+    `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=UTF-8`,
+    ``,
+    htmlBody,
+  ].join('\r\n');
+
+  return Buffer.from(raw).toString('base64url');
+}
+
+export async function sendCustomEmail(toEmail: string, subject: string, htmlBody: string): Promise<boolean> {
+  if (!toEmail || toEmail.endsWith('@vibra.com')) return false;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const gmail = await getUncachableGmailClient();
+      const raw = buildCustomEmail(toEmail, subject, htmlBody);
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw },
+      });
+
+      console.log(`[custom-email] Sent to ${toEmail}`);
+      return true;
+    } catch (error: any) {
+      if (attempt === 0 && (error.code === 401 || error.message?.includes('invalid_grant'))) {
+        console.log(`[custom-email] Token expired, refreshing...`);
+        connectionSettings = null;
+        continue;
+      }
+      console.error(`[custom-email] Failed to send to ${toEmail}:`, error.message);
+      return false;
+    }
+  }
+  return false;
+}
+
+export async function sendBulkCustomEmails(
+  userList: { email: string; name: string }[],
+  subject: string,
+  htmlBody: string
+): Promise<{ sent: number; failed: number }> {
+  let sent = 0;
+  let failed = 0;
+
+  for (const user of userList) {
+    const success = await sendCustomEmail(user.email, subject, htmlBody);
+    if (success) sent++;
+    else failed++;
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  console.log(`[custom-email] Bulk send complete: ${sent} sent, ${failed} failed`);
+  return { sent, failed };
+}

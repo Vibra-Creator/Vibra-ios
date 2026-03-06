@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -50,6 +51,10 @@ export default function Admin() {
   const [resetPwValue, setResetPwValue] = useState("");
   const [changeEmailUserId, setChangeEmailUserId] = useState<string | null>(null);
   const [changeEmailValue, setChangeEmailValue] = useState("");
+  const [customEmailSubject, setCustomEmailSubject] = useState("");
+  const [customEmailBody, setCustomEmailBody] = useState("");
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -145,6 +150,48 @@ export default function Admin() {
     );
     if (confirmed) {
       sendWelcomeEmailsMutation.mutate();
+    }
+  };
+
+  const sendCustomEmailMutation = useMutation({
+    mutationFn: async ({ subject, htmlBody }: { subject: string; htmlBody: string }) => {
+      return await apiRequest("POST", "/api/admin/send-custom-email", { subject, htmlBody });
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "Email personalizzata inviata!", description: `Inviate: ${data.sent}, Fallite: ${data.failed}, Totale: ${data.total}` });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile inviare l'email personalizzata", variant: "destructive" });
+    },
+  });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const content = ev.target?.result as string;
+      setCustomEmailBody(content);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleSendCustomEmail = () => {
+    if (sendCustomEmailMutation.isPending) return;
+    if (!customEmailSubject.trim()) {
+      toast({ title: "Errore", description: "Inserisci un oggetto per l'email", variant: "destructive" });
+      return;
+    }
+    if (!customEmailBody.trim()) {
+      toast({ title: "Errore", description: "Il corpo dell'email è vuoto", variant: "destructive" });
+      return;
+    }
+    const confirmed = window.confirm(
+      `Stai per inviare l'email "${customEmailSubject}" a ${realSubscriberCount} iscritti reali. Continuare?`
+    );
+    if (confirmed) {
+      sendCustomEmailMutation.mutate({ subject: customEmailSubject, htmlBody: customEmailBody });
     }
   };
 
@@ -1217,6 +1264,98 @@ export default function Admin() {
               });
               return (
                 <>
+                  <Card className="mb-4">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2"><Send className="w-5 h-5" /> Invia Email Personalizzata</CardTitle>
+                        <Badge className="text-sm bg-purple-500/20 text-purple-400 border-purple-500/30">
+                          {realSubscriberCount} destinatari
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-foreground mb-1 block">Oggetto</label>
+                          <Input
+                            data-testid="input-custom-email-subject"
+                            placeholder="Es: Novità su Vibra 🚀"
+                            value={customEmailSubject}
+                            onChange={e => setCustomEmailSubject(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-sm font-medium text-foreground">Corpo HTML</label>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                data-testid="button-upload-html"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="text-xs"
+                              >
+                                <Upload className="w-3 h-3 mr-1" /> Carica file HTML
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                data-testid="button-toggle-preview"
+                                onClick={() => setShowEmailPreview(p => !p)}
+                                className="text-xs"
+                              >
+                                {showEmailPreview ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+                                {showEmailPreview ? "Nascondi" : "Anteprima"}
+                              </Button>
+                            </div>
+                          </div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".html,.htm"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                            data-testid="input-file-html"
+                          />
+                          {showEmailPreview && customEmailBody ? (
+                            <div className="rounded-lg border overflow-hidden" style={{ height: 400 }}>
+                              <iframe
+                                srcDoc={customEmailBody}
+                                title="Anteprima email"
+                                className="w-full h-full"
+                                sandbox="allow-same-origin"
+                              />
+                            </div>
+                          ) : (
+                            <Textarea
+                              data-testid="textarea-custom-email-body"
+                              placeholder="Inserisci qui il corpo HTML dell'email oppure carica un file .html..."
+                              value={customEmailBody}
+                              onChange={e => setCustomEmailBody(e.target.value)}
+                              className="font-mono text-xs min-h-[200px]"
+                            />
+                          )}
+                        </div>
+                        <Button
+                          onClick={handleSendCustomEmail}
+                          disabled={sendCustomEmailMutation.isPending || !customEmailSubject.trim() || !customEmailBody.trim()}
+                          data-testid="button-send-custom-email"
+                          className="w-full bg-purple-600 hover:bg-purple-700"
+                        >
+                          {sendCustomEmailMutation.isPending
+                            ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Invio in corso... attendere</>
+                            : <><Send className="w-4 h-4 mr-2" /> Invia a Tutti ({realSubscriberCount})</>
+                          }
+                        </Button>
+                        {sendCustomEmailMutation.isPending && (
+                          <p className="text-xs text-yellow-400 text-center animate-pulse">
+                            Invio in corso a {realSubscriberCount} iscritti... non chiudere la pagina
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   <Card className="mb-4">
                     <CardHeader>
                       <div className="flex items-center justify-between">
