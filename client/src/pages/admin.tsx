@@ -128,8 +128,7 @@ export default function Admin() {
 
   const sendWelcomeEmailsMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/send-welcome-emails");
-      return res.json();
+      return await apiRequest("POST", "/api/admin/send-welcome-emails");
     },
     onSuccess: (data: any) => {
       toast({ title: "Email di benvenuto inviate!", description: `Inviate: ${data.sent}, Fallite: ${data.failed}, Totale: ${data.total}` });
