@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,9 +13,175 @@ const PHRASES = [
   { emoji: "✨", text: "A vibration is approaching" },
 ];
 
+interface Blip {
+  id: number;
+  x: number;
+  y: number;
+  born: number;
+  color: string;
+}
+
+const RADAR_SIZE = 68;
+const CENTER = RADAR_SIZE / 2;
+const BLIP_COLORS = ["#4ade80", "#67e8f9", "#e879f9", "#f472b6"];
+
+function RadarDisplay({ onlineCount }: { onlineCount: number }) {
+  const [blips, setBlips] = useState<Blip[]>([]);
+  const [tick, setTick] = useState(0);
+  const sweepRef = useRef(0);
+  const idRef = useRef(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      sweepRef.current = (sweepRef.current + 6) % 360;
+      setTick(t => t + 1);
+
+      if (Math.random() < 0.35) {
+        const rings = [10, 17, 24, 30];
+        const r = rings[Math.floor(Math.random() * rings.length)] + (Math.random() - 0.5) * 4;
+        const angleRad = (sweepRef.current + (Math.random() - 0.5) * 20) * (Math.PI / 180);
+        setBlips(prev => [
+          ...prev.filter(b => Date.now() - b.born < 3500).slice(-12),
+          {
+            id: idRef.current++,
+            x: CENTER + r * Math.cos(angleRad),
+            y: CENTER + r * Math.sin(angleRad),
+            born: Date.now(),
+            color: BLIP_COLORS[Math.floor(Math.random() * BLIP_COLORS.length)],
+          },
+        ]);
+      }
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  const now = Date.now();
+
+  return (
+    <div className="relative shrink-0" style={{ width: RADAR_SIZE, height: RADAR_SIZE }} data-testid="radar-display">
+      {/* Outer glow */}
+      <motion.div
+        className="absolute inset-0 rounded-full"
+        style={{ boxShadow: "0 0 18px rgba(74,222,128,0.35), 0 0 40px rgba(74,222,128,0.12)" }}
+        animate={{ opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* Outer pulse rings */}
+      {[0, 1, 2].map(i => (
+        <motion.div
+          key={i}
+          className="absolute inset-0 rounded-full border border-green-400/50"
+          initial={{ scale: 1, opacity: 0.5 }}
+          animate={{ scale: [1, 1.7], opacity: [0.4, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.75, ease: "easeOut" }}
+        />
+      ))}
+
+      {/* SVG: rings, crosshairs, blips */}
+      <svg
+        width={RADAR_SIZE}
+        height={RADAR_SIZE}
+        className="absolute inset-0"
+        style={{ overflow: "visible" }}
+      >
+        {/* Background fill */}
+        <circle cx={CENTER} cy={CENTER} r={CENTER - 1} fill="rgba(0,15,10,0.75)" />
+
+        {/* Concentric rings */}
+        {[32, 22, 13].map((r, i) => (
+          <circle
+            key={i}
+            cx={CENTER}
+            cy={CENTER}
+            r={r}
+            fill="none"
+            stroke={`rgba(74,222,128,${0.45 - i * 0.1})`}
+            strokeWidth={i === 0 ? 1.2 : 0.7}
+          />
+        ))}
+
+        {/* Crosshairs */}
+        <line x1={CENTER} y1={3} x2={CENTER} y2={RADAR_SIZE - 3} stroke="rgba(74,222,128,0.18)" strokeWidth="0.6" />
+        <line x1={3} y1={CENTER} x2={RADAR_SIZE - 3} y2={CENTER} stroke="rgba(74,222,128,0.18)" strokeWidth="0.6" />
+        <line x1={12} y1={12} x2={RADAR_SIZE - 12} y2={RADAR_SIZE - 12} stroke="rgba(74,222,128,0.08)" strokeWidth="0.5" />
+        <line x1={RADAR_SIZE - 12} y1={12} x2={12} y2={RADAR_SIZE - 12} stroke="rgba(74,222,128,0.08)" strokeWidth="0.5" />
+
+        {/* Blips */}
+        {blips.map(blip => {
+          const age = (now - blip.born) / 3500;
+          const opacity = Math.max(0, 1 - age);
+          const size = 1.5 + (1 - age) * 1.5;
+          return (
+            <g key={blip.id}>
+              <circle cx={blip.x} cy={blip.y} r={size + 2} fill={blip.color} opacity={opacity * 0.2} />
+              <circle cx={blip.x} cy={blip.y} r={size} fill={blip.color} opacity={opacity * 0.9} />
+            </g>
+          );
+        })}
+
+        {/* Center dot */}
+        <circle cx={CENTER} cy={CENTER} r={2.5} fill="#4ade80" opacity={0.9} />
+        <circle cx={CENTER} cy={CENTER} r={1.2} fill="white" opacity={0.8} />
+      </svg>
+
+      {/* Rotating sweep arc (conic gradient) */}
+      <motion.div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: "conic-gradient(from 0deg, transparent 270deg, rgba(74,222,128,0.04) 300deg, rgba(74,222,128,0.35) 350deg, rgba(200,255,200,0.5) 358deg, transparent 360deg)",
+          mixBlendMode: "screen",
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+      />
+
+      {/* Sweep line tip flash */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: 4,
+          height: 4,
+          top: CENTER - 2,
+          left: CENTER - 2,
+          background: "radial-gradient(circle, #ffffff 0%, #4ade80 60%, transparent 100%)",
+          transformOrigin: "2px 2px",
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            width: 2,
+            height: CENTER - 4,
+            bottom: 2,
+            left: 1,
+            background: "linear-gradient(to top, transparent, rgba(74,222,128,0.6))",
+            borderRadius: 1,
+          }}
+        />
+      </motion.div>
+
+      {/* Online count badge */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ paddingTop: 4 }}>
+        <motion.span
+          className="text-[11px] font-black leading-none"
+          style={{ color: "#4ade80", textShadow: "0 0 8px rgba(74,222,128,0.8)" }}
+          animate={{ opacity: [0.8, 1, 0.8] }}
+          transition={{ duration: 1.8, repeat: Infinity }}
+        >
+          {onlineCount}
+        </motion.span>
+        <span className="text-[7px] text-green-300/60 font-medium leading-none mt-0.5 tracking-wider">ONLINE</span>
+      </div>
+    </div>
+  );
+}
+
 function CosmicBanner() {
   const [index, setIndex] = useState(0);
-  const [scanning, setScanning] = useState(true);
+  const [scanning, setScanning] = useState(false);
 
   const { data: onlineData } = useQuery<{ count: number }>({
     queryKey: ["/api/vibrapp/online-count"],
@@ -28,8 +194,8 @@ function CosmicBanner() {
       setTimeout(() => {
         setIndex(i => (i + 1) % PHRASES.length);
         setScanning(false);
-      }, 600);
-    }, 4000);
+      }, 500);
+    }, 4500);
     return () => clearInterval(timer);
   }, []);
 
@@ -37,56 +203,58 @@ function CosmicBanner() {
   const onlineCount = onlineData?.count ?? 0;
 
   return (
-    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden" data-testid="cosmic-banner">
-      <div className="flex-1 min-w-0 overflow-hidden">
+    <div className="flex items-center gap-3 flex-1 min-w-0" data-testid="cosmic-banner">
+      <RadarDisplay onlineCount={onlineCount} />
+
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.35 }}
-            className="flex items-center gap-1.5"
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-1.5 min-w-0"
           >
             <motion.span
-              animate={scanning ? { opacity: [1, 0.3, 1, 0.3, 1] } : { opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="text-base leading-none shrink-0"
+              className="text-sm leading-none shrink-0"
+              animate={scanning ? { opacity: [1, 0.2, 1, 0.2, 1] } : { opacity: 1 }}
+              transition={{ duration: 0.5 }}
             >
               {phrase.emoji}
             </motion.span>
             <motion.span
               className="text-[11px] font-semibold tracking-wide truncate"
               style={{
-                background: "linear-gradient(90deg, #c084fc, #67e8f9, #f472b6)",
+                background: "linear-gradient(90deg, #c084fc, #67e8f9, #f472b6, #c084fc)",
+                backgroundSize: "200% 100%",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
-              animate={scanning ? { opacity: [1, 0.4, 1] } : { opacity: 1 }}
-              transition={{ duration: 0.6 }}
+              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
             >
               {phrase.text}
             </motion.span>
-            <motion.span
-              className="text-purple-400/70 text-[10px] shrink-0"
-              animate={{ opacity: [1, 0, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              ▮
-            </motion.span>
           </motion.div>
         </AnimatePresence>
-      </div>
 
-      <div className="flex items-center gap-1 shrink-0" data-testid="online-count-badge">
-        <motion.span
-          className="w-1.5 h-1.5 rounded-full bg-green-400"
-          animate={{ scale: [1, 1.4, 1], opacity: [1, 0.5, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        />
-        <span className="text-[10px] text-white/70 font-medium whitespace-nowrap">
-          {onlineCount} alieni online
-        </span>
+        <div className="flex items-center gap-1.5">
+          <motion.span
+            className="text-[9px] text-green-300/70 font-mono tracking-widest"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+          >
+            ◈ SCANNING...
+          </motion.span>
+          <motion.span
+            className="text-[9px] text-white/40 font-mono"
+            animate={{ opacity: [1, 0, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          >
+            ▮
+          </motion.span>
+        </div>
       </div>
     </div>
   );
@@ -95,7 +263,7 @@ function CosmicBanner() {
 export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full">
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-black/30 backdrop-blur-xl border-b border-white/10">
+      <div className="flex items-center gap-2 px-3 py-2 bg-black/40 backdrop-blur-xl border-b border-green-500/10">
         <Link href="/" data-testid="link-home">
           <img src={vibraLogo} alt="Vibra" className="w-9 h-9 object-contain rounded-full shrink-0" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
         </Link>
@@ -154,9 +322,7 @@ export function BottomNav() {
           data-testid={`nav-${item.label.toLowerCase()}`}
         >
           <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
-            isActive
-              ? `${item.activeBg} text-white shadow-lg`
-              : ""
+            isActive ? `${item.activeBg} text-white shadow-lg` : ""
           }`}>
             <item.icon className={`w-5 h-5 ${isActive ? "text-white" : item.color}`} />
             {item.badge > 0 && (
