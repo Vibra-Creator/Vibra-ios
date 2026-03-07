@@ -270,13 +270,14 @@ export class DatabaseStorage implements IStorage {
 
     const likerIds = likedMeRows.map(r => r.swiperId);
 
-    // Who I've already swiped on (to exclude them)
-    const mySwipedRows = await db.select({ swipedId: swipes.swipedId })
+    // Only exclude profiles I already LIKED (those create a match, no need to show in received likes)
+    // Profiles I disliked should still appear so I can reconsider
+    const myLikedRows = await db.select({ swipedId: swipes.swipedId })
       .from(swipes)
-      .where(eq(swipes.swiperId, profileId));
-    const alreadySwiped = new Set(mySwipedRows.map(r => r.swipedId));
+      .where(and(eq(swipes.swiperId, profileId), eq(swipes.liked, true)));
+    const alreadyLiked = new Set(myLikedRows.map(r => r.swipedId));
 
-    const pending = likerIds.filter(id => !alreadySwiped.has(id));
+    const pending = likerIds.filter(id => !alreadyLiked.has(id));
     if (!pending.length) return [];
 
     const result = await db.select().from(profiles).where(inArray(profiles.id, pending));
