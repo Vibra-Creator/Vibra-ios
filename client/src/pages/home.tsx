@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
-import { ActivityToastSystem, GalacticRadar } from "@/components/ActivityFeed";
+import { ActivityToastSystem } from "@/components/ActivityFeed";
 import { Button } from "@/components/ui/button";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -330,7 +330,6 @@ export default function Home() {
                 likeDisabled={currentProfile ? likedIdsSet.has(currentProfile.id) : false}
               />
             }
-            topOverlay={!isGuest ? <GalacticRadar onEnter={() => setLocation("/vibrapp")} /> : undefined}
           />
         )}
       </div>

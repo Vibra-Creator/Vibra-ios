@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ne, sql, lt, desc, asc } from "drizzle-orm";
+import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import multer from "multer";
@@ -3245,7 +3245,17 @@ REGOLE IMPORTANTI:
   });
 
   app.get("/api/vibrapp/online-count", isAuthenticated, async (req: any, res) => {
-    res.json({ count: vibrappOnlineUsers.size });
+    try {
+      const cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const [row] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(profiles)
+        .where(and(eq(profiles.isBot, false), gt(profiles.lastActiveAt, cutoff)));
+      const activeCount = Number(row?.count ?? 0);
+      const socketCount = vibrappOnlineUsers.size;
+      res.json({ count: Math.max(activeCount, socketCount) });
+    } catch {
+      res.json({ count: vibrappOnlineUsers.size });
+    }
   });
 
   return httpServer;
