@@ -803,7 +803,7 @@ export async function registerRoutes(
       const likers = await storage.getReceivedLikes(userProfile.id);
       const blockedIds = await storage.getBlockedIds(userProfile.id);
       const blockedSet = new Set(blockedIds);
-      const filtered = likers.filter(p => !blockedSet.has(p.id) && !p.isBot);
+      const filtered = likers.filter(p => !blockedSet.has(p.id));
       res.json(filtered);
     } catch (error) {
       console.error("Error fetching received likes:", error);
