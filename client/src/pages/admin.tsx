@@ -1400,24 +1400,21 @@ export default function Admin() {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-col items-center gap-4">
-                        <div className="bg-white rounded-xl p-4 shadow-lg">
+                        <div className="rounded-xl overflow-hidden shadow-lg max-w-xs w-full">
                           <img
                             src="/api/qrcode-vibra.png"
                             alt="QR Code Vibra"
-                            className="w-48 h-48"
+                            className="w-full h-auto"
                             data-testid="img-qrcode"
                           />
                         </div>
-                        <p className="text-sm text-muted-foreground text-center">
-                          Punta a <span className="font-medium text-foreground">vibraalienmatch.com</span> — 1000×1000 px, alta risoluzione
-                        </p>
                         <a
                           href="/api/qrcode-vibra.png"
-                          download="qrcode-vibra.png"
+                          download="qrcode-vibra.jpg"
                           data-testid="link-download-qrcode"
                           className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-2 rounded-lg transition-colors"
                         >
-                          <Download className="w-4 h-4" /> Scarica QR Code PNG
+                          <Download className="w-4 h-4" /> Scarica QR Code
                         </a>
                       </div>
                     </CardContent>
