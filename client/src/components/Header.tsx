@@ -1,54 +1,105 @@
+import { useState, useEffect } from "react";
 import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
+const PHRASES = [
+  { emoji: "👽", text: "An alien is searching for you…" },
+  { emoji: "🛸", text: "Cosmic signal detected" },
+  { emoji: "✨", text: "A vibration is approaching" },
+];
+
+function CosmicBanner() {
+  const [index, setIndex] = useState(0);
+  const [scanning, setScanning] = useState(true);
+
+  const { data: onlineData } = useQuery<{ count: number }>({
+    queryKey: ["/api/vibrapp/online-count"],
+    refetchInterval: 30000,
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setScanning(true);
+      setTimeout(() => {
+        setIndex(i => (i + 1) % PHRASES.length);
+        setScanning(false);
+      }, 600);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const phrase = PHRASES[index];
+  const onlineCount = onlineData?.count ?? 0;
+
+  return (
+    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden" data-testid="cosmic-banner">
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.35 }}
+            className="flex items-center gap-1.5"
+          >
+            <motion.span
+              animate={scanning ? { opacity: [1, 0.3, 1, 0.3, 1] } : { opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="text-base leading-none shrink-0"
+            >
+              {phrase.emoji}
+            </motion.span>
+            <motion.span
+              className="text-[11px] font-semibold tracking-wide truncate"
+              style={{
+                background: "linear-gradient(90deg, #c084fc, #67e8f9, #f472b6)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+              animate={scanning ? { opacity: [1, 0.4, 1] } : { opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              {phrase.text}
+            </motion.span>
+            <motion.span
+              className="text-purple-400/70 text-[10px] shrink-0"
+              animate={{ opacity: [1, 0, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              ▮
+            </motion.span>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0" data-testid="online-count-badge">
+        <motion.span
+          className="w-1.5 h-1.5 rounded-full bg-green-400"
+          animate={{ scale: [1, 1.4, 1], opacity: [1, 0.5, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+        <span className="text-[10px] text-white/70 font-medium whitespace-nowrap">
+          {onlineCount} alieni online
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full">
-      <div className="flex items-center justify-center px-4 py-3 bg-black/30 backdrop-blur-xl border-b border-white/10">
+      <div className="flex items-center gap-2 px-3 py-2.5 bg-black/30 backdrop-blur-xl border-b border-white/10">
         <Link href="/" data-testid="link-home">
-          <div className="flex items-center gap-2">
-            <img src={vibraLogo} alt="Vibra" className="w-10 h-10 object-contain rounded-full" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
-            <motion.div
-              className="relative select-none"
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              data-testid="text-match-vibration-banner"
-            >
-              <motion.span
-                className="absolute inset-0 text-lg font-extrabold tracking-wider uppercase blur-md"
-                style={{
-                  background: "linear-gradient(90deg, #a855f7, #06b6d4, #ec4899, #a855f7)",
-                  backgroundSize: "200% 100%",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                aria-hidden="true"
-              >
-                MATCH YOUR VIBRATION
-              </motion.span>
-              <motion.span
-                className="relative text-lg font-extrabold tracking-wider uppercase"
-                style={{
-                  background: "linear-gradient(90deg, #a855f7, #06b6d4, #ec4899, #a855f7)",
-                  backgroundSize: "200% 100%",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              >
-                MATCH YOUR VIBRATION
-              </motion.span>
-            </motion.div>
-          </div>
+          <img src={vibraLogo} alt="Vibra" className="w-9 h-9 object-contain rounded-full shrink-0" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
         </Link>
+        <CosmicBanner />
       </div>
     </header>
   );

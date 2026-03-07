@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles, X, MessageCircle } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
@@ -31,9 +31,6 @@ export default function Home() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
-  const [showVibrappBanner, setShowVibrappBanner] = useState(() => {
-    return !localStorage.getItem("vibra-vibrapp-seen");
-  });
 
   useEffect(() => {
     try { if (navigator.vibrate) navigator.vibrate([40, 30, 40]); } catch {}
@@ -305,34 +302,6 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden">
       {bgLayer}
-
-      {!isGuest && showVibrappBanner && (
-        <div className="w-full relative z-20 shrink-0 px-2 pt-1">
-          <div className="bg-gradient-to-r from-green-600/70 to-emerald-600/70 backdrop-blur-sm rounded-lg px-2.5 py-1.5 flex items-center gap-2 border border-green-400/20" data-testid="vibrapp-banner">
-            <MessageCircle className="w-4 h-4 text-white shrink-0" />
-            <p className="text-white font-semibold text-[11px] flex-1 min-w-0 truncate">{t("vibrapp.welcome")} - {t("vibrapp.welcomeDesc")}</p>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-white text-[10px] border border-white/30 px-1.5 h-5 shrink-0"
-              onClick={() => setLocation("/vibrapp")}
-              data-testid="button-vibrapp-go"
-            >
-              Go
-            </Button>
-            <button
-              onClick={() => {
-                setShowVibrappBanner(false);
-                localStorage.setItem("vibra-vibrapp-seen", "1");
-              }}
-              className="text-white/50 hover:text-white shrink-0"
-              data-testid="button-vibrapp-dismiss"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="w-full relative z-10 flex-1 min-h-0">
         {nextProfile && (
