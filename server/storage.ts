@@ -12,6 +12,7 @@ import {
   type VibingSession,
   type BlockedUser,
   type LocationShare,
+  type ProfileVideo, type InsertProfileVideo,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
@@ -20,10 +21,11 @@ import {
   profileRatings,
   vibingSessions,
   blockedUsers,
-  locationShares
+  locationShares,
+  profileVideos
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, lt } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -144,6 +146,13 @@ export interface IStorage {
   deactivateLocationShare(profileId: string): Promise<void>;
   getLocationShare(profileId: string): Promise<LocationShare | undefined>;
   getMatchLocationShares(profileId: string): Promise<(LocationShare & { profile: Profile })[]>;
+
+  // Profile Videos
+  getProfileVideos(profileId: string): Promise<ProfileVideo[]>;
+  addProfileVideo(data: InsertProfileVideo): Promise<ProfileVideo>;
+  deleteProfileVideo(id: string): Promise<void>;
+  getProfileVideoById(id: string): Promise<ProfileVideo | undefined>;
+  getVideosForInactiveProfiles(cutoffDate: Date): Promise<ProfileVideo[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -893,6 +902,38 @@ export class DatabaseStorage implements IStorage {
     return activeShares
       .filter(s => profileMap.has(s.profileId))
       .map(s => ({ ...s, profile: profileMap.get(s.profileId)! }));
+  }
+  async getProfileVideos(profileId: string): Promise<ProfileVideo[]> {
+    return db.select().from(profileVideos)
+      .where(eq(profileVideos.profileId, profileId))
+      .orderBy(desc(profileVideos.createdAt));
+  }
+
+  async addProfileVideo(data: InsertProfileVideo): Promise<ProfileVideo> {
+    const [video] = await db.insert(profileVideos).values(data).returning();
+    return video;
+  }
+
+  async deleteProfileVideo(id: string): Promise<void> {
+    await db.delete(profileVideos).where(eq(profileVideos.id, id));
+  }
+
+  async getProfileVideoById(id: string): Promise<ProfileVideo | undefined> {
+    const [video] = await db.select().from(profileVideos).where(eq(profileVideos.id, id));
+    return video;
+  }
+
+  async getVideosForInactiveProfiles(cutoffDate: Date): Promise<ProfileVideo[]> {
+    return db.select({ 
+      id: profileVideos.id, 
+      profileId: profileVideos.profileId, 
+      videoUrl: profileVideos.videoUrl, 
+      thumbnailUrl: profileVideos.thumbnailUrl, 
+      createdAt: profileVideos.createdAt 
+    })
+    .from(profileVideos)
+    .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
+    .where(lt(profiles.lastActiveAt, cutoffDate));
   }
 }
 

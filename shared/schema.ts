@@ -379,3 +379,15 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 });
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+
+export const profileVideos = pgTable("profile_videos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  videoUrl: text("video_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertProfileVideoSchema = createInsertSchema(profileVideos).omit({ id: true, createdAt: true });
+export type InsertProfileVideo = z.infer<typeof insertProfileVideoSchema>;
+export type ProfileVideo = typeof profileVideos.$inferSelect;

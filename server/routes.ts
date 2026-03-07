@@ -42,6 +42,37 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+async function moderateVideoThumbnail(thumbnailBase64: string): Promise<{ approved: boolean; reason: string }> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 100,
+      messages: [
+        {
+          role: "system",
+          content: `You are a content moderator for a dating app. Review the image and determine if it contains any of the following prohibited content: nudity, sexual content, graphic violence, hate symbols, racism, religious blasphemy, self-harm promotion, or any other content inappropriate for a social dating platform. Respond ONLY with JSON: {"approved": true/false, "reason": "brief reason in Italian"}`
+        },
+        {
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${thumbnailBase64}`, detail: "low" } }
+          ]
+        }
+      ]
+    });
+    const text = response.choices[0]?.message?.content || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return { approved: parsed.approved !== false, reason: parsed.reason || "" };
+    }
+    return { approved: true, reason: "" };
+  } catch (err: any) {
+    console.error("[video-moderation] AI error, defaulting to approved:", err?.message);
+    return { approved: true, reason: "" };
+  }
+}
+
 async function generateBotReply(
   botProfile: any,
   userProfile: any,
@@ -3276,6 +3307,120 @@ REGOLE IMPORTANTI:
       res.status(500).json({ error: "Upload non disponibile" });
     }
   });
+
+  // ─── Profile Videos ───────────────────────────────────────────────────────
+  app.get("/api/profiles/:profileId/videos", async (req, res) => {
+    try {
+      const videos = await storage.getProfileVideos(req.params.profileId);
+      res.json(videos);
+    } catch (err) {
+      console.error("[profile-videos] get error:", err);
+      res.status(500).json({ error: "Errore nel recupero video" });
+    }
+  });
+
+  app.post("/api/profiles/videos/request-upload", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+
+      const existingVideos = await storage.getProfileVideos(profile.id);
+      if (existingVideos.length >= 2) {
+        return res.status(400).json({ error: "max_videos", message: "Hai già caricato il massimo di 2 video" });
+      }
+
+      const { contentType, size } = req.body;
+      const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
+      if (!ALLOWED_VIDEO.includes(contentType)) {
+        return res.status(400).json({ error: "Tipo file non supportato. Usa MP4, WebM o MOV." });
+      }
+      const maxSize = 50 * 1024 * 1024;
+      if (size && size > maxSize) {
+        return res.status(400).json({ error: "too_large", message: "Il video deve essere al massimo di 50MB" });
+      }
+
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      res.json({ uploadURL, objectPath });
+    } catch (err) {
+      console.error("[profile-videos] request-upload error:", err);
+      res.status(500).json({ error: "Upload non disponibile" });
+    }
+  });
+
+  app.post("/api/profiles/videos", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+
+      const { objectPath, thumbnailBase64 } = req.body;
+      if (!objectPath) return res.status(400).json({ error: "objectPath mancante" });
+
+      const existingVideos = await storage.getProfileVideos(profile.id);
+      if (existingVideos.length >= 2) {
+        await objectStorageService.deleteObject(objectPath);
+        return res.status(400).json({ error: "max_videos", message: "Hai già caricato il massimo di 2 video" });
+      }
+
+      if (thumbnailBase64) {
+        const moderation = await moderateVideoThumbnail(thumbnailBase64);
+        if (!moderation.approved) {
+          await objectStorageService.deleteObject(objectPath);
+          return res.status(400).json({ error: "rejected", reason: moderation.reason || "Contenuto non appropriato" });
+        }
+      }
+
+      const video = await storage.addProfileVideo({
+        profileId: profile.id,
+        videoUrl: objectPath,
+        thumbnailUrl: null,
+      });
+
+      res.json(video);
+    } catch (err) {
+      console.error("[profile-videos] finalize error:", err);
+      res.status(500).json({ error: "Errore nel salvataggio video" });
+    }
+  });
+
+  app.delete("/api/profiles/videos/:videoId", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+
+      const video = await storage.getProfileVideoById(req.params.videoId);
+      if (!video) return res.status(404).json({ error: "Video non trovato" });
+      if (video.profileId !== profile.id && !profile.isAdmin) {
+        return res.status(403).json({ error: "Non autorizzato" });
+      }
+
+      try { await objectStorageService.deleteObject(video.videoUrl); } catch {}
+      await storage.deleteProfileVideo(video.id);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[profile-videos] delete error:", err);
+      res.status(500).json({ error: "Errore nell'eliminazione video" });
+    }
+  });
+
+  // Cleanup job: elimina video di profili inattivi da 30+ giorni
+  async function cleanInactiveProfileVideos() {
+    try {
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const staleVideos = await storage.getVideosForInactiveProfiles(cutoff);
+      if (staleVideos.length === 0) return;
+      console.log(`[profile-videos] cleanup: rimozione ${staleVideos.length} video inattivi`);
+      for (const video of staleVideos) {
+        try { await objectStorageService.deleteObject(video.videoUrl); } catch {}
+        await storage.deleteProfileVideo(video.id);
+      }
+    } catch (err) {
+      console.error("[profile-videos] cleanup error:", err);
+    }
+  }
+  setInterval(cleanInactiveProfileVideos, 60 * 60 * 1000);
+
+  // ──────────────────────────────────────────────────────────────────────────
 
   app.get("/api/vibrapp/online-count", isAuthenticated, async (req: any, res) => {
     try {

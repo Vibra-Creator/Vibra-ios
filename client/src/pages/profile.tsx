@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,7 +35,202 @@ import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
-import type { Profile, Match, SentGift, VirtualGift } from "@shared/schema";
+import type { Profile, Match, SentGift, VirtualGift, ProfileVideo } from "@shared/schema";
+
+function ProfileVideosSection({ profileId }: { profileId: string }) {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadState, setUploadState] = useState<"idle" | "uploading" | "moderating">("idle");
+
+  const { data: videos = [] } = useQuery<ProfileVideo[]>({
+    queryKey: ['/api/profiles', profileId, 'videos'],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (videoId: string) => apiRequest("DELETE", `/api/profiles/videos/${videoId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles', profileId, 'videos'] });
+      toast({ title: t("profile.videoDeleted"), description: t("profile.videoDeletedDesc") });
+    },
+    onError: () => {
+      toast({ title: t("profile.videoDeleteError"), variant: "destructive" });
+    },
+  });
+
+  async function extractThumbnail(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.muted = true;
+      video.playsInline = true;
+      const url = URL.createObjectURL(file);
+      video.src = url;
+      video.addEventListener("loadeddata", () => {
+        video.currentTime = 0;
+      });
+      video.addEventListener("seeked", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 240;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { URL.revokeObjectURL(url); reject(new Error("canvas")); return; }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
+        URL.revokeObjectURL(url);
+        resolve(base64);
+      });
+      video.addEventListener("error", () => { URL.revokeObjectURL(url); reject(new Error("video load")); });
+    });
+  }
+
+  async function handleVideoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!e.target) return;
+    (e.target as HTMLInputElement).value = "";
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: t("profile.videoTooLarge"), description: t("profile.videoTooLargeDesc"), variant: "destructive" });
+      return;
+    }
+
+    const checkDuration = (): Promise<number> => new Promise((resolve, reject) => {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.src = URL.createObjectURL(file);
+      v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); resolve(v.duration); };
+      v.onerror = () => reject(new Error("duration check"));
+    });
+
+    try {
+      const duration = await checkDuration();
+      if (duration > 30) {
+        toast({ title: t("profile.videoTooLong"), description: t("profile.videoTooLongDesc"), variant: "destructive" });
+        return;
+      }
+    } catch {}
+
+    setUploadState("uploading");
+    try {
+      const urlRes = await apiRequest("POST", "/api/profiles/videos/request-upload", {
+        contentType: file.type,
+        size: file.size,
+      });
+      const { uploadURL, objectPath } = urlRes;
+
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+
+      setUploadState("moderating");
+
+      let thumbnailBase64 = "";
+      try { thumbnailBase64 = await extractThumbnail(file); } catch {}
+
+      await apiRequest("POST", "/api/profiles/videos", { objectPath, thumbnailBase64 });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles', profileId, 'videos'] });
+      toast({ title: t("profile.videoApproved"), description: t("profile.videoApprovedDesc") });
+    } catch (err: any) {
+      const msg = err?.message || "";
+      let body: any = {};
+      try {
+        const jsonStart = msg.indexOf("{");
+        if (jsonStart !== -1) body = JSON.parse(msg.slice(jsonStart));
+      } catch {}
+      if (body?.error === "rejected") {
+        toast({ title: t("profile.videoRejected"), description: t("profile.videoRejectedDesc"), variant: "destructive" });
+      } else if (body?.error === "max_videos") {
+        toast({ title: t("profile.videoMaxReached"), description: t("profile.videoMaxReachedDesc"), variant: "destructive" });
+      } else if (body?.error === "too_large") {
+        toast({ title: t("profile.videoTooLarge"), description: t("profile.videoTooLargeDesc"), variant: "destructive" });
+      } else {
+        toast({ title: t("profile.videoUploadError"), variant: "destructive" });
+      }
+    } finally {
+      setUploadState("idle");
+    }
+  }
+
+  const uploading = uploadState === "uploading";
+  const moderating = uploadState === "moderating";
+
+  return (
+    <div className="space-y-3" data-testid="profile-videos-section">
+      <div className="flex items-center gap-2">
+        <VideoIcon className="w-4 h-4 text-cyan-400" />
+        <h3 className="font-semibold text-white">{t("profile.videos")}</h3>
+        <span className="text-xs text-white/40 ml-1">{videos.length}/2</span>
+      </div>
+      <p className="text-white/50 text-xs">{t("profile.videosDesc")}</p>
+
+      <div className="grid grid-cols-2 gap-3">
+        {videos.map((video) => (
+          <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-white/10 bg-black/40 group" data-testid={`profile-video-item-${video.id}`}>
+            <video
+              src={video.videoUrl}
+              className="w-full h-full object-cover"
+              preload="metadata"
+              muted
+              playsInline
+            />
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <Play className="w-8 h-8 text-white/80 fill-white/80" />
+            </div>
+            <button
+              onClick={() => deleteMutation.mutate(video.id)}
+              disabled={deleteMutation.isPending}
+              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 border border-white/20 flex items-center justify-center text-white/80 hover:text-red-400 hover:bg-black/90 transition-colors z-10"
+              data-testid={`button-delete-video-${video.id}`}
+              title={t("profile.deleteVideo")}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+
+        {videos.length < 2 && (
+          <button
+            onClick={() => !uploading && !moderating && fileInputRef.current?.click()}
+            disabled={uploading || moderating}
+            className="aspect-video rounded-xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1.5 text-white/40 hover:border-cyan-400/50 hover:text-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white/5"
+            data-testid="button-add-video"
+          >
+            {uploading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-[10px]">{t("profile.videoUploading")}</span>
+              </>
+            ) : moderating ? (
+              <>
+                <div className="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-[10px] text-yellow-300">{t("profile.videoModerating")}</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-5 h-5" />
+                <span className="text-[10px]">{t("profile.addVideo")}</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      <p className="text-white/30 text-[10px] flex items-center gap-1">
+        <AlertCircle className="w-3 h-3 shrink-0" />
+        {t("profile.videoInactiveNotice")}
+      </p>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/mp4,video/webm,video/quicktime,video/mov"
+        className="hidden"
+        onChange={handleVideoSelect}
+        data-testid="input-video-upload"
+      />
+    </div>
+  );
+}
 
 function ProfileSkeleton() {
   return (
@@ -558,6 +753,8 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+
+        <ProfileVideosSection profileId={profile.id} />
 
         <div className="grid grid-cols-3 gap-3">
           {stats.map((stat, index) => (

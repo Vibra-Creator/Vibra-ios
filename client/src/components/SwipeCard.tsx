@@ -1,14 +1,14 @@
 import { useState, forwardRef, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
-import type { Profile } from "@shared/schema";
+import type { Profile, ProfileVideo } from "@shared/schema";
 
 function getActivityStatus(lastActiveAt: string | Date | null | undefined, t: (key: string) => string): { label: string; color: string; isOnline: boolean } {
   if (!lastActiveAt) return { label: "", color: "", isOnline: false };
@@ -40,6 +40,11 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
   const { t } = useLanguage();
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
+
+  const { data: profileVideos = [] } = useQuery<ProfileVideo[]>({
+    queryKey: ['/api/profiles', profile.id, 'videos'],
+    enabled: isOpen,
+  });
 
   const reportMutation = useMutation({
     mutationFn: (data: { reportedId: string; reason: string }) =>
@@ -219,6 +224,25 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                 </div>
               )}
 
+              {profileVideos.length > 0 && (
+                <div data-testid="profile-detail-videos">
+                  <h3 className="text-sm font-semibold text-white/60 mb-2">{t("profile.profileVideos")}</h3>
+                  <div className="space-y-2">
+                    {profileVideos.map((video, idx) => (
+                      <video
+                        key={video.id}
+                        src={video.videoUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full rounded-xl border border-white/10 bg-black max-h-64 object-contain"
+                        data-testid={`profile-video-${idx}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {profile.languages && profile.languages.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-white/60 mb-2">{t("swipe.languages")}</h3>
@@ -365,6 +389,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const { toast } = useToast();
     const { t } = useLanguage();
 
+    const { data: cardVideos = [] } = useQuery<ProfileVideo[]>({
+      queryKey: ['/api/profiles', profile.id, 'videos'],
+      staleTime: 5 * 60 * 1000,
+    });
+    const hasVideos = cardVideos.length > 0;
+
     useEffect(() => {
       setImageLoaded(false);
       setImageError(false);
@@ -505,14 +535,20 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </motion.button>
                   ) : <div />}
 
-                  {alreadyLiked && (
-                    <div className="pointer-events-none" data-testid={`liked-indicator-${profile.id}`}>
-                      <div className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm">
+                  <div className="flex items-center gap-1 pointer-events-none">
+                    {hasVideos && (
+                      <div className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-black/60 backdrop-blur-sm border border-white/20" data-testid={`video-indicator-${profile.id}`} title={t("swipe.hasVideos")}>
+                        <Play className="w-2.5 h-2.5 text-cyan-400 fill-cyan-400" />
+                        <span className="text-cyan-300 text-[8px] font-bold">VIDEO</span>
+                      </div>
+                    )}
+                    {alreadyLiked && (
+                      <div className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm" data-testid={`liked-indicator-${profile.id}`}>
                         <Heart className="w-2.5 h-2.5 text-white fill-white" />
                         <span className="text-white text-[8px] font-bold">{t("swipe.likeDone")}</span>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
               
