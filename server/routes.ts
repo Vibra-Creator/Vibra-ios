@@ -3321,7 +3321,9 @@ REGOLE IMPORTANTI:
 
   app.post("/api/profiles/videos/request-upload", isAuthenticated, async (req: any, res) => {
     try {
-      const profile = await storage.getProfileByUserId(req.user.id);
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
 
       const existingVideos = await storage.getProfileVideos(profile.id);
@@ -3350,7 +3352,9 @@ REGOLE IMPORTANTI:
 
   app.post("/api/profiles/videos", isAuthenticated, async (req: any, res) => {
     try {
-      const profile = await storage.getProfileByUserId(req.user.id);
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
 
       const { objectPath, thumbnailBase64 } = req.body;
@@ -3385,7 +3389,9 @@ REGOLE IMPORTANTI:
 
   app.delete("/api/profiles/videos/:videoId", isAuthenticated, async (req: any, res) => {
     try {
-      const profile = await storage.getProfileByUserId(req.user.id);
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
 
       const video = await storage.getProfileVideoById(req.params.videoId);
