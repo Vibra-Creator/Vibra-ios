@@ -155,17 +155,17 @@ function ProfileVideosSection({ profileId }: { profileId: string }) {
   const moderating = uploadState === "moderating";
 
   return (
-    <div className="space-y-3" data-testid="profile-videos-section">
-      <div className="flex items-center gap-2">
-        <VideoIcon className="w-4 h-4 text-cyan-400" />
-        <h3 className="font-semibold text-white">{t("profile.videos")}</h3>
-        <span className="text-xs text-white/40 ml-1">{videos.length}/2</span>
+    <div className="space-y-4 rounded-2xl border border-cyan-400/30 bg-cyan-950/20 p-4" data-testid="profile-videos-section">
+      <div className="flex items-center gap-2.5">
+        <VideoIcon className="w-6 h-6 text-cyan-400" />
+        <h3 className="text-lg font-bold text-cyan-300">{t("profile.videos")}</h3>
+        <span className="text-sm font-semibold text-cyan-400/70 ml-1">{videos.length}/2</span>
       </div>
-      <p className="text-white/50 text-xs">{t("profile.videosDesc")}</p>
+      <p className="text-white/70 text-sm leading-snug">{t("profile.videosDesc")}</p>
 
       <div className="grid grid-cols-2 gap-3">
         {videos.map((video) => (
-          <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-white/10 bg-black/40 group" data-testid={`profile-video-item-${video.id}`}>
+          <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-cyan-400/30 bg-black/40 group" data-testid={`profile-video-item-${video.id}`}>
             <video
               src={video.videoUrl}
               className="w-full h-full object-cover"
@@ -174,16 +174,16 @@ function ProfileVideosSection({ profileId }: { profileId: string }) {
               playsInline
             />
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Play className="w-8 h-8 text-white/80 fill-white/80" />
+              <Play className="w-10 h-10 text-white/90 fill-white/90" />
             </div>
             <button
               onClick={() => deleteMutation.mutate(video.id)}
               disabled={deleteMutation.isPending}
-              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 border border-white/20 flex items-center justify-center text-white/80 hover:text-red-400 hover:bg-black/90 transition-colors z-10"
+              className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/80 border border-white/30 flex items-center justify-center text-white hover:text-red-400 hover:bg-black/90 transition-colors z-10"
               data-testid={`button-delete-video-${video.id}`}
               title={t("profile.deleteVideo")}
             >
-              <X className="w-3 h-3" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         ))}
@@ -192,31 +192,31 @@ function ProfileVideosSection({ profileId }: { profileId: string }) {
           <button
             onClick={() => !uploading && !moderating && fileInputRef.current?.click()}
             disabled={uploading || moderating}
-            className="aspect-video rounded-xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1.5 text-white/40 hover:border-cyan-400/50 hover:text-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white/5"
+            className="aspect-video rounded-xl border-2 border-dashed border-cyan-400/50 flex flex-col items-center justify-center gap-2 text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-cyan-950/30"
             data-testid="button-add-video"
           >
             {uploading ? (
               <>
-                <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-[10px]">{t("profile.videoUploading")}</span>
+                <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-semibold">{t("profile.videoUploading")}</span>
               </>
             ) : moderating ? (
               <>
-                <div className="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-[10px] text-yellow-300">{t("profile.videoModerating")}</span>
+                <div className="w-6 h-6 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-semibold text-yellow-300">{t("profile.videoModerating")}</span>
               </>
             ) : (
               <>
-                <Plus className="w-5 h-5" />
-                <span className="text-[10px]">{t("profile.addVideo")}</span>
+                <Plus className="w-7 h-7" />
+                <span className="text-xs font-semibold">{t("profile.addVideo")}</span>
               </>
             )}
           </button>
         )}
       </div>
 
-      <p className="text-white/30 text-[10px] flex items-center gap-1">
-        <AlertCircle className="w-3 h-3 shrink-0" />
+      <p className="text-white/50 text-xs flex items-center gap-1.5">
+        <AlertCircle className="w-3.5 h-3.5 shrink-0 text-cyan-400/60" />
         {t("profile.videoInactiveNotice")}
       </p>
 
