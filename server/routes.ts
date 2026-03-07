@@ -3067,17 +3067,21 @@ REGOLE IMPORTANTI:
     io.emit("vibrapp:online-count", vibrappOnlineUsers.size);
 
     socket.on("vibrapp:message", async (data: {
-      content: string;
+      content?: string;
+      mediaUrl?: string;
+      mediaType?: string;
       replyToId?: string;
       replyToName?: string;
       replyToContent?: string;
     }) => {
       try {
-        if (!data.content || typeof data.content !== "string") return;
-        const content = data.content.trim().substring(0, MAX_MSG_LENGTH);
-        if (!content) return;
+        const rawContent = (data.content || "").trim().substring(0, MAX_MSG_LENGTH);
+        const mediaUrl = typeof data.mediaUrl === "string" ? data.mediaUrl : null;
+        const mediaType = typeof data.mediaType === "string" ? data.mediaType : null;
 
-        const filteredContent = filterOffensiveContent(content);
+        if (!rawContent && !mediaUrl) return;
+
+        const filteredContent = rawContent ? filterOffensiveContent(rawContent) : "";
 
         let replyToSenderId: string | null = null;
         if (data.replyToId) {
@@ -3094,6 +3098,8 @@ REGOLE IMPORTANTI:
           senderName: userProfile.name,
           senderImage: userProfile.imageUrl,
           content: filteredContent,
+          mediaUrl,
+          mediaType,
           replyToId: data.replyToId || null,
           replyToSenderId: replyToSenderId,
           replyToName: data.replyToName || null,
@@ -3104,9 +3110,12 @@ REGOLE IMPORTANTI:
           io.to(`user:${profileId}`).to(`user:${replyToSenderId}`).emit("vibrapp:new-message", msg);
 
           if (replyToSenderId !== profileId) {
+            const pushBody = mediaUrl
+              ? `${userProfile.name}: ${mediaType === "video" ? "📹 Video" : "🖼️ Immagine"}`
+              : `${userProfile.name}: ${filteredContent.substring(0, 100)}`;
             sendPushToProfile(replyToSenderId, {
               title: "Vibrapp",
-              body: `${userProfile.name}: ${filteredContent.substring(0, 100)}`,
+              body: pushBody,
               icon: "/icons/icon-192.png",
               url: "/vibrapp",
             });
@@ -3241,6 +3250,30 @@ REGOLE IMPORTANTI:
     } catch (err) {
       console.error("[vibrapp] fetch messages error:", err);
       res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/vibrapp/request-upload", isAuthenticated, async (req: any, res) => {
+    try {
+      const { contentType, size } = req.body;
+      const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
+      const isImage = ALLOWED_IMAGE.includes(contentType);
+      const isVideo = ALLOWED_VIDEO.includes(contentType);
+      if (!isImage && !isVideo) {
+        return res.status(400).json({ error: "Tipo file non supportato" });
+      }
+      const maxSize = isVideo ? 60 * 1024 * 1024 : 20 * 1024 * 1024;
+      if (size && size > maxSize) {
+        return res.status(400).json({ error: isVideo ? "Video troppo grande (max 60MB)" : "Immagine troppo grande (max 20MB)" });
+      }
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      res.json({ uploadURL, objectPath, mediaType: isVideo ? "video" : "image" });
+    } catch (err) {
+      console.error("[vibrapp] request-upload error:", err);
+      res.status(500).json({ error: "Upload non disponibile" });
     }
   });
 

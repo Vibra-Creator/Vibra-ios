@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2 } from "lucide-react";
+import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn } from "lucide-react";
 import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ interface VibrappMsg {
   senderId: string;
   senderName: string;
   senderImage: string | null;
-  content: string;
+  content: string | null;
+  mediaUrl: string | null;
+  mediaType: string | null;
   replyToId: string | null;
   replyToSenderId: string | null;
   replyToName: string | null;
@@ -23,6 +25,7 @@ interface VibrappMsg {
 }
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
+const MAX_VIDEO_DURATION = 10;
 
 export default function Vibrapp() {
   const { t } = useLanguage();
@@ -34,10 +37,16 @@ export default function Vibrapp() {
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
+  const [mediaFileType, setMediaFileType] = useState<"image" | "video" | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isAtBottomRef = useRef(true);
 
@@ -64,9 +73,6 @@ export default function Vibrapp() {
 
     const socket = io(window.location.origin, { path: "/vibrapp-socket" });
     socketRef.current = socket;
-
-    socket.on("connect", () => {
-    });
 
     socket.on("vibrapp:new-message", (msg: VibrappMsg) => {
       setMessages(prev => {
@@ -158,20 +164,116 @@ export default function Vibrapp() {
     }
   }, [messages, hasMore]);
 
-  const sendMessage = useCallback(() => {
-    if (!inputText.trim() || !profile || !socketRef.current) return;
+  const clearMedia = useCallback(() => {
+    if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+    setMediaFile(null);
+    setMediaPreviewUrl(null);
+    setMediaFileType(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [mediaPreviewUrl]);
 
-    socketRef.current.emit("vibrapp:message", {
-      content: inputText.trim(),
-      replyToId: replyTo?.id,
-      replyToName: replyTo?.senderName,
-      replyToContent: replyTo?.content?.substring(0, 100),
-    });
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    if (!isImage && !isVideo) {
+      alert("Solo immagini o video supportati");
+      return;
+    }
+
+    const maxSize = isVideo ? 60 * 1024 * 1024 : 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(isVideo ? "Video troppo grande (max 60MB)" : "Immagine troppo grande (max 20MB)");
+      return;
+    }
+
+    if (isVideo) {
+      const videoEl = document.createElement("video");
+      videoEl.preload = "metadata";
+      const url = URL.createObjectURL(file);
+      videoEl.src = url;
+      videoEl.onloadedmetadata = () => {
+        if (videoEl.duration > MAX_VIDEO_DURATION) {
+          URL.revokeObjectURL(url);
+          alert(`Il video può durare massimo ${MAX_VIDEO_DURATION} secondi`);
+          return;
+        }
+        if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+        setMediaFile(file);
+        setMediaPreviewUrl(url);
+        setMediaFileType("video");
+      };
+    } else {
+      if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+      const url = URL.createObjectURL(file);
+      setMediaFile(file);
+      setMediaPreviewUrl(url);
+      setMediaFileType("image");
+    }
+  }, [mediaPreviewUrl]);
+
+  const sendMessage = useCallback(async () => {
+    if ((!inputText.trim() && !mediaFile) || !profile || !socketRef.current) return;
+
+    if (mediaFile) {
+      setIsUploading(true);
+      try {
+        const uploadRes = await fetch("/api/vibrapp/request-upload", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contentType: mediaFile.type, size: mediaFile.size }),
+        });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          alert(err.error || "Errore upload");
+          setIsUploading(false);
+          return;
+        }
+        const { uploadURL, objectPath, mediaType } = await uploadRes.json();
+
+        const putRes = await fetch(uploadURL, {
+          method: "PUT",
+          body: mediaFile,
+          headers: { "Content-Type": mediaFile.type },
+        });
+        if (!putRes.ok) {
+          alert("Upload fallito. Riprova.");
+          setIsUploading(false);
+          return;
+        }
+
+        socketRef.current.emit("vibrapp:message", {
+          content: inputText.trim() || "",
+          mediaUrl: objectPath,
+          mediaType,
+          replyToId: replyTo?.id,
+          replyToName: replyTo?.senderName,
+          replyToContent: replyTo?.content?.substring(0, 100),
+        });
+
+        clearMedia();
+      } catch (err) {
+        alert("Errore durante l'upload");
+        console.error(err);
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      socketRef.current.emit("vibrapp:message", {
+        content: inputText.trim(),
+        replyToId: replyTo?.id,
+        replyToName: replyTo?.senderName,
+        replyToContent: replyTo?.content?.substring(0, 100),
+      });
+    }
 
     setInputText("");
     setReplyTo(null);
     inputRef.current?.focus();
-  }, [inputText, profile, replyTo]);
+  }, [inputText, mediaFile, profile, replyTo, clearMedia]);
 
   const handleInputChange = useCallback((val: string) => {
     setInputText(val);
@@ -255,11 +357,7 @@ export default function Vibrapp() {
       >
         {hasMore && messages.length > 0 && (
           <div className="text-center py-2">
-            <button
-              onClick={loadOlderMessages}
-              className="text-xs text-primary hover:underline"
-              data-testid="button-load-more"
-            >
+            <button onClick={loadOlderMessages} className="text-xs text-primary hover:underline" data-testid="button-load-more">
               {t("vibrapp.loadMore")}
             </button>
           </div>
@@ -329,9 +427,41 @@ export default function Vibrapp() {
                         </div>
                       )}
 
-                      <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
+                      {msg.mediaUrl && msg.mediaType === "image" && (
+                        <div
+                          className="relative mb-1 rounded-lg overflow-hidden cursor-pointer group/img"
+                          onClick={() => setLightboxUrl(msg.mediaUrl!)}
+                          data-testid={`media-image-${msg.id}`}
+                        >
+                          <img
+                            src={msg.mediaUrl}
+                            alt="immagine"
+                            className="max-w-full max-h-64 w-full object-cover rounded-lg"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
+                            <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      )}
 
-                      <div className={`flex items-center gap-1 mt-0.5 ${mine ? "justify-end" : "justify-end"}`}>
+                      {msg.mediaUrl && msg.mediaType === "video" && (
+                        <div className="mb-1 rounded-lg overflow-hidden" data-testid={`media-video-${msg.id}`}>
+                          <video
+                            src={msg.mediaUrl}
+                            controls
+                            playsInline
+                            className="max-w-full max-h-64 w-full rounded-lg bg-black"
+                            style={{ maxWidth: "260px" }}
+                          />
+                        </div>
+                      )}
+
+                      {msg.content && (
+                        <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
+                      )}
+
+                      <div className={`flex items-center gap-1 mt-0.5 justify-end`}>
                         {msg.replyToId && (
                           <Lock className="w-2.5 h-2.5 text-purple-400/60" />
                         )}
@@ -465,11 +595,40 @@ export default function Vibrapp() {
                 </div>
                 <p className="text-[11px] text-white/50 truncate">{replyTo.content}</p>
               </div>
-              <button
-                onClick={() => setReplyTo(null)}
-                className="ml-2 p-1 text-white/40 hover:text-white"
-                data-testid="button-cancel-reply"
-              >
+              <button onClick={() => setReplyTo(null)} className="ml-2 p-1 text-white/40 hover:text-white" data-testid="button-cancel-reply">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {mediaPreviewUrl && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="px-3 py-2 bg-black/30 border-b border-white/10 flex items-center gap-3"
+              data-testid="media-preview-bar"
+            >
+              <div className="relative shrink-0">
+                {mediaFileType === "image" ? (
+                  <img src={mediaPreviewUrl} alt="preview" className="w-16 h-16 object-cover rounded-lg" data-testid="media-preview-image" />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-black/50 flex flex-col items-center justify-center border border-white/20" data-testid="media-preview-video">
+                    <Video className="w-6 h-6 text-emerald-400" />
+                    <span className="text-[9px] text-white/60 mt-0.5">Video</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white/70 truncate">{mediaFile?.name}</p>
+                <p className="text-[10px] text-white/40">
+                  {mediaFileType === "image" ? <ImageIcon className="w-3 h-3 inline mr-1" /> : <Video className="w-3 h-3 inline mr-1" />}
+                  {((mediaFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB
+                </p>
+              </div>
+              <button onClick={clearMedia} className="p-1.5 rounded-full bg-white/10 hover:bg-red-500/30 text-white/60 hover:text-red-400 transition-colors" data-testid="button-remove-media">
                 <X className="w-4 h-4" />
               </button>
             </motion.div>
@@ -477,6 +636,22 @@ export default function Vibrapp() {
         </AnimatePresence>
 
         <div className="flex items-center gap-2 px-3 py-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            className="hidden"
+            onChange={handleFileSelect}
+            data-testid="input-file-media"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-emerald-400 hover:bg-white/20 transition-colors shrink-0"
+            data-testid="button-attach-media"
+            title="Allega immagine o video"
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
           <input
             ref={inputRef}
             onFocus={() => initNotificationSound()}
@@ -495,14 +670,49 @@ export default function Vibrapp() {
           />
           <Button
             onClick={sendMessage}
-            disabled={!inputText.trim()}
+            disabled={(!inputText.trim() && !mediaFile) || isUploading}
             className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 p-0 shrink-0 disabled:opacity-30"
             data-testid="button-send-message"
           >
-            <Send className="w-4 h-4 text-white" />
+            {isUploading ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4 text-white" />
+            )}
           </Button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {lightboxUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+            onClick={() => setLightboxUrl(null)}
+            data-testid="lightbox-overlay"
+          >
+            <button
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white"
+              onClick={() => setLightboxUrl(null)}
+              data-testid="button-close-lightbox"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              src={lightboxUrl}
+              alt=""
+              className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl"
+              onClick={(e) => e.stopPropagation()}
+              data-testid="lightbox-image"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
