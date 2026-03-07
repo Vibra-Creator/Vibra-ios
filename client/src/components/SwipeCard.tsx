@@ -535,6 +535,41 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               )}
               
               <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
+                <div className="px-4 pb-2 pt-8">
+                  <div className="flex items-end justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-bold text-2xl leading-tight drop-shadow-lg" data-testid={`card-name-${profile.id}`}>
+                          {profile.name}
+                        </span>
+                        <span className="text-white/90 font-semibold text-xl leading-tight drop-shadow-lg" data-testid={`card-age-${profile.id}`}>
+                          {profile.age}
+                        </span>
+                        {profile.isVerified && (
+                          <BadgeCheck className="w-5 h-5 text-blue-400 shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        {profile.location && (
+                          <div className="flex items-center gap-1" data-testid={`card-location-${profile.id}`}>
+                            <MapPin className="w-3.5 h-3.5 text-white/70 shrink-0" />
+                            <span className="text-white/80 text-sm drop-shadow">{profile.location}</span>
+                          </div>
+                        )}
+                        {(() => {
+                          const activity = getActivityStatus((profile as any).lastActiveAt, t);
+                          if (!activity.label) return null;
+                          return (
+                            <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${activity.color} ${activity.isOnline ? "animate-pulse shadow-[0_0_6px_rgba(34,197,94,0.8)]" : ""}`} />
+                              <span className="text-white/70 text-xs">{activity.label}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 {actionButtons && (
                   <div className="pointer-events-auto pb-safe px-4">
                     {actionButtons}
