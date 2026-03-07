@@ -771,6 +771,22 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/likes/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      const likers = await storage.getReceivedLikes(userProfile.id);
+      const blockedIds = await storage.getBlockedIds(userProfile.id);
+      const blockedSet = new Set(blockedIds);
+      const filtered = likers.filter(p => !blockedSet.has(p.id) && !p.isBot);
+      res.json(filtered);
+    } catch (error) {
+      console.error("Error fetching received likes:", error);
+      res.status(500).json({ error: "Failed to fetch received likes" });
+    }
+  });
+
   app.delete("/api/matches/:matchId", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;

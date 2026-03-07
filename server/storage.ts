@@ -44,6 +44,7 @@ export interface IStorage {
   resetDislikedSwipes(swiperId: string): Promise<number>;
   resetAllSwipes(swiperId: string): Promise<number>;
   checkMutualLike(userId1: string, userId2: string): Promise<boolean>;
+  getReceivedLikes(profileId: string): Promise<Profile[]>;
   
   createMatch(match: InsertMatch): Promise<Match>;
   getMatchesForUser(userId: string): Promise<(Match & { profile: Profile })[]>;
@@ -257,6 +258,29 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return !!swipe;
+  }
+
+  async getReceivedLikes(profileId: string): Promise<Profile[]> {
+    // Who liked me (swipedId = me, liked = true)
+    const likedMeRows = await db.select({ swiperId: swipes.swiperId })
+      .from(swipes)
+      .where(and(eq(swipes.swipedId, profileId), eq(swipes.liked, true)));
+
+    if (!likedMeRows.length) return [];
+
+    const likerIds = likedMeRows.map(r => r.swiperId);
+
+    // Who I've already swiped on (to exclude them)
+    const mySwipedRows = await db.select({ swipedId: swipes.swipedId })
+      .from(swipes)
+      .where(eq(swipes.swiperId, profileId));
+    const alreadySwiped = new Set(mySwipedRows.map(r => r.swipedId));
+
+    const pending = likerIds.filter(id => !alreadySwiped.has(id));
+    if (!pending.length) return [];
+
+    const result = await db.select().from(profiles).where(inArray(profiles.id, pending));
+    return result;
   }
 
   async createMatch(insertMatch: InsertMatch): Promise<Match> {
