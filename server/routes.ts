@@ -306,8 +306,7 @@ export async function registerRoutes(
       const allProfiles = await storage.getProfiles();
       const swipedIds = await storage.getSwipedProfileIds(profileId);
       const likedIds = await storage.getLikedProfileIds(profileId);
-      const likedSet = new Set(likedIds);
-      const dislikedSet = new Set(swipedIds.filter(id => !likedSet.has(id)));
+      const swipedSet = new Set(swipedIds); // exclude ALL swiped (liked + disliked)
       const blockedIds = await storage.getBlockedIds(profileId);
       const blockedSet = new Set(blockedIds);
 
@@ -332,7 +331,7 @@ export async function registerRoutes(
       const swipable = allProfiles.filter(p => {
         if (p.id === profileId) return false;
         afterSelf++;
-        if (dislikedSet.has(p.id)) return false;
+        if (swipedSet.has(p.id)) return false; // exclude all swiped profiles (liked + disliked)
         afterSwiped++;
         if (blockedSet.has(p.id)) return false;
         afterBlocked++;

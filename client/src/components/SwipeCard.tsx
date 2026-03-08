@@ -817,7 +817,7 @@ export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={onSwipeRight}
-        disabled={disabled || likeDisabled}
+        disabled={disabled}
         className="w-14 h-14 rounded-full bg-primary/80 backdrop-blur-sm flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ boxShadow: "0 0 20px rgba(var(--primary-rgb, 168,85,247), 0.5)" }}
         data-testid="button-swipe-right"
