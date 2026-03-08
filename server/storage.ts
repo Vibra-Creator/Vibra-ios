@@ -13,6 +13,7 @@ import {
   type BlockedUser,
   type LocationShare,
   type ProfileVideo, type InsertProfileVideo,
+  type ProfileReaction, type ReactionType,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
@@ -22,7 +23,8 @@ import {
   vibingSessions,
   blockedUsers,
   locationShares,
-  profileVideos
+  profileVideos,
+  profileReactions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, lt } from "drizzle-orm";
@@ -935,6 +937,45 @@ export class DatabaseStorage implements IStorage {
     .from(profileVideos)
     .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
     .where(lt(profiles.lastActiveAt, cutoffDate));
+  }
+
+  async upsertProfileReaction(fromProfileId: string, toProfileId: string, reaction: ReactionType): Promise<"added" | "changed" | "removed"> {
+    const existing = await db.select().from(profileReactions)
+      .where(and(eq(profileReactions.fromProfileId, fromProfileId), eq(profileReactions.toProfileId, toProfileId)))
+      .limit(1);
+    if (existing.length > 0) {
+      if (existing[0].reaction === reaction) {
+        await db.delete(profileReactions)
+          .where(and(eq(profileReactions.fromProfileId, fromProfileId), eq(profileReactions.toProfileId, toProfileId)));
+        return "removed";
+      } else {
+        await db.update(profileReactions).set({ reaction, createdAt: new Date() })
+          .where(and(eq(profileReactions.fromProfileId, fromProfileId), eq(profileReactions.toProfileId, toProfileId)));
+        return "changed";
+      }
+    } else {
+      await db.insert(profileReactions).values({ fromProfileId, toProfileId, reaction });
+      return "added";
+    }
+  }
+
+  async getReactionCounts(toProfileId: string, viewerProfileId?: string): Promise<{ counts: Record<string, number>; myReaction: string | null }> {
+    const rows = await db.select({ reaction: profileReactions.reaction })
+      .from(profileReactions)
+      .where(eq(profileReactions.toProfileId, toProfileId));
+    const counts: Record<string, number> = {};
+    for (const row of rows) {
+      counts[row.reaction] = (counts[row.reaction] || 0) + 1;
+    }
+    let myReaction: string | null = null;
+    if (viewerProfileId) {
+      const mine = await db.select({ reaction: profileReactions.reaction })
+        .from(profileReactions)
+        .where(and(eq(profileReactions.fromProfileId, viewerProfileId), eq(profileReactions.toProfileId, toProfileId)))
+        .limit(1);
+      myReaction = mine.length > 0 ? mine[0].reaction : null;
+    }
+    return { counts, myReaction };
   }
 
   async getStoriesFeed(limit = 30): Promise<Array<{ profileId: string; profileName: string; profileImage: string | null; videoUrl: string; thumbnailUrl: string | null; createdAt: Date }>> {

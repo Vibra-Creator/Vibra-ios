@@ -391,3 +391,16 @@ export const profileVideos = pgTable("profile_videos", {
 export const insertProfileVideoSchema = createInsertSchema(profileVideos).omit({ id: true, createdAt: true });
 export type InsertProfileVideo = z.infer<typeof insertProfileVideoSchema>;
 export type ProfileVideo = typeof profileVideos.$inferSelect;
+
+export const REACTION_TYPES = ["fire", "ufo", "spark", "crush"] as const;
+export type ReactionType = typeof REACTION_TYPES[number];
+
+export const profileReactions = pgTable("profile_reactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromProfileId: varchar("from_profile_id").notNull(),
+  toProfileId: varchar("to_profile_id").notNull(),
+  reaction: varchar("reaction", { length: 16 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ProfileReaction = typeof profileReactions.$inferSelect;

@@ -3308,6 +3308,42 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // ─── Profile Reactions ────────────────────────────────────────────────────
+  app.get("/api/profiles/:profileId/reactions", isAuthenticated, async (req: any, res) => {
+    try {
+      const { profileId } = req.params;
+      const userId = req.user?.claims?.sub;
+      let viewerProfileId: string | undefined;
+      if (userId) {
+        const vp = await storage.getProfileByUserId(userId);
+        viewerProfileId = vp?.id;
+      }
+      const data = await storage.getReactionCounts(profileId, viewerProfileId);
+      res.json(data);
+    } catch (err) {
+      console.error("[reactions GET]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.post("/api/reactions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const { toProfileId, reaction } = req.body;
+      if (!toProfileId || !reaction) return res.status(400).json({ error: "Parametri mancanti" });
+      const VALID = ["fire", "ufo", "spark", "crush"];
+      if (!VALID.includes(reaction)) return res.status(400).json({ error: "Reazione non valida" });
+      const result = await storage.upsertProfileReaction(myProfile.id, toProfileId, reaction as any);
+      res.json({ status: result });
+    } catch (err) {
+      console.error("[reactions POST]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
   // ─── Video Stream (Range-request aware, no ACL required) ─────────────────
   app.get("/api/video-stream/:videoId", async (req, res) => {
     try {

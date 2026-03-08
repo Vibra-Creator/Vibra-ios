@@ -367,6 +367,54 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
   );
 }
 
+const REACTIONS = [
+  { key: "fire",  emoji: "🔥", label: "Fuoco" },
+  { key: "ufo",   emoji: "🛸", label: "Vibra"  },
+  { key: "spark", emoji: "✨", label: "Wow"   },
+  { key: "crush", emoji: "😍", label: "Crush" },
+] as const;
+
+function ReactionBar({ profileId }: { profileId: string }) {
+  const { toast } = useToast();
+  const { data, isLoading } = useQuery<{ counts: Record<string, number>; myReaction: string | null }>({
+    queryKey: ["/api/profiles", profileId, "reactions"],
+    staleTime: 30_000,
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (reaction: string) => apiRequest("POST", "/api/reactions", { toProfileId: profileId, reaction }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/profiles", profileId, "reactions"] }),
+    onError: () => toast({ title: "Errore", description: "Non è stato possibile inviare la reazione", variant: "destructive" }),
+  });
+
+  if (isLoading) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-2 py-1.5 pointer-events-auto" data-testid={`reaction-bar-${profileId}`}>
+      {REACTIONS.map(({ key, emoji, label }) => {
+        const count = data?.counts?.[key] ?? 0;
+        const isActive = data?.myReaction === key;
+        return (
+          <motion.button
+            key={key}
+            whileTap={{ scale: 1.3 }}
+            onClick={(e) => { e.stopPropagation(); if (!mutation.isPending) mutation.mutate(key); }}
+            className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold backdrop-blur-sm transition-all border ${
+              isActive
+                ? "bg-white/25 border-white/60 shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                : "bg-black/30 border-white/15 hover:bg-white/10"
+            }`}
+            data-testid={`reaction-btn-${key}-${profileId}`}
+          >
+            <span className="text-sm leading-none">{emoji}</span>
+            {count > 0 && <span className="text-white/80">{count}</span>}
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface SwipeCardProps {
   profile: Profile;
   onSwipe: (direction: "left" | "right") => void;
@@ -625,6 +673,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   </div>
                 </div>
+                {isTop && <ReactionBar profileId={profile.id} />}
                 {actionButtons && (
                   <div className="pointer-events-auto pb-safe px-4">
                     {actionButtons}
