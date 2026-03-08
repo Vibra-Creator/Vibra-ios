@@ -3,6 +3,7 @@ import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, Messa
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
@@ -322,6 +323,20 @@ export function BottomNav() {
       }
     } catch {}
   }, [pendingIntroCount, vibrappUnreadCount]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        fetch("/api/vibrapp/mark-all-read", { method: "POST", credentials: "include" }).catch(() => {});
+        queryClient.setQueryData(["/api/vibrapp/unread-count"], { count: 0 });
+        try {
+          if ("clearAppBadge" in navigator) (navigator as any).clearAppBadge();
+        } catch {}
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
   const navItems = [
     { path: "/", icon: Home, label: t("nav.discover"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
