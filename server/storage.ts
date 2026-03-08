@@ -153,6 +153,7 @@ export interface IStorage {
   deleteProfileVideo(id: string): Promise<void>;
   getProfileVideoById(id: string): Promise<ProfileVideo | undefined>;
   getVideosForInactiveProfiles(cutoffDate: Date): Promise<ProfileVideo[]>;
+  getStoriesFeed(limit?: number): Promise<Array<{ profileId: string; profileName: string; profileImage: string | null; videoUrl: string; thumbnailUrl: string | null; createdAt: Date }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -934,6 +935,32 @@ export class DatabaseStorage implements IStorage {
     .from(profileVideos)
     .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
     .where(lt(profiles.lastActiveAt, cutoffDate));
+  }
+
+  async getStoriesFeed(limit = 30): Promise<Array<{ profileId: string; profileName: string; profileImage: string | null; videoUrl: string; thumbnailUrl: string | null; createdAt: Date }>> {
+    const rows = await db.select({
+      profileId: profileVideos.profileId,
+      profileName: profiles.name,
+      profileImage: profiles.imageUrl,
+      videoUrl: profileVideos.videoUrl,
+      thumbnailUrl: profileVideos.thumbnailUrl,
+      createdAt: profileVideos.createdAt,
+    })
+    .from(profileVideos)
+    .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
+    .orderBy(desc(profileVideos.createdAt))
+    .limit(limit * 3);
+
+    const seen = new Set<string>();
+    const result: typeof rows = [];
+    for (const row of rows) {
+      if (!seen.has(row.profileId)) {
+        seen.add(row.profileId);
+        result.push(row);
+        if (result.length >= limit) break;
+      }
+    }
+    return result;
   }
 }
 

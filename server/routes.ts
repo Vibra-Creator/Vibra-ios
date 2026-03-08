@@ -3308,6 +3308,17 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // ─── Stories Feed ─────────────────────────────────────────────────────────
+  app.get("/api/stories", async (req, res) => {
+    try {
+      const stories = await storage.getStoriesFeed(20);
+      res.json(stories);
+    } catch (err) {
+      console.error("[stories] feed error:", err);
+      res.status(500).json({ error: "Errore nel recupero storie" });
+    }
+  });
+
   // ─── Profile Videos ───────────────────────────────────────────────────────
   app.get("/api/profiles/:profileId/videos", async (req, res) => {
     try {

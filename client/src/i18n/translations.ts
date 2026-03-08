@@ -154,6 +154,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "home.like": "mettere like",
     "home.dislike": "scartare un profilo",
     "home.restoreError": "Non è stato possibile ripristinare i profili.",
+    "stories.title": "Storie",
 
     // Matches
     "matches.title": "I Tuoi Match",
@@ -1051,6 +1052,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "home.like": "like",
     "home.dislike": "discard a profile",
     "home.restoreError": "Could not restore profiles.",
+    "stories.title": "Stories",
 
     // Matches
     "matches.title": "Your Matches",
@@ -1947,6 +1949,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "home.like": "dar like",
     "home.dislike": "descartar un perfil",
     "home.restoreError": "No se pudieron restaurar los perfiles.",
+    "stories.title": "Historias",
 
     // Matches
     "matches.title": "Tus Matches",
