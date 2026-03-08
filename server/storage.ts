@@ -387,6 +387,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProfile(id: string): Promise<void> {
+    await db.delete(sentGifts).where(or(eq(sentGifts.senderId, id), eq(sentGifts.receiverId, id)));
+    await db.delete(challengeSubmissions).where(eq(challengeSubmissions.profileId, id));
+    await db.delete(roomMembers).where(eq(roomMembers.profileId, id));
+    await db.delete(roomMessages).where(eq(roomMessages.senderId, id));
+    await db.delete(privateRoomMessages).where(eq(privateRoomMessages.senderId, id));
+    await db.delete(privateRoomRequests).where(or(eq(privateRoomRequests.requesterId, id)));
+    await db.delete(profileRatings).where(or(eq(profileRatings.raterId, id), eq(profileRatings.ratedId, id)));
+    await db.delete(blockedUsers).where(or(eq(blockedUsers.blockerId, id), eq(blockedUsers.blockedId, id)));
+    await db.delete(reports).where(or(eq(reports.reporterId, id), eq(reports.reportedId, id)));
+    await db.delete(vibingSessions).where(eq(vibingSessions.profileId, id));
+    await db.delete(locationShares).where(eq(locationShares.profileId, id));
+    await db.delete(profileReactions).where(or(eq(profileReactions.fromProfileId, id), eq(profileReactions.toProfileId, id)));
+    const profileMatches = await db.select({ id: matches.id }).from(matches).where(or(eq(matches.profile1Id, id), eq(matches.profile2Id, id)));
+    if (profileMatches.length > 0) {
+      const matchIds = profileMatches.map(m => m.id);
+      await db.delete(messages).where(inArray(messages.matchId, matchIds));
+    }
+    await db.delete(matches).where(or(eq(matches.profile1Id, id), eq(matches.profile2Id, id)));
+    await db.delete(swipes).where(or(eq(swipes.swiperId, id), eq(swipes.swipedId, id)));
     await db.delete(profiles).where(eq(profiles.id, id));
   }
 

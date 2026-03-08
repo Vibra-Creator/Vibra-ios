@@ -255,6 +255,9 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       toast({ title: "Profilo eliminato" });
     },
   });
