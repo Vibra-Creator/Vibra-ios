@@ -54,6 +54,8 @@ export default function Admin() {
   const [customEmailSubject, setCustomEmailSubject] = useState("");
   const [customEmailBody, setCustomEmailBody] = useState("");
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [profileSearch, setProfileSearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
@@ -530,10 +532,41 @@ export default function Admin() {
           {/* PROFILI TAB */}
           <TabsContent value="profiles">
             <Card>
-              <CardHeader><CardTitle className="text-lg">Gestione Profili ({profiles?.length || 0})</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-lg">Gestione Profili ({profiles?.length || 0})</CardTitle>
+                <div className="relative mt-2">
+                  <input
+                    type="text"
+                    placeholder="Cerca per nome, email, città, tipo alieno…"
+                    value={profileSearch}
+                    onChange={e => setProfileSearch(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm text-foreground placeholder-muted-foreground outline-none focus:border-primary/50"
+                    data-testid="input-profile-search"
+                  />
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  {profileSearch && (
+                    <button onClick={() => setProfileSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {profiles?.map((profile) => {
+                  {(profileSearch
+                    ? (profiles || []).filter(p => {
+                        const q = profileSearch.toLowerCase();
+                        const profileUser = getUserForProfile(p);
+                        return (
+                          p.name?.toLowerCase().includes(q) ||
+                          p.location?.toLowerCase().includes(q) ||
+                          p.alienType?.toLowerCase().includes(q) ||
+                          profileUser?.email?.toLowerCase().includes(q) ||
+                          p.id?.toLowerCase().includes(q)
+                        );
+                      })
+                    : profiles || []
+                  ).map((profile) => {
                     const profileUser = getUserForProfile(profile);
                     const isExpanded = expandedProfile === profile.id;
                     return (
@@ -644,7 +677,17 @@ export default function Admin() {
                       </div>
                     );
                   })}
-                  {(!profiles || profiles.length === 0) && <div className="text-center py-8 text-muted-foreground">Nessun profilo trovato</div>}
+                  {(profileSearch
+                    ? (profiles || []).filter(p => {
+                        const q = profileSearch.toLowerCase();
+                        const pu = getUserForProfile(p);
+                        return p.name?.toLowerCase().includes(q) || p.location?.toLowerCase().includes(q) || p.alienType?.toLowerCase().includes(q) || pu?.email?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q);
+                      }).length === 0
+                    : (!profiles || profiles.length === 0)) && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {profileSearch ? `Nessun profilo trovato per "${profileSearch}"` : "Nessun profilo trovato"}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -653,10 +696,43 @@ export default function Admin() {
           {/* UTENTI TAB */}
           <TabsContent value="users">
             <Card>
-              <CardHeader><CardTitle className="text-lg">Utenti Registrati ({users?.length || 0})</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-lg">Utenti Registrati ({users?.length || 0})</CardTitle>
+                <div className="relative mt-2">
+                  <input
+                    type="text"
+                    placeholder="Cerca per nome, email, telefono, città…"
+                    value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-sm text-foreground placeholder-muted-foreground outline-none focus:border-primary/50"
+                    data-testid="input-user-search"
+                  />
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  {userSearch && (
+                    <button onClick={() => setUserSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {users?.map((u) => {
+                  {(userSearch
+                    ? (users || []).filter(u => {
+                        const q = userSearch.toLowerCase();
+                        const up = profiles?.find(p => p.userId === u.id);
+                        return (
+                          u.email?.toLowerCase().includes(q) ||
+                          u.firstName?.toLowerCase().includes(q) ||
+                          u.lastName?.toLowerCase().includes(q) ||
+                          up?.name?.toLowerCase().includes(q) ||
+                          up?.location?.toLowerCase().includes(q) ||
+                          up?.phoneNumber?.toLowerCase().includes(q) ||
+                          u.id?.toLowerCase().includes(q)
+                        );
+                      })
+                    : users || []
+                  ).map((u) => {
                     const userProfile = profiles?.find(p => p.userId === u.id);
                     const isExpanded = expandedUser === u.id;
                     return (
@@ -805,6 +881,17 @@ export default function Admin() {
                       </div>
                     );
                   })}
+                  {(userSearch
+                    ? (users || []).filter(u => {
+                        const q = userSearch.toLowerCase();
+                        const up = profiles?.find(p => p.userId === u.id);
+                        return u.email?.toLowerCase().includes(q) || u.firstName?.toLowerCase().includes(q) || u.lastName?.toLowerCase().includes(q) || up?.name?.toLowerCase().includes(q) || up?.location?.toLowerCase().includes(q) || up?.phoneNumber?.toLowerCase().includes(q) || u.id?.toLowerCase().includes(q);
+                      }).length === 0
+                    : (!users || users.length === 0)) && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {userSearch ? `Nessun utente trovato per "${userSearch}"` : "Nessun utente trovato"}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
