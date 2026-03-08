@@ -939,6 +939,30 @@ export class DatabaseStorage implements IStorage {
     .where(lt(profiles.lastActiveAt, cutoffDate));
   }
 
+  async getReceivedReactions(toProfileId: string, limit = 50): Promise<Array<{ id: string; reaction: string; createdAt: Date; fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {
+    const rows = await db
+      .select({
+        id: profileReactions.id,
+        reaction: profileReactions.reaction,
+        createdAt: profileReactions.createdAt,
+        fromId: profiles.id,
+        fromName: profiles.name,
+        fromImage: profiles.imageUrl,
+        fromAge: profiles.age,
+      })
+      .from(profileReactions)
+      .innerJoin(profiles, eq(profiles.id, profileReactions.fromProfileId))
+      .where(eq(profileReactions.toProfileId, toProfileId))
+      .orderBy(desc(profileReactions.createdAt))
+      .limit(limit);
+    return rows.map(r => ({
+      id: r.id,
+      reaction: r.reaction,
+      createdAt: r.createdAt,
+      fromProfile: { id: r.fromId, name: r.fromName, imageUrl: r.fromImage, age: r.fromAge },
+    }));
+  }
+
   async upsertProfileReaction(fromProfileId: string, toProfileId: string, reaction: ReactionType): Promise<"added" | "changed" | "removed"> {
     const existing = await db.select().from(profileReactions)
       .where(and(eq(profileReactions.fromProfileId, fromProfileId), eq(profileReactions.toProfileId, toProfileId)))
