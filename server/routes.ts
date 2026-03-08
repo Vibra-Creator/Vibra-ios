@@ -3309,6 +3309,20 @@ REGOLE IMPORTANTI:
   });
 
   // ─── Profile Reactions ────────────────────────────────────────────────────
+  app.get("/api/reactions/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const reactions = await storage.getReceivedReactions(myProfile.id);
+      res.json(reactions);
+    } catch (err) {
+      console.error("[reactions/received]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
   app.get("/api/profiles/:profileId/reactions", isAuthenticated, async (req: any, res) => {
     try {
       const { profileId } = req.params;

@@ -36,6 +36,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile, Match, SentGift, VirtualGift, ProfileVideo } from "@shared/schema";
+import { ProfileDetailModal } from "@/components/SwipeCard";
 
 function ProfileVideosSection({ profileId }: { profileId: string }) {
   const { t } = useLanguage();
@@ -688,6 +689,21 @@ export default function ProfilePage() {
     enabled: !!profile,
   });
 
+  const [selectedReactionProfileId, setSelectedReactionProfileId] = useState<string | null>(null);
+
+  type ReceivedReaction = { id: string; reaction: string; createdAt: string; fromProfile: { id: string; name: string; imageUrl: string; age: number } };
+  const { data: receivedReactions = [] } = useQuery<ReceivedReaction[]>({
+    queryKey: ["/api/reactions/received"],
+    enabled: !!profile,
+  });
+
+  const { data: selectedReactionProfile } = useQuery<Profile>({
+    queryKey: ["/api/profiles", selectedReactionProfileId],
+    enabled: !!selectedReactionProfileId,
+  });
+
+  const REACTION_EMOJI: Record<string, string> = { fire: "🔥", ufo: "🛸", spark: "✨", crush: "😍" };
+
   const stats = [
     { icon: Heart, label: t("profile.match"), value: String(matchesData?.length ?? 0), color: "text-accent" },
     { icon: Coins, label: t("profile.points"), value: String(profile?.points ?? 0), color: "text-yellow-400" },
@@ -826,6 +842,34 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {receivedReactions.length > 0 && (
+          <div className="space-y-3" data-testid="received-reactions-section">
+            <h3 className="font-semibold flex items-center gap-2 text-white">
+              <span className="text-lg">🛸</span>
+              Chi ti ha reagito
+              <span className="ml-auto text-xs text-white/50 font-normal">{receivedReactions.length}</span>
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+              {receivedReactions.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setSelectedReactionProfileId(r.fromProfile.id)}
+                  className="flex-shrink-0 flex flex-col items-center gap-1 group"
+                  data-testid={`reaction-received-${r.id}`}
+                >
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 group-active:border-primary transition-all">
+                      <img src={r.fromProfile.imageUrl} alt={r.fromProfile.name} className="w-full h-full object-cover object-top" />
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 text-lg leading-none">{REACTION_EMOJI[r.reaction] ?? r.reaction}</span>
+                  </div>
+                  <span className="text-[10px] text-white/70 truncate max-w-[56px]">{r.fromProfile.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <PrimaImpressioneToggle profile={profile} />
 
@@ -970,6 +1014,14 @@ export default function ProfilePage() {
           </AlertDialog>
         </div>
       </motion.div>
+
+      {selectedReactionProfile && (
+        <ProfileDetailModal
+          profile={selectedReactionProfile}
+          isOpen={!!selectedReactionProfile}
+          onClose={() => setSelectedReactionProfileId(null)}
+        />
+      )}
     </div>
   );
 }

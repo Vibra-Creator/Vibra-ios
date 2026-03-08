@@ -36,7 +36,7 @@ interface ProfileDetailModalProps {
   hasPrivateRoom?: boolean;
 }
 
-function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }: ProfileDetailModalProps) {
+export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }: ProfileDetailModalProps) {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [showReportMenu, setShowReportMenu] = useState(false);
