@@ -3137,22 +3137,53 @@ REGOLE IMPORTANTI:
           replyToContent: data.replyToContent ? data.replyToContent.substring(0, 100) : null,
         }).returning();
 
+        const pushBody = mediaUrl
+          ? `${userProfile.name}: ${mediaType === "video" ? "📹 Video" : "🖼️ Immagine"}`
+          : `${userProfile.name}: ${filteredContent.substring(0, 100)}`;
+        const vibrappPushPayload = {
+          title: "🛸 Vibrapp",
+          body: pushBody,
+          icon: "/icons/icon-192.png",
+          url: "/vibrapp",
+          type: "vibrapp",
+        };
+
         if (data.replyToId && replyToSenderId) {
           io.to(`user:${profileId}`).to(`user:${replyToSenderId}`).emit("vibrapp:new-message", msg);
-
           if (replyToSenderId !== profileId) {
-            const pushBody = mediaUrl
-              ? `${userProfile.name}: ${mediaType === "video" ? "📹 Video" : "🖼️ Immagine"}`
-              : `${userProfile.name}: ${filteredContent.substring(0, 100)}`;
-            sendPushToProfile(replyToSenderId, {
-              title: "Vibrapp",
-              body: pushBody,
-              icon: "/icons/icon-192.png",
-              url: "/vibrapp",
-            });
+            sendPushToProfile(replyToSenderId, vibrappPushPayload);
           }
         } else {
           io.emit("vibrapp:new-message", msg);
+
+          // Send push to subscribers who are offline (not connected to vibrapp socket)
+          // Only active users in the last 48h to avoid spamming inactive accounts
+          try {
+            const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+            const activeSubs = await db
+              .select({ profileId: pushSubscriptions.profileId, endpoint: pushSubscriptions.endpoint, p256dh: pushSubscriptions.p256dh, auth: pushSubscriptions.auth, id: pushSubscriptions.id })
+              .from(pushSubscriptions)
+              .innerJoin(profiles, eq(profiles.id, pushSubscriptions.profileId))
+              .where(sql`${profiles.lastActiveAt} > ${cutoff} AND ${pushSubscriptions.profileId} != ${profileId}`);
+
+            const onlineSet = new Set(vibrappOnlineUsers.keys());
+            const offlineSubs = activeSubs.filter(s => !onlineSet.has(s.profileId));
+
+            for (const sub of offlineSubs) {
+              try {
+                await webpush.sendNotification(
+                  { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                  JSON.stringify(vibrappPushPayload)
+                );
+              } catch (err: any) {
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
+                }
+              }
+            }
+          } catch (pushErr) {
+            console.error("[vibrapp] offline push error:", pushErr);
+          }
         }
       } catch (err) {
         console.error("[vibrapp] message error:", err);

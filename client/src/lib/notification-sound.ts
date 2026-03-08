@@ -1,79 +1,77 @@
-let cachedAudioUrl: string | null = null;
+let audioCtx: AudioContext | null = null;
+let unlocked = false;
 
-function generateNotificationWav(): string {
-  if (cachedAudioUrl) return cachedAudioUrl;
-
-  const sampleRate = 22050;
-  const duration = 0.4;
-  const numSamples = Math.floor(sampleRate * duration);
-  const buffer = new ArrayBuffer(44 + numSamples * 2);
-  const view = new DataView(buffer);
-
-  function writeString(offset: number, str: string) {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
+export function initNotificationSound() {
+  if (unlocked) return;
+  try {
+    audioCtx = new AudioContext();
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    unlocked = true;
+  } catch (e) {
+    console.warn("[notification-sound] AudioContext init failed:", e);
   }
-
-  writeString(0, "RIFF");
-  view.setUint32(4, 36 + numSamples * 2, true);
-  writeString(8, "WAVE");
-  writeString(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeString(36, "data");
-  view.setUint32(40, numSamples * 2, true);
-
-  for (let i = 0; i < numSamples; i++) {
-    const t = i / sampleRate;
-    const phase1 = t < 0.15 ? 0 : 1;
-    const freq1 = 880 + (t < 0.15 ? t / 0.15 * 200 : 200);
-    const freq2 = 1320 + (t < 0.15 ? 0 : (t - 0.15) / 0.25 * 300);
-    const freq = phase1 === 0 ? freq1 : freq2;
-
-    let envelope = 0;
-    if (t < 0.02) envelope = t / 0.02;
-    else if (t < 0.12) envelope = 1;
-    else if (t < 0.15) envelope = 1 - (t - 0.12) / 0.03 * 0.3;
-    else if (t < 0.17) envelope = 0.7 + (t - 0.15) / 0.02 * 0.3;
-    else if (t < 0.32) envelope = 1;
-    else envelope = Math.max(0, 1 - (t - 0.32) / 0.08);
-
-    const sample = Math.sin(2 * Math.PI * freq * t) * envelope * 0.5;
-    const intSample = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
-    view.setInt16(44 + i * 2, intSample, true);
-  }
-
-  const blob = new Blob([buffer], { type: "audio/wav" });
-  cachedAudioUrl = URL.createObjectURL(blob);
-  return cachedAudioUrl;
 }
-
-let audioElement: HTMLAudioElement | null = null;
 
 export function playNotificationSound() {
   try {
-    const url = generateNotificationWav();
-
-    if (!audioElement) {
-      audioElement = new Audio();
+    if (!audioCtx || audioCtx.state === "closed") {
+      audioCtx = new AudioContext();
     }
-    audioElement.src = url;
-    audioElement.volume = 0.7;
-    audioElement.play().catch(() => {});
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume().then(() => _playAlienSound(audioCtx!)).catch(() => {});
+    } else {
+      _playAlienSound(audioCtx);
+    }
   } catch (e) {
     console.warn("[notification-sound] Could not play:", e);
   }
 }
 
-export function initNotificationSound() {
-  if (!audioElement) {
-    audioElement = new Audio();
-    generateNotificationWav();
+function _playAlienSound(ctx: AudioContext) {
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.gain.value = 1.0;
+  master.connect(ctx.destination);
+
+  function note(
+    type: OscillatorType,
+    freqStart: number,
+    freqEnd: number,
+    start: number,
+    dur: number,
+    vol: number,
+    detune = 0
+  ) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.detune.value = detune;
+    osc.frequency.setValueAtTime(freqStart, now + start);
+    if (freqEnd !== freqStart) {
+      osc.frequency.exponentialRampToValueAtTime(freqEnd, now + start + dur * 0.9);
+    }
+    gain.gain.setValueAtTime(0, now + start);
+    gain.gain.linearRampToValueAtTime(vol, now + start + 0.015);
+    gain.gain.setValueAtTime(vol, now + start + dur * 0.75);
+    gain.gain.linearRampToValueAtTime(0, now + start + dur);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(now + start);
+    osc.stop(now + start + dur + 0.01);
   }
+
+  // Phase 1: UFO sweep up-down (0 – 0.32s)
+  note("sine",  220,  1800, 0,    0.18, 0.75);
+  note("sine",  220,  1800, 0,    0.18, 0.35, 700);
+  note("sine", 1800,   440, 0.18, 0.14, 0.65);
+
+  // Phase 2: alien beep-beep (0.38s – 0.65s)
+  note("square",  880, 880, 0.37, 0.10, 0.45);
+  note("sine",   1100, 1100, 0.37, 0.10, 0.30, -1200);
+
+  note("square", 1320, 1320, 0.52, 0.12, 0.50);
+  note("sine",   1650, 1650, 0.52, 0.12, 0.28, -1200);
+
+  // Phase 3: cosmic tail (0.67s – 0.85s)
+  note("sine",  660,  110, 0.67, 0.18, 0.25);
 }

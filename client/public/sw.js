@@ -1,4 +1,4 @@
-const CACHE_VERSION = 20;
+const CACHE_VERSION = 21;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -29,16 +29,19 @@ self.addEventListener('push', (event) => {
   if (!event.data) return;
   try {
     const data = event.data.json();
+    const isVibrapp = data.type === 'vibrapp';
     const title = data.title || 'Vibra';
     const options = {
       body: data.body || '',
       icon: data.icon || '/icons/icon-192.png',
       badge: '/icons/icon-72.png',
-      vibrate: [200, 100, 200, 100, 200],
-      data: { url: data.url || '/' },
-      tag: 'vibra-' + Date.now(),
+      vibrate: isVibrapp
+        ? [100, 50, 100, 50, 300, 100, 100, 50, 100]
+        : [200, 100, 200, 100, 200],
+      data: { url: data.url || '/', type: data.type },
+      tag: isVibrapp ? 'vibrapp-msg' : 'vibra-' + Date.now(),
       renotify: true,
-      requireInteraction: false,
+      requireInteraction: isVibrapp,
       silent: false,
     };
 
