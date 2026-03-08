@@ -1,6 +1,7 @@
 import { useState, forwardRef, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
 import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play } from "lucide-react";
+import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -381,6 +382,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [exitX, setExitX] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
     const [showRating, setShowRating] = useState(false);
+    const [showStories, setShowStories] = useState(false);
     const [selectedRating, setSelectedRating] = useState<number | null>(null);
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -535,12 +537,29 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </motion.button>
                   ) : <div />}
 
-                  <div className="flex items-center gap-1 pointer-events-none">
-                    {hasVideos && (
-                      <div className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-black/60 backdrop-blur-sm border border-white/20" data-testid={`video-indicator-${profile.id}`} title={t("swipe.hasVideos")}>
-                        <Play className="w-2.5 h-2.5 text-cyan-400 fill-cyan-400" />
-                        <span className="text-cyan-300 text-[8px] font-bold">VIDEO</span>
-                      </div>
+                  <div className="flex items-center gap-1">
+                    {hasVideos && isTop && (
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
+                        className="pointer-events-auto flex flex-col items-center gap-0.5"
+                        style={{ touchAction: "none" }}
+                        data-testid={`button-stories-${profile.id}`}
+                      >
+                        <div className="relative w-10 h-10 rounded-full p-[2px] bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400 animate-pulse-slow">
+                          <div className="w-full h-full rounded-full bg-black/80 flex items-center justify-center overflow-hidden border border-black">
+                            {profile.imageUrl ? (
+                              <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
+                            ) : (
+                              <Play className="w-4 h-4 text-cyan-400 fill-cyan-400" />
+                            )}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-black flex items-center justify-center border border-cyan-400/50">
+                            <Play className="w-2 h-2 text-cyan-400 fill-cyan-400" />
+                          </div>
+                        </div>
+                        <span className="text-[8px] font-bold text-cyan-300 drop-shadow-lg">STORIE</span>
+                      </motion.button>
                     )}
                     {alreadyLiked && (
                       <div className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm" data-testid={`liked-indicator-${profile.id}`}>
@@ -697,6 +716,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           onClose={() => setShowDetail(false)}
           hasPrivateRoom={hasPrivateRoom}
         />
+
+        {showStories && cardVideos.length > 0 && (
+          <StoryViewer
+            profile={{ name: profile.name, imageUrl: profile.imageUrl }}
+            videos={cardVideos}
+            onClose={() => setShowStories(false)}
+          />
+        )}
       </>
     );
   }
