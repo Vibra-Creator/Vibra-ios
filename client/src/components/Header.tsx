@@ -292,8 +292,15 @@ export function BottomNav() {
     refetchInterval: 15000,
   });
 
+  const { data: coldMsgPending } = useQuery<{ count: number }>({
+    queryKey: ["/api/cold-messages/pending-count"],
+    enabled: !!user,
+    refetchInterval: 20000,
+  });
+
   const pendingRoomCount = privateRoomPending?.count || 0;
   const unrepliedRatingCount = ratingCount?.count || 0;
+  const pendingIntroCount = coldMsgPending?.count || 0;
 
   const navItems = [
     { path: "/", icon: Home, label: t("nav.discover"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
@@ -301,7 +308,7 @@ export function BottomNav() {
     { path: "/rooms", icon: Users, label: t("nav.rooms"), badge: 0, color: "text-cyan-400", activeBg: "bg-cyan-600" },
     { path: "/challenges", icon: Trophy, label: t("nav.challenges"), badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
     { path: "/vibing", icon: Zap, label: t("nav.vibing"), badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
-    { path: "/vibrapp", icon: MessageCircle, label: t("nav.vibrapp"), badge: 0, color: "text-green-400", activeBg: "bg-green-600" },
+    { path: "/vibrapp", icon: MessageCircle, label: t("nav.vibrapp"), badge: pendingIntroCount, color: "text-green-400", activeBg: "bg-green-600" },
     { path: "/dove-sei", icon: MapPin, label: t("nav.location"), badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
     { path: "/private-rooms", icon: Lock, label: t("nav.private"), badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
     { path: "/prima-impressione", icon: Eye, label: t("nav.impression"), badge: unrepliedRatingCount, color: "text-rose-400", activeBg: "bg-rose-500" },

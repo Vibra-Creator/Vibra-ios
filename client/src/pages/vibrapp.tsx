@@ -113,6 +113,7 @@ export default function Vibrapp() {
       setSelectedColdMsg(null);
       setReplyText("");
       refetchColdMsgs();
+      queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
       if (data?.privateRoomId) setLocation(`/private-room/${data.privateRoomId}`);
     },
   });

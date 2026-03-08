@@ -3368,6 +3368,20 @@ REGOLE IMPORTANTI:
     }
   });
 
+  app.get("/api/cold-messages/pending-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.json({ count: 0 });
+      const msgs = await storage.getColdMessagesReceived(myProfile.id);
+      const count = msgs.filter(m => !m.replied).length;
+      res.json({ count });
+    } catch (err) {
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
   app.get("/api/cold-messages/received", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
