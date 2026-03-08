@@ -144,6 +144,9 @@ export default function Vibrapp() {
   useEffect(() => {
     if (!profile?.id) return;
 
+    // Clear unread badge when opening vibrapp
+    queryClient.invalidateQueries({ queryKey: ["/api/vibrapp/unread-count"] });
+
     fetch("/api/vibrapp/messages?limit=50", { credentials: "include" })
       .then(r => r.json())
       .then((msgs: VibrappMsg[]) => {

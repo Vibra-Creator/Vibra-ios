@@ -3680,6 +3680,27 @@ REGOLE IMPORTANTI:
 
   // ──────────────────────────────────────────────────────────────────────────
 
+  app.get("/api/vibrapp/unread-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.json({ count: 0 });
+      const [row] = await db.select({ count: sql<number>`count(*)::int` })
+        .from(vibrappMessages)
+        .where(
+          and(
+            ne(vibrappMessages.senderId, myProfile.id),
+            sql`NOT (${myProfile.id} = ANY(${vibrappMessages.readBy}))`
+          )
+        );
+      res.json({ count: Number(row?.count ?? 0) });
+    } catch (err) {
+      console.error("[vibrapp/unread-count]", err);
+      res.json({ count: 0 });
+    }
+  });
+
   app.get("/api/vibrapp/online-count", isAuthenticated, async (req: any, res) => {
     try {
       const cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000);
