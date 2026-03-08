@@ -310,6 +310,19 @@ export function BottomNav() {
   const vibrappUnreadCount = vibrappUnread?.count || 0;
   const vibrappBadge = location === "/vibrapp" ? 0 : (pendingIntroCount + vibrappUnreadCount);
 
+  useEffect(() => {
+    const totalBadge = pendingIntroCount + vibrappUnreadCount;
+    try {
+      if ("setAppBadge" in navigator) {
+        if (totalBadge > 0) {
+          (navigator as any).setAppBadge(totalBadge);
+        } else {
+          (navigator as any).clearAppBadge();
+        }
+      }
+    } catch {}
+  }, [pendingIntroCount, vibrappUnreadCount]);
+
   const navItems = [
     { path: "/", icon: Home, label: t("nav.discover"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
     { path: "/matches", icon: Heart, label: t("nav.matches"), badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
