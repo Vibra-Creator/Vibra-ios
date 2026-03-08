@@ -4,8 +4,80 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { seedDatabase } from "./seed";
 import { startAutoBackup } from "./backup";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 const app = express();
+
+async function runBotMatchJob() {
+  try {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    // Find real users who liked bots but have no bot match today and have at least one pending unmatched bot like
+    const rows = await db.execute(sql`
+      SELECT DISTINCT sw.swiper_id AS real_id
+      FROM swipes sw
+      JOIN profiles bot ON bot.id = sw.swiped_id AND bot.is_bot = true
+      WHERE sw.liked = true
+        AND NOT EXISTS (
+          SELECT 1 FROM matches m
+          WHERE (m.profile1_id = sw.swiper_id AND m.profile2_id = sw.swiped_id)
+             OR (m.profile1_id = sw.swiped_id AND m.profile2_id = sw.swiper_id)
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM bot_daily_match bdm
+          WHERE bdm.real_profile_id = sw.swiper_id AND bdm.match_date = ${todayStr}
+        )
+        AND EXISTS (
+          SELECT 1 FROM profiles rp WHERE rp.id = sw.swiper_id AND rp.is_bot = false
+        )
+    `);
+
+    let matched = 0;
+    for (const row of (rows.rows ?? [])) {
+      const realId = (row as any).real_id as string;
+      // Pick a random unmatched liked bot for this user
+      const botRows = await db.execute(sql`
+        SELECT sw.swiped_id AS bot_id
+        FROM swipes sw
+        WHERE sw.swiper_id = ${realId} AND sw.liked = true
+          AND NOT EXISTS (
+            SELECT 1 FROM matches m
+            WHERE (m.profile1_id = ${realId} AND m.profile2_id = sw.swiped_id)
+               OR (m.profile1_id = sw.swiped_id AND m.profile2_id = ${realId})
+          )
+          AND EXISTS (SELECT 1 FROM profiles WHERE id = sw.swiped_id AND is_bot = true)
+        ORDER BY RANDOM()
+        LIMIT 1
+      `);
+      const botRow = botRows.rows?.[0] as any;
+      if (!botRow) continue;
+      const botId = botRow.bot_id as string;
+      await db.execute(sql`
+        INSERT INTO matches (id, profile1_id, profile2_id, created_at)
+        VALUES (gen_random_uuid(), ${realId}, ${botId}, now())
+        ON CONFLICT DO NOTHING
+      `);
+      await db.execute(sql`
+        INSERT INTO bot_daily_match (real_profile_id, bot_profile_id, match_date)
+        VALUES (${realId}, ${botId}, ${todayStr})
+        ON CONFLICT (real_profile_id, match_date) DO NOTHING
+      `);
+      matched++;
+    }
+    if (matched > 0) console.log(`[bot-match-job] Created ${matched} bot match(es) for today`);
+  } catch (err) {
+    console.error("[bot-match-job] Error:", err);
+  }
+}
+
+function startBotMatchJob() {
+  // Run once at startup (after a short delay) then every 24h
+  setTimeout(() => {
+    runBotMatchJob();
+    setInterval(runBotMatchJob, 24 * 60 * 60 * 1000);
+  }, 10000);
+  console.log("[bot-match-job] Scheduled daily bot match job");
+}
 const httpServer = createServer(app);
 
 declare module "http" {
@@ -102,6 +174,7 @@ app.use((req, res, next) => {
     () => {
       log(`serving on port ${port}`);
       startAutoBackup();
+      startBotMatchJob();
     },
   );
 })();

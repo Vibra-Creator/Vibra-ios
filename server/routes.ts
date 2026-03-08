@@ -753,6 +753,7 @@ export async function registerRoutes(
         }
         
         if (swipedProfile.isBot) {
+          // Bot auto-likes back so mutual-like is recorded
           const existingBotSwipe = await storage.getSwipe(validatedData.swipedId, validatedData.swiperId);
           if (!existingBotSwipe) {
             await storage.createSwipe({
@@ -760,17 +761,33 @@ export async function registerRoutes(
               swipedId: validatedData.swiperId,
               liked: true,
             });
-            console.log(`[SWIPE] Bot ${validatedData.swipedId} auto-liked back ${validatedData.swiperId}`);
           }
-          
+
+          // Random bot match: max 1 bot match per real user per day, ~25% probability
           const existingMatch = await storage.getMatch(validatedData.swiperId, validatedData.swipedId);
           if (!existingMatch) {
-            matchData = await storage.createMatch({
-              profile1Id: validatedData.swiperId,
-              profile2Id: validatedData.swipedId,
-            });
-            match = true;
-            console.log(`[SWIPE] BOT MATCH CREATED! ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const usedTodayRows = await db.execute(
+              sql`SELECT 1 FROM bot_daily_match WHERE real_profile_id = ${validatedData.swiperId} AND match_date = ${todayStr} LIMIT 1`
+            );
+            const alreadyUsed = (usedTodayRows.rows?.length ?? 0) > 0;
+            const lucky = Math.random() < 0.25; // 25% chance
+
+            if (!alreadyUsed && lucky) {
+              matchData = await storage.createMatch({
+                profile1Id: validatedData.swiperId,
+                profile2Id: validatedData.swipedId,
+              });
+              match = true;
+              await db.execute(
+                sql`INSERT INTO bot_daily_match (real_profile_id, bot_profile_id, match_date)
+                    VALUES (${validatedData.swiperId}, ${validatedData.swipedId}, ${todayStr})
+                    ON CONFLICT (real_profile_id, match_date) DO NOTHING`
+              );
+              console.log(`[SWIPE] BOT MATCH (random) ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+            } else {
+              console.log(`[SWIPE] Bot like recorded, no match today (used=${alreadyUsed}, lucky=${lucky})`);
+            }
           }
         } else {
           const isMutualLike = await storage.checkMutualLike(validatedData.swiperId, validatedData.swipedId);
