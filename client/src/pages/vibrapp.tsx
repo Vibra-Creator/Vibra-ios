@@ -144,12 +144,14 @@ export default function Vibrapp() {
   useEffect(() => {
     if (!profile?.id) return;
 
-    // Zero out badges immediately when opening vibrapp
-    queryClient.setQueryData(["/api/vibrapp/unread-count"], { count: 0 });
-    queryClient.setQueryData(["/api/cold-messages/pending-count"], { count: 0 });
-    try {
-      if ("clearAppBadge" in navigator) (navigator as any).clearAppBadge();
-    } catch {}
+    // Mark all vibrapp messages as read in DB, then zero the badge immediately
+    fetch("/api/vibrapp/mark-all-read", { method: "POST", credentials: "include" })
+      .finally(() => {
+        queryClient.setQueryData(["/api/vibrapp/unread-count"], { count: 0 });
+        try {
+          if ("clearAppBadge" in navigator) (navigator as any).clearAppBadge();
+        } catch {}
+      });
 
     fetch("/api/vibrapp/messages?limit=50", { credentials: "include" })
       .then(r => r.json())

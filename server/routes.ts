@@ -3679,6 +3679,25 @@ REGOLE IMPORTANTI:
 
   // ──────────────────────────────────────────────────────────────────────────
 
+  app.post("/api/vibrapp/mark-all-read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.json({ ok: true });
+      await db.execute(
+        sql`UPDATE vibrapp_messages
+            SET read_by = array_append(read_by, ${myProfile.id})
+            WHERE sender_id != ${myProfile.id}
+              AND NOT (${myProfile.id} = ANY(read_by))`
+      );
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[vibrapp/mark-all-read]", err);
+      res.json({ ok: true });
+    }
+  });
+
   app.get("/api/vibrapp/unread-count", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
