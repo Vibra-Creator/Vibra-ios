@@ -3733,5 +3733,125 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // ─── Cosmic Signals ──────────────────────────────────────────────────────────
+
+  app.get("/api/signals", async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      let myProfileId = "";
+      if (userId) {
+        const myProfile = await storage.getProfileByUserId(userId);
+        myProfileId = myProfile?.id || "";
+      }
+      const feed = await storage.getSignalsFeed(myProfileId, 50);
+      res.json(feed);
+    } catch (err) {
+      console.error("[signals] feed error:", err);
+      res.status(500).json({ error: "Errore nel recupero segnali" });
+    }
+  });
+
+  app.post("/api/signals", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const { content, mediaUrl, mediaType } = req.body;
+      if (!content?.trim() && !mediaUrl) return res.status(400).json({ error: "Contenuto richiesto" });
+      const signal = await storage.createSignal({
+        profileId: myProfile.id,
+        content: (content || "").trim().substring(0, 500),
+        mediaUrl: mediaUrl || undefined,
+        mediaType: mediaType || "text",
+      });
+      res.json(signal);
+    } catch (err) {
+      console.error("[signals] create error:", err);
+      res.status(500).json({ error: "Errore nella creazione segnale" });
+    }
+  });
+
+  app.delete("/api/signals/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      await storage.deleteSignal(req.params.id, myProfile.id);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[signals] delete error:", err);
+      res.status(500).json({ error: "Errore nella cancellazione" });
+    }
+  });
+
+  app.post("/api/signals/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const result = await storage.toggleSignalLike(req.params.id, myProfile.id);
+      res.json(result);
+    } catch (err) {
+      console.error("[signals] like error:", err);
+      res.status(500).json({ error: "Errore nel like" });
+    }
+  });
+
+  app.get("/api/signals/:id/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const comments = await storage.getSignalComments(req.params.id);
+      res.json(comments);
+    } catch (err) {
+      console.error("[signals] comments get error:", err);
+      res.status(500).json({ error: "Errore nel recupero commenti" });
+    }
+  });
+
+  app.post("/api/signals/:id/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const { content } = req.body;
+      if (!content?.trim()) return res.status(400).json({ error: "Commento vuoto" });
+      const comment = await storage.addSignalComment({
+        signalId: req.params.id,
+        profileId: myProfile.id,
+        content: content.trim().substring(0, 300),
+      });
+      res.json(comment);
+    } catch (err) {
+      console.error("[signals] comment post error:", err);
+      res.status(500).json({ error: "Errore nel commento" });
+    }
+  });
+
+  app.post("/api/signals/request-upload", isAuthenticated, async (req: any, res) => {
+    try {
+      const { contentType, size } = req.body;
+      const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime"];
+      const ALLOWED_AUDIO = ["audio/mpeg", "audio/mp4", "audio/webm", "audio/ogg", "audio/wav"];
+      const isImage = ALLOWED_IMAGE.includes(contentType);
+      const isVideo = ALLOWED_VIDEO.includes(contentType);
+      const isAudio = ALLOWED_AUDIO.includes(contentType);
+      if (!isImage && !isVideo && !isAudio) return res.status(400).json({ error: "Tipo file non supportato" });
+      const maxSize = isVideo ? 60 * 1024 * 1024 : 20 * 1024 * 1024;
+      if (size && size > maxSize) return res.status(400).json({ error: "File troppo grande" });
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      let mediaType = "image";
+      if (isVideo) mediaType = "video";
+      if (isAudio) mediaType = "audio";
+      res.json({ uploadURL, objectPath, mediaType });
+    } catch (err) {
+      console.error("[signals] request-upload error:", err);
+      res.status(500).json({ error: "Upload non disponibile" });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
   return httpServer;
 }

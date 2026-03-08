@@ -28,6 +28,7 @@ Vibra employs a modern web application architecture:
         -   **Prima Impressione**: A rating system allowing users to get feedback on their profiles.
         -   **Sto Vibing Ora**: A live presence mode showing nearby active users.
         -   **Activity Feed & Vibration Activity**: Real-time notifications and personalized engagement dashboards to boost user retention.
+        -   **Cosmic Signals**: A public social feed where users post short messages (text/photo/video/audio) for everyone to see. Supports ❤️ likes and 💬 comments. Accessible at `/signals`. Profile detail sheet shown on user tap.
         -   **Quick Reactions**: Alien-themed emoji reactions (🔥 Fuoco, 🛸 Vibra, ✨ Wow, 😍 Crush) shown on each swipe card inside the card overlay. Stored in `profile_reactions` table; supports toggle/change via POST /api/reactions; counts shown per emoji.
         -   **Stories Bar**: A horizontal feed of short profile videos.
 -   **Admin Features**: A comprehensive dashboard for user management, profile moderation, verification, and analytics, with real-time stats excluding bot data. Admin can manually manage highlighted profiles and trigger database backups.

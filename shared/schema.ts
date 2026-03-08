@@ -405,6 +405,41 @@ export const coldMessages = pgTable("cold_messages", {
 
 export type ColdMessage = typeof coldMessages.$inferSelect;
 
+// ─── Cosmic Signals ──────────────────────────────────────────────────────────
+export const cosmicSignals = pgTable("cosmic_signals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  content: text("content").default("").notNull(),
+  mediaUrl: text("media_url"),
+  mediaType: varchar("media_type", { length: 16 }), // 'text' | 'image' | 'video' | 'audio'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
+export type CosmicSignal = typeof cosmicSignals.$inferSelect;
+export const insertCosmicSignalSchema = createInsertSchema(cosmicSignals).omit({ id: true, createdAt: true });
+export type InsertCosmicSignal = z.infer<typeof insertCosmicSignalSchema>;
+
+export const signalLikes = pgTable("signal_likes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signalId: varchar("signal_id").notNull(),
+  profileId: varchar("profile_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type SignalLike = typeof signalLikes.$inferSelect;
+
+export const signalComments = pgTable("signal_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  signalId: varchar("signal_id").notNull(),
+  profileId: varchar("profile_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type SignalComment = typeof signalComments.$inferSelect;
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const REACTION_TYPES = ["fire", "ufo", "spark", "crush"] as const;
 export type ReactionType = typeof REACTION_TYPES[number];
 

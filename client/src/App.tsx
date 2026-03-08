@@ -30,6 +30,7 @@ import RoomDetail from "@/pages/room-detail";
 import PrimaImpressione from "@/pages/prima-impressione";
 import Vibing from "@/pages/vibing";
 import VibrappChat from "@/pages/vibrapp";
+import Signals from "@/pages/signals";
 import LocationMap from "@/pages/location-map";
 import Onboarding from "@/pages/onboarding";
 import ForgotPassword from "@/pages/forgot-password";
@@ -165,6 +166,7 @@ function AuthenticatedRouter() {
       <Route path="/prima-impressione" component={PrimaImpressione} />
       <Route path="/vibing" component={Vibing} />
       <Route path="/vibrapp" component={VibrappChat} />
+      <Route path="/signals" component={Signals} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route component={NotFound} />
     </Switch>
@@ -210,6 +212,7 @@ function GuestRouter() {
       <Route path="/private-room/:roomId" component={GuestRedirectPrivateRooms} />
       <Route path="/prima-impressione" component={PrimaImpressione} />
       <Route path="/vibing" component={Vibing} />
+      <Route path="/signals" component={Signals} />
       <Route component={NotFound} />
     </Switch>
   );

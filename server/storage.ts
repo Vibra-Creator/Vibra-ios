@@ -14,6 +14,7 @@ import {
   type LocationShare,
   type ProfileVideo, type InsertProfileVideo,
   type ProfileReaction, type ReactionType,
+  type CosmicSignal, type SignalComment,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
@@ -26,10 +27,13 @@ import {
   profileVideos,
   profileReactions,
   coldMessages,
+  cosmicSignals,
+  signalLikes,
+  signalComments,
   type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray, lt } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, lt, ne } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -158,6 +162,14 @@ export interface IStorage {
   getProfileVideoById(id: string): Promise<ProfileVideo | undefined>;
   getVideosForInactiveProfiles(cutoffDate: Date): Promise<ProfileVideo[]>;
   getStoriesFeed(limit?: number): Promise<Array<{ profileId: string; profileName: string; profileImage: string | null; videoUrl: string; thumbnailUrl: string | null; createdAt: Date }>>;
+
+  // Cosmic Signals
+  getSignalsFeed(myProfileId: string, limit?: number): Promise<Array<CosmicSignal & { profile: Profile; likesCount: number; commentsCount: number; hasLiked: boolean }>>;
+  createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string }): Promise<CosmicSignal>;
+  deleteSignal(id: string, profileId: string): Promise<void>;
+  toggleSignalLike(signalId: string, profileId: string): Promise<{ liked: boolean; count: number }>;
+  getSignalComments(signalId: string): Promise<Array<SignalComment & { profile: Profile }>>;
+  addSignalComment(data: { signalId: string; profileId: string; content: string }): Promise<SignalComment & { profile: Profile }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1106,6 +1118,80 @@ export class DatabaseStorage implements IStorage {
       }
     }
     return result;
+  }
+
+  // ─── Cosmic Signals ────────────────────────────────────────────────────────
+
+  async getSignalsFeed(myProfileId: string, limit = 50): Promise<Array<CosmicSignal & { profile: Profile; likesCount: number; commentsCount: number; hasLiked: boolean }>> {
+    const signals = await db.select().from(cosmicSignals).orderBy(desc(cosmicSignals.createdAt)).limit(limit);
+    if (!signals.length) return [];
+
+    const profileIds = [...new Set(signals.map(s => s.profileId))];
+    const profileRows = await db.select().from(profiles).where(inArray(profiles.id, profileIds));
+    const profileMap = new Map(profileRows.map(p => [p.id, p]));
+
+    const signalIds = signals.map(s => s.id);
+    const likesRows = await db.select().from(signalLikes).where(inArray(signalLikes.signalId, signalIds));
+    const likesCountMap = new Map<string, number>();
+    const myLikesSet = new Set<string>();
+    for (const l of likesRows) {
+      likesCountMap.set(l.signalId, (likesCountMap.get(l.signalId) || 0) + 1);
+      if (l.profileId === myProfileId) myLikesSet.add(l.signalId);
+    }
+    const commentsRows = await db.select({ signalId: signalComments.signalId, cnt: sql<number>`count(*)::int` })
+      .from(signalComments).where(inArray(signalComments.signalId, signalIds))
+      .groupBy(signalComments.signalId);
+    const commentsCountMap = new Map(commentsRows.map(r => [r.signalId, Number(r.cnt)]));
+
+    return signals.map(s => ({
+      ...s,
+      profile: profileMap.get(s.profileId) as Profile,
+      likesCount: likesCountMap.get(s.id) || 0,
+      commentsCount: commentsCountMap.get(s.id) || 0,
+      hasLiked: myLikesSet.has(s.id),
+    })).filter(s => s.profile);
+  }
+
+  async createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string }): Promise<CosmicSignal> {
+    const [signal] = await db.insert(cosmicSignals).values({
+      profileId: data.profileId,
+      content: data.content,
+      mediaUrl: data.mediaUrl || null,
+      mediaType: data.mediaType || "text",
+    }).returning();
+    return signal;
+  }
+
+  async deleteSignal(id: string, profileId: string): Promise<void> {
+    await db.delete(cosmicSignals).where(and(eq(cosmicSignals.id, id), eq(cosmicSignals.profileId, profileId)));
+  }
+
+  async toggleSignalLike(signalId: string, profileId: string): Promise<{ liked: boolean; count: number }> {
+    const [existing] = await db.select().from(signalLikes).where(
+      and(eq(signalLikes.signalId, signalId), eq(signalLikes.profileId, profileId))
+    );
+    if (existing) {
+      await db.delete(signalLikes).where(eq(signalLikes.id, existing.id));
+    } else {
+      await db.insert(signalLikes).values({ signalId, profileId });
+    }
+    const [row] = await db.select({ cnt: sql<number>`count(*)::int` }).from(signalLikes).where(eq(signalLikes.signalId, signalId));
+    return { liked: !existing, count: Number(row?.cnt ?? 0) };
+  }
+
+  async getSignalComments(signalId: string): Promise<Array<SignalComment & { profile: Profile }>> {
+    const comments = await db.select().from(signalComments).where(eq(signalComments.signalId, signalId)).orderBy(signalComments.createdAt);
+    if (!comments.length) return [];
+    const profileIds = [...new Set(comments.map(c => c.profileId))];
+    const profileRows = await db.select().from(profiles).where(inArray(profiles.id, profileIds));
+    const profileMap = new Map(profileRows.map(p => [p.id, p]));
+    return comments.map(c => ({ ...c, profile: profileMap.get(c.profileId) as Profile })).filter(c => c.profile);
+  }
+
+  async addSignalComment(data: { signalId: string; profileId: string; content: string }): Promise<SignalComment & { profile: Profile }> {
+    const [comment] = await db.insert(signalComments).values(data).returning();
+    const [profile] = await db.select().from(profiles).where(eq(profiles.id, data.profileId));
+    return { ...comment, profile };
   }
 }
 
