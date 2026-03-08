@@ -59,28 +59,52 @@ function ProfileVideosSection({ profileId }: { profileId: string }) {
   });
 
   async function extractThumbnail(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const video = document.createElement("video");
       video.preload = "metadata";
       video.muted = true;
       video.playsInline = true;
       const url = URL.createObjectURL(file);
-      video.src = url;
+      let done = false;
+
+      const timeout = setTimeout(() => {
+        if (!done) { done = true; URL.revokeObjectURL(url); resolve(""); }
+      }, 5000);
+
+      const capture = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeout);
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 320;
+          canvas.height = 240;
+          const ctx = canvas.getContext("2d");
+          if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const base64 = canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
+          URL.revokeObjectURL(url);
+          resolve(base64 || "");
+        } catch {
+          URL.revokeObjectURL(url);
+          resolve("");
+        }
+      };
+
+      video.addEventListener("seeked", capture);
       video.addEventListener("loadeddata", () => {
-        video.currentTime = 0;
+        video.currentTime = 0.001;
       });
-      video.addEventListener("seeked", () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = 320;
-        canvas.height = 240;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { URL.revokeObjectURL(url); reject(new Error("canvas")); return; }
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const base64 = canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
-        URL.revokeObjectURL(url);
-        resolve(base64);
+      video.addEventListener("loadedmetadata", () => {
+        video.currentTime = 0.001;
       });
-      video.addEventListener("error", () => { URL.revokeObjectURL(url); reject(new Error("video load")); });
+      video.addEventListener("canplay", () => {
+        if (!done) video.currentTime = 0.001;
+      });
+      video.addEventListener("error", () => {
+        if (!done) { done = true; clearTimeout(timeout); URL.revokeObjectURL(url); resolve(""); }
+      });
+
+      video.src = url;
     });
   }
 
