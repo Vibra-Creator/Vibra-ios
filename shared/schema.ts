@@ -392,6 +392,19 @@ export const insertProfileVideoSchema = createInsertSchema(profileVideos).omit({
 export type InsertProfileVideo = z.infer<typeof insertProfileVideoSchema>;
 export type ProfileVideo = typeof profileVideos.$inferSelect;
 
+export const coldMessages = pgTable("cold_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromProfileId: varchar("from_profile_id").notNull(),
+  toProfileId: varchar("to_profile_id").notNull(),
+  content: text("content").notNull(),
+  replied: boolean("replied").default(false).notNull(),
+  replyContent: text("reply_content"),
+  privateRoomId: varchar("private_room_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ColdMessage = typeof coldMessages.$inferSelect;
+
 export const REACTION_TYPES = ["fire", "ufo", "spark", "crush"] as const;
 export type ReactionType = typeof REACTION_TYPES[number];
 

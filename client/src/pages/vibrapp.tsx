@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn } from "lucide-react";
+import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink } from "lucide-react";
 import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 interface VibrappMsg {
   id: string;
@@ -27,8 +29,26 @@ interface VibrappMsg {
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
 const MAX_VIDEO_DURATION = 10;
 
+interface IntroTarget {
+  id: string;
+  name: string;
+  age: number;
+  imageUrl: string;
+}
+
+interface ReceivedColdMsg {
+  id: string;
+  fromProfileId: string;
+  content: string;
+  replied: boolean;
+  privateRoomId: string | null;
+  createdAt: string;
+  fromProfile: { id: string; name: string; imageUrl: string; age: number };
+}
+
 export default function Vibrapp() {
   const { t } = useLanguage();
+  const [, setLocation] = useLocation();
   const [messages, setMessages] = useState<VibrappMsg[]>([]);
   const [inputText, setInputText] = useState("");
   const [replyTo, setReplyTo] = useState<VibrappMsg | null>(null);
@@ -42,6 +62,13 @@ export default function Vibrapp() {
   const [mediaFileType, setMediaFileType] = useState<"image" | "video" | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [introTarget, setIntroTarget] = useState<IntroTarget | null>(null);
+  const [showIntroCompose, setShowIntroCompose] = useState(false);
+  const [introText, setIntroText] = useState("");
+  const [introColdStatus, setIntroColdStatus] = useState<"idle" | "already_exists" | "sent" | "replied">("idle");
+  const [introCheckDone, setIntroCheckDone] = useState(false);
+  const [selectedColdMsg, setSelectedColdMsg] = useState<ReceivedColdMsg | null>(null);
+  const [replyText, setReplyText] = useState("");
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -58,6 +85,60 @@ export default function Vibrapp() {
       return res.json();
     },
   });
+
+  const { data: receivedColdMsgs, refetch: refetchColdMsgs } = useQuery<ReceivedColdMsg[]>({
+    queryKey: ["/api/cold-messages/received"],
+    queryFn: async () => {
+      const res = await fetch("/api/cold-messages/received", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!profile,
+  });
+
+  const sendColdMsgMutation = useMutation({
+    mutationFn: async ({ toProfileId, content }: { toProfileId: string; content: string }) =>
+      apiRequest("POST", "/api/cold-messages", { toProfileId, content }),
+    onSuccess: (data: any) => {
+      setIntroColdStatus(data.status === "sent" ? "sent" : data.status === "already_replied" ? "replied" : "already_exists");
+      setShowIntroCompose(false);
+      setIntroText("");
+    },
+  });
+
+  const replyColdMsgMutation = useMutation({
+    mutationFn: async ({ id, content }: { id: string; content: string }) =>
+      apiRequest("POST", `/api/cold-messages/${id}/reply`, { content }),
+    onSuccess: (data: any) => {
+      setSelectedColdMsg(null);
+      setReplyText("");
+      refetchColdMsgs();
+      if (data?.privateRoomId) setLocation(`/private-room/${data.privateRoomId}`);
+    },
+  });
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("vibrapp_intro_target");
+    if (raw) {
+      try {
+        const target = JSON.parse(raw) as IntroTarget;
+        setIntroTarget(target);
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!introTarget || !profile) return;
+    fetch(`/api/cold-messages/check/${introTarget.id}`, { credentials: "include" })
+      .then(r => r.json())
+      .then((data: { exists: boolean; replied: boolean; privateRoomId: string | null }) => {
+        if (data.exists) {
+          setIntroColdStatus(data.replied ? "replied" : "already_exists");
+        }
+        setIntroCheckDone(true);
+      })
+      .catch(() => setIntroCheckDone(true));
+  }, [introTarget?.id, profile?.id]);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -347,6 +428,61 @@ export default function Vibrapp() {
           </div>
         </div>
       </div>
+
+      {/* ── Intro target banner ──────────────────────────────────────────── */}
+      {introTarget && introTarget.id !== profile?.id && (
+        <div className="bg-[#0d1f1a] border-b border-emerald-900/30 px-4 py-2.5 shrink-0" data-testid="intro-target-banner">
+          <div className="flex items-center gap-3">
+            <img src={introTarget.imageUrl} alt={introTarget.name} className="w-9 h-9 rounded-full object-cover border-2 border-emerald-500/50" />
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-semibold leading-tight truncate">{introTarget.name}, {introTarget.age}</p>
+              <p className="text-white/50 text-[11px]">
+                {introColdStatus === "sent" && "✅ Presentazione inviata — aspetta che risponda"}
+                {introColdStatus === "already_exists" && "⏳ Presentazione in attesa di risposta"}
+                {introColdStatus === "replied" && "🎉 Ha risposto! Vai alla chat privata"}
+                {(introColdStatus === "idle" && introCheckDone) && "Invia una presentazione per iniziare"}
+                {(introColdStatus === "idle" && !introCheckDone) && "Caricamento..."}
+              </p>
+            </div>
+            {(introColdStatus === "idle" && introCheckDone) && (
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 h-8 shrink-0"
+                onClick={() => setShowIntroCompose(true)}
+                data-testid="button-send-intro"
+              >
+                🛸 Scrivi
+              </Button>
+            )}
+            <button onClick={() => { setIntroTarget(null); sessionStorage.removeItem("vibrapp_intro_target"); }} className="text-white/30 hover:text-white/60 ml-1" data-testid="button-dismiss-intro">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Received intros strip ─────────────────────────────────────────── */}
+      {receivedColdMsgs && receivedColdMsgs.filter(m => !m.replied).length > 0 && (
+        <div className="bg-[#0a0d1e] border-b border-purple-900/30 px-4 py-2 shrink-0" data-testid="received-intros-strip">
+          <p className="text-purple-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">🛸 Presentazioni ricevute</p>
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            {receivedColdMsgs.filter(m => !m.replied).map(msg => (
+              <button
+                key={msg.id}
+                onClick={() => { setSelectedColdMsg(msg); setReplyText(""); }}
+                className="flex flex-col items-center gap-1 shrink-0"
+                data-testid={`intro-bubble-${msg.id}`}
+              >
+                <div className="relative">
+                  <img src={msg.fromProfile.imageUrl} alt={msg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500" />
+                  <span className="absolute -bottom-1 -right-1 text-[14px]">🛸</span>
+                </div>
+                <span className="text-white/70 text-[10px] truncate max-w-[52px]">{msg.fromProfile.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div
         ref={messagesContainerRef}
@@ -682,6 +818,116 @@ export default function Vibrapp() {
           </Button>
         </div>
       </div>
+
+      {/* ── Intro compose modal ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showIntroCompose && introTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] bg-black/70 flex items-end justify-center"
+            onClick={() => setShowIntroCompose(false)}
+            data-testid="intro-compose-overlay"
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              className="bg-[#111827] rounded-t-2xl w-full max-w-lg p-5 pb-8"
+              onClick={e => e.stopPropagation()}
+              data-testid="intro-compose-panel"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <img src={introTarget.imageUrl} alt={introTarget.name} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
+                <div>
+                  <p className="text-white font-bold">{introTarget.name}, {introTarget.age}</p>
+                  <p className="text-white/50 text-xs">Presentazione — max 500 caratteri</p>
+                </div>
+              </div>
+              <textarea
+                className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-emerald-500/50 mb-4"
+                rows={4}
+                maxLength={500}
+                placeholder="Ciao! Mi chiamo... Ho visto il tuo profilo e mi piacerebbe conoscerti 🛸"
+                value={introText}
+                onChange={e => setIntroText(e.target.value)}
+                data-testid="input-intro-text"
+              />
+              <div className="flex gap-2">
+                <Button variant="ghost" className="flex-1 text-white/60" onClick={() => setShowIntroCompose(false)} data-testid="button-cancel-intro">
+                  Annulla
+                </Button>
+                <Button
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white"
+                  disabled={introText.trim().length < 10 || sendColdMsgMutation.isPending}
+                  onClick={() => sendColdMsgMutation.mutate({ toProfileId: introTarget.id, content: introText })}
+                  data-testid="button-confirm-intro"
+                >
+                  {sendColdMsgMutation.isPending ? "Invio..." : "🛸 Invia presentazione"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Reply to cold message modal ───────────────────────────────────── */}
+      <AnimatePresence>
+        {selectedColdMsg && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] bg-black/70 flex items-end justify-center"
+            onClick={() => setSelectedColdMsg(null)}
+            data-testid="coldmsg-reply-overlay"
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              className="bg-[#111827] rounded-t-2xl w-full max-w-lg p-5 pb-8"
+              onClick={e => e.stopPropagation()}
+              data-testid="coldmsg-reply-panel"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <img src={selectedColdMsg.fromProfile.imageUrl} alt={selectedColdMsg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500" />
+                <div>
+                  <p className="text-white font-bold">{selectedColdMsg.fromProfile.name}, {selectedColdMsg.fromProfile.age}</p>
+                  <p className="text-white/50 text-xs">Ti ha inviato una presentazione</p>
+                </div>
+              </div>
+              <div className="bg-[#1f2937] rounded-xl p-3 mb-4 border border-purple-500/20">
+                <p className="text-white/80 text-sm">{selectedColdMsg.content}</p>
+              </div>
+              <p className="text-white/50 text-xs mb-2">La tua risposta apre una chat privata 🔐</p>
+              <textarea
+                className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-purple-500/50 mb-4"
+                rows={3}
+                maxLength={500}
+                placeholder="Ciao! Anche tu mi hai incuriosito/a..."
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
+                data-testid="input-cold-reply"
+              />
+              <div className="flex gap-2">
+                <Button variant="ghost" className="flex-1 text-white/60" onClick={() => setSelectedColdMsg(null)} data-testid="button-cancel-cold-reply">
+                  Chiudi
+                </Button>
+                <Button
+                  className="flex-1 bg-purple-600 hover:bg-purple-500 text-white"
+                  disabled={replyText.trim().length < 5 || replyColdMsgMutation.isPending}
+                  onClick={() => replyColdMsgMutation.mutate({ id: selectedColdMsg.id, content: replyText })}
+                  data-testid="button-confirm-cold-reply"
+                >
+                  {replyColdMsgMutation.isPending ? "Apertura..." : "🔐 Apri chat privata"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {lightboxUrl && (

@@ -3339,6 +3339,88 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // ─── Cold Messages (Intro DM) ─────────────────────────────────────────────
+  app.post("/api/cold-messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const { toProfileId, content } = req.body;
+      if (!toProfileId || !content?.trim()) return res.status(400).json({ error: "Parametri mancanti" });
+      if (toProfileId === myProfile.id) return res.status(400).json({ error: "Non puoi scrivere a te stesso" });
+      const result = await storage.sendColdMessage(myProfile.id, toProfileId, content.trim().substring(0, 500));
+      if (result.status === "sent") {
+        const targetProfile = await storage.getProfile(toProfileId);
+        if (targetProfile) {
+          sendPushToProfile(toProfileId, {
+            title: `🛸 ${myProfile.name} ti ha scritto`,
+            body: content.trim().substring(0, 100),
+            icon: "/icons/icon-192.png",
+            url: "/vibrapp",
+          });
+        }
+      }
+      res.json(result);
+    } catch (err) {
+      console.error("[cold-messages POST]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.get("/api/cold-messages/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const messages = await storage.getColdMessagesReceived(myProfile.id);
+      res.json(messages);
+    } catch (err) {
+      console.error("[cold-messages received]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.get("/api/cold-messages/check/:toProfileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const msg = await storage.getColdMessageBetween(myProfile.id, req.params.toProfileId);
+      res.json({ exists: !!msg, replied: msg?.replied ?? false, privateRoomId: msg?.privateRoomId ?? null });
+    } catch (err) {
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.post("/api/cold-messages/:id/reply", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const { content } = req.body;
+      if (!content?.trim()) return res.status(400).json({ error: "Messaggio mancante" });
+      const msg = await storage.getColdMessageById(req.params.id);
+      if (!msg) return res.status(404).json({ error: "Messaggio non trovato" });
+      if (msg.toProfileId !== myProfile.id) return res.status(403).json({ error: "Non autorizzato" });
+      if (msg.replied) return res.status(400).json({ error: "Già risposto" });
+      const { privateRoomId } = await storage.replyColdMessage(req.params.id, content.trim().substring(0, 500));
+      sendPushToProfile(msg.fromProfileId, {
+        title: `🛸 ${myProfile.name} ha risposto!`,
+        body: "La conversazione privata è ora aperta 🎉",
+        icon: "/icons/icon-192.png",
+        url: `/private-room/${privateRoomId}`,
+      });
+      res.json({ privateRoomId });
+    } catch (err) {
+      console.error("[cold-messages reply]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
   // ─── Profile Reactions ────────────────────────────────────────────────────
   app.get("/api/reactions/received", isAuthenticated, async (req: any, res) => {
     try {

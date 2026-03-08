@@ -24,7 +24,9 @@ import {
   blockedUsers,
   locationShares,
   profileVideos,
-  profileReactions
+  profileReactions,
+  coldMessages,
+  type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, lt } from "drizzle-orm";
@@ -937,6 +939,84 @@ export class DatabaseStorage implements IStorage {
     .from(profileVideos)
     .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
     .where(lt(profiles.lastActiveAt, cutoffDate));
+  }
+
+  async sendColdMessage(fromProfileId: string, toProfileId: string, content: string): Promise<{ status: "sent" | "already_exists" | "already_replied"; coldMessage?: ColdMessage }> {
+    const existing = await db.select().from(coldMessages)
+      .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
+      .limit(1);
+    if (existing.length > 0) {
+      return { status: existing[0].replied ? "already_replied" : "already_exists", coldMessage: existing[0] };
+    }
+    const [msg] = await db.insert(coldMessages).values({ fromProfileId, toProfileId, content }).returning();
+    return { status: "sent", coldMessage: msg };
+  }
+
+  async getColdMessagesReceived(toProfileId: string): Promise<Array<ColdMessage & { fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {
+    const rows = await db.select({
+      id: coldMessages.id,
+      fromProfileId: coldMessages.fromProfileId,
+      toProfileId: coldMessages.toProfileId,
+      content: coldMessages.content,
+      replied: coldMessages.replied,
+      replyContent: coldMessages.replyContent,
+      privateRoomId: coldMessages.privateRoomId,
+      createdAt: coldMessages.createdAt,
+      fromId: profiles.id,
+      fromName: profiles.name,
+      fromImage: profiles.imageUrl,
+      fromAge: profiles.age,
+    })
+    .from(coldMessages)
+    .innerJoin(profiles, eq(profiles.id, coldMessages.fromProfileId))
+    .where(eq(coldMessages.toProfileId, toProfileId))
+    .orderBy(desc(coldMessages.createdAt));
+    return rows.map(r => ({
+      id: r.id, fromProfileId: r.fromProfileId, toProfileId: r.toProfileId,
+      content: r.content, replied: r.replied, replyContent: r.replyContent,
+      privateRoomId: r.privateRoomId, createdAt: r.createdAt,
+      fromProfile: { id: r.fromId, name: r.fromName, imageUrl: r.fromImage, age: r.fromAge },
+    }));
+  }
+
+  async getColdMessageBetween(fromProfileId: string, toProfileId: string): Promise<ColdMessage | null> {
+    const [msg] = await db.select().from(coldMessages)
+      .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
+      .limit(1);
+    return msg ?? null;
+  }
+
+  async getColdMessageById(id: string): Promise<ColdMessage | null> {
+    const [msg] = await db.select().from(coldMessages).where(eq(coldMessages.id, id)).limit(1);
+    return msg ?? null;
+  }
+
+  async replyColdMessage(messageId: string, replyContent: string): Promise<{ privateRoomId: string }> {
+    const [msg] = await db.select().from(coldMessages).where(eq(coldMessages.id, messageId)).limit(1);
+    if (!msg) throw new Error("Cold message not found");
+
+    const fromProfile = await db.select().from(profiles).where(eq(profiles.id, msg.fromProfileId)).limit(1);
+    const toProfile = await db.select().from(profiles).where(eq(profiles.id, msg.toProfileId)).limit(1);
+    if (!fromProfile[0] || !toProfile[0]) throw new Error("Profiles not found");
+
+    const [room] = await db.insert(privateRooms).values({
+      ownerId: msg.toProfileId,
+      name: `${toProfile[0].name} & ${fromProfile[0].name}`,
+      description: "Conversazione privata",
+      isActive: true,
+    }).returning();
+
+    await db.insert(privateRoomRequests).values({
+      roomId: room.id,
+      requesterId: msg.fromProfileId,
+      status: "approved",
+    });
+
+    await db.update(coldMessages)
+      .set({ replied: true, replyContent, privateRoomId: room.id })
+      .where(eq(coldMessages.id, messageId));
+
+    return { privateRoomId: room.id };
   }
 
   async getReceivedReactions(toProfileId: string, limit = 50): Promise<Array<{ id: string; reaction: string; createdAt: Date; fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {
