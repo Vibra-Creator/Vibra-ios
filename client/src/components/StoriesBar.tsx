@@ -117,7 +117,7 @@ export function StoryViewer({ profile, videos, onClose }: StoryViewerProps) {
         <video
           ref={videoRef}
           key={video.id}
-          src={video.videoUrl}
+          src={`/api/video-stream/${video.id}`}
           className="w-full h-full object-contain bg-black"
           playsInline
           autoPlay

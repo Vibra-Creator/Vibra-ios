@@ -11,7 +11,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
-import { registerObjectStorageRoutes, ObjectStorageService } from "./replit_integrations/object_storage";
+import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
 import OpenAI from "openai";
 import { createBackup, getBackupList, startAutoBackup } from "./backup";
 import { Server as SocketIOServer } from "socket.io";
@@ -3308,6 +3308,44 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // ─── Video Stream (Range-request aware, no ACL required) ─────────────────
+  app.get("/api/video-stream/:videoId", async (req, res) => {
+    try {
+      const video = await storage.getProfileVideoById(req.params.videoId);
+      if (!video) return res.status(404).end();
+
+      const file = await objectStorageService.getObjectEntityFile(video.videoUrl);
+      const [metadata] = await file.getMetadata();
+      const totalSize = parseInt(String(metadata.size || "0"), 10);
+      const contentType = (metadata.contentType as string) || "video/mp4";
+
+      const rangeHeader = req.headers.range;
+      if (rangeHeader) {
+        const parts = rangeHeader.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1024 * 1024 - 1, totalSize - 1);
+        const chunkSize = end - start + 1;
+        res.writeHead(206, {
+          "Content-Range": `bytes ${start}-${end}/${totalSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type": contentType,
+        });
+        file.createReadStream({ start, end }).pipe(res);
+      } else {
+        res.writeHead(200, {
+          "Content-Length": totalSize,
+          "Content-Type": contentType,
+          "Accept-Ranges": "bytes",
+        });
+        file.createReadStream().pipe(res);
+      }
+    } catch (err) {
+      console.error("[video-stream]", err);
+      if (!res.headersSent) res.status(500).end();
+    }
+  });
+
   // ─── Stories Feed ─────────────────────────────────────────────────────────
   app.get("/api/stories", async (req, res) => {
     try {
@@ -3383,6 +3421,15 @@ REGOLE IMPORTANTI:
           await objectStorageService.deleteObject(objectPath);
           return res.status(400).json({ error: "rejected", reason: moderation.reason || "Contenuto non appropriato" });
         }
+      }
+
+      try {
+        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+          owner: userId,
+          visibility: "public",
+        });
+      } catch (aclErr) {
+        console.error("[profile-videos] ACL set error (non-fatal):", aclErr);
       }
 
       const video = await storage.addProfileVideo({

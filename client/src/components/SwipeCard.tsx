@@ -232,7 +232,7 @@ function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = false }
                     {profileVideos.map((video, idx) => (
                       <video
                         key={video.id}
-                        src={video.videoUrl}
+                        src={`/api/video-stream/${video.id}`}
                         controls
                         playsInline
                         preload="metadata"
