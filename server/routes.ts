@@ -220,25 +220,16 @@ export async function registerRoutes(
     try {
       const result = await db.execute(sql`
         DELETE FROM vibrapp_messages
-        WHERE created_at < NOW() - INTERVAL '24 hours'
-        AND id NOT IN (
-          SELECT DISTINCT reply_to_id FROM vibrapp_messages WHERE reply_to_id IS NOT NULL
-        )
-        AND (
-          reply_to_id IS NULL
-          OR reply_to_id NOT IN (
-            SELECT DISTINCT reply_to_id FROM vibrapp_messages WHERE reply_to_id IS NOT NULL
-          )
-        )
+        WHERE created_at < NOW() - INTERVAL '48 hours'
       `);
       const count = (result as any).rowCount ?? 0;
-      if (count > 0) console.log(`[vibrapp-cleanup] Deleted ${count} messages older than 24h`);
+      if (count > 0) console.log(`[vibrapp-cleanup] Deleted ${count} messages older than 48h`);
     } catch (e) {
       console.error("[vibrapp-cleanup] Error:", e);
     }
   }
   cleanOldVibrappMessages();
-  setInterval(cleanOldVibrappMessages, 60 * 60 * 1000);
+  setInterval(cleanOldVibrappMessages, 30 * 60 * 1000);
 
   app.get("/api/auth/social-config", (req, res) => {
     res.json({
