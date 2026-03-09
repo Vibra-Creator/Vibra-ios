@@ -260,6 +260,9 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       toast({ title: "Profilo eliminato" });
     },
+    onError: (err: any) => {
+      toast({ title: "Errore eliminazione", description: err?.message || "Si è verificato un errore", variant: "destructive" });
+    },
   });
 
   const verifyProfileMutation = useMutation({

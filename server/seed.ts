@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings, vibingSessions, reports, blockedUsers } from "@shared/schema";
+import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings, vibingSessions, reports, blockedUsers, deletedBotIds } from "@shared/schema";
 import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -1594,6 +1594,9 @@ export async function seedDatabase() {
     const existingProfiles = await db.select().from(profiles);
     const existingIds = new Set(existingProfiles.map(p => p.id));
 
+    const adminDeletedRows = await db.select({ botId: deletedBotIds.botId }).from(deletedBotIds);
+    const adminDeletedIds = new Set(adminDeletedRows.map(r => r.botId));
+
     const oldBotProfiles = existingProfiles.filter(p => p.isBot && !validBotIds.has(p.id));
     if (oldBotProfiles.length > 0) {
       console.log(`Removing ${oldBotProfiles.length} outdated bot profiles...`);
@@ -1630,7 +1633,7 @@ export async function seedDatabase() {
       }
     }
     
-    const missingProfiles = seedProfiles.filter(p => !existingIds.has(p.id));
+    const missingProfiles = seedProfiles.filter(p => !existingIds.has(p.id) && !adminDeletedIds.has(p.id));
     const existingBotProfiles = seedProfiles.filter(p => existingIds.has(p.id));
     
     const jitter = (id: string) => {

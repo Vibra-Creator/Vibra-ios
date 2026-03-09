@@ -32,6 +32,7 @@ import {
   cosmicSignals,
   signalLikes,
   signalComments,
+  deletedBotIds,
   type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
@@ -395,6 +396,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProfile(id: string): Promise<void> {
+    const [targetProfile] = await db.select({ isBot: profiles.isBot }).from(profiles).where(eq(profiles.id, id));
     await db.delete(sentGifts).where(or(eq(sentGifts.senderId, id), eq(sentGifts.receiverId, id)));
     await db.delete(challengeSubmissions).where(eq(challengeSubmissions.profileId, id));
     await db.delete(roomMembers).where(eq(roomMembers.profileId, id));
@@ -416,6 +418,9 @@ export class DatabaseStorage implements IStorage {
     await db.delete(swipes).where(or(eq(swipes.swiperId, id), eq(swipes.swipedId, id)));
     await db.delete(profileFavorites).where(or(eq(profileFavorites.profileId, id), eq(profileFavorites.favoritedProfileId, id)));
     await db.delete(profiles).where(eq(profiles.id, id));
+    if (targetProfile?.isBot) {
+      await db.insert(deletedBotIds).values({ botId: id }).onConflictDoNothing();
+    }
   }
 
   async setProfileVerified(id: string, isVerified: boolean): Promise<Profile | undefined> {

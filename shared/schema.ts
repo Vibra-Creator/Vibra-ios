@@ -463,3 +463,8 @@ export const profileFavorites = pgTable("profile_favorites", {
 export const insertProfileFavoriteSchema = createInsertSchema(profileFavorites).omit({ id: true, createdAt: true });
 export type InsertProfileFavorite = z.infer<typeof insertProfileFavoriteSchema>;
 export type ProfileFavorite = typeof profileFavorites.$inferSelect;
+
+export const deletedBotIds = pgTable("deleted_bot_ids", {
+  botId: varchar("bot_id").primaryKey(),
+  deletedAt: timestamp("deleted_at").defaultNow().notNull(),
+});
