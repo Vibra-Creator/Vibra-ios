@@ -712,8 +712,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-impression-${profile.id}`}
                   >
-                    <div className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center ${profile.ratingEnabled ? "bg-gradient-to-br from-pink-500/50 to-purple-600/50 border-pink-400/40" : "bg-black/50 border-white/10"}`}>
-                      <Eye className={`w-6 h-6 ${profile.ratingEnabled ? "text-pink-300" : "text-white/40"}`} />
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #c026d3, #a855f7)", boxShadow: "0 0 14px rgba(192,38,211,0.55)", opacity: profile.ratingEnabled ? 1 : 0.45 }}>
+                      <Eye className="w-6 h-6 text-white" />
                     </div>
                     <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
                   </motion.button>
