@@ -618,7 +618,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               )}
 
               {isTop && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3 pointer-events-auto">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
                   <motion.button
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
@@ -696,6 +696,26 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       <Share2 className="w-6 h-6 text-white" />
                     </div>
                     <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Condividi</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={(e) => {
+                      e.stopPropagation(); e.preventDefault();
+                      if (profile.ratingEnabled) {
+                        setShowRating(true); setSelectedRating(null); setRatingSubmitted(false);
+                      } else {
+                        toast({ title: "Non disponibile", description: `${profile.name} non ha attivato le impressioni` });
+                      }
+                    }}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ touchAction: "none" }}
+                    data-testid={`button-impression-${profile.id}`}
+                  >
+                    <div className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center ${profile.ratingEnabled ? "bg-gradient-to-br from-pink-500/50 to-purple-600/50 border-pink-400/40" : "bg-black/50 border-white/10"}`}>
+                      <Eye className={`w-6 h-6 ${profile.ratingEnabled ? "text-pink-300" : "text-white/40"}`} />
+                    </div>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
                   </motion.button>
 
                   <motion.button

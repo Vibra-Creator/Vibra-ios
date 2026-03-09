@@ -348,7 +348,6 @@ export function BottomNav() {
     { path: "/signals", icon: Radio, label: "Signals", badge: 0, color: "text-fuchsia-400", activeBg: "bg-fuchsia-600" },
     { path: "/dove-sei", icon: MapPin, label: t("nav.location"), badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
     { path: "/private-rooms", icon: Lock, label: t("nav.private"), badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
-    { path: "/prima-impressione", icon: Eye, label: t("nav.impression"), badge: unrepliedRatingCount, color: "text-rose-400", activeBg: "bg-rose-500" },
     { path: "/profile", icon: User, label: t("nav.profile"), badge: 0, color: "text-emerald-400", activeBg: "bg-emerald-500" },
     ...(isAdmin ? [{ path: "/admin", icon: Shield, label: t("nav.admin"), badge: 0, color: "text-red-400", activeBg: "bg-red-500" }] : []),
   ];
