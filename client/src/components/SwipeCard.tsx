@@ -429,6 +429,7 @@ interface SwipeCardProps {
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
   function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay }, ref) {
     const [exitX, setExitX] = useState(0);
+    const [exitY, setExitY] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
     const [showRating, setShowRating] = useState(false);
     const [showStories, setShowStories] = useState(false);
@@ -512,6 +513,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       },
     });
     const x = useMotionValue(0);
+    const y = useMotionValue(0);
     const rotate = useTransform(x, [-200, 200], [-25, 25]);
     const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0.5, 1, 1, 1, 0.5]);
     
@@ -528,7 +530,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const handleDragEnd = (_: any, info: PanInfo) => {
       dragDistanceRef.current = Math.abs(info.offset.x) + Math.abs(info.offset.y);
       setTimeout(() => { isDraggingRef.current = false; }, 50);
-      if (info.offset.x > 100 && !alreadyLiked) {
+      const absX = Math.abs(info.offset.x);
+      const absY = Math.abs(info.offset.y);
+      if (absY > absX && info.offset.y < -110) {
+        setExitY(-700);
+        setShowRating(false);
+        setSelectedRating(null);
+        onSwipe("left");
+      } else if (info.offset.x > 100 && !alreadyLiked) {
         setExitX(300);
         setShowRating(false);
         setSelectedRating(null);
@@ -552,18 +561,19 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         <motion.div
           ref={ref}
           className="absolute inset-0 cursor-grab active:cursor-grabbing"
-          style={{ x, rotate, opacity }}
-          drag={isTop ? "x" : false}
-          dragConstraints={{ left: 0, right: 0 }}
+          style={{ x, y, rotate, opacity }}
+          drag={isTop ? true : false}
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          dragElastic={0.9}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 20 }}
           animate={{ 
             scale: isTop ? 1 : 0.95, 
-            y: isTop ? 0 : 20,
+            y: isTop ? exitY || 0 : 20,
             x: exitX,
           }}
-          exit={{ x: exitX, opacity: 0 }}
+          exit={{ x: exitX, y: exitY, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           data-testid={`swipe-card-${profile.id}`}
         >
@@ -692,20 +702,18 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => {
                       e.stopPropagation(); e.preventDefault();
-                      if (profile.ratingEnabled) {
-                        setShowRating(true); setSelectedRating(null); setRatingSubmitted(false);
-                      } else {
-                        toast({ title: "Non disponibile", description: `${profile.name} non ha attivato le impressioni` });
-                      }
+                      if (!alreadyLiked) onSwipe("right");
                     }}
+                    disabled={alreadyLiked}
                     className="flex flex-col items-center gap-0.5"
                     style={{ touchAction: "none" }}
-                    data-testid={`button-impression-${profile.id}`}
+                    data-testid={`button-like-sidebar-${profile.id}`}
                   >
-                    <div className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center ${profile.ratingEnabled ? "bg-gradient-to-br from-pink-500/50 to-purple-600/50 border-pink-400/40" : "bg-black/50 border-white/10"}`}>
-                      <Eye className={`w-6 h-6 ${profile.ratingEnabled ? "text-pink-300" : "text-white/40"}`} />
+                    <div className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center ${alreadyLiked ? "bg-pink-500/40 border-pink-400/50" : "bg-gradient-to-br from-pink-500/60 to-rose-600/60 border-pink-400/40"}`}
+                      style={{ boxShadow: alreadyLiked ? "none" : "0 0 16px rgba(236,72,153,0.5)" }}>
+                      <Heart className={`w-6 h-6 ${alreadyLiked ? "text-pink-300 fill-pink-300" : "text-white fill-white"}`} />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Like</span>
                   </motion.button>
                 </div>
               )}
@@ -878,19 +886,9 @@ interface ActionButtonsProps {
 }
 
 export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled, likeDisabled }: ActionButtonsProps) {
+  if (!onSuperLike) return null;
   return (
     <div className="flex items-center justify-center gap-6 py-2 pb-3">
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={onSwipeLeft}
-        disabled={disabled}
-        className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-sm border border-red-400/50 flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        data-testid="button-swipe-left"
-      >
-        <X className="w-7 h-7 text-red-400" />
-      </motion.button>
-      
       {onSuperLike && (
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -903,18 +901,6 @@ export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled
           <Star className="w-6 h-6 text-secondary" />
         </motion.button>
       )}
-      
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={onSwipeRight}
-        disabled={disabled}
-        className="w-14 h-14 rounded-full bg-primary/80 backdrop-blur-sm flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ boxShadow: "0 0 20px rgba(var(--primary-rgb, 168,85,247), 0.5)" }}
-        data-testid="button-swipe-right"
-      >
-        <Heart className="w-7 h-7 text-primary-foreground" />
-      </motion.button>
     </div>
   );
 }
