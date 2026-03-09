@@ -329,6 +329,7 @@ export function BottomNav() {
       if (document.visibilityState === "hidden") {
         fetch("/api/vibrapp/mark-all-read", { method: "POST", credentials: "include" }).catch(() => {});
         queryClient.setQueryData(["/api/vibrapp/unread-count"], { count: 0 });
+        queryClient.setQueryData(["/api/cold-messages/pending-count"], { count: 0 });
         try {
           if ("clearAppBadge" in navigator) (navigator as any).clearAppBadge();
         } catch {}
