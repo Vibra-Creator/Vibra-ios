@@ -156,6 +156,19 @@ const memoryUpload = multer({
   },
 });
 
+const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 30 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v", "video/x-mp4"];
+    if (!allowed.includes(file.mimetype)) {
+      cb(new Error("Formato video non supportato. Usa MP4, MOV o WebM."));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
 const objectStorageService = new ObjectStorageService();
 
 export async function registerRoutes(
@@ -666,6 +679,77 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Error uploading profile photo:", error?.message || error);
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
+    }
+  });
+
+  app.post("/api/profiles/upload-video", isAuthenticated, (req: any, res: any, next: any) => {
+    videoUpload.single("video")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ error: "Video troppo grande. Massimo 30 MB." });
+        }
+        return res.status(400).json({ error: err.message || "Errore nel caricamento del video" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+
+      if (!req.file) return res.status(400).json({ error: "No video uploaded" });
+
+      if (userProfile.profileVideoUrl) {
+        try { await objectStorageService.deleteObject(userProfile.profileVideoUrl); } catch {}
+      }
+
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+
+      const putResponse = await fetch(uploadURL, {
+        method: "PUT",
+        body: req.file.buffer,
+        headers: { "Content-Type": req.file.mimetype },
+      });
+
+      if (!putResponse.ok) {
+        console.error("Video storage PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+        return res.status(500).json({ error: "Errore nel salvataggio del video. Riprova." });
+      }
+
+      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+        owner: userId,
+        visibility: "public",
+      });
+
+      await storage.updateProfile(userProfile.id, { profileVideoUrl: objectPath });
+      res.json({ profileVideoUrl: objectPath });
+    } catch (error: any) {
+      console.error("Error uploading profile video:", error?.message || error);
+      res.status(500).json({ error: "Errore nel caricamento del video. Riprova." });
+    }
+  });
+
+  app.delete("/api/profiles/delete-video", isAuthenticated, async (req: any, res: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+
+      if (userProfile.profileVideoUrl) {
+        try { await objectStorageService.deleteObject(userProfile.profileVideoUrl); } catch {}
+      }
+
+      await storage.updateProfile(userProfile.id, { profileVideoUrl: null });
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting profile video:", error?.message || error);
+      res.status(500).json({ error: "Errore nell'eliminazione del video." });
     }
   });
 

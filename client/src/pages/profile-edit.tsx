@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, CheckCircle, Phone, ImagePlus, X, Loader2, UserCircle, Eye, Compass } from "lucide-react";
+import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, CheckCircle, Phone, ImagePlus, X, Loader2, UserCircle, Eye, Compass, Video, Trash2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,12 +175,15 @@ export default function ProfileEdit() {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [profileVideoUrl, setProfileVideoUrl] = useState<string | null>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [ratingEnabled, setRatingEnabled] = useState(false);
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
   const [maxDistanceKm, setMaxDistanceKm] = useState<number>(0);
   const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
   const [profileLongitude, setProfileLongitude] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const hasInitialized = useRef(false);
 
   const { data: existingProfile, isLoading } = useQuery<Profile | null>({
@@ -258,6 +261,7 @@ export default function ProfileEdit() {
       setCommunicationStyles(existingProfile.communicationStyle ? existingProfile.communicationStyle.split(",").filter(Boolean) : []);
       setCitySearch(existingProfile.location || "");
       setUploadedPhotos(existingProfile.photos || []);
+      setProfileVideoUrl(existingProfile.profileVideoUrl || null);
       setRatingEnabled(existingProfile.ratingEnabled || false);
       setLocationSharingEnabled(existingProfile.locationSharingEnabled || false);
       if (existingProfile.maxDistanceKm != null) setMaxDistanceKm(existingProfile.maxDistanceKm);
@@ -460,6 +464,89 @@ export default function ProfileEdit() {
     }
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v", "video/x-mp4"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Formato non supportato", description: "Usa MP4, MOV o WebM.", variant: "destructive" });
+      if (videoInputRef.current) videoInputRef.current.value = "";
+      return;
+    }
+
+    const maxSize = 30 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ title: "Video troppo grande", description: `${(file.size / (1024 * 1024)).toFixed(1)} MB. Massimo 30 MB.`, variant: "destructive" });
+      if (videoInputRef.current) videoInputRef.current.value = "";
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const videoEl = document.createElement("video");
+      videoEl.preload = "metadata";
+      videoEl.onloadedmetadata = () => {
+        URL.revokeObjectURL(videoEl.src);
+        if (videoEl.duration > 8) {
+          toast({ title: "Video troppo lungo", description: `Durata: ${videoEl.duration.toFixed(1)}s. Massimo 8 secondi.`, variant: "destructive" });
+          if (videoInputRef.current) videoInputRef.current.value = "";
+          reject(new Error("Too long"));
+        } else {
+          resolve();
+        }
+      };
+      videoEl.onerror = () => {
+        URL.revokeObjectURL(videoEl.src);
+        reject(new Error("Cannot read video"));
+      };
+      videoEl.src = URL.createObjectURL(file);
+    }).catch(() => null);
+
+    if (!videoInputRef.current?.files?.[0]) return;
+
+    setIsUploadingVideo(true);
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+      const response = await fetch("/api/profiles/upload-video", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Upload failed");
+      }
+      const data = await response.json();
+      setProfileVideoUrl(data.profileVideoUrl);
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      queryClient.removeQueries({ queryKey: ["/api/profiles/swipable"] });
+      toast({ title: "Video caricato!", description: "Il tuo video profilo è stato aggiunto." });
+    } catch (err: any) {
+      const msg = err?.message || "Errore nel caricamento";
+      toast({ title: "Errore", description: msg, variant: "destructive" });
+    } finally {
+      setIsUploadingVideo(false);
+      if (videoInputRef.current) videoInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteVideo = async () => {
+    try {
+      const response = await fetch("/api/profiles/delete-video", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Delete failed");
+      setProfileVideoUrl(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      queryClient.removeQueries({ queryKey: ["/api/profiles/swipable"] });
+      toast({ title: "Video rimosso", description: "Il video profilo è stato eliminato." });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile rimuovere il video.", variant: "destructive" });
+    }
+  };
+
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const filteredInterests = interestSearch
@@ -644,6 +731,68 @@ export default function ProfileEdit() {
                           </button>
                         )}
                       </div>
+                    </div>
+
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm"
+                      className="hidden"
+                      onChange={handleVideoUpload}
+                      data-testid="input-profile-video"
+                    />
+
+                    <div>
+                      <div className="flex items-center gap-2 text-white font-semibold text-sm tracking-wide uppercase mb-3">
+                        <Video className="w-4 h-4 text-primary" />
+                        <span>Video Profilo</span>
+                        <span className="text-white/40 font-normal normal-case text-xs ml-1">max 8 sec · MP4/MOV/WebM</span>
+                      </div>
+                      {profileVideoUrl ? (
+                        <div className="relative rounded-xl overflow-hidden border-2 border-primary/60 bg-black" style={{ aspectRatio: '9/16', maxHeight: 280 }}>
+                          <video
+                            src={profileVideoUrl}
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full h-full object-cover"
+                            data-testid="video-profile-preview"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleDeleteVideo}
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center hover:bg-red-600/80 transition-colors"
+                            data-testid="button-delete-video"
+                          >
+                            <Trash2 className="w-4 h-4 text-white" />
+                          </button>
+                          <div className="absolute bottom-2 left-2 bg-black/60 rounded-full px-2 py-0.5">
+                            <span className="text-[10px] text-white font-semibold">VIDEO ATTIVO</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => videoInputRef.current?.click()}
+                          disabled={isUploadingVideo}
+                          className="w-full rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-2 text-white/90 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors py-8"
+                          data-testid="button-add-video"
+                        >
+                          {isUploadingVideo ? (
+                            <>
+                              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                              <span className="text-sm font-medium">Caricamento video...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Video className="w-8 h-8" />
+                              <span className="text-sm font-medium">Aggiungi video profilo</span>
+                              <span className="text-xs text-white/50">Sostituisce la foto nella card · max 8 sec</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

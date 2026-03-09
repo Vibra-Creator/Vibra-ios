@@ -106,12 +106,27 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
             data-testid="profile-detail-modal"
           >
             <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-              <img
-                src={profile.imageUrl}
-                alt={profile.name}
-                className="w-full aspect-[3/4] object-cover object-top"
-                data-testid="detail-profile-image"
-              />
+              {profile.profileVideoUrl ? (
+                <video
+                  key={profile.profileVideoUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full aspect-[3/4] object-cover object-top"
+                  poster={profile.imageUrl}
+                  data-testid="detail-profile-video"
+                >
+                  <source src={profile.profileVideoUrl} />
+                </video>
+              ) : (
+                <img
+                  src={profile.imageUrl}
+                  alt={profile.name}
+                  className="w-full aspect-[3/4] object-cover object-top"
+                  data-testid="detail-profile-image"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
               {allPhotos.length > 1 && (
                 <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1.5 pointer-events-none">
@@ -584,22 +599,40 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               : undefined
           }>
             <div className="relative h-full overflow-hidden">
-              {!imageLoaded && !imageError && (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-purple-900/50 to-black/80 animate-pulse" data-testid={`image-loading-${profile.id}`}>
-                  <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
-                    <User className="w-8 h-8 text-white/40" />
-                  </div>
-                </div>
+              {profile.profileVideoUrl ? (
+                <video
+                  key={profile.profileVideoUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover object-top cursor-pointer"
+                  onClick={handleImageTap}
+                  poster={profile.imageUrl}
+                  data-testid={`profile-video-${profile.id}`}
+                >
+                  <source src={profile.profileVideoUrl} />
+                </video>
+              ) : (
+                <>
+                  {!imageLoaded && !imageError && (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-purple-900/50 to-black/80 animate-pulse" data-testid={`image-loading-${profile.id}`}>
+                      <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                        <User className="w-8 h-8 text-white/40" />
+                      </div>
+                    </div>
+                  )}
+                  <img
+                    src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
+                    alt={profile.name}
+                    className={`w-full h-full object-cover object-top cursor-pointer transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                    onClick={handleImageTap}
+                    onLoad={() => setImageLoaded(true)}
+                    onError={() => setImageError(true)}
+                    data-testid={`profile-image-${profile.id}`}
+                  />
+                </>
               )}
-              <img
-                src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
-                alt={profile.name}
-                className={`w-full h-full object-cover object-top cursor-pointer transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
-                onClick={handleImageTap}
-                onLoad={() => setImageLoaded(true)}
-                onError={() => setImageError(true)}
-                data-testid={`profile-image-${profile.id}`}
-              />
               
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" style={{ height: '25%' }} />
@@ -614,6 +647,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm" data-testid={`liked-indicator-${profile.id}`}>
                   <Heart className="w-2.5 h-2.5 text-white fill-white" />
                   <span className="text-white text-[8px] font-bold">{t("swipe.likeDone")}</span>
+                </div>
+              )}
+
+              {profile.profileVideoUrl && !alreadyLiked && (
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5 px-1.5 py-px rounded-full bg-black/50 backdrop-blur-sm border border-white/20" data-testid={`video-indicator-${profile.id}`}>
+                  <Play className="w-2.5 h-2.5 text-white fill-white" />
+                  <span className="text-white text-[8px] font-bold">VIDEO</span>
                 </div>
               )}
 

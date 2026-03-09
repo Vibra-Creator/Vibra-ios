@@ -53,6 +53,7 @@ export const profiles = pgTable("profiles", {
   referralCode: varchar("referral_code"),
   highlightedUntil: timestamp("highlighted_until"),
   highlightReason: text("highlight_reason"),
+  profileVideoUrl: text("profile_video_url"),
 });
 
 export const swipes = pgTable("swipes", {
