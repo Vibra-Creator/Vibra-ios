@@ -143,18 +143,6 @@ export default function Home() {
   );
   const currentProfile = availableProfiles[0];
 
-  useEffect(() => {
-    if (currentProfile) {
-      sessionStorage.setItem("vibrapp_intro_target", JSON.stringify({
-        id: currentProfile.id,
-        name: currentProfile.name,
-        age: currentProfile.age,
-        imageUrl: currentProfile.imageUrl,
-      }));
-    } else {
-      sessionStorage.removeItem("vibrapp_intro_target");
-    }
-  }, [currentProfile?.id]);
   const nextProfile = availableProfiles[1];
 
   useEffect(() => {

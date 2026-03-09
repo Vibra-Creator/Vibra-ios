@@ -358,7 +358,9 @@ export function BottomNav() {
   const renderItem = (item: typeof navItems[0]) => {
     const isActive = location === item.path;
     return (
-      <Link key={item.path} href={item.path}>
+      <Link key={item.path} href={item.path} onClick={() => {
+        if (item.path === "/vibrapp") sessionStorage.removeItem("vibrapp_intro_target");
+      }}>
         <motion.div
           whileTap={{ scale: 0.9 }}
           className="flex flex-col items-center gap-0.5 min-w-[56px]"
