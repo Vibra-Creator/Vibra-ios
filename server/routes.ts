@@ -3744,6 +3744,9 @@ REGOLE IMPORTANTI:
 
       try { await objectStorageService.deleteObject(video.videoUrl); } catch {}
       await storage.deleteProfileVideo(video.id);
+      if (profile.profileVideoUrl === video.videoUrl) {
+        await storage.updateProfile(profile.id, { profileVideoUrl: null });
+      }
       res.json({ success: true });
     } catch (err) {
       console.error("[profile-videos] delete error:", err);
