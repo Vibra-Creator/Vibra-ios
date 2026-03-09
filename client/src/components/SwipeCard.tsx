@@ -656,8 +656,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-vibrapp-${profile.id}`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                      <MessageCircle className="w-6 h-6 text-violet-300" />
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#25D366", boxShadow: "0 0 14px rgba(37,211,102,0.6)" }}>
+                      <MessageCircle className="w-6 h-6 text-white" />
                     </div>
                     <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
                   </motion.button>
