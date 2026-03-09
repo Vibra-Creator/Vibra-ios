@@ -67,6 +67,7 @@ export default function Vibrapp() {
   const [introText, setIntroText] = useState("");
   const [introColdStatus, setIntroColdStatus] = useState<"idle" | "already_exists" | "sent" | "replied">("idle");
   const [introCheckDone, setIntroCheckDone] = useState(false);
+  const [introPrivateRoomId, setIntroPrivateRoomId] = useState<string | null>(null);
   const [selectedColdMsg, setSelectedColdMsg] = useState<ReceivedColdMsg | null>(null);
   const [replyText, setReplyText] = useState("");
   const socketRef = useRef<Socket | null>(null);
@@ -100,7 +101,9 @@ export default function Vibrapp() {
     mutationFn: async ({ toProfileId, content }: { toProfileId: string; content: string }) =>
       apiRequest("POST", "/api/cold-messages", { toProfileId, content }),
     onSuccess: (data: any) => {
-      setIntroColdStatus(data.status === "sent" ? "sent" : data.status === "already_replied" ? "replied" : "already_exists");
+      const status = data.status === "sent" ? "sent" : data.status === "already_replied" ? "replied" : "already_exists";
+      setIntroColdStatus(status);
+      if (status === "replied" && data.privateRoomId) setIntroPrivateRoomId(data.privateRoomId);
       setShowIntroCompose(false);
       setIntroText("");
     },
@@ -135,6 +138,7 @@ export default function Vibrapp() {
       .then((data: { exists: boolean; replied: boolean; privateRoomId: string | null }) => {
         if (data.exists) {
           setIntroColdStatus(data.replied ? "replied" : "already_exists");
+          if (data.replied && data.privateRoomId) setIntroPrivateRoomId(data.privateRoomId);
         }
         setIntroCheckDone(true);
       })
@@ -415,10 +419,99 @@ export default function Vibrapp() {
 
   const isMine = (msg: VibrappMsg) => msg.senderId === profile?.id;
 
+  useEffect(() => {
+    if (introTarget && profile && introTarget.id !== profile.id && introColdStatus === "replied" && introPrivateRoomId) {
+      sessionStorage.removeItem("vibrapp_intro_target");
+      setLocation(`/private-room/${introPrivateRoomId}`);
+    }
+  }, [introColdStatus, introPrivateRoomId, introTarget?.id, profile?.id]);
+
   if (!profile) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (introTarget && introTarget.id !== profile?.id) {
+    if (introColdStatus === "replied" && introPrivateRoomId) {
+      return null;
+    }
+
+    const clearIntro = () => {
+      setIntroTarget(null);
+      setIntroCheckDone(false);
+      setIntroColdStatus("idle");
+      setIntroPrivateRoomId(null);
+      setIntroText("");
+      sessionStorage.removeItem("vibrapp_intro_target");
+    };
+
+    return (
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#0a0d1e]" data-testid="vibrapp-dm-page">
+        <div className="bg-gradient-to-r from-[#075e54] to-[#128c7e] px-4 py-3 flex items-center gap-3 shrink-0 shadow-lg">
+          <button onClick={clearIntro} className="text-white/80 hover:text-white mr-1" data-testid="button-back-vibrapp-dm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <img src={introTarget.imageUrl} alt={introTarget.name} className="w-10 h-10 rounded-full object-cover border-2 border-white/30" />
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-base leading-tight truncate">{introTarget.name}, {introTarget.age}</p>
+            <p className="text-white/60 text-xs">Chat diretta privata</p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+          {!introCheckDone ? (
+            <div className="w-10 h-10 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+          ) : introColdStatus === "sent" || introColdStatus === "already_exists" ? (
+            <div className="flex flex-col items-center gap-5 text-center">
+              <div className="relative">
+                <img src={introTarget.imageUrl} alt={introTarget.name} className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/50" />
+                <span className="absolute -bottom-2 -right-2 text-3xl">🛸</span>
+              </div>
+              <div>
+                <p className="text-white font-bold text-lg">{introTarget.name}</p>
+                <p className="text-white/60 text-sm mt-1">Presentazione inviata — in attesa di risposta</p>
+                <p className="text-white/40 text-xs mt-2">Quando risponde si apre automaticamente la chat privata 🔐</p>
+              </div>
+              <button onClick={clearIntro} className="mt-4 text-white/40 text-sm underline underline-offset-4" data-testid="button-cancel-dm-wait">
+                Torna alla chat generale
+              </button>
+            </div>
+          ) : (
+            <div className="w-full max-w-md flex flex-col gap-4">
+              <div className="flex flex-col items-center gap-3 mb-2">
+                <img src={introTarget.imageUrl} alt={introTarget.name} className="w-20 h-20 rounded-full object-cover border-4 border-emerald-500" />
+                <div className="text-center">
+                  <p className="text-white font-bold text-lg">{introTarget.name}, {introTarget.age}</p>
+                  <p className="text-white/50 text-xs mt-0.5">Invia una presentazione per iniziare 🛸</p>
+                </div>
+              </div>
+              <textarea
+                className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-4 resize-none outline-none border border-white/10 focus:border-emerald-500/50"
+                rows={5}
+                maxLength={500}
+                placeholder={`Ciao ${introTarget.name}! Mi chiamo... Ho visto il tuo profilo e mi piacerebbe conoscerti 🛸`}
+                value={introText}
+                onChange={e => setIntroText(e.target.value)}
+                data-testid="input-dm-intro-text"
+              />
+              <p className="text-white/30 text-xs text-right">{introText.length}/500</p>
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 text-base font-semibold rounded-xl"
+                disabled={introText.trim().length < 10 || sendColdMsgMutation.isPending}
+                onClick={() => sendColdMsgMutation.mutate({ toProfileId: introTarget.id, content: introText })}
+                data-testid="button-send-dm-intro"
+              >
+                {sendColdMsgMutation.isPending ? "Invio..." : "🛸 Invia presentazione"}
+              </Button>
+              <button onClick={clearIntro} className="text-white/40 text-sm text-center underline underline-offset-4" data-testid="button-cancel-dm-intro">
+                Torna alla chat generale
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
