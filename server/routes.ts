@@ -733,6 +733,22 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/profiles/set-main-video", isAuthenticated, async (req: any, res: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      const { videoUrl } = req.body;
+      if (!videoUrl) return res.status(400).json({ error: "videoUrl required" });
+      await storage.updateProfile(userProfile.id, { profileVideoUrl: videoUrl });
+      res.json({ success: true, profileVideoUrl: videoUrl });
+    } catch (error: any) {
+      console.error("Error setting main video:", error?.message || error);
+      res.status(500).json({ error: "Errore nel salvataggio." });
+    }
+  });
+
   app.delete("/api/profiles/delete-video", isAuthenticated, async (req: any, res: any) => {
     try {
       const userId = req.user?.claims?.sub;

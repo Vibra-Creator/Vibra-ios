@@ -38,7 +38,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import type { Profile, Match, SentGift, VirtualGift, ProfileVideo } from "@shared/schema";
 import { ProfileDetailModal } from "@/components/SwipeCard";
 
-function ProfileVideosSection({ profileId }: { profileId: string }) {
+function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChanged }: { profileId: string; currentMainVideoUrl?: string | null; onMainVideoChanged?: (url: string) => void }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +56,19 @@ function ProfileVideosSection({ profileId }: { profileId: string }) {
     },
     onError: () => {
       toast({ title: t("profile.videoDeleteError"), variant: "destructive" });
+    },
+  });
+
+  const setMainVideoMutation = useMutation({
+    mutationFn: (videoUrl: string) => apiRequest("POST", "/api/profiles/set-main-video", { videoUrl }),
+    onSuccess: (_data: any, videoUrl: string) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      queryClient.removeQueries({ queryKey: ["/api/profiles/swipable"] });
+      if (onMainVideoChanged) onMainVideoChanged(videoUrl);
+      toast({ title: "Video principale impostato!", description: "Questo video ora appare al posto della foto nella card." });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile impostare il video principale.", variant: "destructive" });
     },
   });
 
@@ -189,29 +202,49 @@ function ProfileVideosSection({ profileId }: { profileId: string }) {
       <p className="text-white/70 text-sm leading-snug">{t("profile.videosDesc")}</p>
 
       <div className="grid grid-cols-2 gap-3">
-        {videos.map((video) => (
-          <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-cyan-400/30 bg-black/40 group" data-testid={`profile-video-item-${video.id}`}>
-            <video
-              src={video.videoUrl}
-              className="w-full h-full object-cover"
-              preload="metadata"
-              muted
-              playsInline
-            />
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Play className="w-10 h-10 text-white/90 fill-white/90" />
+        {videos.map((video) => {
+          const isMain = currentMainVideoUrl === video.videoUrl;
+          return (
+            <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-cyan-400/30 bg-black/40 group" data-testid={`profile-video-item-${video.id}`}>
+              <video
+                src={video.videoUrl}
+                className="w-full h-full object-cover"
+                preload="metadata"
+                muted
+                playsInline
+              />
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Play className="w-10 h-10 text-white/90 fill-white/90" />
+              </div>
+              <button
+                onClick={() => deleteMutation.mutate(video.id)}
+                disabled={deleteMutation.isPending}
+                className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/80 border border-white/30 flex items-center justify-center text-white hover:text-red-400 hover:bg-black/90 transition-colors z-10"
+                data-testid={`button-delete-video-${video.id}`}
+                title={t("profile.deleteVideo")}
+              >
+                <X className="w-4 h-4" />
+              </button>
+              {isMain ? (
+                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-primary/80 rounded-full px-2 py-0.5 z-10">
+                  <Star className="w-3 h-3 text-white fill-white" />
+                  <span className="text-[10px] font-bold text-white">PRINCIPALE</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setMainVideoMutation.mutate(video.videoUrl)}
+                  disabled={setMainVideoMutation.isPending}
+                  className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/70 hover:bg-primary/80 border border-white/30 rounded-full px-2 py-0.5 z-10 text-white/70 hover:text-white transition-colors"
+                  data-testid={`button-set-main-video-${video.id}`}
+                  title="Imposta come video principale"
+                >
+                  <Star className="w-3 h-3" />
+                  <span className="text-[10px] font-semibold">Imposta principale</span>
+                </button>
+              )}
             </div>
-            <button
-              onClick={() => deleteMutation.mutate(video.id)}
-              disabled={deleteMutation.isPending}
-              className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/80 border border-white/30 flex items-center justify-center text-white hover:text-red-400 hover:bg-black/90 transition-colors z-10"
-              data-testid={`button-delete-video-${video.id}`}
-              title={t("profile.deleteVideo")}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+          );
+        })}
 
         {videos.length < 2 && (
           <button
@@ -794,7 +827,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <ProfileVideosSection profileId={profile.id} />
+        <ProfileVideosSection profileId={profile.id} currentMainVideoUrl={profile.profileVideoUrl} />
 
         <div className="grid grid-cols-3 gap-3">
           {stats.map((stat, index) => (
