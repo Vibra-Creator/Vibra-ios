@@ -3843,6 +3843,44 @@ REGOLE IMPORTANTI:
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Favorites
+  app.get("/api/favorites", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profile not found" });
+      const favorites = await storage.getFavorites(myProfile.id);
+      res.json(favorites);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch favorites" });
+    }
+  });
+
+  app.post("/api/favorites/:profileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profile not found" });
+      const fav = await storage.addFavorite(myProfile.id, req.params.profileId);
+      res.json(fav);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to add favorite" });
+    }
+  });
+
+  app.delete("/api/favorites/:profileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profile not found" });
+      await storage.removeFavorite(myProfile.id, req.params.profileId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to remove favorite" });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return httpServer;
 }

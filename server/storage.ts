@@ -15,6 +15,7 @@ import {
   type ProfileVideo, type InsertProfileVideo,
   type ProfileReaction, type ReactionType,
   type CosmicSignal, type SignalComment,
+  type ProfileFavorite,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
@@ -22,6 +23,7 @@ import {
   reports, userSuspensions, bannedWords,
   profileRatings,
   vibingSessions,
+  profileFavorites,
   blockedUsers,
   locationShares,
   profileVideos,
@@ -170,6 +172,12 @@ export interface IStorage {
   toggleSignalLike(signalId: string, profileId: string): Promise<{ liked: boolean; count: number }>;
   getSignalComments(signalId: string): Promise<Array<SignalComment & { profile: Profile }>>;
   addSignalComment(data: { signalId: string; profileId: string; content: string }): Promise<SignalComment & { profile: Profile }>;
+
+  // Profile Favorites
+  getFavorites(profileId: string): Promise<Array<ProfileFavorite & { profile: Profile }>>;
+  addFavorite(profileId: string, favoritedProfileId: string): Promise<ProfileFavorite>;
+  removeFavorite(profileId: string, favoritedProfileId: string): Promise<void>;
+  isFavorite(profileId: string, favoritedProfileId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -406,6 +414,7 @@ export class DatabaseStorage implements IStorage {
     }
     await db.delete(matches).where(or(eq(matches.profile1Id, id), eq(matches.profile2Id, id)));
     await db.delete(swipes).where(or(eq(swipes.swiperId, id), eq(swipes.swipedId, id)));
+    await db.delete(profileFavorites).where(or(eq(profileFavorites.profileId, id), eq(profileFavorites.favoritedProfileId, id)));
     await db.delete(profiles).where(eq(profiles.id, id));
   }
 
@@ -1211,6 +1220,31 @@ export class DatabaseStorage implements IStorage {
     const [comment] = await db.insert(signalComments).values(data).returning();
     const [profile] = await db.select().from(profiles).where(eq(profiles.id, data.profileId));
     return { ...comment, profile };
+  }
+
+  async getFavorites(profileId: string): Promise<Array<ProfileFavorite & { profile: Profile }>> {
+    const favs = await db.select().from(profileFavorites).where(eq(profileFavorites.profileId, profileId)).orderBy(desc(profileFavorites.createdAt));
+    if (!favs.length) return [];
+    const profileIds = favs.map(f => f.favoritedProfileId);
+    const profileRows = await db.select().from(profiles).where(inArray(profiles.id, profileIds));
+    const profileMap = new Map(profileRows.map(p => [p.id, p]));
+    return favs.map(f => ({ ...f, profile: profileMap.get(f.favoritedProfileId) as Profile })).filter(f => f.profile);
+  }
+
+  async addFavorite(profileId: string, favoritedProfileId: string): Promise<ProfileFavorite> {
+    const existing = await db.select().from(profileFavorites).where(and(eq(profileFavorites.profileId, profileId), eq(profileFavorites.favoritedProfileId, favoritedProfileId)));
+    if (existing.length > 0) return existing[0];
+    const [fav] = await db.insert(profileFavorites).values({ profileId, favoritedProfileId }).returning();
+    return fav;
+  }
+
+  async removeFavorite(profileId: string, favoritedProfileId: string): Promise<void> {
+    await db.delete(profileFavorites).where(and(eq(profileFavorites.profileId, profileId), eq(profileFavorites.favoritedProfileId, favoritedProfileId)));
+  }
+
+  async isFavorite(profileId: string, favoritedProfileId: string): Promise<boolean> {
+    const [existing] = await db.select().from(profileFavorites).where(and(eq(profileFavorites.profileId, profileId), eq(profileFavorites.favoritedProfileId, favoritedProfileId)));
+    return !!existing;
   }
 }
 

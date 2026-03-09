@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2 } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useLocation } from "wouter";
 import type { Profile, ProfileVideo } from "@shared/schema";
 
 function getActivityStatus(lastActiveAt: string | Date | null | undefined, t: (key: string) => string): { label: string; color: string; isOnline: boolean } {
@@ -435,9 +436,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [isFavorited, setIsFavorited] = useState(false);
     const dragDistanceRef = useRef(0);
     const { toast } = useToast();
     const { t } = useLanguage();
+    const [, navigate] = useLocation();
 
     const { data: cardVideos = [] } = useQuery<ProfileVideo[]>({
       queryKey: ['/api/profiles', profile.id, 'videos'],
@@ -479,6 +482,33 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           toast({ title: t("common.error"), description: t("swipe.voteError"), variant: "destructive" });
         }
         setShowRating(false);
+      },
+    });
+
+    const { data: favoritesData } = useQuery<{ favoritedProfileId: string }[]>({
+      queryKey: ["/api/favorites"],
+      staleTime: 60 * 1000,
+      enabled: isTop,
+    });
+    useEffect(() => {
+      if (favoritesData) {
+        setIsFavorited(favoritesData.some(f => f.favoritedProfileId === profile.id));
+      }
+    }, [favoritesData, profile.id]);
+
+    const toggleFavoriteMutation = useMutation({
+      mutationFn: async () => {
+        if (isFavorited) {
+          return apiRequest("DELETE", `/api/favorites/${profile.id}`);
+        } else {
+          return apiRequest("POST", `/api/favorites/${profile.id}`);
+        }
+      },
+      onSuccess: () => {
+        const next = !isFavorited;
+        setIsFavorited(next);
+        queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+        toast({ title: next ? `⭐ Aggiunto ai preferiti` : `Rimosso dai preferiti`, description: profile.name });
       },
     });
     const x = useMotionValue(0);
@@ -564,60 +594,121 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" style={{ height: '25%' }} />
 
-              <div className="absolute top-0 left-0 right-0 z-20 flex flex-col gap-0.5 pt-0.5 px-2">
-                {topOverlay && (
-                  <div className="pointer-events-none">
-                    {topOverlay}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
-                  {profile.ratingEnabled && isTop && !showRating ? (
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }}
-                      className="pointer-events-auto flex items-center gap-0.5 px-1.5 py-px rounded-full bg-gradient-to-r from-pink-500/70 to-purple-600/70 backdrop-blur-sm text-white text-[8px] font-semibold border border-white/15"
-                      style={{ touchAction: "none" }}
-                      data-testid={`button-rate-${profile.id}`}
-                    >
-                      <Eye className="w-2.5 h-2.5" />
-                      <span>{t("swipe.piButton")}</span>
-                    </motion.button>
-                  ) : <div />}
-
-                  <div className="flex items-center gap-1">
-                    {hasVideos && isTop && (
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
-                        className="pointer-events-auto flex flex-col items-center gap-0.5"
-                        style={{ touchAction: "none" }}
-                        data-testid={`button-stories-${profile.id}`}
-                      >
-                        <div className="relative w-10 h-10 rounded-full p-[2px] bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400 animate-pulse-slow">
-                          <div className="w-full h-full rounded-full bg-black/80 flex items-center justify-center overflow-hidden border border-black">
-                            {profile.imageUrl ? (
-                              <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
-                            ) : (
-                              <Play className="w-4 h-4 text-cyan-400 fill-cyan-400" />
-                            )}
-                          </div>
-                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-black flex items-center justify-center border border-cyan-400/50">
-                            <Play className="w-2 h-2 text-cyan-400 fill-cyan-400" />
-                          </div>
-                        </div>
-                        <span className="text-[8px] font-bold text-cyan-300 drop-shadow-lg">STORIE</span>
-                      </motion.button>
-                    )}
-                    {alreadyLiked && (
-                      <div className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm" data-testid={`liked-indicator-${profile.id}`}>
-                        <Heart className="w-2.5 h-2.5 text-white fill-white" />
-                        <span className="text-white text-[8px] font-bold">{t("swipe.likeDone")}</span>
-                      </div>
-                    )}
-                  </div>
+              {topOverlay && (
+                <div className="absolute top-0 left-0 right-0 z-20 pt-1 px-2 pointer-events-none">
+                  {topOverlay}
                 </div>
-              </div>
+              )}
+
+              {alreadyLiked && (
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm" data-testid={`liked-indicator-${profile.id}`}>
+                  <Heart className="w-2.5 h-2.5 text-white fill-white" />
+                  <span className="text-white text-[8px] font-bold">{t("swipe.likeDone")}</span>
+                </div>
+              )}
+
+              {isTop && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3 pointer-events-auto">
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ touchAction: "none" }}
+                    data-testid={`button-stories-${profile.id}`}
+                  >
+                    <div className={`relative w-12 h-12 rounded-full p-[2.5px] ${hasVideos ? "bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400" : "bg-white/20"}`}>
+                      <div className="w-full h-full rounded-full bg-black/70 overflow-hidden border border-black/40">
+                        {profile.imageUrl ? (
+                          <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Play className="w-5 h-5 text-cyan-400 fill-cyan-400" />
+                          </div>
+                        )}
+                      </div>
+                      {hasVideos && (
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-black flex items-center justify-center border border-cyan-400/60">
+                          <Play className="w-2 h-2 text-cyan-400 fill-cyan-400" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Storie</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={(e) => {
+                      e.stopPropagation(); e.preventDefault();
+                      sessionStorage.setItem("vibrapp_intro_target", JSON.stringify({ id: profile.id, name: profile.name, age: profile.age, imageUrl: profile.imageUrl }));
+                      navigate("/vibrapp");
+                    }}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ touchAction: "none" }}
+                    data-testid={`button-vibrapp-${profile.id}`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                      <MessageCircle className="w-6 h-6 text-violet-300" />
+                    </div>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavoriteMutation.mutate(); }}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ touchAction: "none" }}
+                    data-testid={`button-favorite-${profile.id}`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                      <Bookmark className={`w-6 h-6 ${isFavorited ? "text-yellow-400 fill-yellow-400" : "text-white"}`} />
+                    </div>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={async (e) => {
+                      e.stopPropagation(); e.preventDefault();
+                      const shareUrl = `${window.location.origin}`;
+                      if (navigator.share) {
+                        try { await navigator.share({ title: `${profile.name}, ${profile.age}`, text: `Guarda questo profilo su Vibra!`, url: shareUrl }); }
+                        catch {}
+                      } else {
+                        await navigator.clipboard.writeText(shareUrl);
+                        toast({ title: "Link copiato!" });
+                      }
+                    }}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ touchAction: "none" }}
+                    data-testid={`button-share-${profile.id}`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                      <Share2 className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Condividi</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={(e) => {
+                      e.stopPropagation(); e.preventDefault();
+                      if (profile.ratingEnabled) {
+                        setShowRating(true); setSelectedRating(null); setRatingSubmitted(false);
+                      } else {
+                        toast({ title: "Non disponibile", description: `${profile.name} non ha attivato le impressioni` });
+                      }
+                    }}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ touchAction: "none" }}
+                    data-testid={`button-impression-${profile.id}`}
+                  >
+                    <div className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center ${profile.ratingEnabled ? "bg-gradient-to-br from-pink-500/50 to-purple-600/50 border-pink-400/40" : "bg-black/50 border-white/10"}`}>
+                      <Eye className={`w-6 h-6 ${profile.ratingEnabled ? "text-pink-300" : "text-white/40"}`} />
+                    </div>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
+                  </motion.button>
+                </div>
+              )}
               
               {!alreadyLiked && (
                 <motion.div 
@@ -638,7 +729,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               )}
               
               <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
-                <div className="px-4 pb-2 pt-8">
+                <div className="pl-4 pr-16 pb-2 pt-8">
                   <div className="flex items-end justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">

@@ -452,3 +452,14 @@ export const profileReactions = pgTable("profile_reactions", {
 });
 
 export type ProfileReaction = typeof profileReactions.$inferSelect;
+
+export const profileFavorites = pgTable("profile_favorites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  favoritedProfileId: varchar("favorited_profile_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertProfileFavoriteSchema = createInsertSchema(profileFavorites).omit({ id: true, createdAt: true });
+export type InsertProfileFavorite = z.infer<typeof insertProfileFavoriteSchema>;
+export type ProfileFavorite = typeof profileFavorites.$inferSelect;
