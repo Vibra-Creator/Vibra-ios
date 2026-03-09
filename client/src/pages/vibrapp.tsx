@@ -7,7 +7,7 @@ import { playNotificationSound, initNotificationSound } from "@/lib/notification
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 
 interface VibrappMsg {
   id: string;
@@ -49,6 +49,7 @@ interface ReceivedColdMsg {
 export default function Vibrapp() {
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const [messages, setMessages] = useState<VibrappMsg[]>([]);
   const [inputText, setInputText] = useState("");
   const [replyTo, setReplyTo] = useState<VibrappMsg | null>(null);
@@ -122,14 +123,25 @@ export default function Vibrapp() {
   });
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("vibrapp_intro_target");
-    if (raw) {
-      try {
-        const target = JSON.parse(raw) as IntroTarget;
-        setIntroTarget(target);
-      } catch {}
+    const params = new URLSearchParams(searchString);
+    const dmId = params.get("dm");
+    if (dmId) {
+      const raw = sessionStorage.getItem("vibrapp_intro_target");
+      if (raw) {
+        try {
+          const target = JSON.parse(raw) as IntroTarget;
+          if (target.id === dmId) {
+            setIntroTarget(target);
+            setIntroColdStatus("idle");
+            setIntroCheckDone(false);
+            setIntroPrivateRoomId(null);
+          }
+        } catch {}
+      }
+    } else {
+      setIntroTarget(null);
     }
-  }, []);
+  }, [searchString]);
 
   useEffect(() => {
     if (!introTarget || !profile) return;
@@ -441,12 +453,8 @@ export default function Vibrapp() {
     }
 
     const clearIntro = () => {
-      setIntroTarget(null);
-      setIntroCheckDone(false);
-      setIntroColdStatus("idle");
-      setIntroPrivateRoomId(null);
-      setIntroText("");
       sessionStorage.removeItem("vibrapp_intro_target");
+      setLocation("/vibrapp");
     };
 
     return (

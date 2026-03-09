@@ -650,7 +650,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     onClick={(e) => {
                       e.stopPropagation(); e.preventDefault();
                       sessionStorage.setItem("vibrapp_intro_target", JSON.stringify({ id: profile.id, name: profile.name, age: profile.age, imageUrl: profile.imageUrl }));
-                      navigate("/vibrapp");
+                      navigate(`/vibrapp?dm=${encodeURIComponent(profile.id)}`);
                     }}
                     className="flex flex-col items-center gap-0.5"
                     style={{ touchAction: "none" }}
