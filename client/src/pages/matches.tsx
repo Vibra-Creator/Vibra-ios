@@ -5,6 +5,7 @@ import { Heart, ArrowLeft, UserPlus, Sparkles, MapPin, ThumbsUp } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchCard, MatchCardSkeleton } from "@/components/MatchCard";
+import { ProfileDetailModal } from "@/components/SwipeCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,7 +21,7 @@ interface MatchWithProfile extends Match {
   profile: Profile;
 }
 
-function LikerCard({ profile, index }: { profile: Profile; index: number }) {
+function LikerCard({ profile, index, onViewProfile }: { profile: Profile; index: number; onViewProfile: (p: Profile) => void }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -51,7 +52,7 @@ function LikerCard({ profile, index }: { profile: Profile; index: number }) {
       className="relative rounded-2xl overflow-hidden bg-card border border-card-border shadow-lg"
       data-testid={`liker-card-${profile.id}`}
     >
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={() => onViewProfile(profile)}>
         <img
           src={profile.imageUrl}
           alt={profile.name}
@@ -105,6 +106,7 @@ export default function Matches() {
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"matches" | "likers">("likers");
+  const [selectedLiker, setSelectedLiker] = useState<Profile | null>(null);
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -245,7 +247,7 @@ export default function Matches() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-testid="grid-likers">
               {likers.map((profile, index) => (
-                <LikerCard key={profile.id} profile={profile} index={index} />
+                <LikerCard key={profile.id} profile={profile} index={index} onViewProfile={setSelectedLiker} />
               ))}
             </div>
           )
@@ -277,6 +279,13 @@ export default function Matches() {
         )}
       </div>
       <GuestBlockerModal />
+      {selectedLiker && (
+        <ProfileDetailModal
+          profile={selectedLiker}
+          isOpen={!!selectedLiker}
+          onClose={() => setSelectedLiker(null)}
+        />
+      )}
     </div>
   );
 }
