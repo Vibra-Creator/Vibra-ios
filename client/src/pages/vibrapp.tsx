@@ -744,6 +744,13 @@ export default function Vibrapp() {
                       </div>
                     </div>
 
+                    {msg.replyToId && (
+                      <div className={`flex items-center gap-1 mt-0.5 ${mine ? "justify-end" : "justify-start"}`}>
+                        <Lock className="w-2.5 h-2.5 text-purple-400/70" />
+                        <span className="text-[9px] text-purple-400/70 font-medium">Privato · visibile solo a voi due</span>
+                      </div>
+                    )}
+
                     {hasReactions && (
                       <div className={`flex flex-wrap gap-0.5 mt-0.5 ${mine ? "justify-end" : "justify-start"}`}>
                         {Object.entries(reactions).map(([emoji, users]) => (
