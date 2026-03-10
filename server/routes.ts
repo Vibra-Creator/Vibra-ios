@@ -233,10 +233,10 @@ export async function registerRoutes(
     try {
       const result = await db.execute(sql`
         DELETE FROM vibrapp_messages
-        WHERE created_at < NOW() - INTERVAL '48 hours'
+        WHERE created_at < NOW() - INTERVAL '24 hours'
       `);
       const count = (result as any).rowCount ?? 0;
-      if (count > 0) console.log(`[vibrapp-cleanup] Deleted ${count} messages older than 48h`);
+      if (count > 0) console.log(`[vibrapp-cleanup] Deleted ${count} messages older than 24h`);
     } catch (e) {
       console.error("[vibrapp-cleanup] Error:", e);
     }
@@ -3388,10 +3388,15 @@ REGOLE IMPORTANTI:
       const limit = parseInt(req.query.limit as string) || 50;
       const before = req.query.before as string | undefined;
 
-      const visibilityFilter = or(
-        sql`${vibrappMessages.replyToId} IS NULL`,
-        eq(vibrappMessages.senderId, profileId),
-        eq(vibrappMessages.replyToSenderId, profileId)
+      const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      const visibilityFilter = and(
+        gt(vibrappMessages.createdAt, cutoff24h),
+        or(
+          sql`${vibrappMessages.replyToId} IS NULL`,
+          eq(vibrappMessages.senderId, profileId),
+          eq(vibrappMessages.replyToSenderId, profileId)
+        )
       );
 
       let query;
@@ -3510,7 +3515,7 @@ REGOLE IMPORTANTI:
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
       const msg = await storage.getColdMessageBetween(myProfile.id, req.params.toProfileId);
-      res.json({ exists: !!msg, replied: msg?.replied ?? false, privateRoomId: msg?.privateRoomId ?? null });
+      res.json({ exists: !!msg, replied: msg?.replied ?? false, privateRoomId: msg?.privateRoomId ?? null, content: msg?.content ?? null, createdAt: msg?.createdAt ?? null });
     } catch (err) {
       res.status(500).json({ error: "Errore" });
     }

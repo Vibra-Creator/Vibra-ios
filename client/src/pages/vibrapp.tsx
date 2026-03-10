@@ -69,6 +69,8 @@ export default function Vibrapp() {
   const [introColdStatus, setIntroColdStatus] = useState<"idle" | "already_exists" | "sent" | "replied">("idle");
   const [introCheckDone, setIntroCheckDone] = useState(false);
   const [introPrivateRoomId, setIntroPrivateRoomId] = useState<string | null>(null);
+  const [introSentContent, setIntroSentContent] = useState<string | null>(null);
+  const [introSentAt, setIntroSentAt] = useState<string | null>(null);
   const [selectedColdMsg, setSelectedColdMsg] = useState<ReceivedColdMsg | null>(null);
   const [replyText, setReplyText] = useState("");
   const socketRef = useRef<Socket | null>(null);
@@ -101,10 +103,14 @@ export default function Vibrapp() {
   const sendColdMsgMutation = useMutation({
     mutationFn: async ({ toProfileId, content }: { toProfileId: string; content: string }) =>
       apiRequest("POST", "/api/cold-messages", { toProfileId, content }),
-    onSuccess: (data: any) => {
+    onSuccess: (data: any, variables) => {
       const status = data.status === "sent" ? "sent" : data.status === "already_replied" ? "replied" : "already_exists";
       setIntroColdStatus(status);
       if (status === "replied" && data.privateRoomId) setIntroPrivateRoomId(data.privateRoomId);
+      if (status === "sent") {
+        setIntroSentContent(variables.content);
+        setIntroSentAt(new Date().toISOString());
+      }
       setShowIntroCompose(false);
       setIntroText("");
     },
@@ -147,10 +153,12 @@ export default function Vibrapp() {
     if (!introTarget || !profile) return;
     fetch(`/api/cold-messages/check/${introTarget.id}`, { credentials: "include" })
       .then(r => r.json())
-      .then((data: { exists: boolean; replied: boolean; privateRoomId: string | null }) => {
+      .then((data: { exists: boolean; replied: boolean; privateRoomId: string | null; content: string | null; createdAt: string | null }) => {
         if (data.exists) {
           setIntroColdStatus(data.replied ? "replied" : "already_exists");
           if (data.replied && data.privateRoomId) setIntroPrivateRoomId(data.privateRoomId);
+          if (data.content) setIntroSentContent(data.content);
+          if (data.createdAt) setIntroSentAt(data.createdAt);
         }
         setIntroCheckDone(true);
       })
@@ -470,23 +478,37 @@ export default function Vibrapp() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+        <div className={`flex-1 flex flex-col ${introColdStatus === "sent" || introColdStatus === "already_exists" ? "" : "items-center justify-center px-6 py-8"}`}>
           {!introCheckDone ? (
             <div className="w-10 h-10 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
           ) : introColdStatus === "sent" || introColdStatus === "already_exists" ? (
-            <div className="flex flex-col items-center gap-5 text-center">
-              <div className="relative">
-                <img src={introTarget.imageUrl} alt={introTarget.name} className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/50" />
-                <span className="absolute -bottom-2 -right-2 text-3xl">🛸</span>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-4">
+                {introSentContent && (
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%]">
+                      <div className="bg-[#005c4b] text-white rounded-xl rounded-tr-sm px-4 py-2.5">
+                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap break-words">{introSentContent}</p>
+                        <p className="text-[10px] text-white/50 text-right mt-1">
+                          {introSentAt ? new Date(introSentAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-center">
+                  <div className="flex items-center gap-2 bg-black/40 rounded-full px-4 py-2 text-white/50 text-xs">
+                    <span>🔐</span>
+                    <span>In attesa che {introTarget.name} risponda</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-bold text-lg">{introTarget.name}</p>
-                <p className="text-white/60 text-sm mt-1">Presentazione inviata — in attesa di risposta</p>
-                <p className="text-white/40 text-xs mt-2">Quando risponde si apre automaticamente la chat privata 🔐</p>
+              <div className="shrink-0 px-4 py-3 bg-[#1a1a2e] border-t border-white/10">
+                <p className="text-center text-white/30 text-xs mb-2">Hai già inviato la tua presentazione</p>
+                <button onClick={clearIntro} className="w-full text-white/40 text-sm underline underline-offset-4 text-center" data-testid="button-cancel-dm-wait">
+                  Torna alla chat generale
+                </button>
               </div>
-              <button onClick={clearIntro} className="mt-4 text-white/40 text-sm underline underline-offset-4" data-testid="button-cancel-dm-wait">
-                Torna alla chat generale
-              </button>
             </div>
           ) : (
             <div className="w-full max-w-md flex flex-col gap-4">
