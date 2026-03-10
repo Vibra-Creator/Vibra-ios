@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2 } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,8 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
   const { t } = useLanguage();
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
+  const [modalMuted, setModalMuted] = useState(true);
+  const modalVideoRef = useRef<HTMLVideoElement>(null);
 
   const { data: profileVideos = [] } = useQuery<ProfileVideo[]>({
     queryKey: ['/api/profiles', profile.id, 'videos'],
@@ -107,18 +109,34 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
           >
             <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClose(); }}>
               {profile.profileVideoUrl ? (
-                <video
-                  key={profile.profileVideoUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="w-full aspect-[3/4] object-cover object-top"
-                  poster={profile.imageUrl}
-                  data-testid="detail-profile-video"
-                >
-                  <source src={profile.profileVideoUrl} />
-                </video>
+                <>
+                  <video
+                    ref={modalVideoRef}
+                    key={profile.profileVideoUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full aspect-[3/4] object-cover object-top"
+                    poster={profile.imageUrl}
+                    data-testid="detail-profile-video"
+                  >
+                    <source src={profile.profileVideoUrl} />
+                  </video>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newMuted = !modalMuted;
+                      setModalMuted(newMuted);
+                      if (modalVideoRef.current) modalVideoRef.current.muted = newMuted;
+                    }}
+                    className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                    data-testid="button-modal-mute-toggle"
+                  >
+                    {modalMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                  </button>
+                </>
               ) : (
                 <img
                   src={profile.imageUrl}
@@ -453,6 +471,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
+    const [isCardMuted, setIsCardMuted] = useState(true);
+    const cardVideoRef = useRef<HTMLVideoElement>(null);
     const dragDistanceRef = useRef(0);
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -600,19 +620,35 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           }>
             <div className="relative h-full overflow-hidden">
               {profile.profileVideoUrl ? (
-                <video
-                  key={profile.profileVideoUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="w-full h-full object-cover object-top cursor-pointer"
-                  onClick={handleImageTap}
-                  poster={profile.imageUrl}
-                  data-testid={`profile-video-${profile.id}`}
-                >
-                  <source src={profile.profileVideoUrl} />
-                </video>
+                <>
+                  <video
+                    ref={cardVideoRef}
+                    key={profile.profileVideoUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover object-top cursor-pointer"
+                    onClick={handleImageTap}
+                    poster={profile.imageUrl}
+                    data-testid={`profile-video-${profile.id}`}
+                  >
+                    <source src={profile.profileVideoUrl} />
+                  </video>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newMuted = !isCardMuted;
+                      setIsCardMuted(newMuted);
+                      if (cardVideoRef.current) cardVideoRef.current.muted = newMuted;
+                    }}
+                    className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                    data-testid="button-card-mute-toggle"
+                  >
+                    {isCardMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                  </button>
+                </>
               ) : (
                 <>
                   {!imageLoaded && !imageError && (
