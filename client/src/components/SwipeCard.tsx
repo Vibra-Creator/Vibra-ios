@@ -485,20 +485,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const hasVideos = cardVideos.length > 0;
 
     useEffect(() => {
-      setImageLoaded(false);
-      setImageError(false);
-      if (profile.imageUrl) {
-        const img = new window.Image();
-        img.onload = () => setImageLoaded(true);
-        img.onerror = () => setImageError(true);
-        img.src = profile.imageUrl;
-      }
       const extras = profile.photos || [];
       extras.forEach((url: string) => {
         const img = new window.Image();
         img.src = url;
       });
-    }, [profile.imageUrl, profile.photos]);
+    }, [profile.id, profile.photos]);
 
     useEffect(() => {
       const video = cardVideoRef.current;
