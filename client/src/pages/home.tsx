@@ -305,6 +305,17 @@ export default function Home() {
       {bgLayer}
 
       <div className="w-full relative z-10 flex-1 min-h-0">
+        {availableProfiles.slice(2, 5).filter(p => p.profileVideoUrl).map(p => (
+          <video
+            key={`preload-${p.id}`}
+            src={p.profileVideoUrl ?? undefined}
+            preload="auto"
+            muted
+            playsInline
+            className="absolute w-0 h-0 opacity-0 pointer-events-none"
+            aria-hidden="true"
+          />
+        ))}
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}

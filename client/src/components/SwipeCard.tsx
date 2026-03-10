@@ -500,6 +500,18 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       });
     }, [profile.imageUrl, profile.photos]);
 
+    useEffect(() => {
+      const video = cardVideoRef.current;
+      if (!video || !profile.profileVideoUrl) return;
+      if (isTop) {
+        video.currentTime = 0;
+        const p = video.play();
+        if (p) p.catch(() => {});
+      } else {
+        video.pause();
+      }
+    }, [isTop, profile.profileVideoUrl]);
+
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {
         return apiRequest("POST", "/api/ratings", { ratedId: profile.id, rating });
@@ -628,13 +640,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     muted
                     loop
                     playsInline
+                    preload="auto"
+                    src={profile.profileVideoUrl ?? undefined}
                     className="w-full h-full object-cover object-top cursor-pointer"
                     onClick={handleImageTap}
                     poster={profile.imageUrl}
                     data-testid={`profile-video-${profile.id}`}
-                  >
-                    <source src={profile.profileVideoUrl} />
-                  </video>
+                  />
                   <button
                     type="button"
                     onClick={(e) => {
