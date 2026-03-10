@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useGuest } from "@/hooks/use-guest";
 import { useLanguage } from "@/i18n/LanguageContext";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import type { Profile } from "@shared/schema";
 
 const PHRASES = [
   { emoji: "👽", text: "An alien is searching for you…" },
@@ -261,6 +263,46 @@ function CosmicBanner() {
   );
 }
 
+function LikesReceivedButton() {
+  const { user } = useAuth();
+  const { isGuest } = useGuest();
+
+  const { data: likers } = useQuery<Profile[]>({
+    queryKey: ["/api/likes/received"],
+    enabled: !!user && !isGuest,
+    refetchInterval: 30000,
+  });
+
+  const count = likers?.length ?? 0;
+
+  return (
+    <Link href="/matches" data-testid="link-likes-received">
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.88 }}
+        className="relative flex items-center justify-center w-10 h-10 rounded-full shrink-0"
+        style={{
+          background: "linear-gradient(135deg, #be185d 0%, #ec4899 50%, #f9a8d4 100%)",
+          boxShadow: "0 0 12px rgba(236,72,153,0.5), 0 0 24px rgba(236,72,153,0.2)",
+        }}
+        data-testid="button-likes-received-header"
+      >
+        <Heart className="w-5 h-5 text-white fill-white" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))" }} />
+        {count > 0 && (
+          <motion.span
+            key={count}
+            initial={{ scale: 1.4 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-white text-pink-600 text-[10px] font-black flex items-center justify-center px-1 border border-pink-300"
+          >
+            {count > 99 ? "99+" : count}
+          </motion.span>
+        )}
+      </motion.button>
+    </Link>
+  );
+}
+
 export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full">
@@ -269,6 +311,7 @@ export function Header() {
           <img src={vibraLogo} alt="Vibra" className="w-9 h-9 object-contain rounded-full shrink-0" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
         </Link>
         <CosmicBanner />
+        <LikesReceivedButton />
       </div>
     </header>
   );
