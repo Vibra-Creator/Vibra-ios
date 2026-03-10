@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -810,6 +810,23 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       <Heart className={`w-6 h-6 ${alreadyLiked ? "text-pink-300 fill-pink-300" : "text-white fill-white"}`} />
                     </div>
                     <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Like</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={(e) => {
+                      e.stopPropagation(); e.preventDefault();
+                      navigate("/signals");
+                    }}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ touchAction: "none" }}
+                    data-testid={`button-signals-sidebar-${profile.id}`}
+                  >
+                    <div className="w-12 h-12 rounded-full backdrop-blur-sm border border-fuchsia-400/40 flex items-center justify-center bg-gradient-to-br from-fuchsia-500/60 to-purple-600/60"
+                      style={{ boxShadow: "0 0 14px rgba(217,70,239,0.45)" }}>
+                      <Radio className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signals</span>
                   </motion.button>
                 </div>
               )}
