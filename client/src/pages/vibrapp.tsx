@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { io, Socket } from "socket.io-client";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink } from "lucide-react";
+import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink, Mic, Square, MicOff } from "lucide-react";
 import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -60,8 +60,13 @@ export default function Vibrapp() {
   const [showScrollDown, setShowScrollDown] = useState(false);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
-  const [mediaFileType, setMediaFileType] = useState<"image" | "video" | null>(null);
+  const [mediaFileType, setMediaFileType] = useState<"image" | "video" | "audio" | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [introTarget, setIntroTarget] = useState<IntroTarget | null>(null);
   const [showIntroCompose, setShowIntroCompose] = useState(false);
@@ -287,6 +292,65 @@ export default function Vibrapp() {
     setMediaFileType(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [mediaPreviewUrl]);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/ogg";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.start(100);
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(d => d + 1);
+      }, 1000);
+    } catch {
+      alert("Impossibile accedere al microfono. Controlla i permessi.");
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    recorder.onstop = () => {
+      const baseMime = (recorder.mimeType || "audio/webm").split(";")[0];
+      const blob = new Blob(audioChunksRef.current, { type: baseMime });
+      const ext = baseMime.includes("ogg") ? "ogg" : "webm";
+      const file = new File([blob], `vocale_${Date.now()}.${ext}`, { type: baseMime });
+      const url = URL.createObjectURL(blob);
+      if (mediaPreviewUrl) URL.revokeObjectURL(mediaPreviewUrl);
+      setMediaFile(file);
+      setMediaPreviewUrl(url);
+      setMediaFileType("audio");
+    };
+    recorder.stop();
+    recorder.stream.getTracks().forEach(t => t.stop());
+    setIsRecording(false);
+    setRecordingDuration(0);
+    mediaRecorderRef.current = null;
+  }, [mediaPreviewUrl]);
+
+  const cancelRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    recorder.stop();
+    recorder.stream.getTracks().forEach(t => t.stop());
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    mediaRecorderRef.current = null;
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingDuration(0);
+  }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -727,6 +791,20 @@ export default function Vibrapp() {
                         </div>
                       )}
 
+                      {msg.mediaUrl && msg.mediaType === "audio" && (
+                        <div className="mb-1 flex items-center gap-2 py-1" data-testid={`media-audio-${msg.id}`}>
+                          <div className="w-7 h-7 rounded-full bg-emerald-600/30 flex items-center justify-center shrink-0">
+                            <Mic className="w-3.5 h-3.5 text-emerald-400" />
+                          </div>
+                          <audio
+                            src={msg.mediaUrl}
+                            controls
+                            className="flex-1 h-8"
+                            style={{ minWidth: "160px", maxWidth: "220px", accentColor: "#10b981" }}
+                          />
+                        </div>
+                      )}
+
                       {msg.content && (
                         <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
                       )}
@@ -891,6 +969,11 @@ export default function Vibrapp() {
               <div className="relative shrink-0">
                 {mediaFileType === "image" ? (
                   <img src={mediaPreviewUrl} alt="preview" className="w-16 h-16 object-cover rounded-lg" data-testid="media-preview-image" />
+                ) : mediaFileType === "audio" ? (
+                  <div className="w-16 h-16 rounded-lg bg-emerald-900/40 flex flex-col items-center justify-center border border-emerald-500/30" data-testid="media-preview-audio">
+                    <Mic className="w-6 h-6 text-emerald-400" />
+                    <span className="text-[9px] text-white/60 mt-0.5">Vocale</span>
+                  </div>
                 ) : (
                   <div className="w-16 h-16 rounded-lg bg-black/50 flex flex-col items-center justify-center border border-white/20" data-testid="media-preview-video">
                     <Video className="w-6 h-6 text-emerald-400" />
@@ -899,11 +982,17 @@ export default function Vibrapp() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-white/70 truncate">{mediaFile?.name}</p>
-                <p className="text-[10px] text-white/40">
-                  {mediaFileType === "image" ? <ImageIcon className="w-3 h-3 inline mr-1" /> : <Video className="w-3 h-3 inline mr-1" />}
-                  {((mediaFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB
-                </p>
+                {mediaFileType === "audio" && mediaPreviewUrl ? (
+                  <audio src={mediaPreviewUrl} controls className="w-full h-8 accent-emerald-400" data-testid="audio-preview-player" />
+                ) : (
+                  <>
+                    <p className="text-xs text-white/70 truncate">{mediaFile?.name}</p>
+                    <p className="text-[10px] text-white/40">
+                      {mediaFileType === "image" ? <ImageIcon className="w-3 h-3 inline mr-1" /> : <Video className="w-3 h-3 inline mr-1" />}
+                      {((mediaFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB
+                    </p>
+                  </>
+                )}
               </div>
               <button onClick={clearMedia} className="p-1.5 rounded-full bg-white/10 hover:bg-red-500/30 text-white/60 hover:text-red-400 transition-colors" data-testid="button-remove-media">
                 <X className="w-4 h-4" />
@@ -921,42 +1010,84 @@ export default function Vibrapp() {
             onChange={handleFileSelect}
             data-testid="input-file-media"
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-emerald-400 hover:bg-white/20 transition-colors shrink-0"
-            data-testid="button-attach-media"
-            title="Allega immagine o video"
-          >
-            <Paperclip className="w-4 h-4" />
-          </button>
-          <input
-            ref={inputRef}
-            onFocus={() => initNotificationSound()}
-            type="text"
-            value={inputText}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder={t("vibrapp.placeholder")}
-            className="flex-1 bg-white/10 text-white placeholder:text-white/40 rounded-full px-4 py-2.5 text-sm border border-white/10 focus:border-emerald-500 focus:outline-none transition-colors"
-            data-testid="input-vibrapp-message"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={(!inputText.trim() && !mediaFile) || isUploading}
-            className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 p-0 shrink-0 disabled:opacity-30"
-            data-testid="button-send-message"
-          >
-            {isUploading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Send className="w-4 h-4 text-white" />
-            )}
-          </Button>
+
+          {isRecording ? (
+            <>
+              <button
+                onClick={cancelRecording}
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-red-400 hover:bg-white/20 transition-colors shrink-0"
+                data-testid="button-cancel-recording"
+                title="Annulla registrazione"
+              >
+                <MicOff className="w-4 h-4" />
+              </button>
+              <div className="flex-1 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-full px-4 py-2.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                <span className="text-sm text-red-400 font-medium">
+                  {String(Math.floor(recordingDuration / 60)).padStart(2, "0")}:{String(recordingDuration % 60).padStart(2, "0")}
+                </span>
+                <span className="text-xs text-white/50 flex-1">Registrazione in corso…</span>
+              </div>
+              <Button
+                onClick={stopRecording}
+                className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 p-0 shrink-0"
+                data-testid="button-stop-recording"
+                title="Ferma e invia"
+              >
+                <Square className="w-4 h-4 text-white fill-white" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-emerald-400 hover:bg-white/20 transition-colors shrink-0"
+                data-testid="button-attach-media"
+                title="Allega immagine o video"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <input
+                ref={inputRef}
+                onFocus={() => initNotificationSound()}
+                type="text"
+                value={inputText}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                placeholder={t("vibrapp.placeholder")}
+                className="flex-1 bg-white/10 text-white placeholder:text-white/40 rounded-full px-4 py-2.5 text-sm border border-white/10 focus:border-emerald-500 focus:outline-none transition-colors"
+                data-testid="input-vibrapp-message"
+              />
+              {inputText.trim() || mediaFile ? (
+                <Button
+                  onClick={sendMessage}
+                  disabled={(!inputText.trim() && !mediaFile) || isUploading}
+                  className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 p-0 shrink-0 disabled:opacity-30"
+                  data-testid="button-send-message"
+                >
+                  {isUploading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 text-white" />
+                  )}
+                </Button>
+              ) : (
+                <button
+                  onClick={startRecording}
+                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-emerald-400 hover:bg-white/20 transition-colors shrink-0"
+                  data-testid="button-start-recording"
+                  title="Registra messaggio vocale"
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 

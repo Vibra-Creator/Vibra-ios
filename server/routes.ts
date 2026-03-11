@@ -3245,7 +3245,7 @@ REGOLE IMPORTANTI:
         }).returning();
 
         const pushBody = mediaUrl
-          ? `${userProfile.name}: ${mediaType === "video" ? "📹 Video" : "🖼️ Immagine"}`
+          ? `${userProfile.name}: ${mediaType === "video" ? "📹 Video" : mediaType === "audio" ? "🎤 Vocale" : "🖼️ Immagine"}`
           : `${userProfile.name}: ${filteredContent.substring(0, 100)}`;
         const vibrappPushPayload = {
           title: "🛸 Vibrapp",
@@ -3432,19 +3432,21 @@ REGOLE IMPORTANTI:
       const { contentType, size } = req.body;
       const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
+      const ALLOWED_AUDIO = ["audio/webm", "audio/ogg", "audio/wav", "audio/mp4", "audio/mpeg", "audio/mp3"];
       const isImage = ALLOWED_IMAGE.includes(contentType);
       const isVideo = ALLOWED_VIDEO.includes(contentType);
-      if (!isImage && !isVideo) {
+      const isAudio = ALLOWED_AUDIO.includes(contentType);
+      if (!isImage && !isVideo && !isAudio) {
         return res.status(400).json({ error: "Tipo file non supportato" });
       }
-      const maxSize = isVideo ? 60 * 1024 * 1024 : 20 * 1024 * 1024;
+      const maxSize = isVideo ? 60 * 1024 * 1024 : isAudio ? 10 * 1024 * 1024 : 20 * 1024 * 1024;
       if (size && size > maxSize) {
-        return res.status(400).json({ error: isVideo ? "Video troppo grande (max 60MB)" : "Immagine troppo grande (max 20MB)" });
+        return res.status(400).json({ error: isVideo ? "Video troppo grande (max 60MB)" : isAudio ? "Audio troppo grande (max 10MB)" : "Immagine troppo grande (max 20MB)" });
       }
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-      res.json({ uploadURL, objectPath, mediaType: isVideo ? "video" : "image" });
+      res.json({ uploadURL, objectPath, mediaType: isVideo ? "video" : isAudio ? "audio" : "image" });
     } catch (err) {
       console.error("[vibrapp] request-upload error:", err);
       res.status(500).json({ error: "Upload non disponibile" });
