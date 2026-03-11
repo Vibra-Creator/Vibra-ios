@@ -50,6 +50,17 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
     enabled: isOpen,
   });
 
+  interface ProfileSignal { id: string; content: string | null; mediaUrl: string | null; mediaType: string | null; createdAt: string; }
+  const { data: profileSignals = [] } = useQuery<ProfileSignal[]>({
+    queryKey: ['/api/signals/profile', profile.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/signals/profile/${profile.id}`, { credentials: "include" });
+      return res.ok ? res.json() : [];
+    },
+    enabled: isOpen,
+    staleTime: 30000,
+  });
+
   const reportMutation = useMutation({
     mutationFn: (data: { reportedId: string; reason: string }) =>
       apiRequest("POST", "/api/reports", data),
@@ -204,6 +215,36 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                 <div>
                   <h3 className="text-sm font-semibold text-white/60 mb-2">{t("swipe.bio")}</h3>
                   <p className="text-white/90 text-sm leading-relaxed" data-testid="detail-profile-bio">{profile.bio}</p>
+                </div>
+              )}
+
+              {profileSignals.length > 0 && (
+                <div data-testid="detail-profile-signals">
+                  <h3 className="text-sm font-semibold text-white/60 mb-2 flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-purple-400" />
+                    Cosmic Signals
+                  </h3>
+                  <div className="space-y-2">
+                    {profileSignals.map(sig => (
+                      <div key={sig.id} className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2.5" data-testid={`detail-signal-${sig.id}`}>
+                        {sig.content && (
+                          <p className="text-white/85 text-sm leading-relaxed">"{sig.content}"</p>
+                        )}
+                        {sig.mediaUrl && sig.mediaType === "image" && (
+                          <img src={sig.mediaUrl} alt="signal" className="mt-2 w-full rounded-lg object-cover max-h-48" />
+                        )}
+                        {sig.mediaUrl && sig.mediaType === "video" && (
+                          <video src={sig.mediaUrl} controls playsInline className="mt-2 w-full rounded-lg max-h-48 bg-black" />
+                        )}
+                        {sig.mediaUrl && sig.mediaType === "audio" && (
+                          <audio src={sig.mediaUrl} controls className="mt-2 w-full" />
+                        )}
+                        <p className="text-purple-400/50 text-[10px] mt-1.5">
+                          {(() => { const diff = Date.now() - new Date(sig.createdAt).getTime(); const m = Math.floor(diff/60000); if(m<60) return `${m}m fa`; const h = Math.floor(m/60); if(h<24) return `${h}h fa`; return `${Math.floor(h/24)}g fa`; })()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

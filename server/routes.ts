@@ -3931,6 +3931,16 @@ REGOLE IMPORTANTI:
     }
   });
 
+  app.get("/api/signals/profile/:profileId", async (req, res) => {
+    try {
+      const signals = await storage.getProfileSignals(req.params.profileId, 5);
+      res.json(signals);
+    } catch (err) {
+      console.error("[signals] profile signals error:", err);
+      res.status(500).json({ error: "Errore nel recupero segnali" });
+    }
+  });
+
   app.post("/api/signals/request-upload", isAuthenticated, async (req: any, res) => {
     try {
       const { contentType, size } = req.body;

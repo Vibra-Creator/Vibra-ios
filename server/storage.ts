@@ -168,6 +168,7 @@ export interface IStorage {
 
   // Cosmic Signals
   getSignalsFeed(myProfileId: string, limit?: number): Promise<Array<CosmicSignal & { profile: Profile; likesCount: number; commentsCount: number; hasLiked: boolean }>>;
+  getProfileSignals(profileId: string, limit?: number): Promise<Pick<CosmicSignal, "id" | "content" | "mediaUrl" | "mediaType" | "createdAt">[]>;
   createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string }): Promise<CosmicSignal>;
   deleteSignal(id: string, profileId: string): Promise<void>;
   toggleSignalLike(signalId: string, profileId: string): Promise<{ liked: boolean; count: number }>;
@@ -1157,6 +1158,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ─── Cosmic Signals ────────────────────────────────────────────────────────
+
+  async getProfileSignals(profileId: string, limit = 5): Promise<Pick<CosmicSignal, "id" | "content" | "mediaUrl" | "mediaType" | "createdAt">[]> {
+    const rows = await db
+      .select({ id: cosmicSignals.id, content: cosmicSignals.content, mediaUrl: cosmicSignals.mediaUrl, mediaType: cosmicSignals.mediaType, createdAt: cosmicSignals.createdAt })
+      .from(cosmicSignals)
+      .where(eq(cosmicSignals.profileId, profileId))
+      .orderBy(desc(cosmicSignals.createdAt))
+      .limit(limit);
+    return rows;
+  }
 
   async getSignalsFeed(myProfileId: string, limit = 50): Promise<Array<CosmicSignal & { profile: Profile; likesCount: number; commentsCount: number; hasLiked: boolean }>> {
     const signals = await db.select().from(cosmicSignals).orderBy(desc(cosmicSignals.createdAt)).limit(limit);
