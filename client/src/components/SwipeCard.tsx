@@ -513,6 +513,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
     const [isCardMuted, setIsCardMuted] = useState(true);
+    const [showSignalCompose, setShowSignalCompose] = useState(false);
+    const [signalText, setSignalText] = useState("");
+    const [signalSent, setSignalSent] = useState(false);
     const cardVideoRef = useRef<HTMLVideoElement>(null);
     const dragDistanceRef = useRef(0);
     const { toast } = useToast();
@@ -592,6 +595,28 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         toast({ title: next ? `⭐ Aggiunto ai preferiti` : `Rimosso dai preferiti`, description: profile.name });
       },
     });
+
+    const sendSignalMutation = useMutation({
+      mutationFn: () => apiRequest("POST", "/api/signals", {
+        content: signalText.trim(),
+        mediaType: "text",
+        toProfileId: profile.id,
+      }),
+      onSuccess: () => {
+        setSignalSent(true);
+        setSignalText("");
+        queryClient.invalidateQueries({ queryKey: ["/api/signals/received"] });
+        setTimeout(() => { setShowSignalCompose(false); setSignalSent(false); }, 1800);
+      },
+      onError: (err: any) => {
+        if (err?.status === 401 || err?.message?.includes("401")) {
+          toast({ title: "Accesso richiesto", description: "Registrati per inviare Cosmic Signal", variant: "destructive" });
+        } else {
+          toast({ title: "Errore", description: "Impossibile inviare il Signal", variant: "destructive" });
+        }
+      },
+    });
+
     const x = useMotionValue(0);
     const y = useMotionValue(0);
     const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -861,7 +886,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => {
                       e.stopPropagation(); e.preventDefault();
-                      navigate("/signals");
+                      setShowSignalCompose(true);
                     }}
                     className="flex flex-col items-center gap-0.5"
                     style={{ touchAction: "none" }}
@@ -871,7 +896,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ boxShadow: "0 0 14px rgba(217,70,239,0.45)" }}>
                       <Radio className="w-6 h-6 text-white" />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signals</span>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
                   </motion.button>
                 </div>
               )}
@@ -1011,6 +1036,74 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     {ratingSubmitted ? t("swipe.sent") : ratingMutation.isPending ? "..." : t("swipe.sendVote")}
                   </button>
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showSignalCompose && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-end justify-center"
+              onClick={() => { setShowSignalCompose(false); setSignalText(""); setSignalSent(false); }}
+              data-testid="signal-compose-overlay"
+            >
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-lg bg-[#0d0120] border-t border-fuchsia-500/30 rounded-t-2xl p-5 pb-10"
+                onClick={e => e.stopPropagation()}
+                data-testid="signal-compose-panel"
+              >
+                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+                {signalSent ? (
+                  <div className="text-center py-6">
+                    <div className="text-5xl mb-3">🛸</div>
+                    <p className="text-white font-bold text-lg">Signal inviato!</p>
+                    <p className="text-white/50 text-sm mt-1">{profile.name} lo vedrà nei suoi Like & Signal</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-fuchsia-500/60" />
+                      <div>
+                        <p className="text-white font-bold">{profile.name}, {profile.age}</p>
+                        <p className="text-fuchsia-400/70 text-xs flex items-center gap-1"><Radio className="w-3 h-3" /> Invia un Cosmic Signal diretto</p>
+                      </div>
+                    </div>
+                    <textarea
+                      className="w-full bg-white/5 border border-fuchsia-500/20 text-white text-sm rounded-xl p-3 resize-none outline-none focus:border-fuchsia-500/50 mb-3"
+                      rows={3}
+                      maxLength={300}
+                      placeholder={`Scrivi qualcosa a ${profile.name}…`}
+                      value={signalText}
+                      onChange={e => setSignalText(e.target.value)}
+                      data-testid="input-signal-text"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowSignalCompose(false); setSignalText(""); }}
+                        className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm"
+                        data-testid="button-cancel-signal"
+                      >Annulla</button>
+                      <button
+                        onClick={() => sendSignalMutation.mutate()}
+                        disabled={signalText.trim().length < 2 || sendSignalMutation.isPending}
+                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-semibold text-sm disabled:opacity-40 transition-opacity"
+                        data-testid="button-send-signal"
+                      >
+                        {sendSignalMutation.isPending ? "Invio…" : "🛸 Invia Signal"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </motion.div>
             </motion.div>
           )}

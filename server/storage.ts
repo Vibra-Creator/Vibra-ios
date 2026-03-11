@@ -169,11 +169,12 @@ export interface IStorage {
   // Cosmic Signals
   getSignalsFeed(myProfileId: string, limit?: number): Promise<Array<CosmicSignal & { profile: Profile; likesCount: number; commentsCount: number; hasLiked: boolean }>>;
   getProfileSignals(profileId: string, limit?: number): Promise<Pick<CosmicSignal, "id" | "content" | "mediaUrl" | "mediaType" | "createdAt">[]>;
-  createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string }): Promise<CosmicSignal>;
+  createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string; toProfileId?: string }): Promise<CosmicSignal>;
   deleteSignal(id: string, profileId: string): Promise<void>;
   toggleSignalLike(signalId: string, profileId: string): Promise<{ liked: boolean; count: number }>;
   getSignalComments(signalId: string): Promise<Array<SignalComment & { profile: Profile }>>;
   addSignalComment(data: { signalId: string; profileId: string; content: string }): Promise<SignalComment & { profile: Profile }>;
+  getReceivedDirectSignals(toProfileId: string): Promise<Array<Pick<CosmicSignal, "id" | "content" | "mediaUrl" | "mediaType" | "createdAt"> & { fromProfile: Pick<Profile, "id" | "name" | "age" | "imageUrl"> }>>;
 
   // Profile Favorites
   getFavorites(profileId: string): Promise<Array<ProfileFavorite & { profile: Profile }>>;
@@ -1170,7 +1171,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSignalsFeed(myProfileId: string, limit = 50): Promise<Array<CosmicSignal & { profile: Profile; likesCount: number; commentsCount: number; hasLiked: boolean }>> {
-    const signals = await db.select().from(cosmicSignals).orderBy(desc(cosmicSignals.createdAt)).limit(limit);
+    const signals = await db.select().from(cosmicSignals)
+      .where(sql`${cosmicSignals.toProfileId} IS NULL`)
+      .orderBy(desc(cosmicSignals.createdAt)).limit(limit);
     if (!signals.length) return [];
 
     const profileIds = [...new Set(signals.map(s => s.profileId))];
@@ -1199,14 +1202,37 @@ export class DatabaseStorage implements IStorage {
     })).filter(s => s.profile);
   }
 
-  async createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string }): Promise<CosmicSignal> {
+  async createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string; toProfileId?: string }): Promise<CosmicSignal> {
     const [signal] = await db.insert(cosmicSignals).values({
       profileId: data.profileId,
+      toProfileId: data.toProfileId || null,
       content: data.content,
       mediaUrl: data.mediaUrl || null,
       mediaType: data.mediaType || "text",
     }).returning();
     return signal;
+  }
+
+  async getReceivedDirectSignals(toProfileId: string): Promise<Array<Pick<CosmicSignal, "id" | "content" | "mediaUrl" | "mediaType" | "createdAt"> & { fromProfile: Pick<Profile, "id" | "name" | "age" | "imageUrl"> }>> {
+    const signals = await db.select({
+      id: cosmicSignals.id,
+      content: cosmicSignals.content,
+      mediaUrl: cosmicSignals.mediaUrl,
+      mediaType: cosmicSignals.mediaType,
+      createdAt: cosmicSignals.createdAt,
+      fromProfileId: cosmicSignals.profileId,
+    }).from(cosmicSignals)
+      .where(eq(cosmicSignals.toProfileId, toProfileId))
+      .orderBy(desc(cosmicSignals.createdAt));
+    if (!signals.length) return [];
+    const profileIds = [...new Set(signals.map(s => s.fromProfileId))];
+    const profileRows = await db.select({ id: profiles.id, name: profiles.name, age: profiles.age, imageUrl: profiles.imageUrl })
+      .from(profiles).where(inArray(profiles.id, profileIds));
+    const profileMap = new Map(profileRows.map(p => [p.id, p]));
+    return signals.map(s => ({
+      id: s.id, content: s.content, mediaUrl: s.mediaUrl, mediaType: s.mediaType, createdAt: s.createdAt,
+      fromProfile: profileMap.get(s.fromProfileId) as Pick<Profile, "id" | "name" | "age" | "imageUrl">,
+    })).filter(s => s.fromProfile);
   }
 
   async deleteSignal(id: string, profileId: string): Promise<void> {

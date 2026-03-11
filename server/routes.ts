@@ -3857,7 +3857,7 @@ REGOLE IMPORTANTI:
       const userId = req.user?.claims?.sub;
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
-      const { content, mediaUrl, mediaType } = req.body;
+      const { content, mediaUrl, mediaType, toProfileId } = req.body;
       if (!content?.trim() && !mediaUrl) return res.status(400).json({ error: "Contenuto richiesto" });
       if (mediaUrl) {
         const objectStorageService = new ObjectStorageService();
@@ -3868,11 +3868,25 @@ REGOLE IMPORTANTI:
         content: (content || "").trim().substring(0, 500),
         mediaUrl: mediaUrl || undefined,
         mediaType: mediaType || "text",
+        toProfileId: toProfileId || undefined,
       });
       res.json(signal);
     } catch (err) {
       console.error("[signals] create error:", err);
       res.status(500).json({ error: "Errore nella creazione segnale" });
+    }
+  });
+
+  app.get("/api/signals/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const signals = await storage.getReceivedDirectSignals(myProfile.id);
+      res.json(signals);
+    } catch (err) {
+      console.error("[signals] received error:", err);
+      res.status(500).json({ error: "Errore nel recupero signal ricevuti" });
     }
   });
 

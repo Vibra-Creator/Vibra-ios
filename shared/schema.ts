@@ -412,6 +412,7 @@ export type ColdMessage = typeof coldMessages.$inferSelect;
 export const cosmicSignals = pgTable("cosmic_signals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   profileId: varchar("profile_id").notNull(),
+  toProfileId: varchar("to_profile_id"),   // null = public feed; set = direct signal
   content: text("content").default("").notNull(),
   mediaUrl: text("media_url"),
   mediaType: varchar("media_type", { length: 16 }), // 'text' | 'image' | 'video' | 'audio'

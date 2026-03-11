@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Heart, ArrowLeft, UserPlus, Sparkles, MapPin, ThumbsUp } from "lucide-react";
+import { Heart, ArrowLeft, UserPlus, Sparkles, MapPin, ThumbsUp, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchCard, MatchCardSkeleton } from "@/components/MatchCard";
@@ -125,7 +125,14 @@ export default function Matches() {
     refetchInterval: 30000,
   });
 
-  const likersCount = likers?.length ?? 0;
+  interface ReceivedSignal { id: string; content: string | null; mediaUrl: string | null; mediaType: string | null; createdAt: string; fromProfile: { id: string; name: string; age: number; imageUrl: string }; }
+  const { data: receivedSignals = [] } = useQuery<ReceivedSignal[]>({
+    queryKey: ["/api/signals/received"],
+    enabled: !!myProfile && !isGuest,
+    refetchInterval: 30000,
+  });
+
+  const likersCount = (likers?.length ?? 0) + receivedSignals.length;
 
   return (
     <div className="relative flex-1 min-h-0 h-full overflow-y-auto">
@@ -166,8 +173,8 @@ export default function Matches() {
                 }`}
                 data-testid="tab-likers"
               >
-                <ThumbsUp className="w-4 h-4" />
-                Ti hanno messo like
+                <Heart className="w-4 h-4" />
+                Like & Signal
                 {likersCount > 0 && (
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${activeTab === "likers" ? "bg-white/20" : "bg-pink-500 text-white"}`}>
                     {likersCount}
@@ -226,7 +233,7 @@ export default function Matches() {
                 </div>
               ))}
             </div>
-          ) : !likers?.length ? (
+          ) : !likers?.length && !receivedSignals.length ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -236,19 +243,64 @@ export default function Matches() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-pink-500/30 to-rose-500/30 flex items-center justify-center">
                 <Heart className="w-8 h-8 text-pink-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Nessun like ancora</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Nessun like o Signal ancora</h3>
               <p className="text-white/60 text-sm">
-                Quando qualcuno mette like al tuo profilo, lo vedrai qui. Continua a esplorare!
+                Quando qualcuno mette like o ti invia un Signal, lo vedrai qui. Continua a esplorare!
               </p>
               <Button className="mt-4 bg-gradient-to-r from-pink-500 to-rose-500" onClick={() => setLocation("/")}>
                 Esplora profili
               </Button>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-testid="grid-likers">
-              {likers.map((profile, index) => (
-                <LikerCard key={profile.id} profile={profile} index={index} onViewProfile={setSelectedLiker} />
-              ))}
+            <div className="space-y-4" data-testid="grid-likers">
+              {receivedSignals.length > 0 && (
+                <div>
+                  <p className="text-fuchsia-400 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5" /> Cosmic Signal ricevuti
+                  </p>
+                  <div className="space-y-2">
+                    {receivedSignals.map(sig => (
+                      <motion.div
+                        key={sig.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-start gap-3 bg-fuchsia-500/10 border border-fuchsia-500/25 rounded-2xl p-3"
+                        data-testid={`signal-card-${sig.id}`}
+                      >
+                        <button onClick={() => setSelectedLiker(sig.fromProfile as any)} className="shrink-0">
+                          <img src={sig.fromProfile.imageUrl} alt={sig.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-fuchsia-500/50" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className="text-white font-semibold text-sm">{sig.fromProfile.name}, {sig.fromProfile.age}</p>
+                            <Radio className="w-3 h-3 text-fuchsia-400 shrink-0" />
+                          </div>
+                          {sig.content && <p className="text-white/75 text-xs leading-relaxed line-clamp-2">"{sig.content}"</p>}
+                          {sig.mediaUrl && sig.mediaType === "image" && (
+                            <img src={sig.mediaUrl} alt="signal" className="mt-1.5 w-full rounded-lg object-cover max-h-32" />
+                          )}
+                          {sig.mediaUrl && sig.mediaType === "audio" && (
+                            <audio src={sig.mediaUrl} controls className="mt-1.5 w-full h-8" />
+                          )}
+                          <p className="text-fuchsia-400/50 text-[10px] mt-1">
+                            {(() => { const diff = Date.now() - new Date(sig.createdAt).getTime(); const m = Math.floor(diff/60000); if(m<60) return `${m}m fa`; const h = Math.floor(m/60); if(h<24) return `${h}h fa`; return `${Math.floor(h/24)}g fa`; })()}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {likers && likers.length > 0 && (
+                <div>
+                  {receivedSignals.length > 0 && <p className="text-pink-400 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 fill-pink-400" /> Like ricevuti</p>}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {likers.map((profile, index) => (
+                      <LikerCard key={profile.id} profile={profile} index={index} onViewProfile={setSelectedLiker} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )
         ) : matchesLoading ? (
