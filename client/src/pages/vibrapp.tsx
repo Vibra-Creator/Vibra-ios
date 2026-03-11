@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation, useSearch } from "wouter";
+import { ProfileDetailModal } from "@/components/SwipeCard";
 
 interface VibrappMsg {
   id: string;
@@ -85,6 +86,7 @@ export default function Vibrapp() {
   const [introAudioFile, setIntroAudioFile] = useState<File | null>(null);
   const [introAudioUrl, setIntroAudioUrl] = useState<string | null>(null);
   const [introIsUploading, setIntroIsUploading] = useState(false);
+  const [viewedSenderProfile, setViewedSenderProfile] = useState<any | null>(null);
   const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const introAudioChunksRef = useRef<Blob[]>([]);
   const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -822,12 +824,22 @@ export default function Vibrapp() {
                   {!mine && (
                     <div className="w-8 shrink-0 mr-1.5 flex items-end">
                       {showAvatar && (
-                        <img
-                          src={msg.senderImage || "/icons/icon-72x72.png"}
-                          alt=""
-                          className="w-7 h-7 rounded-full object-cover"
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/profiles/${msg.senderId}`, { credentials: "include" });
+                              if (res.ok) { const p = await res.json(); setViewedSenderProfile(p); }
+                            } catch {}
+                          }}
+                          className="focus:outline-none"
                           data-testid={`avatar-${msg.senderId}`}
-                        />
+                        >
+                          <img
+                            src={msg.senderImage || "/icons/icon-72x72.png"}
+                            alt=""
+                            className="w-7 h-7 rounded-full object-cover hover:ring-2 hover:ring-emerald-400 transition-all"
+                          />
+                        </button>
                       )}
                     </div>
                   )}
@@ -1373,6 +1385,14 @@ export default function Vibrapp() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {viewedSenderProfile && (
+        <ProfileDetailModal
+          profile={viewedSenderProfile}
+          isOpen={!!viewedSenderProfile}
+          onClose={() => setViewedSenderProfile(null)}
+        />
+      )}
     </div>
   );
 }
