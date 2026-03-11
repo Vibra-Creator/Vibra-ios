@@ -40,6 +40,8 @@ interface ReceivedColdMsg {
   id: string;
   fromProfileId: string;
   content: string;
+  mediaUrl: string | null;
+  mediaType: string | null;
   replied: boolean;
   privateRoomId: string | null;
   createdAt: string;
@@ -78,6 +80,14 @@ export default function Vibrapp() {
   const [introSentAt, setIntroSentAt] = useState<string | null>(null);
   const [selectedColdMsg, setSelectedColdMsg] = useState<ReceivedColdMsg | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [introIsRecording, setIntroIsRecording] = useState(false);
+  const [introRecordingDuration, setIntroRecordingDuration] = useState(0);
+  const [introAudioFile, setIntroAudioFile] = useState<File | null>(null);
+  const [introAudioUrl, setIntroAudioUrl] = useState<string | null>(null);
+  const [introIsUploading, setIntroIsUploading] = useState(false);
+  const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const introAudioChunksRef = useRef<Blob[]>([]);
+  const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -106,8 +116,8 @@ export default function Vibrapp() {
   });
 
   const sendColdMsgMutation = useMutation({
-    mutationFn: async ({ toProfileId, content }: { toProfileId: string; content: string }) =>
-      apiRequest("POST", "/api/cold-messages", { toProfileId, content }),
+    mutationFn: async ({ toProfileId, content, mediaUrl, mediaType }: { toProfileId: string; content: string; mediaUrl?: string; mediaType?: string }) =>
+      apiRequest("POST", "/api/cold-messages", { toProfileId, content, mediaUrl, mediaType }),
     onSuccess: (data: any, variables) => {
       const status = data.status === "sent" ? "sent" : data.status === "already_replied" ? "replied" : "already_exists";
       setIntroColdStatus(status);
@@ -118,6 +128,7 @@ export default function Vibrapp() {
       }
       setShowIntroCompose(false);
       setIntroText("");
+      if (introAudioUrl) { URL.revokeObjectURL(introAudioUrl); setIntroAudioFile(null); setIntroAudioUrl(null); }
     },
   });
 
@@ -351,6 +362,89 @@ export default function Vibrapp() {
     setIsRecording(false);
     setRecordingDuration(0);
   }, []);
+
+  const introStartRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/ogg";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      introAudioChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) introAudioChunksRef.current.push(e.data); };
+      recorder.start(100);
+      introMediaRecorderRef.current = recorder;
+      setIntroIsRecording(true);
+      setIntroRecordingDuration(0);
+      introRecordingTimerRef.current = setInterval(() => setIntroRecordingDuration(d => d + 1), 1000);
+    } catch {
+      alert("Impossibile accedere al microfono. Controlla i permessi.");
+    }
+  }, []);
+
+  const introStopRecording = useCallback(() => {
+    const recorder = introMediaRecorderRef.current;
+    if (!recorder) return;
+    if (introRecordingTimerRef.current) clearInterval(introRecordingTimerRef.current);
+    recorder.onstop = () => {
+      const baseMime = (recorder.mimeType || "audio/webm").split(";")[0];
+      const blob = new Blob(introAudioChunksRef.current, { type: baseMime });
+      const ext = baseMime.includes("ogg") ? "ogg" : "webm";
+      const file = new File([blob], `vocale_intro_${Date.now()}.${ext}`, { type: baseMime });
+      const url = URL.createObjectURL(blob);
+      if (introAudioUrl) URL.revokeObjectURL(introAudioUrl);
+      setIntroAudioFile(file);
+      setIntroAudioUrl(url);
+    };
+    recorder.stop();
+    recorder.stream.getTracks().forEach(t => t.stop());
+    setIntroIsRecording(false);
+    setIntroRecordingDuration(0);
+    introMediaRecorderRef.current = null;
+  }, [introAudioUrl]);
+
+  const introCancelRecording = useCallback(() => {
+    const recorder = introMediaRecorderRef.current;
+    if (!recorder) return;
+    recorder.stop();
+    recorder.stream.getTracks().forEach(t => t.stop());
+    if (introRecordingTimerRef.current) clearInterval(introRecordingTimerRef.current);
+    introMediaRecorderRef.current = null;
+    introAudioChunksRef.current = [];
+    setIntroIsRecording(false);
+    setIntroRecordingDuration(0);
+  }, []);
+
+  const introClearAudio = useCallback(() => {
+    if (introAudioUrl) URL.revokeObjectURL(introAudioUrl);
+    setIntroAudioFile(null);
+    setIntroAudioUrl(null);
+  }, [introAudioUrl]);
+
+  const introSubmit = useCallback(async () => {
+    if (!introTarget) return;
+    if (introAudioFile) {
+      setIntroIsUploading(true);
+      try {
+        const uploadRes = await fetch("/api/vibrapp/request-upload", {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contentType: introAudioFile.type, size: introAudioFile.size }),
+        });
+        if (!uploadRes.ok) { alert("Errore upload audio"); return; }
+        const { uploadURL, objectPath, mediaType } = await uploadRes.json();
+        const putRes = await fetch(uploadURL, { method: "PUT", body: introAudioFile, headers: { "Content-Type": introAudioFile.type } });
+        if (!putRes.ok) { alert("Upload fallito. Riprova."); return; }
+        sendColdMsgMutation.mutate({ toProfileId: introTarget.id, content: introText, mediaUrl: objectPath, mediaType });
+      } finally {
+        setIntroIsUploading(false);
+      }
+    } else {
+      sendColdMsgMutation.mutate({ toProfileId: introTarget.id, content: introText });
+    }
+  }, [introTarget, introAudioFile, introText, sendColdMsgMutation]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1114,29 +1208,68 @@ export default function Vibrapp() {
                 <img src={introTarget.imageUrl} alt={introTarget.name} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500" />
                 <div>
                   <p className="text-white font-bold">{introTarget.name}, {introTarget.age}</p>
-                  <p className="text-white/50 text-xs">Presentazione — max 500 caratteri</p>
+                  <p className="text-white/50 text-xs">Presentazione — testo o messaggio vocale</p>
                 </div>
               </div>
-              <textarea
-                className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-emerald-500/50 mb-4"
-                rows={4}
-                maxLength={500}
-                placeholder="Ciao! Mi chiamo... Ho visto il tuo profilo e mi piacerebbe conoscerti 🛸"
-                value={introText}
-                onChange={e => setIntroText(e.target.value)}
-                data-testid="input-intro-text"
-              />
+
+              {introIsRecording ? (
+                <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                  <span className="text-sm text-red-400 font-medium flex-1">
+                    {String(Math.floor(introRecordingDuration / 60)).padStart(2, "0")}:{String(introRecordingDuration % 60).padStart(2, "0")} — Registrazione in corso…
+                  </span>
+                  <button onClick={introCancelRecording} className="text-white/40 hover:text-red-400 transition-colors" data-testid="button-intro-cancel-rec">
+                    <MicOff className="w-4 h-4" />
+                  </button>
+                  <button onClick={introStopRecording} className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center" data-testid="button-intro-stop-rec">
+                    <Square className="w-3.5 h-3.5 text-white fill-white" />
+                  </button>
+                </div>
+              ) : introAudioFile && introAudioUrl ? (
+                <div className="flex items-center gap-3 bg-emerald-900/30 border border-emerald-500/30 rounded-xl px-3 py-2 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600/30 flex items-center justify-center shrink-0">
+                    <Mic className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <audio src={introAudioUrl} controls className="flex-1 h-8" style={{ accentColor: "#10b981" }} data-testid="intro-audio-preview" />
+                  <button onClick={introClearAudio} className="text-white/40 hover:text-red-400 transition-colors shrink-0" data-testid="button-intro-clear-audio">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-emerald-500/50 mb-2"
+                    rows={4}
+                    maxLength={500}
+                    placeholder="Ciao! Mi chiamo... Ho visto il tuo profilo e mi piacerebbe conoscerti 🛸"
+                    value={introText}
+                    onChange={e => setIntroText(e.target.value)}
+                    data-testid="input-intro-text"
+                  />
+                  <div className="flex items-center justify-end mb-3">
+                    <button
+                      onClick={introStartRecording}
+                      className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                      data-testid="button-intro-start-rec"
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                      Registra vocale invece
+                    </button>
+                  </div>
+                </>
+              )}
+
               <div className="flex gap-2">
-                <Button variant="ghost" className="flex-1 text-white/60" onClick={() => setShowIntroCompose(false)} data-testid="button-cancel-intro">
+                <Button variant="ghost" className="flex-1 text-white/60" onClick={() => { setShowIntroCompose(false); introCancelRecording(); introClearAudio(); }} data-testid="button-cancel-intro">
                   Annulla
                 </Button>
                 <Button
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white"
-                  disabled={introText.trim().length < 10 || sendColdMsgMutation.isPending}
-                  onClick={() => sendColdMsgMutation.mutate({ toProfileId: introTarget.id, content: introText })}
+                  disabled={(!introAudioFile && introText.trim().length < 10) || sendColdMsgMutation.isPending || introIsUploading || introIsRecording}
+                  onClick={introSubmit}
                   data-testid="button-confirm-intro"
                 >
-                  {sendColdMsgMutation.isPending ? "Invio..." : "🛸 Invia presentazione"}
+                  {introIsUploading || sendColdMsgMutation.isPending ? "Invio..." : "🛸 Invia presentazione"}
                 </Button>
               </div>
             </motion.div>
@@ -1171,7 +1304,16 @@ export default function Vibrapp() {
                 </div>
               </div>
               <div className="bg-[#1f2937] rounded-xl p-3 mb-4 border border-purple-500/20">
-                <p className="text-white/80 text-sm">{selectedColdMsg.content}</p>
+                {selectedColdMsg.mediaType === "audio" && selectedColdMsg.mediaUrl ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-purple-600/30 flex items-center justify-center shrink-0">
+                      <Mic className="w-3.5 h-3.5 text-purple-400" />
+                    </div>
+                    <audio src={selectedColdMsg.mediaUrl} controls className="flex-1 h-8" style={{ accentColor: "#9333ea" }} />
+                  </div>
+                ) : (
+                  <p className="text-white/80 text-sm">{selectedColdMsg.content}</p>
+                )}
               </div>
               <p className="text-white/50 text-xs mb-2">La tua risposta apre una chat privata 🔐</p>
               <textarea

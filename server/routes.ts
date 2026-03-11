@@ -3460,16 +3460,16 @@ REGOLE IMPORTANTI:
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
-      const { toProfileId, content } = req.body;
-      if (!toProfileId || !content?.trim()) return res.status(400).json({ error: "Parametri mancanti" });
+      const { toProfileId, content, mediaUrl, mediaType } = req.body;
+      if (!toProfileId || (!content?.trim() && !mediaUrl)) return res.status(400).json({ error: "Parametri mancanti" });
       if (toProfileId === myProfile.id) return res.status(400).json({ error: "Non puoi scrivere a te stesso" });
-      const result = await storage.sendColdMessage(myProfile.id, toProfileId, content.trim().substring(0, 500));
+      const result = await storage.sendColdMessage(myProfile.id, toProfileId, (content || "").trim().substring(0, 500), mediaUrl || undefined, mediaType || undefined);
       if (result.status === "sent") {
         const targetProfile = await storage.getProfile(toProfileId);
         if (targetProfile) {
           sendPushToProfile(toProfileId, {
             title: `🛸 ${myProfile.name} ti ha scritto`,
-            body: content.trim().substring(0, 100),
+            body: mediaType === "audio" ? "🎤 Ha inviato un messaggio vocale" : (content || "").trim().substring(0, 100),
             icon: "/icons/icon-192.png",
             url: "/vibrapp",
           });
@@ -3517,7 +3517,7 @@ REGOLE IMPORTANTI:
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
       const msg = await storage.getColdMessageBetween(myProfile.id, req.params.toProfileId);
-      res.json({ exists: !!msg, replied: msg?.replied ?? false, privateRoomId: msg?.privateRoomId ?? null, content: msg?.content ?? null, createdAt: msg?.createdAt ?? null });
+      res.json({ exists: !!msg, replied: msg?.replied ?? false, privateRoomId: msg?.privateRoomId ?? null, content: msg?.content ?? null, mediaUrl: msg?.mediaUrl ?? null, mediaType: msg?.mediaType ?? null, createdAt: msg?.createdAt ?? null });
     } catch (err) {
       res.status(500).json({ error: "Errore" });
     }

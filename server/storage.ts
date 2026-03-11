@@ -986,14 +986,14 @@ export class DatabaseStorage implements IStorage {
     .where(lt(profiles.lastActiveAt, cutoffDate));
   }
 
-  async sendColdMessage(fromProfileId: string, toProfileId: string, content: string): Promise<{ status: "sent" | "already_exists" | "already_replied"; coldMessage?: ColdMessage }> {
+  async sendColdMessage(fromProfileId: string, toProfileId: string, content: string, mediaUrl?: string, mediaType?: string): Promise<{ status: "sent" | "already_exists" | "already_replied"; coldMessage?: ColdMessage }> {
     const existing = await db.select().from(coldMessages)
       .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
       .limit(1);
     if (existing.length > 0) {
       return { status: existing[0].replied ? "already_replied" : "already_exists", coldMessage: existing[0] };
     }
-    const [msg] = await db.insert(coldMessages).values({ fromProfileId, toProfileId, content }).returning();
+    const [msg] = await db.insert(coldMessages).values({ fromProfileId, toProfileId, content, mediaUrl: mediaUrl || null, mediaType: mediaType || null }).returning();
     return { status: "sent", coldMessage: msg };
   }
 
@@ -1003,6 +1003,8 @@ export class DatabaseStorage implements IStorage {
       fromProfileId: coldMessages.fromProfileId,
       toProfileId: coldMessages.toProfileId,
       content: coldMessages.content,
+      mediaUrl: coldMessages.mediaUrl,
+      mediaType: coldMessages.mediaType,
       replied: coldMessages.replied,
       replyContent: coldMessages.replyContent,
       privateRoomId: coldMessages.privateRoomId,
@@ -1018,7 +1020,8 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(coldMessages.createdAt));
     return rows.map(r => ({
       id: r.id, fromProfileId: r.fromProfileId, toProfileId: r.toProfileId,
-      content: r.content, replied: r.replied, replyContent: r.replyContent,
+      content: r.content, mediaUrl: r.mediaUrl, mediaType: r.mediaType,
+      replied: r.replied, replyContent: r.replyContent,
       privateRoomId: r.privateRoomId, createdAt: r.createdAt,
       fromProfile: { id: r.fromId, name: r.fromName, imageUrl: r.fromImage, age: r.fromAge },
     }));

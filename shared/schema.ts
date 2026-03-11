@@ -398,6 +398,8 @@ export const coldMessages = pgTable("cold_messages", {
   fromProfileId: varchar("from_profile_id").notNull(),
   toProfileId: varchar("to_profile_id").notNull(),
   content: text("content").notNull(),
+  mediaUrl: text("media_url"),
+  mediaType: varchar("media_type", { length: 16 }),
   replied: boolean("replied").default(false).notNull(),
   replyContent: text("reply_content"),
   privateRoomId: varchar("private_room_id"),
