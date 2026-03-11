@@ -456,6 +456,27 @@ function ReferralSection() {
           {t("profile.share")}
         </Button>
       </div>
+
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 flex items-center bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 overflow-hidden" data-testid="share-app-link-box">
+          <span className="text-white/50 text-sm truncate select-all">vibraalienmatch.com</span>
+        </div>
+        <button
+          onClick={async () => {
+            const url = "https://vibraalienmatch.com";
+            if (navigator.share) {
+              try { await navigator.share({ title: "Vibra – Alien Dating App 👽", text: "Unisciti a me su Vibra, l'app cosmica degli incontri 🛸", url }); } catch {}
+            } else {
+              await navigator.clipboard.writeText(url);
+              toast({ title: "Link copiato!", description: "vibraalienmatch.com copiato negli appunti" });
+            }
+          }}
+          className="w-11 h-11 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+          data-testid="button-share-app-link"
+        >
+          <Share2 className="w-5 h-5 text-primary" />
+        </button>
+      </div>
       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3 flex items-center gap-2">
         <Coins className="w-5 h-5 text-yellow-400 shrink-0" />
         <p className="text-sm text-yellow-200 font-medium" data-testid="text-referral-reward-info">{t("referral.rewardExplain")}</p>
