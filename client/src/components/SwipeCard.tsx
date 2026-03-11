@@ -1,6 +1,6 @@
-import { useState, forwardRef, useRef, useEffect } from "react";
+import { useState, forwardRef, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -516,6 +516,20 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [showSignalCompose, setShowSignalCompose] = useState(false);
     const [signalText, setSignalText] = useState("");
     const [signalSent, setSignalSent] = useState(false);
+
+    // Vibrapp direct compose
+    const [showVibCompose, setShowVibCompose] = useState(false);
+    const [vibText, setVibText] = useState("");
+    const [vibSent, setVibSent] = useState(false);
+    const [vibIsRecording, setVibIsRecording] = useState(false);
+    const [vibRecordingDuration, setVibRecordingDuration] = useState(0);
+    const [vibAudioFile, setVibAudioFile] = useState<File | null>(null);
+    const [vibAudioUrl, setVibAudioUrl] = useState<string | null>(null);
+    const [vibIsUploading, setVibIsUploading] = useState(false);
+    const vibMediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const vibAudioChunksRef = useRef<Blob[]>([]);
+    const vibTimerRef = useRef<NodeJS.Timeout | null>(null);
+
     const cardVideoRef = useRef<HTMLVideoElement>(null);
     const dragDistanceRef = useRef(0);
     const { toast } = useToast();
@@ -616,6 +630,94 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         }
       },
     });
+
+    const sendColdMsgMutation = useMutation({
+      mutationFn: (vars: { toProfileId: string; content: string; mediaUrl?: string; mediaType?: string }) =>
+        apiRequest("POST", "/api/cold-messages", vars),
+      onSuccess: () => {
+        setVibSent(true);
+        setVibText("");
+        setTimeout(() => { setShowVibCompose(false); setVibSent(false); }, 1800);
+      },
+      onError: () => toast({ title: "Errore", description: "Impossibile inviare il messaggio", variant: "destructive" }),
+    });
+
+    const vibStartRecording = useCallback(async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/ogg";
+        const recorder = new MediaRecorder(stream, { mimeType });
+        vibAudioChunksRef.current = [];
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) vibAudioChunksRef.current.push(e.data); };
+        recorder.start(100);
+        vibMediaRecorderRef.current = recorder;
+        setVibIsRecording(true);
+        setVibRecordingDuration(0);
+        vibTimerRef.current = setInterval(() => setVibRecordingDuration(d => d + 1), 1000);
+      } catch {
+        toast({ title: "Microfono non disponibile", description: "Controlla i permessi del browser", variant: "destructive" });
+      }
+    }, [toast]);
+
+    const vibStopRecording = useCallback(() => {
+      const recorder = vibMediaRecorderRef.current;
+      if (!recorder) return;
+      if (vibTimerRef.current) clearInterval(vibTimerRef.current);
+      recorder.onstop = () => {
+        const baseMime = (recorder.mimeType || "audio/webm").split(";")[0];
+        const blob = new Blob(vibAudioChunksRef.current, { type: baseMime });
+        const ext = baseMime.includes("ogg") ? "ogg" : "webm";
+        const file = new File([blob], `vocale_${Date.now()}.${ext}`, { type: baseMime });
+        const url = URL.createObjectURL(blob);
+        if (vibAudioUrl) URL.revokeObjectURL(vibAudioUrl);
+        setVibAudioFile(file);
+        setVibAudioUrl(url);
+      };
+      recorder.stop();
+      recorder.stream.getTracks().forEach(t => t.stop());
+      setVibIsRecording(false);
+      setVibRecordingDuration(0);
+      vibMediaRecorderRef.current = null;
+    }, [vibAudioUrl]);
+
+    const vibCancelRecording = useCallback(() => {
+      const recorder = vibMediaRecorderRef.current;
+      if (recorder) { recorder.stop(); recorder.stream.getTracks().forEach(t => t.stop()); }
+      if (vibTimerRef.current) clearInterval(vibTimerRef.current);
+      vibMediaRecorderRef.current = null;
+      vibAudioChunksRef.current = [];
+      setVibIsRecording(false);
+      setVibRecordingDuration(0);
+    }, []);
+
+    const vibClearAudio = useCallback(() => {
+      if (vibAudioUrl) URL.revokeObjectURL(vibAudioUrl);
+      setVibAudioFile(null);
+      setVibAudioUrl(null);
+    }, [vibAudioUrl]);
+
+    const vibSubmit = useCallback(async () => {
+      if (vibAudioFile) {
+        setVibIsUploading(true);
+        try {
+          const uploadRes = await fetch("/api/vibrapp/request-upload", {
+            method: "POST", credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contentType: vibAudioFile.type, size: vibAudioFile.size }),
+          });
+          if (!uploadRes.ok) { toast({ title: "Errore upload", variant: "destructive" }); return; }
+          const { uploadURL, objectPath, mediaType } = await uploadRes.json();
+          const putRes = await fetch(uploadURL, { method: "PUT", body: vibAudioFile, headers: { "Content-Type": vibAudioFile.type } });
+          if (!putRes.ok) { toast({ title: "Upload fallito", variant: "destructive" }); return; }
+          sendColdMsgMutation.mutate({ toProfileId: profile.id, content: vibText, mediaUrl: objectPath, mediaType });
+        } finally {
+          setVibIsUploading(false);
+        }
+      } else {
+        sendColdMsgMutation.mutate({ toProfileId: profile.id, content: vibText });
+      }
+    }, [vibAudioFile, vibText, profile.id, sendColdMsgMutation, toast]);
 
     const x = useMotionValue(0);
     const y = useMotionValue(0);
@@ -795,8 +897,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => {
                       e.stopPropagation(); e.preventDefault();
-                      sessionStorage.setItem("vibrapp_intro_target", JSON.stringify({ id: profile.id, name: profile.name, age: profile.age, imageUrl: profile.imageUrl }));
-                      navigate(`/vibrapp?dm=${encodeURIComponent(profile.id)}`);
+                      setShowVibCompose(true);
                     }}
                     className="flex flex-col items-center gap-0.5"
                     style={{ touchAction: "none" }}
@@ -1041,6 +1142,118 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           )}
         </AnimatePresence>
 
+        {/* ── Vibrapp direct compose sheet ── */}
+        <AnimatePresence>
+          {showVibCompose && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-end justify-center"
+              onClick={() => { setShowVibCompose(false); setVibText(""); setVibSent(false); vibCancelRecording(); vibClearAudio(); }}
+              data-testid="vibrapp-compose-overlay"
+            >
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-lg bg-[#0d1f12] border-t border-emerald-500/30 rounded-t-2xl p-5 pb-10"
+                onClick={e => e.stopPropagation()}
+                data-testid="vibrapp-compose-panel"
+              >
+                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+                {vibSent ? (
+                  <div className="text-center py-6">
+                    <div className="text-5xl mb-3">💬</div>
+                    <p className="text-white font-bold text-lg">Messaggio inviato!</p>
+                    <p className="text-white/50 text-sm mt-1">{profile.name} lo vedrà nel Vibrapp</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-emerald-500/60" />
+                      <div>
+                        <p className="text-white font-bold">{profile.name}, {profile.age}</p>
+                        <p className="text-emerald-400/70 text-xs flex items-center gap-1.5">
+                          <MessageCircle className="w-3 h-3" /> Messaggio diretto su Vibrapp
+                        </p>
+                      </div>
+                    </div>
+
+                    {vibIsRecording ? (
+                      <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <span className="text-sm text-red-400 font-medium flex-1">
+                          {String(Math.floor(vibRecordingDuration / 60)).padStart(2, "0")}:{String(vibRecordingDuration % 60).padStart(2, "0")} — Registrazione…
+                        </span>
+                        <button onClick={vibCancelRecording} className="text-white/40 hover:text-red-400" data-testid="button-vib-cancel-rec">
+                          <MicOff className="w-4 h-4" />
+                        </button>
+                        <button onClick={vibStopRecording} className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center" data-testid="button-vib-stop-rec">
+                          <Square className="w-3.5 h-3.5 text-white fill-white" />
+                        </button>
+                      </div>
+                    ) : vibAudioFile && vibAudioUrl ? (
+                      <div className="flex items-center gap-3 bg-emerald-900/30 border border-emerald-500/30 rounded-xl px-3 py-2 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-600/30 flex items-center justify-center shrink-0">
+                          <Mic className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <audio src={vibAudioUrl} controls className="flex-1 h-8" style={{ accentColor: "#10b981" }} data-testid="vib-audio-preview" />
+                        <button onClick={vibClearAudio} className="text-white/40 hover:text-red-400 shrink-0" data-testid="button-vib-clear-audio">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <textarea
+                          className="w-full bg-white/5 border border-emerald-500/20 text-white text-sm rounded-xl p-3 resize-none outline-none focus:border-emerald-500/50 mb-2"
+                          rows={3}
+                          maxLength={500}
+                          placeholder={`Scrivi a ${profile.name}…`}
+                          value={vibText}
+                          onChange={e => setVibText(e.target.value)}
+                          data-testid="input-vib-text"
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-end mb-3">
+                          <button
+                            onClick={vibStartRecording}
+                            className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                            data-testid="button-vib-start-rec"
+                          >
+                            <Mic className="w-3.5 h-3.5" />
+                            Registra vocale invece
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowVibCompose(false); setVibText(""); vibCancelRecording(); vibClearAudio(); }}
+                        className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm"
+                        data-testid="button-cancel-vib"
+                      >Annulla</button>
+                      <button
+                        onClick={vibSubmit}
+                        disabled={(!vibAudioFile && vibText.trim().length < 2) || vibIsUploading || sendColdMsgMutation.isPending || vibIsRecording}
+                        className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-40 transition-opacity"
+                        style={{ background: "#25D366" }}
+                        data-testid="button-send-vib"
+                      >
+                        {vibIsUploading || sendColdMsgMutation.isPending ? "Invio…" : "💬 Invia messaggio"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Signal compose sheet ── */}
         <AnimatePresence>
           {showSignalCompose && (
             <motion.div
