@@ -3859,6 +3859,10 @@ REGOLE IMPORTANTI:
       if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
       const { content, mediaUrl, mediaType } = req.body;
       if (!content?.trim() && !mediaUrl) return res.status(400).json({ error: "Contenuto richiesto" });
+      if (mediaUrl) {
+        const objectStorageService = new ObjectStorageService();
+        await objectStorageService.trySetObjectEntityAclPolicy(mediaUrl, { owner: userId, visibility: "public" }).catch(() => {});
+      }
       const signal = await storage.createSignal({
         profileId: myProfile.id,
         content: (content || "").trim().substring(0, 500),
