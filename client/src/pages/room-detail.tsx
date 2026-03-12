@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Users } from "lucide-react";
+import { ArrowLeft, Send, Users, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Room, RoomMessage } from "@shared/schema";
 
 const ROOM_BACKGROUNDS: Record<string, { type: "image"; src: string } | { type: "video"; src: string }> = {
@@ -26,9 +27,13 @@ export default function RoomDetail() {
   const roomId = params.roomId;
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [messageText, setMessageText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<RoomMessage[]>([]);
+  const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: room } = useQuery<Room>({
     queryKey: ["/api/rooms", roomId],
@@ -42,7 +47,7 @@ export default function RoomDetail() {
   });
 
   const messages = (() => {
-    const server = serverMessages || [];
+    const server = (serverMessages || []).filter(m => !deletingIds.has(m.id));
     if (optimisticMessages.length === 0) return server;
     const serverIds = new Set(server.map(m => m.id));
     const pending = optimisticMessages.filter(m => !serverIds.has(m.id));
@@ -94,6 +99,25 @@ export default function RoomDetail() {
     },
   });
 
+  const deleteMessage = useMutation({
+    mutationFn: (msgId: string) => apiRequest("DELETE", `/api/rooms/${roomId}/messages/${msgId}`),
+    onMutate: (msgId) => {
+      setDeletingIds(prev => new Set(prev).add(msgId));
+      setSelectedMsgId(null);
+    },
+    onSuccess: (_, msgId) => {
+      queryClient.setQueryData(
+        ["/api/rooms", roomId, "messages"],
+        (old: RoomMessage[] | undefined) => old?.filter(m => m.id !== msgId) ?? []
+      );
+      setDeletingIds(prev => { const s = new Set(prev); s.delete(msgId); return s; });
+    },
+    onError: (_, msgId) => {
+      setDeletingIds(prev => { const s = new Set(prev); s.delete(msgId); return s; });
+      toast({ title: "Errore", description: "Impossibile cancellare il messaggio", variant: "destructive" });
+    },
+  });
+
   useEffect(() => {
     if (roomId && myProfile) {
       joinMutation.mutate();
@@ -103,6 +127,14 @@ export default function RoomDetail() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Dismiss menu when clicking outside
+  useEffect(() => {
+    if (!selectedMsgId) return;
+    const handler = () => setSelectedMsgId(null);
+    document.addEventListener("click", handler, { capture: true });
+    return () => document.removeEventListener("click", handler, { capture: true });
+  }, [selectedMsgId]);
 
   const handleSend = () => {
     if (messageText.trim() && myProfile) {
@@ -117,6 +149,20 @@ export default function RoomDetail() {
       handleSend();
     }
   };
+
+  const handlePressStart = useCallback((msgId: string, isMe: boolean) => {
+    if (!isMe) return;
+    longPressTimerRef.current = setTimeout(() => {
+      setSelectedMsgId(msgId);
+    }, 450);
+  }, []);
+
+  const handlePressEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
 
   const formatTime = (date: Date | string) => {
     const d = new Date(date);
@@ -181,12 +227,15 @@ export default function RoomDetail() {
           <AnimatePresence>
             {messages.map((msg, index) => {
               const isMe = msg.senderId === myProfile?.id;
+              const isSelected = selectedMsgId === msg.id;
+              const isDeleting = deletingIds.has(msg.id);
               return (
                 <motion.div
                   key={msg.id}
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02 }}
+                  animate={{ opacity: isDeleting ? 0 : 1, scale: isDeleting ? 0.85 : 1 }}
+                  exit={{ opacity: 0, scale: 0.85, y: -5 }}
+                  transition={{ delay: isDeleting ? 0 : index * 0.02 }}
                   className={`flex gap-3 ${isMe ? "flex-row-reverse" : "flex-row"}`}
                   data-testid={`room-message-${msg.id}`}
                 >
@@ -202,16 +251,49 @@ export default function RoomDetail() {
                       <AvatarFallback className="bg-accent/30 text-white text-sm">{myProfile?.name?.[0] || "?"}</AvatarFallback>
                     </Avatar>
                   )}
-                  <div className={`flex flex-col max-w-[70%] ${isMe ? "items-end" : "items-start"}`}>
+                  <div className={`flex flex-col max-w-[70%] ${isMe ? "items-end" : "items-start"} relative`}>
                     <p className={`text-sm mb-1 font-semibold ${isMe ? "text-white/70" : "text-cyan-300"}`}>
                       {isMe ? "Tu" : msg.senderName}
                     </p>
+
+                    {/* Delete popup — shown above the bubble when selected */}
+                    <AnimatePresence>
+                      {isSelected && isMe && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.85, y: 6 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.85, y: 6 }}
+                          className="absolute -top-10 right-0 z-30"
+                          onClick={e => e.stopPropagation()}
+                          data-testid={`delete-popup-${msg.id}`}
+                        >
+                          <button
+                            onClick={() => deleteMessage.mutate(msg.id)}
+                            className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg transition-colors"
+                            data-testid={`button-delete-message-${msg.id}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Elimina
+                          </button>
+                          {/* Little arrow pointing down */}
+                          <div className="w-2 h-2 bg-red-600 rotate-45 absolute -bottom-1 right-4" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     <div
-                      className={`px-4 py-2.5 rounded-2xl ${
+                      className={`px-4 py-2.5 rounded-2xl select-none transition-opacity ${
                         isMe
                           ? "bg-gradient-to-r from-primary to-accent text-white rounded-br-md"
                           : "bg-white/15 backdrop-blur-sm text-white rounded-bl-md"
-                      }`}
+                      } ${isSelected ? "opacity-80" : "opacity-100"}`}
+                      onMouseDown={() => handlePressStart(msg.id, isMe)}
+                      onMouseUp={handlePressEnd}
+                      onMouseLeave={handlePressEnd}
+                      onTouchStart={() => handlePressStart(msg.id, isMe)}
+                      onTouchEnd={handlePressEnd}
+                      onTouchCancel={handlePressEnd}
+                      onContextMenu={e => { if (isMe) { e.preventDefault(); setSelectedMsgId(msg.id); } }}
                     >
                       <p className="text-[15px] break-words leading-relaxed">{msg.content}</p>
                       <span className={`text-xs block mt-1 ${isMe ? "text-white/60 text-right" : "text-white/40"}`}>
@@ -248,6 +330,9 @@ export default function RoomDetail() {
             <Send className="w-4 h-4" />
           </Button>
         </div>
+        {selectedMsgId && (
+          <p className="text-center text-white/40 text-[10px] mt-1">Tieni premuto per cancellare un messaggio</p>
+        )}
       </div>
     </div>
   );

@@ -1870,6 +1870,23 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/rooms/:id/messages/:msgId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      const [msg] = await db.select().from(roomMessages).where(eq(roomMessages.id, req.params.msgId));
+      if (!msg) return res.status(404).json({ error: "Messaggio non trovato" });
+      if (msg.senderId !== userProfile.id) return res.status(403).json({ error: "Non puoi cancellare messaggi altrui" });
+      await db.delete(roomMessages).where(eq(roomMessages.id, req.params.msgId));
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error deleting room message:", error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
   app.post("/api/rooms/:id/join", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
