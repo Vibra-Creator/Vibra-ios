@@ -975,6 +975,11 @@ export class DatabaseStorage implements IStorage {
     return video;
   }
 
+  async updateProfileVideoLocation(id: string, location: string | null): Promise<ProfileVideo | undefined> {
+    const [video] = await db.update(profileVideos).set({ location }).where(eq(profileVideos.id, id)).returning();
+    return video;
+  }
+
   async getVideosForInactiveProfiles(cutoffDate: Date): Promise<ProfileVideo[]> {
     return db.select({ 
       id: profileVideos.id, 

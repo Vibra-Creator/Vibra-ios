@@ -43,6 +43,8 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "moderating">("idle");
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [editingLocation, setEditingLocation] = useState<string>("");
 
   const { data: videos = [] } = useQuery<ProfileVideo[]>({
     queryKey: ['/api/profiles', profileId, 'videos'],
@@ -69,6 +71,19 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
     },
     onError: () => {
       toast({ title: "Errore", description: "Impossibile impostare il video principale.", variant: "destructive" });
+    },
+  });
+
+  const updateLocationMutation = useMutation({
+    mutationFn: (data: { videoId: string; location: string | null }) => 
+      apiRequest("PATCH", `/api/profiles/videos/${data.videoId}/location`, { location: data.location }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles', profileId, 'videos'] });
+      toast({ title: "Luogo aggiornato", description: "La location del video è stata salvata." });
+      setEditingVideoId(null);
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile salvare la location.", variant: "destructive" });
     },
   });
 
@@ -204,6 +219,10 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
       <div className="grid grid-cols-2 gap-3">
         {videos.map((video) => {
           const isMain = currentMainVideoUrl === video.videoUrl;
+          const uploadDate = new Date(video.createdAt).toLocaleDateString("it-IT");
+          const uploadTime = new Date(video.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+          const isEditing = editingVideoId === video.id;
+          
           return (
             <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-cyan-400/30 bg-black/40 group" data-testid={`profile-video-item-${video.id}`}>
               <video
@@ -216,6 +235,42 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                 <Play className="w-10 h-10 text-white/90 fill-white/90" />
               </div>
+
+              {/* Data/Ora + Location overlay in alto a sinistra */}
+              {isEditing ? (
+                <div className="absolute top-1.5 left-1.5 z-20 bg-black/90 rounded px-2 py-1 flex gap-1">
+                  <input
+                    type="text"
+                    value={editingLocation}
+                    onChange={(e) => setEditingLocation(e.target.value)}
+                    placeholder="Luogo"
+                    maxLength={50}
+                    className="text-[10px] bg-gray-800 text-white rounded px-1 py-0 w-20 outline-none border border-white/20"
+                    data-testid={`input-video-location-${video.id}`}
+                  />
+                  <button
+                    onClick={() => updateLocationMutation.mutate({ videoId: video.id, location: editingLocation || null })}
+                    disabled={updateLocationMutation.isPending}
+                    className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold"
+                    data-testid={`button-save-location-${video.id}`}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => setEditingVideoId(null)}
+                    className="text-[10px] text-red-400 hover:text-red-300 font-semibold"
+                    data-testid={`button-cancel-location-${video.id}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="absolute top-1.5 left-1.5 text-[10px] text-white z-10 bg-black/70 rounded px-2 py-1 group/overlay hover:cursor-pointer" onClick={() => { setEditingVideoId(video.id); setEditingLocation(video.location || ""); }}>
+                  <div className="font-semibold">{uploadDate} {uploadTime}</div>
+                  <div className="text-white/80 min-h-[14px]">{video.location || "Tocca per aggiungere luogo"}</div>
+                </div>
+              )}
+
               <button
                 onClick={() => deleteMutation.mutate(video.id)}
                 disabled={deleteMutation.isPending}

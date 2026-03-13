@@ -386,6 +386,7 @@ export const profileVideos = pgTable("profile_videos", {
   profileId: varchar("profile_id").notNull(),
   videoUrl: text("video_url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
+  location: text("location"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
