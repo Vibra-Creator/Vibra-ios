@@ -638,7 +638,7 @@ export default function Vibrapp() {
           </div>
         </div>
 
-        <div className={`flex-1 flex flex-col ${introColdStatus === "sent" || introColdStatus === "already_exists" ? "" : "items-center justify-center px-6 py-8"}`}>
+        <div className={`flex-1 flex flex-col overflow-y-auto ${introColdStatus === "sent" || introColdStatus === "already_exists" ? "" : "items-center justify-center px-6 py-4"}`}>
           {!introCheckDone ? (
             <div className="w-10 h-10 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
           ) : introColdStatus === "sent" || introColdStatus === "already_exists" ? (
