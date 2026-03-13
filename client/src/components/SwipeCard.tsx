@@ -821,7 +821,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         if (!newMuted) cardVideoRef.current.volume = 1;
                       }
                     }}
-                    className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                    className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
                     data-testid="button-card-mute-toggle"
                   >
                     {isCardMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
