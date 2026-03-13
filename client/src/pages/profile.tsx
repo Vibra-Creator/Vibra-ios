@@ -143,7 +143,7 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
 
     try {
       const duration = await checkDuration();
-      if (duration > 8) {
+      if (duration > 12) {
         toast({ title: t("profile.videoTooLong"), description: t("profile.videoTooLongDesc"), variant: "destructive" });
         return;
       }
