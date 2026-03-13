@@ -28,7 +28,7 @@ interface VibrappMsg {
 }
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
-const MAX_VIDEO_DURATION = 10;
+const MAX_VIDEO_DURATION = 12;
 
 interface IntroTarget {
   id: string;
