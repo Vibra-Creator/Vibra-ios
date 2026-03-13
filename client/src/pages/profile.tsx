@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
@@ -41,10 +41,7 @@ import { ProfileDetailModal } from "@/components/SwipeCard";
 function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChanged }: { profileId: string; currentMainVideoUrl?: string | null; onMainVideoChanged?: (url: string) => void }) {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadState, setUploadState] = useState<"idle" | "uploading" | "moderating">("idle");
-  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
-  const [editingLocation, setEditingLocation] = useState<string>("");
+  const [, navigate] = useLocation();
 
   const { data: videos = [] } = useQuery<ProfileVideo[]>({
     queryKey: ['/api/profiles', profileId, 'videos'],
@@ -74,139 +71,6 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
     },
   });
 
-  const updateLocationMutation = useMutation({
-    mutationFn: (data: { videoId: string; location: string | null }) => 
-      apiRequest("PATCH", `/api/profiles/videos/${data.videoId}/location`, { location: data.location }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profiles', profileId, 'videos'] });
-      toast({ title: "Luogo aggiornato", description: "La location del video è stata salvata." });
-      setEditingVideoId(null);
-    },
-    onError: () => {
-      toast({ title: "Errore", description: "Impossibile salvare la location.", variant: "destructive" });
-    },
-  });
-
-  async function extractThumbnail(file: File): Promise<string> {
-    return new Promise((resolve) => {
-      const video = document.createElement("video");
-      video.preload = "metadata";
-      video.muted = true;
-      video.playsInline = true;
-      const url = URL.createObjectURL(file);
-      let done = false;
-
-      const timeout = setTimeout(() => {
-        if (!done) { done = true; URL.revokeObjectURL(url); resolve(""); }
-      }, 5000);
-
-      const capture = () => {
-        if (done) return;
-        done = true;
-        clearTimeout(timeout);
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = 320;
-          canvas.height = 240;
-          const ctx = canvas.getContext("2d");
-          if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const base64 = canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
-          URL.revokeObjectURL(url);
-          resolve(base64 || "");
-        } catch {
-          URL.revokeObjectURL(url);
-          resolve("");
-        }
-      };
-
-      video.addEventListener("seeked", capture);
-      video.addEventListener("loadeddata", () => {
-        video.currentTime = 0.001;
-      });
-      video.addEventListener("loadedmetadata", () => {
-        video.currentTime = 0.001;
-      });
-      video.addEventListener("canplay", () => {
-        if (!done) video.currentTime = 0.001;
-      });
-      video.addEventListener("error", () => {
-        if (!done) { done = true; clearTimeout(timeout); URL.revokeObjectURL(url); resolve(""); }
-      });
-
-      video.src = url;
-    });
-  }
-
-  async function handleVideoSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!e.target) return;
-    (e.target as HTMLInputElement).value = "";
-    if (!file) return;
-
-    if (file.size > 50 * 1024 * 1024) {
-      toast({ title: t("profile.videoTooLarge"), description: t("profile.videoTooLargeDesc"), variant: "destructive" });
-      return;
-    }
-
-    const checkDuration = (): Promise<number> => new Promise((resolve, reject) => {
-      const v = document.createElement("video");
-      v.preload = "metadata";
-      v.src = URL.createObjectURL(file);
-      v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); resolve(v.duration); };
-      v.onerror = () => reject(new Error("duration check"));
-    });
-
-    try {
-      const duration = await checkDuration();
-      if (duration > 12) {
-        toast({ title: t("profile.videoTooLong"), description: t("profile.videoTooLongDesc"), variant: "destructive" });
-        return;
-      }
-    } catch {}
-
-    setUploadState("uploading");
-    try {
-      const urlRes = await apiRequest("POST", "/api/profiles/videos/request-upload", {
-        contentType: file.type,
-        size: file.size,
-      });
-      const { uploadURL, objectPath } = urlRes;
-
-      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-
-      setUploadState("moderating");
-
-      let thumbnailBase64 = "";
-      try { thumbnailBase64 = await extractThumbnail(file); } catch {}
-
-      await apiRequest("POST", "/api/profiles/videos", { objectPath, thumbnailBase64 });
-
-      queryClient.invalidateQueries({ queryKey: ['/api/profiles', profileId, 'videos'] });
-      toast({ title: t("profile.videoApproved"), description: t("profile.videoApprovedDesc") });
-    } catch (err: any) {
-      const msg = err?.message || "";
-      let body: any = {};
-      try {
-        const jsonStart = msg.indexOf("{");
-        if (jsonStart !== -1) body = JSON.parse(msg.slice(jsonStart));
-      } catch {}
-      if (body?.error === "rejected") {
-        toast({ title: t("profile.videoRejected"), description: t("profile.videoRejectedDesc"), variant: "destructive" });
-      } else if (body?.error === "max_videos") {
-        toast({ title: t("profile.videoMaxReached"), description: t("profile.videoMaxReachedDesc"), variant: "destructive" });
-      } else if (body?.error === "too_large") {
-        toast({ title: t("profile.videoTooLarge"), description: t("profile.videoTooLargeDesc"), variant: "destructive" });
-      } else {
-        toast({ title: t("profile.videoUploadError"), variant: "destructive" });
-      }
-    } finally {
-      setUploadState("idle");
-    }
-  }
-
-  const uploading = uploadState === "uploading";
-  const moderating = uploadState === "moderating";
-
   return (
     <div className="space-y-4 rounded-2xl border border-cyan-400/30 bg-cyan-950/20 p-4" data-testid="profile-videos-section">
       <div className="flex items-center gap-2.5">
@@ -219,12 +83,8 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
       <div className="grid grid-cols-2 gap-3">
         {videos.map((video) => {
           const isMain = currentMainVideoUrl === video.videoUrl;
-          const uploadDate = new Date(video.createdAt).toLocaleDateString("it-IT");
-          const uploadTime = new Date(video.createdAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-          const isEditing = editingVideoId === video.id;
-          
           return (
-            <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-cyan-400/30 bg-black/40 group" data-testid={`profile-video-item-${video.id}`}>
+            <div key={video.id} className="relative aspect-video rounded-xl overflow-hidden border border-cyan-400/30 bg-black/40" data-testid={`profile-video-item-${video.id}`}>
               <video
                 src={video.videoUrl}
                 className="w-full h-full object-cover"
@@ -232,69 +92,59 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
                 muted
                 playsInline
               />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
                 <Play className="w-10 h-10 text-white/90 fill-white/90" />
               </div>
 
-              {/* Data/Ora + Location overlay in alto a sinistra */}
-              {isEditing ? (
-                <div className="absolute top-1.5 left-1.5 z-20 bg-black/90 rounded px-2 py-1 flex gap-1">
-                  <input
-                    type="text"
-                    value={editingLocation}
-                    onChange={(e) => setEditingLocation(e.target.value)}
-                    placeholder="Luogo"
-                    maxLength={50}
-                    className="text-[10px] bg-gray-800 text-white rounded px-1 py-0 w-20 outline-none border border-white/20"
-                    data-testid={`input-video-location-${video.id}`}
-                  />
-                  <button
-                    onClick={() => updateLocationMutation.mutate({ videoId: video.id, location: editingLocation || null })}
-                    disabled={updateLocationMutation.isPending}
-                    className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold"
-                    data-testid={`button-save-location-${video.id}`}
-                  >
-                    ✓
-                  </button>
-                  <button
-                    onClick={() => setEditingVideoId(null)}
-                    className="text-[10px] text-red-400 hover:text-red-300 font-semibold"
-                    data-testid={`button-cancel-location-${video.id}`}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div className="absolute top-1.5 left-1.5 text-[10px] text-white z-10 bg-black/70 rounded px-2 py-1 group/overlay hover:cursor-pointer" onClick={() => { setEditingVideoId(video.id); setEditingLocation(video.location || ""); }}>
-                  <div className="font-semibold">{uploadDate} {uploadTime}</div>
-                  <div className="text-white/80 min-h-[14px]">{video.location || "Tocca per aggiungere luogo"}</div>
+              {/* Location overlay */}
+              {video.location && (
+                <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-black/70 rounded-full px-2 py-0.5 max-w-[65%] pointer-events-none">
+                  <MapPin className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                  <span className="text-[10px] text-white truncate">{video.location}</span>
                 </div>
               )}
 
+              {/* GIF overlay */}
+              {(video as any).gifOverlayUrl && (
+                <div className="absolute top-6 right-1 pointer-events-none">
+                  <img src={(video as any).gifOverlayUrl} alt="gif" className="w-12 h-12 object-contain rounded-lg" />
+                </div>
+              )}
+
+              {/* Caption overlay */}
+              {(video as any).caption && (
+                <div className="absolute bottom-7 left-0 right-0 px-1.5 pointer-events-none">
+                  <div className="bg-black/60 rounded px-1.5 py-0.5">
+                    <p className="text-white text-[10px] font-medium text-center truncate">{(video as any).caption}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Delete button */}
               <button
                 onClick={() => deleteMutation.mutate(video.id)}
                 disabled={deleteMutation.isPending}
-                className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/80 border border-white/30 flex items-center justify-center text-white hover:text-red-400 hover:bg-black/90 transition-colors z-10"
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/80 border border-white/30 flex items-center justify-center text-white hover:text-red-400 transition-colors z-10"
                 data-testid={`button-delete-video-${video.id}`}
-                title={t("profile.deleteVideo")}
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
+
+              {/* Main / Set main badge */}
               {isMain ? (
-                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-primary/80 rounded-full px-2 py-0.5 z-10">
-                  <Star className="w-3 h-3 text-white fill-white" />
-                  <span className="text-[10px] font-bold text-white">PRINCIPALE</span>
+                <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-primary/80 rounded-full px-1.5 py-0.5 z-10">
+                  <Star className="w-2.5 h-2.5 text-white fill-white" />
+                  <span className="text-[9px] font-bold text-white">PRINCIPALE</span>
                 </div>
               ) : (
                 <button
                   onClick={() => setMainVideoMutation.mutate(video.videoUrl)}
                   disabled={setMainVideoMutation.isPending}
-                  className="absolute bottom-1.5 left-1.5 flex items-center gap-1 bg-black/70 hover:bg-primary/80 border border-white/30 rounded-full px-2 py-0.5 z-10 text-white/70 hover:text-white transition-colors"
+                  className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/70 hover:bg-primary/80 border border-white/30 rounded-full px-1.5 py-0.5 z-10 text-white/70 hover:text-white transition-colors"
                   data-testid={`button-set-main-video-${video.id}`}
-                  title="Imposta come video principale"
                 >
-                  <Star className="w-3 h-3" />
-                  <span className="text-[10px] font-semibold">Imposta principale</span>
+                  <Star className="w-2.5 h-2.5" />
+                  <span className="text-[9px] font-semibold">Principale</span>
                 </button>
               )}
             </div>
@@ -303,27 +153,12 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
 
         {videos.length < 2 && (
           <button
-            onClick={() => !uploading && !moderating && fileInputRef.current?.click()}
-            disabled={uploading || moderating}
-            className="aspect-video rounded-xl border-2 border-dashed border-cyan-400/50 flex flex-col items-center justify-center gap-2 text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-cyan-950/30"
+            onClick={() => navigate("/video-upload")}
+            className="aspect-video rounded-xl border-2 border-dashed border-cyan-400/50 flex flex-col items-center justify-center gap-2 text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-400/10 transition-colors bg-cyan-950/30 active:scale-95"
             data-testid="button-add-video"
           >
-            {uploading ? (
-              <>
-                <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs font-semibold">{t("profile.videoUploading")}</span>
-              </>
-            ) : moderating ? (
-              <>
-                <div className="w-6 h-6 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs font-semibold text-yellow-300">{t("profile.videoModerating")}</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-7 h-7" />
-                <span className="text-xs font-semibold">{t("profile.addVideo")}</span>
-              </>
-            )}
+            <Plus className="w-7 h-7" />
+            <span className="text-xs font-semibold">{t("profile.addVideo")}</span>
           </button>
         )}
       </div>
@@ -332,15 +167,6 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
         <AlertCircle className="w-3.5 h-3.5 shrink-0 text-cyan-400/60" />
         {t("profile.videoInactiveNotice")}
       </p>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="video/mp4,video/webm,video/quicktime,video/mov"
-        className="hidden"
-        onChange={handleVideoSelect}
-        data-testid="input-video-upload"
-      />
     </div>
   );
 }

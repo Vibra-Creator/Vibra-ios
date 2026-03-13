@@ -34,6 +34,7 @@ import Signals from "@/pages/signals";
 import LocationMap from "@/pages/location-map";
 import Onboarding from "@/pages/onboarding";
 import ForgotPassword from "@/pages/forgot-password";
+import VideoUpload from "@/pages/video-upload";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
@@ -168,6 +169,7 @@ function AuthenticatedRouter() {
       <Route path="/vibrapp" component={VibrappChat} />
       <Route path="/signals" component={Signals} />
       <Route path="/dove-sei" component={LocationMap} />
+      <Route path="/video-upload" component={VideoUpload} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -317,7 +319,7 @@ function AppContent() {
     return <UnauthenticatedRouter />;
   }
 
-  const showHeader = isAuthenticated && !isPublicPage && location !== "/profile/edit";
+  const showHeader = isAuthenticated && !isPublicPage && location !== "/profile/edit" && location !== "/video-upload";
 
   return (
     <>

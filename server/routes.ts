@@ -3740,10 +3740,14 @@ REGOLE IMPORTANTI:
         console.error("[profile-videos] ACL set error (non-fatal):", aclErr);
       }
 
+      const { location, caption, gifOverlayUrl } = req.body;
       const video = await storage.addProfileVideo({
         profileId: profile.id,
         videoUrl: objectPath,
         thumbnailUrl: null,
+        location: location || null,
+        caption: caption || null,
+        gifOverlayUrl: gifOverlayUrl || null,
       });
 
       res.json(video);
@@ -3753,25 +3757,6 @@ REGOLE IMPORTANTI:
     }
   });
 
-  app.patch("/api/profiles/videos/:videoId/location", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const profile = await storage.getProfileByUserId(userId);
-      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
-
-      const video = await storage.getProfileVideoById(req.params.videoId);
-      if (!video) return res.status(404).json({ error: "Video non trovato" });
-      if (video.profileId !== profile.id) return res.status(403).json({ error: "Non puoi modificare i video altrui" });
-
-      const { location } = req.body;
-      const updated = await storage.updateProfileVideoLocation(req.params.videoId, location || null);
-      res.json(updated);
-    } catch (err) {
-      console.error("[profile-videos-location] error:", err);
-      res.status(500).json({ error: "Errore nell'aggiornamento della location" });
-    }
-  });
 
   app.delete("/api/profiles/videos/:videoId", isAuthenticated, async (req: any, res) => {
     try {

@@ -306,17 +306,39 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
               {profileVideos.length > 0 && (
                 <div data-testid="profile-detail-videos">
                   <h3 className="text-sm font-semibold text-white/60 mb-2">{t("profile.profileVideos")}</h3>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {profileVideos.map((video, idx) => (
-                      <video
-                        key={video.id}
-                        src={`/api/video-stream/${video.id}`}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        className="w-full rounded-xl border border-white/10 bg-black max-h-64 object-contain"
-                        data-testid={`profile-video-${idx}`}
-                      />
+                      <div key={video.id} className="relative rounded-xl overflow-hidden border border-white/10 bg-black">
+                        <video
+                          src={`/api/video-stream/${video.id}`}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="w-full max-h-64 object-contain"
+                          data-testid={`profile-video-${idx}`}
+                        />
+                        {/* Location overlay */}
+                        {(video as any).location && (
+                          <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 rounded-full px-2 py-0.5 pointer-events-none">
+                            <span className="text-[10px] text-cyan-300">📍</span>
+                            <span className="text-[10px] text-white truncate max-w-[120px]">{(video as any).location}</span>
+                          </div>
+                        )}
+                        {/* GIF overlay */}
+                        {(video as any).gifOverlayUrl && (
+                          <div className="absolute top-6 right-2 pointer-events-none">
+                            <img src={(video as any).gifOverlayUrl} alt="gif" className="w-14 h-14 object-contain rounded-lg" />
+                          </div>
+                        )}
+                        {/* Caption overlay */}
+                        {(video as any).caption && (
+                          <div className="absolute bottom-8 left-0 right-0 px-2 pointer-events-none">
+                            <div className="bg-black/70 rounded-lg px-2 py-1">
+                              <p className="text-white text-xs font-medium text-center">{(video as any).caption}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>

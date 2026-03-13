@@ -387,6 +387,8 @@ export const profileVideos = pgTable("profile_videos", {
   videoUrl: text("video_url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   location: text("location"),
+  caption: text("caption"),
+  gifOverlayUrl: text("gif_overlay_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
