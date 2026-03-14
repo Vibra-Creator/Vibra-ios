@@ -47,6 +47,9 @@ export default function Admin() {
   const [newBannedWord, setNewBannedWord] = useState("");
   const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [videoUploadState, setVideoUploadState] = useState<Record<string, "idle" | "uploading">>({});
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [videoUploadTarget, setVideoUploadTarget] = useState<string | null>(null);
   const [resetPwUserId, setResetPwUserId] = useState<string | null>(null);
   const [resetPwValue, setResetPwValue] = useState("");
   const [changeEmailUserId, setChangeEmailUserId] = useState<string | null>(null);
@@ -116,6 +119,11 @@ export default function Admin() {
     onError: () => {
       toast({ title: "Errore", description: "Impossibile salvare l'impostazione", variant: "destructive" });
     },
+  });
+
+  const { data: expandedProfileVideos = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/profiles", expandedProfile, "videos"],
+    enabled: !!expandedProfile,
   });
 
   const { data: backups, isLoading: backupsLoading } = useQuery<any[]>({
@@ -249,6 +257,55 @@ export default function Admin() {
     downloadCSV(`report-${referrer.name.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     toast({ title: "Report scaricato!", description: `Report di ${referrer.name} generato.` });
   };
+
+  async function handleAdminVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    (e.target as HTMLInputElement).value = "";
+    const profileId = videoUploadTarget;
+    if (!profileId) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: "Video troppo grande", description: "Max 50MB", variant: "destructive" });
+      return;
+    }
+
+    setVideoUploadState(s => ({ ...s, [profileId]: "uploading" }));
+    try {
+      const uploadRes = await apiRequest("POST", `/api/admin/profiles/${profileId}/videos/request-upload`, {
+        contentType: file.type,
+        size: file.size,
+      }) as { uploadURL: string; objectPath: string };
+
+      await fetch(uploadRes.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      await apiRequest("POST", `/api/admin/profiles/${profileId}/videos`, { objectPath: uploadRes.objectPath });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles", profileId, "videos"] });
+      toast({ title: "Video caricato!", description: "Il video è stato aggiunto al profilo." });
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("max_videos")) {
+        toast({ title: "Limite raggiunto", description: "Il profilo ha già 2 video.", variant: "destructive" });
+      } else {
+        toast({ title: "Errore upload", description: "Impossibile caricare il video.", variant: "destructive" });
+      }
+    } finally {
+      setVideoUploadState(s => ({ ...s, [profileId]: "idle" }));
+      setVideoUploadTarget(null);
+    }
+  }
+
+  const deleteAdminVideoMutation = useMutation({
+    mutationFn: ({ profileId, videoId }: { profileId: string; videoId: string }) =>
+      apiRequest("DELETE", `/api/admin/profiles/${profileId}/videos/${videoId}`),
+    onSuccess: (_data, { profileId }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles", profileId, "videos"] });
+      toast({ title: "Video eliminato" });
+    },
+    onError: () => {
+      toast({ title: "Errore eliminazione", variant: "destructive" });
+    },
+  });
 
   const deleteProfileMutation = useMutation({
     mutationFn: async (profileId: string) => apiRequest("DELETE", `/api/admin/profiles/${profileId}`),
@@ -671,6 +728,59 @@ export default function Admin() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Video management section */}
+                            <div className="mt-3 border border-border/50 rounded-lg p-3 bg-muted/10">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                                  🎬 Video ({isExpanded ? expandedProfileVideos.length : 0}/2)
+                                </h4>
+                                {isExpanded && expandedProfileVideos.length < 2 && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs gap-1"
+                                    disabled={videoUploadState[profile.id] === "uploading"}
+                                    onClick={() => {
+                                      setVideoUploadTarget(profile.id);
+                                      setTimeout(() => videoInputRef.current?.click(), 50);
+                                    }}
+                                    data-testid={`button-add-video-${profile.id}`}
+                                  >
+                                    {videoUploadState[profile.id] === "uploading" ? (
+                                      <><Loader2 className="w-3 h-3 animate-spin" /> Caricamento...</>
+                                    ) : (
+                                      <><Upload className="w-3 h-3" /> Aggiungi Video</>
+                                    )}
+                                  </Button>
+                                )}
+                              </div>
+                              {isExpanded && expandedProfileVideos.length > 0 ? (
+                                <div className="flex gap-2 overflow-x-auto pb-1">
+                                  {expandedProfileVideos.map((video: any) => (
+                                    <div key={video.id} className="relative flex-shrink-0">
+                                      <video
+                                        src={`/api/video-stream/${video.id}`}
+                                        className="w-24 h-16 rounded-lg object-cover border border-border bg-black"
+                                        preload="metadata"
+                                        muted
+                                        playsInline
+                                      />
+                                      <button
+                                        onClick={() => deleteAdminVideoMutation.mutate({ profileId: profile.id, videoId: video.id })}
+                                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center hover:bg-red-700 transition-colors"
+                                        data-testid={`button-delete-admin-video-${video.id}`}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : isExpanded ? (
+                                <p className="text-xs text-muted-foreground">Nessun video. Clicca "Aggiungi Video" per caricare.</p>
+                              ) : null}
+                            </div>
+
                             <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                               <span>Punti: {profile.points || 0}</span>
                               <span>|</span>
@@ -1678,6 +1788,16 @@ export default function Admin() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Hidden file input for admin video upload */}
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/mp4,video/webm,video/quicktime,video/mov"
+        className="hidden"
+        onChange={handleAdminVideoUpload}
+        data-testid="input-admin-video-upload"
+      />
     </div>
   );
 }

@@ -1386,6 +1386,76 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/profiles/:profileId/videos", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const videos = await storage.getProfileVideos(req.params.profileId);
+      res.json(videos);
+    } catch (err) {
+      res.status(500).json({ error: "Errore nel recupero video" });
+    }
+  });
+
+  app.post("/api/admin/profiles/:profileId/videos/request-upload", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfile(req.params.profileId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const existingVideos = await storage.getProfileVideos(profile.id);
+      if (existingVideos.length >= 2) return res.status(400).json({ error: "max_videos" });
+      const { contentType, size } = req.body;
+      const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
+      if (!ALLOWED_VIDEO.includes(contentType)) return res.status(400).json({ error: "Tipo file non supportato" });
+      if (size && size > 50 * 1024 * 1024) return res.status(400).json({ error: "too_large" });
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      res.json({ uploadURL, objectPath });
+    } catch (err) {
+      console.error("[admin-video] request-upload error:", err);
+      res.status(500).json({ error: "Upload non disponibile" });
+    }
+  });
+
+  app.post("/api/admin/profiles/:profileId/videos", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfile(req.params.profileId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const existingVideos = await storage.getProfileVideos(profile.id);
+      if (existingVideos.length >= 2) return res.status(400).json({ error: "max_videos" });
+      const { objectPath, caption, location, gifOverlayUrl } = req.body;
+      if (!objectPath) return res.status(400).json({ error: "objectPath mancante" });
+      try {
+        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+          owner: profile.userId,
+          visibility: "public",
+        });
+      } catch {}
+      const video = await storage.addProfileVideo({
+        profileId: profile.id,
+        videoUrl: objectPath,
+        thumbnailUrl: null,
+        location: location || null,
+        caption: caption || null,
+        gifOverlayUrl: gifOverlayUrl || null,
+      });
+      res.json(video);
+    } catch (err) {
+      console.error("[admin-video] finalize error:", err);
+      res.status(500).json({ error: "Errore nel salvataggio video" });
+    }
+  });
+
+  app.delete("/api/admin/profiles/:profileId/videos/:videoId", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const video = await storage.getProfileVideoById(req.params.videoId);
+      if (!video) return res.status(404).json({ error: "Video non trovato" });
+      if (video.profileId !== req.params.profileId) return res.status(403).json({ error: "Non corrisponde al profilo" });
+      try { await objectStorageService.deleteObject(video.videoUrl); } catch {}
+      await storage.deleteProfileVideo(req.params.videoId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: "Errore nell'eliminazione" });
+    }
+  });
+
   app.get("/api/admin/challenge-submissions", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const submissions = await storage.getAllChallengeSubmissions();
