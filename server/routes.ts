@@ -1399,6 +1399,7 @@ export async function registerRoutes(
     try {
       const profile = await storage.getProfile(req.params.profileId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      // Note: we DON'T check MAX_VIDEOS here; the POST will handle FIFO deletion if needed
       const { contentType, size } = req.body;
       const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
       if (!ALLOWED_VIDEO.includes(contentType)) return res.status(400).json({ error: "Tipo file non supportato" });
