@@ -1428,7 +1428,6 @@ export async function registerRoutes(
       if (!objectPath) return res.status(400).json({ error: "objectPath mancante" });
       try {
         await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-          owner: profile.userId,
           visibility: "public",
         });
       } catch {}
@@ -3805,7 +3804,6 @@ REGOLE IMPORTANTI:
 
       try {
         await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-          owner: userId,
           visibility: "public",
         });
       } catch (aclErr) {
