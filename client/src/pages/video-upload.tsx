@@ -147,7 +147,7 @@ export default function VideoUpload() {
       if (body?.error === "rejected") {
         toast({ title: "Contenuto non approvato", description: "Il video non è stato approvato dalla moderazione.", variant: "destructive" });
       } else if (body?.error === "max_videos") {
-        toast({ title: "Limite raggiunto", description: "Hai già caricato 2 video.", variant: "destructive" });
+        toast({ title: "Limite raggiunto", description: "Hai già 4 video. Caricandone uno nuovo, il più vecchio verrà eliminato automaticamente.", variant: "destructive" });
       } else {
         toast({ title: "Errore", description: "Impossibile pubblicare il video.", variant: "destructive" });
       }

@@ -1399,8 +1399,6 @@ export async function registerRoutes(
     try {
       const profile = await storage.getProfile(req.params.profileId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
-      const existingVideos = await storage.getProfileVideos(profile.id);
-      if (existingVideos.length >= 2) return res.status(400).json({ error: "max_videos" });
       const { contentType, size } = req.body;
       const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
       if (!ALLOWED_VIDEO.includes(contentType)) return res.status(400).json({ error: "Tipo file non supportato" });
@@ -1418,8 +1416,14 @@ export async function registerRoutes(
     try {
       const profile = await storage.getProfile(req.params.profileId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const MAX_VIDEOS = 4;
       const existingVideos = await storage.getProfileVideos(profile.id);
-      if (existingVideos.length >= 2) return res.status(400).json({ error: "max_videos" });
+      if (existingVideos.length >= MAX_VIDEOS) {
+        const sorted = [...existingVideos].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const oldest = sorted[0];
+        try { await objectStorageService.deleteObject(oldest.videoUrl); } catch {}
+        await storage.deleteProfileVideo(oldest.id);
+      }
       const { objectPath, caption, location, gifOverlayUrl } = req.body;
       if (!objectPath) return res.status(400).json({ error: "objectPath mancante" });
       try {
@@ -3753,11 +3757,6 @@ REGOLE IMPORTANTI:
       const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
 
-      const existingVideos = await storage.getProfileVideos(profile.id);
-      if (existingVideos.length >= 2) {
-        return res.status(400).json({ error: "max_videos", message: "Hai già caricato il massimo di 2 video" });
-      }
-
       const { contentType, size } = req.body;
       const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
       if (!ALLOWED_VIDEO.includes(contentType)) {
@@ -3787,10 +3786,13 @@ REGOLE IMPORTANTI:
       const { objectPath, thumbnailBase64 } = req.body;
       if (!objectPath) return res.status(400).json({ error: "objectPath mancante" });
 
+      const MAX_VIDEOS = 4;
       const existingVideos = await storage.getProfileVideos(profile.id);
-      if (existingVideos.length >= 2) {
-        await objectStorageService.deleteObject(objectPath);
-        return res.status(400).json({ error: "max_videos", message: "Hai già caricato il massimo di 2 video" });
+      if (existingVideos.length >= MAX_VIDEOS) {
+        const sorted = [...existingVideos].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const oldest = sorted[0];
+        try { await objectStorageService.deleteObject(oldest.videoUrl); } catch {}
+        await storage.deleteProfileVideo(oldest.id);
       }
 
       if (thumbnailBase64) {

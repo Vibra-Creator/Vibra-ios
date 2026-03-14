@@ -285,7 +285,7 @@ export default function Admin() {
     } catch (err: any) {
       const msg = err?.message || "";
       if (msg.includes("max_videos")) {
-        toast({ title: "Limite raggiunto", description: "Il profilo ha già 2 video.", variant: "destructive" });
+        toast({ title: "Limite raggiunto", description: "Il profilo ha già 4 video.", variant: "destructive" });
       } else {
         toast({ title: "Errore upload", description: "Impossibile caricare il video.", variant: "destructive" });
       }
@@ -733,9 +733,9 @@ export default function Admin() {
                             <div className="mt-3 border border-border/50 rounded-lg p-3 bg-muted/10">
                               <div className="flex items-center justify-between mb-2">
                                 <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                                  🎬 Video ({isExpanded ? expandedProfileVideos.length : 0}/2)
+                                  🎬 Video ({isExpanded ? expandedProfileVideos.length : 0}/4)
                                 </h4>
-                                {isExpanded && expandedProfileVideos.length < 2 && (
+                                {isExpanded && (
                                   <Button
                                     size="sm"
                                     variant="outline"

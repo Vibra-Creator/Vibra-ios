@@ -76,11 +76,11 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
       <div className="flex items-center gap-2.5">
         <VideoIcon className="w-6 h-6 text-cyan-400" />
         <h3 className="text-lg font-bold text-cyan-300">{t("profile.videos")}</h3>
-        <span className="text-sm font-semibold text-cyan-400/70 ml-1">{videos.length}/2</span>
+        <span className="text-sm font-semibold text-cyan-400/70 ml-1">{videos.length}/4</span>
       </div>
       <p className="text-white/70 text-sm leading-snug">{t("profile.videosDesc")}</p>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3" data-testid="profile-videos-grid">
         {videos.map((video) => {
           const isMain = currentMainVideoUrl === video.videoUrl;
           return (
@@ -151,7 +151,7 @@ function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChang
           );
         })}
 
-        {videos.length < 2 && (
+        {videos.length < 4 && (
           <button
             onClick={() => navigate("/video-upload")}
             className="aspect-video rounded-xl border-2 border-dashed border-cyan-400/50 flex flex-col items-center justify-center gap-2 text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-400/10 transition-colors bg-cyan-950/30 active:scale-95"
