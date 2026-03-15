@@ -1441,9 +1441,9 @@ export async function registerRoutes(
         gifOverlayUrl: gifOverlayUrl || null,
       });
       res.json(video);
-    } catch (err) {
-      console.error("[admin-video] finalize error:", err);
-      res.status(500).json({ error: "Errore nel salvataggio video" });
+    } catch (err: any) {
+      console.error("[admin-video] finalize error:", err?.message || err);
+      res.status(500).json({ error: "Errore nel salvataggio video", details: err?.message });
     }
   });
 
