@@ -328,6 +328,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "pi.timeNow": "ora",
     "pi.timeDays": "g",
 
+    // SwipeCard buttons
+    "swipe.share": "Condividi",
+    "swipe.signalSent": "Signal inviato!",
+    "swipe.signalSentDesc": "{name} lo vedrà nei suoi Like & Signal",
+    "swipe.sendSignalDirect": "Invia un Cosmic Signal diretto",
+
     // Vibing
     "vibing.title": "Sto Vibing Ora",
     "vibing.desc": "Attiva la modalità live per 30 minuti. Vedrai solo persone attive vicino a te che stanno anche loro vibando!",
@@ -1226,6 +1232,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "pi.timeNow": "now",
     "pi.timeDays": "d",
 
+    // SwipeCard buttons
+    "swipe.share": "Share",
+    "swipe.signalSent": "Signal sent!",
+    "swipe.signalSentDesc": "{name} will see it in their Likes & Signals",
+    "swipe.sendSignalDirect": "Send a direct Cosmic Signal",
+
     // Vibing
     "vibing.title": "Vibing Now",
     "vibing.desc": "Activate live mode for 30 minutes. You'll see only active people near you who are also vibing!",
@@ -2122,6 +2134,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "pi.sendError": "No se pudo enviar el mensaje.",
     "pi.timeNow": "ahora",
     "pi.timeDays": "d",
+
+    // SwipeCard buttons
+    "swipe.share": "Compartir",
+    "swipe.signalSent": "¡Señal enviada!",
+    "swipe.signalSentDesc": "{name} lo verá en sus Me gusta y señales",
+    "swipe.sendSignalDirect": "Enviar una señal cósmica directa",
 
     // Vibing
     "vibing.title": "Vibing Ahora",

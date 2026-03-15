@@ -970,7 +970,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
                       <Share2 className="w-6 h-6 text-white" />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Condividi</span>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
                   </motion.button>
 
                   <motion.button
@@ -1008,7 +1008,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ boxShadow: alreadyLiked ? "none" : "0 0 16px rgba(236,72,153,0.5)" }}>
                       <Heart className={`w-6 h-6 ${alreadyLiked ? "text-pink-300 fill-pink-300" : "text-white fill-white"}`} />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Like</span>
+                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.like")}</span>
                   </motion.button>
 
                   <motion.button
@@ -1306,8 +1306,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 {signalSent ? (
                   <div className="text-center py-6">
                     <div className="text-5xl mb-3">🛸</div>
-                    <p className="text-white font-bold text-lg">Signal inviato!</p>
-                    <p className="text-white/50 text-sm mt-1">{profile.name} lo vedrà nei suoi Like & Signal</p>
+                    <p className="text-white font-bold text-lg">{t("swipe.signalSent")}</p>
+                    <p className="text-white/50 text-sm mt-1">{t("swipe.signalSentDesc").replace("{name}", profile.name)}</p>
                   </div>
                 ) : (
                   <>
@@ -1315,7 +1315,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-fuchsia-500/60" />
                       <div>
                         <p className="text-white font-bold">{profile.name}, {profile.age}</p>
-                        <p className="text-fuchsia-400/70 text-xs flex items-center gap-1"><Radio className="w-3 h-3" /> Invia un Cosmic Signal diretto</p>
+                        <p className="text-fuchsia-400/70 text-xs flex items-center gap-1"><Radio className="w-3 h-3" /> {t("swipe.sendSignalDirect")}</p>
                       </div>
                     </div>
                     <textarea
