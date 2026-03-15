@@ -272,24 +272,25 @@ export default function Admin() {
 
     setVideoUploadState(s => ({ ...s, [profileId]: "uploading" }));
     try {
-      const uploadRes = await apiRequest("POST", `/api/admin/profiles/${profileId}/videos/request-upload`, {
-        contentType: file.type,
-        size: file.size,
-      }) as { uploadURL: string; objectPath: string };
+      const formData = new FormData();
+      formData.append("video", file);
 
-      await fetch(uploadRes.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      await apiRequest("POST", `/api/admin/profiles/${profileId}/videos`, { objectPath: uploadRes.objectPath });
+      const res = await fetch(`/api/admin/profiles/${profileId}/videos`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(errData?.error || `Errore ${res.status}`);
+      }
 
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles", profileId, "videos"] });
       toast({ title: "Video caricato!", description: "Il video è stato aggiunto al profilo." });
     } catch (err: any) {
       const msg = err?.message || "";
       console.error("[admin-upload] Error:", err);
-      if (msg.includes("max_videos")) {
-        toast({ title: "Limite raggiunto", description: "Il profilo ha già 4 video.", variant: "destructive" });
-      } else {
-        toast({ title: "Errore upload", description: msg || "Impossibile caricare il video.", variant: "destructive" });
-      }
+      toast({ title: "Errore upload", description: msg || "Impossibile caricare il video.", variant: "destructive" });
     } finally {
       setVideoUploadState(s => ({ ...s, [profileId]: "idle" }));
       setVideoUploadTarget(null);

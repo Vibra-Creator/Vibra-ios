@@ -1395,56 +1395,82 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/profiles/:profileId/videos/request-upload", isAuthenticated, isAdmin, async (req: any, res) => {
-    try {
-      const profile = await storage.getProfile(req.params.profileId);
-      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
-      // Note: we DON'T check MAX_VIDEOS here; the POST will handle FIFO deletion if needed
-      const { contentType, size } = req.body;
-      const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
-      if (!ALLOWED_VIDEO.includes(contentType)) return res.status(400).json({ error: "Tipo file non supportato" });
-      if (size && size > 50 * 1024 * 1024) return res.status(400).json({ error: "too_large" });
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-      res.json({ uploadURL, objectPath });
-    } catch (err) {
-      console.error("[admin-video] request-upload error:", err);
-      res.status(500).json({ error: "Upload non disponibile" });
-    }
+  const adminVideoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v", "video/x-mp4", "video/mov"];
+      if (!allowed.includes(file.mimetype)) {
+        cb(new Error("Formato video non supportato. Usa MP4, MOV o WebM."));
+        return;
+      }
+      cb(null, true);
+    },
   });
 
-  app.post("/api/admin/profiles/:profileId/videos", isAuthenticated, isAdmin, async (req: any, res) => {
-    try {
-      const profile = await storage.getProfile(req.params.profileId);
-      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
-      const MAX_VIDEOS = 4;
-      const existingVideos = await storage.getProfileVideos(profile.id);
-      if (existingVideos.length >= MAX_VIDEOS) {
-        const sorted = [...existingVideos].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        const oldest = sorted[0];
-        try { await objectStorageService.deleteObject(oldest.videoUrl); } catch {}
-        await storage.deleteProfileVideo(oldest.id);
+  app.post("/api/admin/profiles/:profileId/videos", isAuthenticated, isAdmin, (req: any, res: any, next: any) => {
+    adminVideoUpload.single("video")(req, res, async (err: any) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ error: "Video troppo grande. Massimo 50 MB." });
+        return res.status(400).json({ error: err.message || "Errore upload" });
       }
-      const { objectPath, caption, location, gifOverlayUrl } = req.body;
-      if (!objectPath) return res.status(400).json({ error: "objectPath mancante" });
+      const profileId = req.params.profileId;
+      console.log(`[admin-video] upload for profileId=${profileId}, file=${req.file?.originalname}, size=${req.file?.size}`);
       try {
-        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-          visibility: "public",
+        if (!req.file) return res.status(400).json({ error: "Nessun video ricevuto" });
+
+        const profile = await storage.getProfile(profileId);
+        if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+        console.log(`[admin-video] Profile: ${profile.name}`);
+
+        const MAX_VIDEOS = 4;
+        const existingVideos = await storage.getProfileVideos(profile.id);
+        if (existingVideos.length >= MAX_VIDEOS) {
+          const sorted = [...existingVideos].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const oldest = sorted[0];
+          console.log(`[admin-video] FIFO: deleting oldest ${oldest.id}`);
+          try { await objectStorageService.deleteObject(oldest.videoUrl); } catch {}
+          await storage.deleteProfileVideo(oldest.id);
+        }
+
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+        console.log(`[admin-video] Uploading to GCS: ${objectPath}`);
+
+        const putResponse = await fetch(uploadURL, {
+          method: "PUT",
+          body: req.file.buffer,
+          headers: { "Content-Type": req.file.mimetype },
         });
-      } catch {}
-      const video = await storage.addProfileVideo({
-        profileId: profile.id,
-        videoUrl: objectPath,
-        thumbnailUrl: null,
-        location: location || null,
-        caption: caption || null,
-        gifOverlayUrl: gifOverlayUrl || null,
-      });
-      res.json(video);
-    } catch (err: any) {
-      console.error("[admin-video] finalize error:", err?.message || err);
-      res.status(500).json({ error: "Errore nel salvataggio video", details: err?.message });
-    }
+        if (!putResponse.ok) {
+          const putErr = await putResponse.text().catch(() => putResponse.statusText);
+          console.error(`[admin-video] GCS PUT failed: ${putResponse.status}`, putErr);
+          return res.status(500).json({ error: "Errore nel salvataggio del video. Riprova." });
+        }
+        console.log(`[admin-video] GCS PUT OK`);
+
+        try {
+          await objectStorageService.trySetObjectEntityAclPolicy(objectPath, { visibility: "public" });
+        } catch (aclErr: any) {
+          console.log(`[admin-video] ACL set FAILED (non-fatal): ${aclErr?.message}`);
+        }
+
+        const { caption, location, gifOverlayUrl } = req.body;
+        const video = await storage.addProfileVideo({
+          profileId: profile.id,
+          videoUrl: objectPath,
+          thumbnailUrl: null,
+          location: location || null,
+          caption: caption || null,
+          gifOverlayUrl: gifOverlayUrl || null,
+        });
+        console.log(`[admin-video] Saved OK: ${video.id}`);
+        res.json(video);
+      } catch (err: any) {
+        console.error("[admin-video] error:", err?.message || err);
+        res.status(500).json({ error: "Errore nel caricamento video", details: err?.message });
+      }
+    });
   });
 
   app.delete("/api/admin/profiles/:profileId/videos/:videoId", isAuthenticated, isAdmin, async (req: any, res) => {
