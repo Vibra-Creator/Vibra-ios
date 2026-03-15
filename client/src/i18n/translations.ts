@@ -1762,7 +1762,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "activity.vibingNearby": "{count} people are vibing near you",
 
     // Vibrapp
-    "nav.vibrapp": "Vibrapp",
+    "nav.vibrapp": "Chat",
     "vibrapp.title": "Vibrapp",
     "vibrapp.subtitle": "Vibra's chat",
     "vibrapp.onlineCount": "{count} online",
@@ -2659,7 +2659,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "activity.vibingNearby": "{count} personas están vibrando cerca de ti",
 
     // Vibrapp
-    "nav.vibrapp": "Vibrapp",
+    "nav.vibrapp": "Chat",
     "vibrapp.title": "Vibrapp",
     "vibrapp.subtitle": "El chat de Vibra",
     "vibrapp.onlineCount": "{count} online",
