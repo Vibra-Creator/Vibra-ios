@@ -626,7 +626,7 @@ export default function Vibrapp() {
     };
 
     return (
-      <div className="flex flex-col h-screen overflow-hidden bg-[#0a0d1e]" data-testid="vibrapp-dm-page">
+      <div className="flex flex-col h-full overflow-hidden bg-[#0a0d1e]" data-testid="vibrapp-dm-page">
         <div className="bg-gradient-to-r from-[#075e54] to-[#128c7e] px-4 py-3 flex items-center gap-3 shrink-0 shadow-lg">
           <button onClick={clearIntro} className="text-white/80 hover:text-white mr-1" data-testid="button-back-vibrapp-dm">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -708,7 +708,7 @@ export default function Vibrapp() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" data-testid="vibrapp-page">
+    <div className="flex flex-col h-full overflow-hidden" data-testid="vibrapp-page">
       <div className="bg-gradient-to-r from-[#075e54] to-[#128c7e] px-4 py-3 flex items-center justify-between shrink-0 shadow-lg" data-testid="vibrapp-header">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -1040,7 +1040,7 @@ export default function Vibrapp() {
         </button>
       )}
 
-      <div className="shrink-0 bg-[#1a1a2e] border-t border-white/10" data-testid="vibrapp-input-area">
+      <div className="shrink-0 bg-[#1a1a2e] border-t border-white/10 pb-safe" data-testid="vibrapp-input-area">
         <AnimatePresence>
           {replyTo && (
             <motion.div
