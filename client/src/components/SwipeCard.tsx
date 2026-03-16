@@ -555,6 +555,22 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const vibAudioChunksRef = useRef<Blob[]>([]);
     const vibTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    const [keyboardPadding, setKeyboardPadding] = useState(0);
+    useEffect(() => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const handler = () => {
+        const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        setKeyboardPadding(offset);
+      };
+      vv.addEventListener("resize", handler);
+      vv.addEventListener("scroll", handler);
+      return () => {
+        vv.removeEventListener("resize", handler);
+        vv.removeEventListener("scroll", handler);
+      };
+    }, []);
+
     const cardVideoRef = useRef<HTMLVideoElement>(null);
     const dragDistanceRef = useRef(0);
     const { toast } = useToast();
@@ -1178,6 +1194,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] flex items-end justify-center"
+              style={{ paddingBottom: `${keyboardPadding}px` }}
               onClick={() => { setShowVibCompose(false); setVibText(""); setVibSent(false); vibCancelRecording(); vibClearAudio(); }}
               data-testid="vibrapp-compose-overlay"
             >
@@ -1289,6 +1306,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] flex items-end justify-center"
+              style={{ paddingBottom: `${keyboardPadding}px` }}
               onClick={() => { setShowSignalCompose(false); setSignalText(""); setSignalSent(false); }}
               data-testid="signal-compose-overlay"
             >
