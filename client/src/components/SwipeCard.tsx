@@ -556,6 +556,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const vibTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const [keyboardPadding, setKeyboardPadding] = useState(0);
+    const [navHeight, setNavHeight] = useState(130);
     useEffect(() => {
       const vv = window.visualViewport;
       if (!vv) return;
@@ -569,6 +570,17 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         vv.removeEventListener("resize", handler);
         vv.removeEventListener("scroll", handler);
       };
+    }, []);
+    useEffect(() => {
+      const measure = () => {
+        const nav = document.querySelector('[data-testid="bottom-nav"]');
+        if (nav) setNavHeight(nav.getBoundingClientRect().height);
+      };
+      measure();
+      const obs = new ResizeObserver(measure);
+      const nav = document.querySelector('[data-testid="bottom-nav"]');
+      if (nav) obs.observe(nav);
+      return () => obs.disconnect();
     }, []);
 
     const cardVideoRef = useRef<HTMLVideoElement>(null);
@@ -1194,7 +1206,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] flex items-end justify-center"
-              style={{ paddingBottom: `${keyboardPadding}px` }}
+              style={{ paddingBottom: `${navHeight + keyboardPadding}px` }}
               onClick={() => { setShowVibCompose(false); setVibText(""); setVibSent(false); vibCancelRecording(); vibClearAudio(); }}
               data-testid="vibrapp-compose-overlay"
             >
@@ -1306,7 +1318,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] flex items-end justify-center"
-              style={{ paddingBottom: `${keyboardPadding}px` }}
+              style={{ paddingBottom: `${navHeight + keyboardPadding}px` }}
               onClick={() => { setShowSignalCompose(false); setSignalText(""); setSignalSent(false); }}
               data-testid="signal-compose-overlay"
             >
