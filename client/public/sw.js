@@ -1,10 +1,14 @@
-const CACHE_VERSION = 21;
+const CACHE_VERSION = 22;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
   '/',
   '/favicon.png',
-  '/manifest.json'
+  '/manifest.json',
+  '/vibra-logo.png',
+  '/apple-touch-icon.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -91,13 +95,17 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
-      fetch(event.request).then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
-        }
-        return response;
-      }).catch(() => caches.match('/'))
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match('/').then((cached) => {
+          const networkFetch = fetch(event.request).then((response) => {
+            if (response.ok) {
+              cache.put('/', response.clone());
+            }
+            return response;
+          }).catch(() => cached);
+          return cached || networkFetch;
+        });
+      })
     );
     return;
   }
