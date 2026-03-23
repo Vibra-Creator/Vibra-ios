@@ -821,10 +821,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         <motion.div
           ref={ref}
           className="absolute inset-0 cursor-grab active:cursor-grabbing"
-          style={{ x, y, rotate, opacity }}
+          style={{ x, y, rotate, opacity, willChange: "transform" }}
           drag={isTop ? true : false}
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-          dragElastic={0.9}
+          dragElastic={1}
+          dragMomentum={false}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 20 }}
@@ -834,7 +835,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
             x: exitX,
           }}
           exit={{ x: exitX, y: exitY, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          transition={{ type: "spring", stiffness: 500, damping: 40 }}
           data-testid={`swipe-card-${profile.id}`}
         >
           <div className="relative overflow-hidden bg-black h-full"
