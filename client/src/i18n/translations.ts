@@ -151,7 +151,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "home.profilesRestored": "Profili ripristinati!",
     "home.profilesRestoredDesc": "Tutti i profili sono di nuovo disponibili (i match restano).",
     "home.swipeError": "Si è verificato un errore durante lo swipe. Riprova.",
-    "home.like": "mettere like",
+    "home.like": "Like",
     "home.dislike": "scartare un profilo",
     "home.restoreError": "Non è stato possibile ripristinare i profili.",
     "stories.title": "Storie",

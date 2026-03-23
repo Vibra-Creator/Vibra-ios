@@ -1037,7 +1037,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ boxShadow: alreadyLiked ? "none" : "0 0 16px rgba(236,72,153,0.5)" }}>
                       <Heart className={`w-6 h-6 ${alreadyLiked ? "text-pink-300 fill-pink-300" : "text-white fill-white"}`} />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.like")}</span>
+                    <span className="text-[11px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.like")}</span>
                   </motion.button>
 
                   <motion.button
