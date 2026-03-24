@@ -1309,6 +1309,227 @@ const seedProfiles = [
     relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Toro",
     loveLanguage: "Atti di servizio", communicationStyle: "Aperto e diretto", lifestyle: "Equilibrato"
   },
+  // ── Nuovi bot adulti (40-60 anni) ──────────────────────────────────────────
+  {
+    id: "136", name: "Carla", age: 47,
+    bio: "Insegno lettere alle medie da vent'anni. Ogni giorno con i ragazzi mi ricorda perché ho scelto questo lavoro. Nel tempo libero leggo, cammino e ogni tanto mi perdo nei musei. Cerco qualcuno con cui conversare davvero.",
+    imageUrl: "/images/bots/bot136_main.png", photos: [],
+    location: "Roma", interests: ["Letteratura", "Musei", "Trekking"], alienType: "Cristallino",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Castano scuro", eyeColor: "Marrone",
+    bodyType: "Media", height: 163, preferredAgeMin: 40, preferredAgeMax: 65,
+    education: "Laurea", languages: ["Italiano", "Francese"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Vergine",
+    loveLanguage: "Parole di affermazione", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
+  },
+  {
+    id: "137", name: "Giovanna", age: 52,
+    bio: "Avvocata civilista a Milano. La mia vita è frenetica ma so anche fermarmi. Amo il teatro, i viaggi in treno e cucinare il risotto della nonna il sabato. Non cerco la perfezione, cerco l'autenticità.",
+    imageUrl: "/images/bots/bot137_main.png", photos: [],
+    location: "Milano", interests: ["Teatro", "Viaggi", "Cucina"], alienType: "Nebulare",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Castano chiaro", eyeColor: "Verde",
+    bodyType: "Snella", height: 168, preferredAgeMin: 42, preferredAgeMax: 65,
+    education: "Laurea", languages: ["Italiano", "Inglese", "Tedesco"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Capricorno",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Aperto e diretto", lifestyle: "Urbano e dinamico"
+  },
+  {
+    id: "138", name: "Paola", age: 44,
+    bio: "Commercialista a Napoli, cresciuta tra i numeri ma con una passione sfrenata per la pizza e il mare. Mi piace ballare la salsa il venerdì sera e non mi spaventa affrontare argomenti scomodi. Sono diretta, lo avviso.",
+    imageUrl: "/images/bots/bot138_main.png", photos: [],
+    location: "Napoli", interests: ["Danza", "Mare", "Cucina"], alienType: "Solare",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Nero", eyeColor: "Marrone scuro",
+    bodyType: "Formosa", height: 160, preferredAgeMin: 38, preferredAgeMax: 58,
+    education: "Laurea", languages: ["Italiano", "Inglese"],
+    relationshipType: "Conoscersi prima", wantsChildren: "Non voglio", zodiacSign: "Ariete",
+    loveLanguage: "Contatto fisico", communicationStyle: "Creativo e spontaneo", lifestyle: "Attivo e sociale"
+  },
+  {
+    id: "139", name: "Maria Grazia", age: 58,
+    bio: "Medica di base da trent'anni. Ho visto molto e mi ha reso più paziente e meno giudicante. Amo il giardinaggio, i documentari e la montagna fuori stagione. Cerco compagnia vera, non pose.",
+    imageUrl: "/images/bots/bot139_main.png", photos: [],
+    location: "Torino", interests: ["Giardinaggio", "Montagna", "Documentari"], alienType: "Biotico",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Grigio argentato", eyeColor: "Azzurro",
+    bodyType: "Media", height: 161, preferredAgeMin: 48, preferredAgeMax: 70,
+    education: "Laurea", languages: ["Italiano", "Inglese"],
+    relationshipType: "Amicizia che evolve", wantsChildren: "Ho già figli", zodiacSign: "Scorpione",
+    loveLanguage: "Atti di servizio", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
+  },
+  {
+    id: "140", name: "Luisa", age: 41,
+    bio: "Architetta freelance a Bologna. Disegno case per gli altri e per me disegno idee. Vado in bici quasi ogni giorno, ascolto podcast di storia e cucino cose strane il weekend. Un po' irregolare, molto sincera.",
+    imageUrl: "/images/bots/bot140_main.png", photos: [],
+    location: "Bologna", interests: ["Architettura", "Ciclismo", "Storia"], alienType: "Cosmico",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Castano ramato", eyeColor: "Nocciola",
+    bodyType: "Snella", height: 170, preferredAgeMin: 35, preferredAgeMax: 55,
+    education: "Laurea", languages: ["Italiano", "Inglese", "Spagnolo"],
+    relationshipType: "Relazione seria", wantsChildren: "In futuro", zodiacSign: "Gemelli",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Aperto e diretto", lifestyle: "Attivo e sociale"
+  },
+  {
+    id: "141", name: "Daniela", age: 55,
+    bio: "Giornalista freelance a Genova. Ho intervistato sindaci e pescatori, preferisco i secondi. Amo il porto, la focaccia vera e i romanzi polizieschi. Non sono perfetta ma sono curiosa e non mi annoio mai.",
+    imageUrl: "/images/bots/bot141_main.png", photos: [],
+    location: "Genova", interests: ["Scrittura", "Lettura", "Mare"], alienType: "Nebulare",
+    gender: "Donna", preferredGender: "Tutti", hairColor: "Scuro con striature grigie", eyeColor: "Marrone",
+    bodyType: "Media", height: 165, preferredAgeMin: 44, preferredAgeMax: 65,
+    education: "Laurea", languages: ["Italiano", "Inglese"],
+    relationshipType: "Conoscersi prima", wantsChildren: "Ho già figli", zodiacSign: "Pesci",
+    loveLanguage: "Parole di affermazione", communicationStyle: "Riflessivo e profondo", lifestyle: "Urbano e dinamico"
+  },
+  {
+    id: "142", name: "Antonella", age: 49,
+    bio: "Restauratrice di dipinti a Firenze. Trascorro le giornate a riparare cose belle e mi piace pensare che le persone siano un po' come i quadri: tutte da scoprire con calma. Ironica, paziente, appassionata.",
+    imageUrl: "/images/bots/bot142_main.png", photos: [],
+    location: "Firenze", interests: ["Arte", "Musei", "Fotografia"], alienType: "Cristallino",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Castano caldo", eyeColor: "Verde scuro",
+    bodyType: "Media", height: 166, preferredAgeMin: 42, preferredAgeMax: 62,
+    education: "Laurea", languages: ["Italiano", "Inglese", "Francese"],
+    relationshipType: "Relazione seria", wantsChildren: "Non voglio", zodiacSign: "Cancro",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Creativo e spontaneo", lifestyle: "Equilibrato"
+  },
+  {
+    id: "143", name: "Rosaria", age: 43,
+    bio: "Farmacista a Bari, la gente mi chiede consigli di salute e io li do volentieri. Amo il mare d'inverno quando è vuoto, il calcio del Bari e cucinare la pasta al forno della domenica. Concreta e di buon umore.",
+    imageUrl: "/images/bots/bot143_main.png", photos: [],
+    location: "Bari", interests: ["Calcio", "Mare", "Cucina"], alienType: "Solare",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Nero riccio", eyeColor: "Marrone scuro",
+    bodyType: "Formosa", height: 158, preferredAgeMin: 38, preferredAgeMax: 55,
+    education: "Laurea", languages: ["Italiano"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Leone",
+    loveLanguage: "Atti di servizio", communicationStyle: "Aperto e diretto", lifestyle: "Equilibrato"
+  },
+  {
+    id: "144", name: "Cristina", age: 51,
+    bio: "Ho una piccola impresa tessile a Verona, lavoro tanto ma so anche staccare. Amo l'opera lirica, il vino dell'Amarone e le passeggiate nel centro storico. Cerco una persona con la testa sulle spalle e la voglia di godersi la vita.",
+    imageUrl: "/images/bots/bot144_main.png", photos: [],
+    location: "Verona", interests: ["Opera", "Vino", "Cultura"], alienType: "Cosmico",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Biondo miele", eyeColor: "Grigio",
+    bodyType: "Media", height: 167, preferredAgeMin: 44, preferredAgeMax: 62,
+    education: "Laurea", languages: ["Italiano", "Inglese", "Tedesco"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Bilancia",
+    loveLanguage: "Regali significativi", communicationStyle: "Aperto e diretto", lifestyle: "Urbano e dinamico"
+  },
+  {
+    id: "145", name: "Marisa", age: 57,
+    bio: "In pensione da un anno dopo una vita da insegnante elementare. Finalmente ho tempo per me. Coltivo pomodori sul balcone, guardo troppi documentari sulla natura e sto imparando l'acquerello. Sono curiosa del mondo ancora.",
+    imageUrl: "/images/bots/bot145_main.png", photos: [],
+    location: "Palermo", interests: ["Pittura", "Giardinaggio", "Viaggi"], alienType: "Biotico",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Nero-grigio", eyeColor: "Marrone",
+    bodyType: "Media", height: 159, preferredAgeMin: 48, preferredAgeMax: 70,
+    education: "Laurea", languages: ["Italiano", "Siciliano"],
+    relationshipType: "Amicizia che evolve", wantsChildren: "Ho già figli", zodiacSign: "Toro",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
+  },
+  {
+    id: "146", name: "Sergio", age: 52,
+    bio: "Dirigente in un'azienda di logistica a Roma. Il lavoro mi piace ma non mi definisce. La domenica cucino per gli amici, il sabato corro. Ho due figlie grandi di cui vado fiero. Cerco una donna con cui ridere e crescere ancora.",
+    imageUrl: "/images/bots/bot146_main.png", photos: [],
+    location: "Roma", interests: ["Corsa", "Cucina", "Viaggi"], alienType: "Solare",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Grigio sale e pepe", eyeColor: "Marrone",
+    bodyType: "Atletico", height: 178, preferredAgeMin: 40, preferredAgeMax: 60,
+    education: "Laurea", languages: ["Italiano", "Inglese"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Sagittario",
+    loveLanguage: "Atti di servizio", communicationStyle: "Aperto e diretto", lifestyle: "Attivo e sociale"
+  },
+  {
+    id: "147", name: "Roberto", age: 47,
+    bio: "Ingegnere civile a Milano. Progetto ponti ma sono ancora in costruzione anch'io. Amo il jazz, la fotografia urbana e il calcio dell'Inter. Sono separato con un figlio di 12 anni, la cosa più importante della mia vita.",
+    imageUrl: "/images/bots/bot147_main.png", photos: [],
+    location: "Milano", interests: ["Jazz", "Fotografia", "Calcio"], alienType: "Cosmico",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Scuro con grigio alle tempie", eyeColor: "Nocciola",
+    bodyType: "Media", height: 180, preferredAgeMin: 36, preferredAgeMax: 55,
+    education: "Laurea", languages: ["Italiano", "Inglese"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Acquario",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Riflessivo e profondo", lifestyle: "Urbano e dinamico"
+  },
+  {
+    id: "148", name: "Francesco", age: 55,
+    bio: "Ho una trattoria nel centro di Napoli, la porto avanti da 20 anni. Cucino ancora meglio di quando ho aperto. Amo il mare, il Vesuvio visto dall'alto e le discussioni accese sul calcio. Non cerco complicazioni, cerco calore umano.",
+    imageUrl: "/images/bots/bot148_main.png", photos: [],
+    location: "Napoli", interests: ["Cucina", "Mare", "Calcio"], alienType: "Nebulare",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Grigio scuro", eyeColor: "Marrone scuro",
+    bodyType: "Robusto", height: 174, preferredAgeMin: 40, preferredAgeMax: 60,
+    education: "Diploma", languages: ["Italiano"],
+    relationshipType: "Conoscersi prima", wantsChildren: "Ho già figli", zodiacSign: "Scorpione",
+    loveLanguage: "Contatto fisico", communicationStyle: "Creativo e spontaneo", lifestyle: "Equilibrato"
+  },
+  {
+    id: "149", name: "Claudio", age: 42,
+    bio: "Ortopedico a Torino. Riparo ossa ma sono bravo anche ad ascoltare. Vado in montagna ogni volta che posso, leggo molto e allevo un gatto di nome Freud. Ho il senso dell'umorismo strano ma non pericoloso.",
+    imageUrl: "/images/bots/bot149_main.png", photos: [],
+    location: "Torino", interests: ["Montagna", "Lettura", "Sci"], alienType: "Biotico",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Scuro con occhiali", eyeColor: "Marrone",
+    bodyType: "Media", height: 177, preferredAgeMin: 35, preferredAgeMax: 52,
+    education: "Laurea", languages: ["Italiano", "Inglese", "Francese"],
+    relationshipType: "Relazione seria", wantsChildren: "In futuro", zodiacSign: "Capricorno",
+    loveLanguage: "Parole di affermazione", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
+  },
+  {
+    id: "150", name: "Enrico", age: 59,
+    bio: "Professore universitario di storia medievale a Bologna. Ho scritto tre libri che leggono in venti persone. Coltivo rose, ascolto opera e bevo vino rosso con convinzione. Cerco una compagna di avventure intellettuali e umane.",
+    imageUrl: "/images/bots/bot150_main.png", photos: [],
+    location: "Bologna", interests: ["Storia", "Opera", "Vino"], alienType: "Cristallino",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Bianco argentato", eyeColor: "Azzurro",
+    bodyType: "Magro", height: 176, preferredAgeMin: 44, preferredAgeMax: 65,
+    education: "Dottorato", languages: ["Italiano", "Inglese", "Latino"],
+    relationshipType: "Amicizia che evolve", wantsChildren: "Ho già figli", zodiacSign: "Vergine",
+    loveLanguage: "Parole di affermazione", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
+  },
+  {
+    id: "151", name: "Alberto", age: 46,
+    bio: "Fotografo indipendente a Firenze. Lavoro per riviste di viaggi e architettura. Ho girato molto ma la Toscana mi riporta sempre a casa. Sono tranquillo, un po' solitario di natura, ma quando incontro la persona giusta mi apro.",
+    imageUrl: "/images/bots/bot151_main.png", photos: [],
+    location: "Firenze", interests: ["Fotografia", "Viaggi", "Arte"], alienType: "Cosmico",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Riccio scuro con grigio", eyeColor: "Scuro",
+    bodyType: "Media", height: 175, preferredAgeMin: 36, preferredAgeMax: 55,
+    education: "Diploma", languages: ["Italiano", "Inglese", "Spagnolo"],
+    relationshipType: "Conoscersi prima", wantsChildren: "Non voglio", zodiacSign: "Pesci",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Creativo e spontaneo", lifestyle: "Attivo e sociale"
+  },
+  {
+    id: "152", name: "Salvatore", age: 53,
+    bio: "Avvocato penalista a Palermo. Il mio lavoro mi ha insegnato che quasi nessuno è completamente colpevole o innocente. Fuori dall'aula sono semplice: passeggio sul lungomare, cucino arancine e vado alla messa la domenica.",
+    imageUrl: "/images/bots/bot152_main.png", photos: [],
+    location: "Palermo", interests: ["Cucina", "Passeggio", "Cultura"], alienType: "Solare",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Grigio scuro", eyeColor: "Marrone scuro",
+    bodyType: "Media", height: 173, preferredAgeMin: 42, preferredAgeMax: 62,
+    education: "Laurea", languages: ["Italiano", "Siciliano"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Gemelli",
+    loveLanguage: "Atti di servizio", communicationStyle: "Aperto e diretto", lifestyle: "Equilibrato"
+  },
+  {
+    id: "153", name: "Giorgio", age: 48,
+    bio: "Manager nel settore turistico a Venezia. Vivo in una città che tutto il mondo vuole visitare e io ho ancora il privilegio di trovarla magica. Amo remare in laguna, il caffè al mattino presto e i gatti del sestiere.",
+    imageUrl: "/images/bots/bot153_main.png", photos: [],
+    location: "Venezia", interests: ["Voga", "Cultura", "Gastronomia"], alienType: "Nebulare",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Scuro con striature grigie", eyeColor: "Verde",
+    bodyType: "Media", height: 179, preferredAgeMin: 38, preferredAgeMax: 58,
+    education: "Laurea", languages: ["Italiano", "Inglese", "Tedesco"],
+    relationshipType: "Relazione seria", wantsChildren: "In futuro", zodiacSign: "Bilancia",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Aperto e diretto", lifestyle: "Urbano e dinamico"
+  },
+  {
+    id: "154", name: "Luca", age: 44,
+    bio: "Produttore di olio e vino in Puglia, vicino a Bari. Vivo sulla terra e ne sono orgoglioso. Mi sveglio all'alba, lavoro con le mani, mi siedo a tavola con la famiglia. Cerco una donna che apprezzi le cose vere.",
+    imageUrl: "/images/bots/bot154_main.png", photos: [],
+    location: "Bari", interests: ["Agricoltura", "Enologia", "Natura"], alienType: "Biotico",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Nero abbronzato", eyeColor: "Marrone",
+    bodyType: "Robusto", height: 176, preferredAgeMin: 35, preferredAgeMax: 55,
+    education: "Diploma", languages: ["Italiano", "Pugliese"],
+    relationshipType: "Relazione seria", wantsChildren: "Sì", zodiacSign: "Toro",
+    loveLanguage: "Atti di servizio", communicationStyle: "Aperto e diretto", lifestyle: "Equilibrato"
+  },
+  {
+    id: "155", name: "Pietro", age: 56,
+    bio: "Imprenditore nel settore edilizio a Cagliari. Ho costruito palazzi ma la mia vera soddisfazione è la famiglia. Vedovo da tre anni, con due figli adulti che mi spingono a riprendere la vita. Cerco serenità e un sorriso sincero.",
+    imageUrl: "/images/bots/bot155_main.png", photos: [],
+    location: "Cagliari", interests: ["Vela", "Cucina", "Golf"], alienType: "Cosmico",
+    gender: "Uomo", preferredGender: "Donna", hairColor: "Grigio argentato", eyeColor: "Azzurro chiaro",
+    bodyType: "Robusto", height: 182, preferredAgeMin: 44, preferredAgeMax: 65,
+    education: "Laurea", languages: ["Italiano", "Sardo"],
+    relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Leone",
+    loveLanguage: "Tempo di qualità", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
+  },
 ];
 
 const seedSwipesToCreateMatch = [
@@ -1527,6 +1748,27 @@ const botAccountCredentials = [
   { profileId: "133", email: "marcob@vibra.app", password: "Vibra2024!", firstName: "Marco", lastName: "Bianchi" },
   { profileId: "134", email: "filippo@vibra.app", password: "Vibra2024!", firstName: "Filippo", lastName: "De Luca" },
   { profileId: "135", email: "giuseppe@vibra.app", password: "Vibra2024!", firstName: "Giuseppe", lastName: "Ferrante" },
+  // ── Nuovi bot adulti (40-60 anni) ──────────────────────────────────────────
+  { profileId: "136", email: "carla@vibra.app", password: "Vibra2024!", firstName: "Carla", lastName: "Ferretti" },
+  { profileId: "137", email: "giovanna@vibra.app", password: "Vibra2024!", firstName: "Giovanna", lastName: "Morelli" },
+  { profileId: "138", email: "paolac@vibra.app", password: "Vibra2024!", firstName: "Paola", lastName: "Santoro" },
+  { profileId: "139", email: "mariagrazia@vibra.app", password: "Vibra2024!", firstName: "Maria Grazia", lastName: "Rizzo" },
+  { profileId: "140", email: "luisaf@vibra.app", password: "Vibra2024!", firstName: "Luisa", lastName: "Fabbri" },
+  { profileId: "141", email: "danielap@vibra.app", password: "Vibra2024!", firstName: "Daniela", lastName: "Parodi" },
+  { profileId: "142", email: "antonella@vibra.app", password: "Vibra2024!", firstName: "Antonella", lastName: "Bianchi" },
+  { profileId: "143", email: "rosaria@vibra.app", password: "Vibra2024!", firstName: "Rosaria", lastName: "Conti" },
+  { profileId: "144", email: "cristina@vibra.app", password: "Vibra2024!", firstName: "Cristina", lastName: "Longo" },
+  { profileId: "145", email: "marisa@vibra.app", password: "Vibra2024!", firstName: "Marisa", lastName: "Toscano" },
+  { profileId: "146", email: "sergiom@vibra.app", password: "Vibra2024!", firstName: "Sergio", lastName: "Marini" },
+  { profileId: "147", email: "robertoa@vibra.app", password: "Vibra2024!", firstName: "Roberto", lastName: "Aiello" },
+  { profileId: "148", email: "francescop@vibra.app", password: "Vibra2024!", firstName: "Francesco", lastName: "Paglia" },
+  { profileId: "149", email: "claudio@vibra.app", password: "Vibra2024!", firstName: "Claudio", lastName: "Benedetti" },
+  { profileId: "150", email: "enrico@vibra.app", password: "Vibra2024!", firstName: "Enrico", lastName: "Galli" },
+  { profileId: "151", email: "albertom@vibra.app", password: "Vibra2024!", firstName: "Alberto", lastName: "Mancini" },
+  { profileId: "152", email: "salvatorel@vibra.app", password: "Vibra2024!", firstName: "Salvatore", lastName: "Russo" },
+  { profileId: "153", email: "giorgiof@vibra.app", password: "Vibra2024!", firstName: "Giorgio", lastName: "Ferrara" },
+  { profileId: "154", email: "lucap@vibra.app", password: "Vibra2024!", firstName: "Luca", lastName: "Piani" },
+  { profileId: "155", email: "pietrov@vibra.app", password: "Vibra2024!", firstName: "Pietro", lastName: "Vitale" },
 ];
 
 async function createBotUserAccounts() {
