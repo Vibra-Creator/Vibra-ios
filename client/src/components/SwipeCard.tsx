@@ -607,11 +607,29 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       const video = cardVideoRef.current;
       if (!video || !profile.profileVideoUrl) return;
       if (isTop) {
-        video.currentTime = 0;
-        const p = video.play();
-        if (p) p.catch(() => {});
+        // TikTok-style: se il video è già bufferizzato sufficiente, riparte subito
+        if (video.readyState >= 3) {
+          video.currentTime = 0;
+          const p = video.play();
+          if (p) p.catch(() => {});
+        } else {
+          // Aspetta il canplay per play istantaneo
+          const onReady = () => {
+            video.currentTime = 0;
+            const p = video.play();
+            if (p) p.catch(() => {});
+            video.removeEventListener("canplay", onReady);
+          };
+          video.addEventListener("canplay", onReady);
+          video.load();
+          return () => video.removeEventListener("canplay", onReady);
+        }
       } else {
+        // Seconda card: buffer in anticipo senza riprodurre (TikTok preload)
         video.pause();
+        if (video.readyState < 3) {
+          video.load();
+        }
       }
     }, [isTop, profile.profileVideoUrl]);
 
@@ -858,8 +876,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     src={profile.profileVideoUrl ?? undefined}
                     className="w-full h-full object-cover object-top cursor-pointer"
                     onClick={handleImageTap}
-                    poster={profile.imageUrl}
+                    poster={profile.imageUrl ?? undefined}
                     data-testid={`profile-video-${profile.id}`}
+                    style={{ willChange: "transform" }}
+                    {...(isTop ? { fetchPriority: "high" } as any : {})}
                   />
                   <button
                     type="button"

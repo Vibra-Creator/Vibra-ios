@@ -1808,6 +1808,53 @@ async function createBotUserAccounts() {
   }
 }
 
+async function seedBotVideosByCity() {
+  const cityVideoMap: Record<string, string> = {
+    Roma:    "/videos/bot_locali/bar-roma.mp4",
+    Milano:  "/videos/bot_locali/bar-milano.mp4",
+    Napoli:  "/videos/bot_locali/trattoria-napoli.mp4",
+    Torino:  "/videos/bot_locali/caffe-torino.mp4",
+    Firenze: "/videos/bot_locali/osteria-firenze.mp4",
+    Bologna: "/videos/bot_locali/ristorante-bologna.mp4",
+    Venezia: "/videos/bot_locali/bacaro-venezia.mp4",
+    Palermo: "/videos/bot_locali/ristorante-palermo.mp4",
+    Genova:  "/videos/bot_locali/discoteca-genova.mp4",
+    Bari:    "/videos/bot_locali/aperitivo-bari.mp4",
+    Verona:  "/videos/bot_locali/enoteca-verona.mp4",
+    Cagliari:"/videos/bot_locali/rooftop-cagliari.mp4",
+    // città secondarie → video città più vicina
+    Trento:  "/videos/bot_locali/caffe-torino.mp4",
+    Treviso: "/videos/bot_locali/bacaro-venezia.mp4",
+    Padova:  "/videos/bot_locali/bacaro-venezia.mp4",
+    Ancona:  "/videos/bot_locali/ristorante-bologna.mp4",
+    Perugia: "/videos/bot_locali/osteria-firenze.mp4",
+    Siena:   "/videos/bot_locali/osteria-firenze.mp4",
+    Arezzo:  "/videos/bot_locali/osteria-firenze.mp4",
+    Livorno: "/videos/bot_locali/osteria-firenze.mp4",
+    Parma:   "/videos/bot_locali/ristorante-bologna.mp4",
+    Modena:  "/videos/bot_locali/ristorante-bologna.mp4",
+    Brescia: "/videos/bot_locali/bar-milano.mp4",
+    Trieste: "/videos/bot_locali/bacaro-venezia.mp4",
+    Salerno: "/videos/bot_locali/trattoria-napoli.mp4",
+    Catania: "/videos/bot_locali/ristorante-palermo.mp4",
+    Messina: "/videos/bot_locali/ristorante-palermo.mp4",
+    Lecce:   "/videos/bot_locali/aperitivo-bari.mp4",
+    Taranto: "/videos/bot_locali/aperitivo-bari.mp4",
+    Amalfi:  "/videos/bot_locali/trattoria-napoli.mp4",
+  };
+
+  const botProfiles = await db.select({ id: profiles.id, location: profiles.location, profileVideoUrl: profiles.profileVideoUrl }).from(profiles).where(eq(profiles.isBot, true));
+  let assigned = 0;
+  for (const bot of botProfiles) {
+    const videoUrl = cityVideoMap[bot.location || ""];
+    if (videoUrl && !bot.profileVideoUrl) {
+      await db.update(profiles).set({ profileVideoUrl: videoUrl }).where(eq(profiles.id, bot.id));
+      assigned++;
+    }
+  }
+  if (assigned > 0) console.log(`[seed] Assigned city venue videos to ${assigned} bot profiles.`);
+}
+
 async function cleanupTestData() {
   try {
     const testEmails = await db.select().from(users).where(
@@ -2023,6 +2070,7 @@ export async function seedDatabase() {
     }
 
     await createBotUserAccounts();
+    await seedBotVideosByCity();
     await ensureAdminAccount();
     await promoteUserToAdmin("famax61@yahoo.com");
     await promoteUserToAdmin("famax61@gmail.com");
