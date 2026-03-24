@@ -623,23 +623,24 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !profile.profileVideoUrl) return;
-      const startMuted = globalMuted ?? false;
+      const wantAudio = !(globalMuted ?? false);
       const tryPlay = () => {
         video.currentTime = 0;
-        video.muted = startMuted;
-        if (startMuted) {
-          video.play().catch(() => {});
-        } else {
-          const p = video.play();
-          if (p) p.catch((err) => {
-            if (err.name === "NotAllowedError") {
-              video.muted = true;
-              setIsCardMuted(true);
-              onMutedChange?.(true);
-              video.play().catch(() => {});
-            }
-          });
-        }
+        video.muted = true; // parte sempre muted per garantire autoplay
+        video.volume = 1;
+        const p = video.play();
+        if (p) p.then(() => {
+          // video in play muted: ora sblocca audio se l'utente lo vuole
+          if (wantAudio) {
+            video.muted = false; // non lancia errori, Chrome lo permette dopo interazione
+            // verifica se il browser ha effettivamente sbloccato l'audio
+            setTimeout(() => {
+              if (video.muted) {
+                setIsCardMuted(true); // aggiorna l'icona se il browser ha bloccato
+              }
+            }, 150);
+          }
+        }).catch(() => {});
       };
       if (isTop) {
         // TikTok-style: se il video è già bufferizzato sufficiente, riparte subito
