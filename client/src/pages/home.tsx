@@ -25,6 +25,7 @@ export default function Home() {
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
+  const [globalMuted, setGlobalMuted] = useState(false);
   const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
@@ -324,6 +325,8 @@ export default function Home() {
             isTop={false}
             hasPrivateRoom={roomOwners?.[nextProfile.id] || false}
             alreadyLiked={likedIdsSet.has(nextProfile.id)}
+            globalMuted={globalMuted}
+            onMutedChange={setGlobalMuted}
           />
         )}
         {currentProfile && (
@@ -334,6 +337,8 @@ export default function Home() {
             isTop={true}
             hasPrivateRoom={roomOwners?.[currentProfile.id] || false}
             alreadyLiked={likedIdsSet.has(currentProfile.id)}
+            globalMuted={globalMuted}
+            onMutedChange={setGlobalMuted}
             actionButtons={
               <ActionButtons
                 onSwipeLeft={handleSwipeLeft}

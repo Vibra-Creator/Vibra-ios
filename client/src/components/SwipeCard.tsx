@@ -534,10 +534,12 @@ interface SwipeCardProps {
   alreadyLiked?: boolean;
   actionButtons?: React.ReactNode;
   topOverlay?: React.ReactNode;
+  globalMuted?: boolean;
+  onMutedChange?: (muted: boolean) => void;
 }
 
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
-  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay }, ref) {
+  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange }, ref) {
     const [exitX, setExitX] = useState(0);
     const [exitY, setExitY] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
@@ -548,7 +550,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
-    const [isCardMuted, setIsCardMuted] = useState(false);
+    const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? false);
     const [showSignalCompose, setShowSignalCompose] = useState(false);
     const [signalText, setSignalText] = useState("");
     const [signalSent, setSignalSent] = useState(false);
@@ -615,19 +617,29 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     }, [profile.id, profile.photos]);
 
     useEffect(() => {
+      setIsCardMuted(globalMuted ?? false);
+    }, [globalMuted]);
+
+    useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !profile.profileVideoUrl) return;
+      const startMuted = globalMuted ?? false;
       const tryPlay = () => {
         video.currentTime = 0;
-        video.muted = false;
-        const p = video.play();
-        if (p) p.catch((err) => {
-          if (err.name === "NotAllowedError") {
-            video.muted = true;
-            setIsCardMuted(true);
-            video.play().catch(() => {});
-          }
-        });
+        video.muted = startMuted;
+        if (startMuted) {
+          video.play().catch(() => {});
+        } else {
+          const p = video.play();
+          if (p) p.catch((err) => {
+            if (err.name === "NotAllowedError") {
+              video.muted = true;
+              setIsCardMuted(true);
+              onMutedChange?.(true);
+              video.play().catch(() => {});
+            }
+          });
+        }
       };
       if (isTop) {
         // TikTok-style: se il video è già bufferizzato sufficiente, riparte subito
@@ -909,6 +921,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         e.stopPropagation();
                         const newMuted = !isCardMuted;
                         setIsCardMuted(newMuted);
+                        onMutedChange?.(newMuted);
                         if (cardVideoRef.current) {
                           cardVideoRef.current.muted = newMuted;
                           if (!newMuted) cardVideoRef.current.volume = 1;
