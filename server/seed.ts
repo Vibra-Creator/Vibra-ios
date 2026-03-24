@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings, vibingSessions, reports, blockedUsers, deletedBotIds } from "@shared/schema";
-import { eq, or, sql } from "drizzle-orm";
+import { eq, or, sql, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 const cityCoords: Record<string, { lat: number; lng: number }> = {
@@ -1809,50 +1809,180 @@ async function createBotUserAccounts() {
 }
 
 async function seedBotVideosByCity() {
-  const cityVideoMap: Record<string, string> = {
-    Roma:    "/videos/bot_locali/bar-roma.mp4",
-    Milano:  "/videos/bot_locali/bar-milano.mp4",
-    Napoli:  "/videos/bot_locali/trattoria-napoli.mp4",
-    Torino:  "/videos/bot_locali/caffe-torino.mp4",
-    Firenze: "/videos/bot_locali/osteria-firenze.mp4",
-    Bologna: "/videos/bot_locali/ristorante-bologna.mp4",
-    Venezia: "/videos/bot_locali/bacaro-venezia.mp4",
-    Palermo: "/videos/bot_locali/ristorante-palermo.mp4",
-    Genova:  "/videos/bot_locali/discoteca-genova.mp4",
-    Bari:    "/videos/bot_locali/aperitivo-bari.mp4",
-    Verona:  "/videos/bot_locali/enoteca-verona.mp4",
-    Cagliari:"/videos/bot_locali/rooftop-cagliari.mp4",
-    // città secondarie → video città più vicina
-    Trento:  "/videos/bot_locali/caffe-torino.mp4",
-    Treviso: "/videos/bot_locali/bacaro-venezia.mp4",
-    Padova:  "/videos/bot_locali/bacaro-venezia.mp4",
-    Ancona:  "/videos/bot_locali/ristorante-bologna.mp4",
-    Perugia: "/videos/bot_locali/osteria-firenze.mp4",
-    Siena:   "/videos/bot_locali/osteria-firenze.mp4",
-    Arezzo:  "/videos/bot_locali/osteria-firenze.mp4",
-    Livorno: "/videos/bot_locali/osteria-firenze.mp4",
-    Parma:   "/videos/bot_locali/ristorante-bologna.mp4",
-    Modena:  "/videos/bot_locali/ristorante-bologna.mp4",
-    Brescia: "/videos/bot_locali/bar-milano.mp4",
-    Trieste: "/videos/bot_locali/bacaro-venezia.mp4",
-    Salerno: "/videos/bot_locali/trattoria-napoli.mp4",
-    Catania: "/videos/bot_locali/ristorante-palermo.mp4",
-    Messina: "/videos/bot_locali/ristorante-palermo.mp4",
-    Lecce:   "/videos/bot_locali/aperitivo-bari.mp4",
-    Taranto: "/videos/bot_locali/aperitivo-bari.mp4",
-    Amalfi:  "/videos/bot_locali/trattoria-napoli.mp4",
+  // Each city has its own list of unique videos — bots are assigned one each in rotation
+  const cityVideos: Record<string, string[]> = {
+    Roma:    [
+      "/videos/bot_locali/bar-roma.mp4",
+      "/videos/bot_locali/trattoria-roma-2.mp4",
+      "/videos/bot_locali/rooftop-roma-3.mp4",
+      "/videos/bot_locali/enoteca-roma-4.mp4",
+      "/videos/bot_locali/birra-roma-5.mp4",
+      "/videos/bot_locali/cocktailbar-roma-6.mp4",
+      "/videos/bot_locali/caffe-roma-7.mp4",
+      "/videos/bot_locali/lounge-roma-8.mp4",
+      "/videos/bot_locali/gelatocaffe-roma-9.mp4",
+    ],
+    Milano:  [
+      "/videos/bot_locali/bar-milano.mp4",
+      "/videos/bot_locali/lounge-milano-2.mp4",
+      "/videos/bot_locali/ristorante-milano-3.mp4",
+      "/videos/bot_locali/terrace-milano-4.mp4",
+      "/videos/bot_locali/caffe-milano-5.mp4",
+      "/videos/bot_locali/navigli-milano-6.mp4",
+      "/videos/bot_locali/brera-milano-7.mp4",
+      "/videos/bot_locali/aperitivo-milano-8.mp4",
+      "/videos/bot_locali/canalebar-milano-9.mp4",
+    ],
+    Bologna: [
+      "/videos/bot_locali/ristorante-bologna.mp4",
+      "/videos/bot_locali/osteria-bologna-2.mp4",
+      "/videos/bot_locali/cocktailbar-bologna-3.mp4",
+      "/videos/bot_locali/enoteca-bologna-4.mp4",
+      "/videos/bot_locali/pub-bologna-5.mp4",
+      "/videos/bot_locali/rooftop-bologna-6.mp4",
+      "/videos/bot_locali/cantina-bologna-7.mp4",
+    ],
+    Firenze: [
+      "/videos/bot_locali/osteria-firenze.mp4",
+      "/videos/bot_locali/winebar-firenze-2.mp4",
+      "/videos/bot_locali/caffe-firenze-3.mp4",
+      "/videos/bot_locali/trattoria-firenze-4.mp4",
+      "/videos/bot_locali/rooftop-firenze-5.mp4",
+      "/videos/bot_locali/cocktailbar-firenze-6.mp4",
+      "/videos/bot_locali/birreria-firenze-7.mp4",
+    ],
+    Napoli:  [
+      "/videos/bot_locali/trattoria-napoli.mp4",
+      "/videos/bot_locali/pizzeria-napoli-2.mp4",
+      "/videos/bot_locali/caffe-napoli-3.mp4",
+      "/videos/bot_locali/rooftop-napoli-4.mp4",
+      "/videos/bot_locali/winebar-napoli-5.mp4",
+      "/videos/bot_locali/streetbar-napoli-6.mp4",
+    ],
+    Bari:    [
+      "/videos/bot_locali/aperitivo-bari.mp4",
+      "/videos/bot_locali/pesceria-bari-2.mp4",
+      "/videos/bot_locali/winebar-bari-3.mp4",
+      "/videos/bot_locali/rooftop-bari-4.mp4",
+      "/videos/bot_locali/masseria-bari-5.mp4",
+    ],
+    Palermo: [
+      "/videos/bot_locali/ristorante-palermo.mp4",
+      "/videos/bot_locali/caffe-palermo-2.mp4",
+      "/videos/bot_locali/winebar-palermo-3.mp4",
+      "/videos/bot_locali/rooftop-palermo-4.mp4",
+      "/videos/bot_locali/caffe-palermo-5.mp4",
+    ],
+    Genova:  [
+      "/videos/bot_locali/discoteca-genova.mp4",
+      "/videos/bot_locali/bar-genova-2.mp4",
+      "/videos/bot_locali/trattoria-genova-3.mp4",
+      "/videos/bot_locali/taverna-genova-4.mp4",
+      "/videos/bot_locali/lounge-genova-5.mp4",
+    ],
+    Torino:  [
+      "/videos/bot_locali/caffe-torino.mp4",
+      "/videos/bot_locali/caffestorico-torino-2.mp4",
+      "/videos/bot_locali/aperitivobar-torino-3.mp4",
+      "/videos/bot_locali/chocolatebar-torino-4.mp4",
+      "/videos/bot_locali/jazzbar-torino-5.mp4",
+    ],
+    Verona:  [
+      "/videos/bot_locali/enoteca-verona.mp4",
+      "/videos/bot_locali/osteria-verona-2.mp4",
+      "/videos/bot_locali/cantina-verona-3.mp4",
+      "/videos/bot_locali/rooftop-verona-4.mp4",
+    ],
+    Venezia: [
+      "/videos/bot_locali/bacaro-venezia.mp4",
+      "/videos/bot_locali/bacaro-venezia-2.mp4",
+    ],
+    Cagliari:[
+      "/videos/bot_locali/rooftop-cagliari.mp4",
+      "/videos/bot_locali/bar-cagliari-2.mp4",
+    ],
+    Catania: [
+      "/videos/bot_locali/bar-catania-1.mp4",
+      "/videos/bot_locali/trattoria-catania-2.mp4",
+    ],
+    Padova:  [
+      "/videos/bot_locali/caffe-padova-1.mp4",
+      "/videos/bot_locali/winebar-padova-2.mp4",
+    ],
+    Salerno: [
+      "/videos/bot_locali/trattoria-salerno-1.mp4",
+      "/videos/bot_locali/rooftop-salerno-2.mp4",
+    ],
+    Perugia: [
+      "/videos/bot_locali/trattoria-perugia-1.mp4",
+      "/videos/bot_locali/winebar-perugia-2.mp4",
+    ],
+    Siena:   [
+      "/videos/bot_locali/enoteca-siena-1.mp4",
+      "/videos/bot_locali/caffe-siena-2.mp4",
+    ],
+    Trento:  [
+      "/videos/bot_locali/bar-trento-1.mp4",
+      "/videos/bot_locali/enoteca-trento-2.mp4",
+    ],
+    Brescia: [
+      "/videos/bot_locali/bar-brescia-1.mp4",
+      "/videos/bot_locali/winebar-brescia-2.mp4",
+    ],
+    Livorno: [
+      "/videos/bot_locali/osteria-livorno-1.mp4",
+      "/videos/bot_locali/winebar-livorno-2.mp4",
+    ],
+    Modena:  [
+      "/videos/bot_locali/bar-modena-1.mp4",
+      "/videos/bot_locali/ristorante-modena-2.mp4",
+    ],
+    // Città con 1 bot — video unico
+    Arezzo:  ["/videos/bot_locali/osteria-firenze.mp4"],
+    Lecce:   ["/videos/bot_locali/aperitivo-bari.mp4"],
+    Amalfi:  ["/videos/bot_locali/trattoria-napoli.mp4"],
+    Trieste: ["/videos/bot_locali/bacaro-venezia.mp4"],
+    Parma:   ["/videos/bot_locali/ristorante-bologna.mp4"],
+    Ancona:  ["/videos/bot_locali/ristorante-bologna.mp4"],
+    Taranto: ["/videos/bot_locali/aperitivo-bari.mp4"],
+    Messina: ["/videos/bot_locali/ristorante-palermo.mp4"],
+    Treviso: ["/videos/bot_locali/bacaro-venezia.mp4"],
   };
 
-  const botProfiles = await db.select({ id: profiles.id, location: profiles.location, profileVideoUrl: profiles.profileVideoUrl }).from(profiles).where(eq(profiles.isBot, true));
+  // Reset all Italian bot videos first so re-runs are idempotent
+  const italianCities = Object.keys(cityVideos);
+  await db.update(profiles)
+    .set({ profileVideoUrl: null })
+    .where(
+      and(
+        eq(profiles.isBot, true),
+        sql`${profiles.location} = ANY(${sql`ARRAY[${sql.join(italianCities.map(c => sql`${c}`), sql`, `)}]`})`
+      )
+    );
+
+  // Fetch bots grouped by city and assign videos in rotation
+  const botProfiles = await db
+    .select({ id: profiles.id, location: profiles.location })
+    .from(profiles)
+    .where(eq(profiles.isBot, true))
+    .orderBy(profiles.id);
+
+  const cityIndex: Record<string, number> = {};
   let assigned = 0;
+
   for (const bot of botProfiles) {
-    const videoUrl = cityVideoMap[bot.location || ""];
-    if (videoUrl && !bot.profileVideoUrl) {
-      await db.update(profiles).set({ profileVideoUrl: videoUrl }).where(eq(profiles.id, bot.id));
-      assigned++;
-    }
+    const city = bot.location || "";
+    const videos = cityVideos[city];
+    if (!videos) continue;
+
+    if (cityIndex[city] === undefined) cityIndex[city] = 0;
+    const videoUrl = videos[cityIndex[city] % videos.length];
+    cityIndex[city]++;
+
+    await db.update(profiles).set({ profileVideoUrl: videoUrl }).where(eq(profiles.id, bot.id));
+    assigned++;
   }
-  if (assigned > 0) console.log(`[seed] Assigned city venue videos to ${assigned} bot profiles.`);
+  if (assigned > 0) console.log(`[seed] Assigned unique city venue videos to ${assigned} bot profiles.`);
 }
 
 async function cleanupTestData() {
