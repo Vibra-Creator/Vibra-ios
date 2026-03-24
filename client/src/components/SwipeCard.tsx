@@ -42,7 +42,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
   const { t } = useLanguage();
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
-  const [modalMuted, setModalMuted] = useState(true);
+  const [modalMuted, setModalMuted] = useState(false);
   const modalVideoRef = useRef<HTMLVideoElement>(null);
 
   const { data: profileVideos = [] } = useQuery<ProfileVideo[]>({
@@ -125,31 +125,42 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                     ref={modalVideoRef}
                     key={profile.profileVideoUrl}
                     autoPlay
-                    muted
                     loop
                     playsInline
                     className="w-full aspect-[3/4] object-cover object-top"
                     poster={profile.imageUrl}
                     data-testid="detail-profile-video"
+                    onCanPlay={(e) => {
+                      const v = e.currentTarget;
+                      v.muted = false;
+                      v.volume = 1;
+                      const p = v.play();
+                      if (p) p.catch(() => { v.muted = true; setModalMuted(true); v.play().catch(() => {}); });
+                    }}
                   >
                     <source src={profile.profileVideoUrl} />
                   </video>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newMuted = !modalMuted;
-                      setModalMuted(newMuted);
-                      if (modalVideoRef.current) {
-                        modalVideoRef.current.muted = newMuted;
-                        if (!newMuted) modalVideoRef.current.volume = 1;
-                      }
-                    }}
-                    className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
-                    data-testid="button-modal-mute-toggle"
-                  >
-                    {modalMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
-                  </button>
+                  <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+                    <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="5" width="14" height="14" rx="2"/></svg>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newMuted = !modalMuted;
+                        setModalMuted(newMuted);
+                        if (modalVideoRef.current) {
+                          modalVideoRef.current.muted = newMuted;
+                          if (!newMuted) modalVideoRef.current.volume = 1;
+                        }
+                      }}
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                      data-testid="button-modal-mute-toggle"
+                    >
+                      {modalMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <img
@@ -537,7 +548,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
-    const [isCardMuted, setIsCardMuted] = useState(true);
+    const [isCardMuted, setIsCardMuted] = useState(false);
     const [showSignalCompose, setShowSignalCompose] = useState(false);
     const [signalText, setSignalText] = useState("");
     const [signalSent, setSignalSent] = useState(false);
@@ -606,18 +617,26 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !profile.profileVideoUrl) return;
+      const tryPlay = () => {
+        video.currentTime = 0;
+        video.muted = false;
+        const p = video.play();
+        if (p) p.catch((err) => {
+          if (err.name === "NotAllowedError") {
+            video.muted = true;
+            setIsCardMuted(true);
+            video.play().catch(() => {});
+          }
+        });
+      };
       if (isTop) {
         // TikTok-style: se il video è già bufferizzato sufficiente, riparte subito
         if (video.readyState >= 3) {
-          video.currentTime = 0;
-          const p = video.play();
-          if (p) p.catch(() => {});
+          tryPlay();
         } else {
           // Aspetta il canplay per play istantaneo
           const onReady = () => {
-            video.currentTime = 0;
-            const p = video.play();
-            if (p) p.catch(() => {});
+            tryPlay();
             video.removeEventListener("canplay", onReady);
           };
           video.addEventListener("canplay", onReady);
@@ -869,7 +888,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     ref={cardVideoRef}
                     key={profile.profileVideoUrl}
                     autoPlay
-                    muted
                     loop
                     playsInline
                     preload="auto"
@@ -881,22 +899,27 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ willChange: "transform" }}
                     {...(isTop ? { fetchPriority: "high" } as any : {})}
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newMuted = !isCardMuted;
-                      setIsCardMuted(newMuted);
-                      if (cardVideoRef.current) {
-                        cardVideoRef.current.muted = newMuted;
-                        if (!newMuted) cardVideoRef.current.volume = 1;
-                      }
-                    }}
-                    className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
-                    data-testid="button-card-mute-toggle"
-                  >
-                    {isCardMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
-                  </button>
+                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
+                    <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="5" width="14" height="14" rx="2"/></svg>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newMuted = !isCardMuted;
+                        setIsCardMuted(newMuted);
+                        if (cardVideoRef.current) {
+                          cardVideoRef.current.muted = newMuted;
+                          if (!newMuted) cardVideoRef.current.volume = 1;
+                        }
+                      }}
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                      data-testid="button-card-mute-toggle"
+                    >
+                      {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
