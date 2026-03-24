@@ -861,7 +861,7 @@ export async function registerRoutes(
               sql`SELECT 1 FROM bot_daily_match WHERE real_profile_id = ${validatedData.swiperId} AND match_date = ${todayStr} LIMIT 1`
             );
             const alreadyUsed = (usedTodayRows.rows?.length ?? 0) > 0;
-            const lucky = Math.random() < 0.25; // 25% chance
+            const lucky = Math.random() < 0.20; // 20% chance (~1 in 5)
 
             if (!alreadyUsed && lucky) {
               matchData = await storage.createMatch({
@@ -2450,6 +2450,33 @@ REGOLE IMPORTANTI:
         content: content.trim(),
       });
       res.json(message);
+
+      // Bot auto-reply in private room: find bot member and reply with a natural delay
+      try {
+        const roomMembers = await storage.getPrivateRoomMembers(req.params.id);
+        const botMember = roomMembers.find((m: any) => m.isBot && m.id !== userProfile.id);
+        if (botMember) {
+          const prMessages = await storage.getPrivateRoomMessages(req.params.id);
+          const chatHistory = prMessages.map((m: any) => ({ senderId: m.senderId, content: m.content }));
+          const delayMs = 3000 + Math.random() * 7000; // 3–10 seconds
+          setTimeout(async () => {
+            try {
+              const botReplyText = await generateBotReply(botMember, userProfile, chatHistory);
+              await storage.createPrivateRoomMessage({
+                roomId: req.params.id,
+                senderId: botMember.id,
+                senderName: botMember.name,
+                senderImage: botMember.imageUrl || undefined,
+                content: botReplyText,
+              });
+            } catch (botErr) {
+              console.error("[BOT] Private room auto-reply error:", botErr);
+            }
+          }, delayMs);
+        }
+      } catch (botCheckErr) {
+        console.error("[BOT] Private room member check error:", botCheckErr);
+      }
     } catch (error) {
       console.error("Error sending private room message:", error);
       res.status(500).json({ error: "Failed to send message" });
@@ -3590,6 +3617,28 @@ REGOLE IMPORTANTI:
             icon: "/icons/icon-192.png",
             url: "/vibrapp",
           });
+
+          // If the recipient is a bot, auto-reply after a natural delay (5–15 minutes)
+          if (targetProfile.isBot && result.coldMessage) {
+            const coldMsgId = result.coldMessage.id;
+            const delayMs = (5 + Math.random() * 10) * 60 * 1000; // 5–15 min
+            setTimeout(async () => {
+              try {
+                const chatHistory = [{ senderId: myProfile.id, content: (content || "").trim() }];
+                const botReplyText = await generateBotReply(targetProfile, myProfile, chatHistory);
+                const { privateRoomId } = await storage.replyColdMessage(coldMsgId, botReplyText);
+                sendPushToProfile(myProfile.id, {
+                  title: `🛸 ${targetProfile.name} ha risposto!`,
+                  body: "La conversazione privata è ora aperta 🎉",
+                  icon: "/icons/icon-192.png",
+                  url: `/private-room/${privateRoomId}`,
+                });
+                console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name}`);
+              } catch (botErr) {
+                console.error("[BOT] Cold message auto-reply error:", botErr);
+              }
+            }, delayMs);
+          }
         }
       }
       res.json(result);
