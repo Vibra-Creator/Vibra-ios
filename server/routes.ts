@@ -4186,6 +4186,45 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // Admin fix route for bot image extensions
+  app.get("/api/admin/fix-bot-images", async (req, res) => {
+    try {
+      // Check if user is admin
+      const userId = req.session?.userId || req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const user = await storage.getProfileByUserId(userId);
+      if (!user?.isAdmin) return res.status(403).json({ error: "Admin only" });
+
+      // Fix all bot images from .jpg to .png
+      await db
+        .update(profiles)
+        .set({
+          imageUrl: sql`REPLACE(image_url, '.jpg', '.png')`
+        })
+        .where(
+          and(
+            eq(profiles.isBot, true),
+            sql`image_url LIKE '/images/bots/bot%.jpg'`
+          )
+        );
+
+      const fixed = await db
+        .select({ count: sql<number>`COUNT(*)`.as("count") })
+        .from(profiles)
+        .where(
+          and(
+            eq(profiles.isBot, true),
+            sql`image_url LIKE '/images/bots/bot%.png'`
+          )
+        );
+
+      res.json({ success: true, botsPng: fixed[0]?.count || 0 });
+    } catch (err) {
+      console.error("Fix bot images error:", err);
+      res.status(500).json({ error: "Failed to fix bot images" });
+    }
+  });
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return httpServer;

@@ -2090,6 +2090,19 @@ export async function seedDatabase() {
 
     await db.execute(sql`UPDATE profiles SET points = 0 WHERE points != 0`);
 
+    // Fix bot images: convert .jpg to .png in database (they were generated as .png)
+    console.log("Fixing bot image extensions from .jpg to .png...");
+    try {
+      await db.execute(sql`
+        UPDATE profiles 
+        SET image_url = REPLACE(image_url, '.jpg', '.png')
+        WHERE is_bot = true AND image_url LIKE '/images/bots/bot%.jpg'
+      `);
+      console.log("Bot image extensions fixed!");
+    } catch (e) {
+      console.error("Error fixing bot images:", e);
+    }
+
     const botProfiles = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.isBot, true));
     for (let i = 0; i < botProfiles.length; i++) {
       const bot = botProfiles[i];
