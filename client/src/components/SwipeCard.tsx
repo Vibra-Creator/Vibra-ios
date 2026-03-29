@@ -1268,62 +1268,62 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               onClick={() => { setShowVibCompose(false); setVibText(""); setVibSent(false); vibCancelRecording(); vibClearAudio(); }}
               data-testid="vibrapp-compose-overlay"
             >
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+              <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="relative w-full max-w-lg bg-[#0d1f12] border-t border-emerald-500/30 rounded-t-2xl p-5 pb-10"
+                className="relative w-full max-w-lg bg-teal-100 border-t border-teal-300 rounded-t-2xl p-5 pb-10"
                 onClick={e => e.stopPropagation()}
                 data-testid="vibrapp-compose-panel"
               >
-                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+                <div className="w-10 h-1 bg-teal-400 rounded-full mx-auto mb-4" />
                 {vibSent ? (
                   <div className="text-center py-6">
                     <div className="text-5xl mb-3">💬</div>
-                    <p className="text-white font-bold text-lg">Messaggio inviato!</p>
-                    <p className="text-white/50 text-sm mt-1">{profile.name} lo vedrà nel Vibrapp</p>
+                    <p className="text-teal-900 font-bold text-lg">Messaggio inviato!</p>
+                    <p className="text-teal-700 text-sm mt-1">{profile.name} lo vedrà nel Vibrapp</p>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-3 mb-4">
-                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-emerald-500/60" />
+                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-teal-600/60" />
                       <div>
-                        <p className="text-white font-bold">{profile.name}, {profile.age}</p>
-                        <p className="text-emerald-400/70 text-xs flex items-center gap-1.5">
+                        <p className="text-teal-900 font-bold">{profile.name}, {profile.age}</p>
+                        <p className="text-teal-700 text-xs flex items-center gap-1.5">
                           <MessageCircle className="w-3 h-3" /> Messaggio diretto su Vibrapp
                         </p>
                       </div>
                     </div>
 
                     {vibIsRecording ? (
-                      <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-3">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-                        <span className="text-sm text-red-400 font-medium flex-1">
+                      <div className="flex items-center gap-3 bg-red-100 border border-red-300 rounded-xl px-4 py-3 mb-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shrink-0" />
+                        <span className="text-sm text-red-700 font-medium flex-1">
                           {String(Math.floor(vibRecordingDuration / 60)).padStart(2, "0")}:{String(vibRecordingDuration % 60).padStart(2, "0")} — Registrazione…
                         </span>
-                        <button onClick={vibCancelRecording} className="text-white/40 hover:text-red-400" data-testid="button-vib-cancel-rec">
+                        <button onClick={vibCancelRecording} className="text-red-600 hover:text-red-800" data-testid="button-vib-cancel-rec">
                           <MicOff className="w-4 h-4" />
                         </button>
-                        <button onClick={vibStopRecording} className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center" data-testid="button-vib-stop-rec">
+                        <button onClick={vibStopRecording} className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center hover:bg-teal-700" data-testid="button-vib-stop-rec">
                           <Square className="w-3.5 h-3.5 text-white fill-white" />
                         </button>
                       </div>
                     ) : vibAudioFile && vibAudioUrl ? (
-                      <div className="flex items-center gap-3 bg-emerald-900/30 border border-emerald-500/30 rounded-xl px-3 py-2 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-600/30 flex items-center justify-center shrink-0">
-                          <Mic className="w-4 h-4 text-emerald-400" />
+                      <div className="flex items-center gap-3 bg-teal-200 border border-teal-400 rounded-xl px-3 py-2 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-teal-300 flex items-center justify-center shrink-0">
+                          <Mic className="w-4 h-4 text-teal-700" />
                         </div>
-                        <audio src={vibAudioUrl} controls className="flex-1 h-8" style={{ accentColor: "#10b981" }} data-testid="vib-audio-preview" />
-                        <button onClick={vibClearAudio} className="text-white/40 hover:text-red-400 shrink-0" data-testid="button-vib-clear-audio">
+                        <audio src={vibAudioUrl} controls className="flex-1 h-8" style={{ accentColor: "#0d9488" }} data-testid="vib-audio-preview" />
+                        <button onClick={vibClearAudio} className="text-red-600 hover:text-red-800 shrink-0" data-testid="button-vib-clear-audio">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
                       <>
                         <textarea
-                          className="w-full bg-white/5 border border-emerald-500/20 text-white text-sm rounded-xl p-3 resize-none outline-none focus:border-emerald-500/50 mb-2"
+                          className="w-full bg-teal-50 border border-teal-400 text-teal-900 text-sm rounded-xl p-3 resize-none outline-none focus:border-teal-600 focus:ring-1 focus:ring-teal-400 mb-2"
                           rows={3}
                           maxLength={500}
                           placeholder={`Scrivi a ${profile.name}…`}
@@ -1335,7 +1335,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         <div className="flex items-center justify-end mb-3">
                           <button
                             onClick={vibStartRecording}
-                            className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                            className="flex items-center gap-1.5 text-xs text-teal-700 hover:text-teal-900 font-medium transition-colors"
                             data-testid="button-vib-start-rec"
                           >
                             <Mic className="w-3.5 h-3.5" />
@@ -1348,14 +1348,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setShowVibCompose(false); setVibText(""); vibCancelRecording(); vibClearAudio(); }}
-                        className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm"
+                        className="flex-1 py-2.5 rounded-xl border border-teal-400 text-teal-700 text-sm font-medium hover:bg-teal-200 transition-colors"
                         data-testid="button-cancel-vib"
                       >Annulla</button>
                       <button
                         onClick={vibSubmit}
                         disabled={(!vibAudioFile && vibText.trim().length < 2) || vibIsUploading || sendColdMsgMutation.isPending || vibIsRecording}
-                        className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-40 transition-opacity"
-                        style={{ background: "#25D366" }}
+                        className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-40 transition-opacity bg-teal-600 hover:bg-teal-700"
                         data-testid="button-send-vib"
                       >
                         {vibIsUploading || sendColdMsgMutation.isPending ? "Invio…" : "💬 Invia messaggio"}
