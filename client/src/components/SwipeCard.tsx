@@ -1379,34 +1379,34 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               onClick={() => { setShowSignalCompose(false); setSignalText(""); setSignalSent(false); }}
               data-testid="signal-compose-overlay"
             >
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+              <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
               <motion.div
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="relative w-full max-w-lg bg-[#0d0120] border-t border-fuchsia-500/30 rounded-t-2xl p-5 pb-10"
+                className="relative w-full max-w-lg bg-green-100 border-t border-green-400 rounded-t-2xl p-5 pb-10"
                 onClick={e => e.stopPropagation()}
                 data-testid="signal-compose-panel"
               >
-                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+                <div className="w-10 h-1 bg-green-500 rounded-full mx-auto mb-4" />
                 {signalSent ? (
                   <div className="text-center py-6">
                     <div className="text-5xl mb-3">🛸</div>
-                    <p className="text-white font-bold text-lg">{t("swipe.signalSent")}</p>
-                    <p className="text-white/50 text-sm mt-1">{t("swipe.signalSentDesc").replace("{name}", profile.name)}</p>
+                    <p className="text-green-900 font-bold text-lg">{t("swipe.signalSent")}</p>
+                    <p className="text-green-700 text-sm mt-1">{t("swipe.signalSentDesc").replace("{name}", profile.name)}</p>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-3 mb-4">
-                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-fuchsia-500/60" />
+                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-green-600/60" />
                       <div>
-                        <p className="text-white font-bold">{profile.name}, {profile.age}</p>
-                        <p className="text-fuchsia-400/70 text-xs flex items-center gap-1"><Radio className="w-3 h-3" /> {t("swipe.sendSignalDirect")}</p>
+                        <p className="text-green-900 font-bold">{profile.name}, {profile.age}</p>
+                        <p className="text-green-700 text-xs flex items-center gap-1"><Radio className="w-3 h-3" /> {t("swipe.sendSignalDirect")}</p>
                       </div>
                     </div>
                     <textarea
-                      className="w-full bg-white/5 border border-fuchsia-500/20 text-white text-sm rounded-xl p-3 resize-none outline-none focus:border-fuchsia-500/50 mb-3"
+                      className="w-full bg-green-50 border border-green-400 text-green-900 text-sm rounded-xl p-3 resize-none outline-none focus:border-green-600 focus:ring-1 focus:ring-green-400 mb-3"
                       rows={3}
                       maxLength={300}
                       placeholder={`Scrivi qualcosa a ${profile.name}…`}
@@ -1418,13 +1418,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setShowSignalCompose(false); setSignalText(""); }}
-                        className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm"
+                        className="flex-1 py-2.5 rounded-xl border border-green-400 text-green-700 text-sm font-medium hover:bg-green-200 transition-colors"
                         data-testid="button-cancel-signal"
                       >Annulla</button>
                       <button
                         onClick={() => sendSignalMutation.mutate()}
                         disabled={signalText.trim().length < 2 || sendSignalMutation.isPending}
-                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white font-semibold text-sm disabled:opacity-40 transition-opacity"
+                        className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-sm disabled:opacity-40 transition-colors"
                         data-testid="button-send-signal"
                       >
                         {sendSignalMutation.isPending ? "Invio…" : "🛸 Invia Signal"}
