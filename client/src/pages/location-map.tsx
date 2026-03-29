@@ -110,7 +110,7 @@ export default function LocationMap() {
       zoomControl: false,
     }).setView([defaultLat, defaultLng], 13);
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
       subdomains: "abcd",
       maxZoom: 19,
@@ -137,9 +137,9 @@ export default function LocationMap() {
         });
         const marker = L.marker([loc.latitude, loc.longitude], { icon })
           .addTo(leafletMap.current!)
-          .bindPopup(`<div style="text-align:center;font-family:sans-serif;">
-            <strong>${loc.profile.name}</strong><br/>
-            <small>${loc.profile.location || ""}</small>
+          .bindPopup(`<div style="text-align:center;font-family:sans-serif;color:#333;background:#fff;padding:8px;border-radius:6px;">
+            <strong style="color:#000;">${loc.profile.name}</strong><br/>
+            <small style="color:#666;">${loc.profile.location || ""}</small>
           </div>`);
         markersRef.current.push(marker);
       });
@@ -163,7 +163,7 @@ export default function LocationMap() {
 
     myMarkerRef.current = L.marker([locationStatus.share.latitude, locationStatus.share.longitude], { icon: myIcon })
       .addTo(leafletMap.current)
-      .bindPopup(`<div style="text-align:center;font-family:sans-serif;"><strong>${t("location.you")}</strong></div>`);
+      .bindPopup(`<div style="text-align:center;font-family:sans-serif;color:#000;background:#fff;padding:8px;border-radius:6px;"><strong>${t("location.you")}</strong></div>`);
 
     leafletMap.current.setView([locationStatus.share.latitude, locationStatus.share.longitude], 14);
   }, [locationStatus?.share, myProfile]);
@@ -176,13 +176,13 @@ export default function LocationMap() {
       <div ref={mapRef} className="flex-1 z-0" style={{ minHeight: "300px" }} />
 
       <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="bg-black/60 backdrop-blur-md text-white border border-white/10 rounded-xl" onClick={() => setLocation("/")} data-testid="button-back">
+        <Button variant="ghost" size="icon" className="bg-white/80 backdrop-blur-md text-slate-800 border border-slate-200 rounded-xl hover:bg-white" onClick={() => setLocation("/")} data-testid="button-back">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <div className="flex-1 bg-black/60 backdrop-blur-md rounded-xl p-3 border border-white/10">
+        <div className="flex-1 bg-white/90 backdrop-blur-md rounded-xl p-3 border border-slate-200 shadow-md">
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-secondary" />
-            <h2 className="text-white font-semibold text-sm" data-testid="text-location-title">{t("location.title")}</h2>
+            <h2 className="text-slate-800 font-semibold text-sm" data-testid="text-location-title">{t("location.title")}</h2>
             <Button
               variant="ghost"
               size="icon"
@@ -190,15 +190,15 @@ export default function LocationMap() {
               onClick={() => setShowInfo(!showInfo)}
               data-testid="button-location-info"
             >
-              <Info className="w-4 h-4 text-white/60" />
+              <Info className="w-4 h-4 text-slate-600" />
             </Button>
           </div>
           {isSharing && (
             <div className="mt-1 flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-green-400">{t("location.active")}</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-xs text-green-600 font-medium">{t("location.active")}</span>
               {matchLocations && matchLocations.length > 0 && (
-                <span className="text-xs text-white/40 ml-1">
+                <span className="text-xs text-slate-500 ml-1">
                   {matchLocations.length} {matchLocations.length === 1 ? t("location.matchVisibleSingular") : t("location.matchVisible")}
                 </span>
               )}
@@ -215,38 +215,38 @@ export default function LocationMap() {
             exit={{ opacity: 0, y: -20 }}
             className="absolute top-20 left-4 right-4 z-20"
           >
-            <Card className="bg-black/80 backdrop-blur-xl border-white/10 p-4">
+            <Card className="bg-white/95 backdrop-blur-xl border-slate-200 p-4 shadow-lg">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-yellow-400" />
-                  <h3 className="text-white font-semibold text-sm">{t("location.privacySafety")}</h3>
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-slate-900 font-semibold text-sm">{t("location.privacySafety")}</h3>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => setShowInfo(false)} data-testid="button-close-info">
-                  <X className="w-4 h-4 text-white/60" />
+                  <X className="w-4 h-4 text-slate-600" />
                 </Button>
               </div>
-              <div className="space-y-2 text-white/70 text-xs">
+              <div className="space-y-2 text-slate-700 text-xs">
                 <p>{t("location.privacyText1")}</p>
                 <p>{t("location.privacyText2")}</p>
                 <p>{t("location.privacyText3")}</p>
                 <p>{t("location.privacyText4")}</p>
-                <p className="text-yellow-400/80">{t("location.privacyText5")}</p>
+                <p className="text-amber-600 font-medium">{t("location.privacyText5")}</p>
               </div>
             </Card>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent pt-12">
+      <div className="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-white/90 via-white/60 to-transparent pt-12">
         {!locationEnabled ? (
-          <Card className="bg-black/60 backdrop-blur-md border-white/10 p-4">
+          <Card className="bg-white/95 backdrop-blur-md border-slate-200 p-4 shadow-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5 text-white/40" />
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-slate-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium">{t("location.notActive")}</p>
-                <p className="text-white/50 text-xs">{t("location.notActiveDesc")}</p>
+                <p className="text-slate-900 text-sm font-medium">{t("location.notActive")}</p>
+                <p className="text-slate-600 text-xs">{t("location.notActiveDesc")}</p>
               </div>
             </div>
           </Card>
@@ -267,7 +267,7 @@ export default function LocationMap() {
                 {matchLocations.map(loc => (
                   <button
                     key={loc.profileId}
-                    className="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-white/10 shrink-0"
+                    className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-3 py-2 border border-slate-300 shrink-0 hover:bg-white transition-colors"
                     onClick={() => {
                       leafletMap.current?.setView([loc.latitude, loc.longitude], 15);
                     }}
@@ -275,9 +275,9 @@ export default function LocationMap() {
                   >
                     <Avatar className="w-6 h-6">
                       <AvatarImage src={loc.profile.imageUrl} />
-                      <AvatarFallback className="bg-primary/30 text-white text-xs">{loc.profile.name[0]}</AvatarFallback>
+                      <AvatarFallback className="bg-primary/20 text-slate-800 text-xs font-medium">{loc.profile.name[0]}</AvatarFallback>
                     </Avatar>
-                    <span className="text-white text-xs font-medium whitespace-nowrap">{loc.profile.name}</span>
+                    <span className="text-slate-800 text-xs font-medium whitespace-nowrap">{loc.profile.name}</span>
                   </button>
                 ))}
               </div>
@@ -286,7 +286,7 @@ export default function LocationMap() {
               onClick={() => stopMutation.mutate()}
               disabled={stopMutation.isPending}
               variant="outline"
-              className="w-full border-red-500/50 text-red-400 py-5"
+              className="w-full border-red-400 text-red-600 hover:bg-red-50 py-5"
               data-testid="button-stop-sharing"
             >
               <X className="w-4 h-4 mr-2" />
