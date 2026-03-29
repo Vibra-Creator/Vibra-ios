@@ -780,8 +780,7 @@ export default function Vibrapp() {
 
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-3 py-2 space-y-1"
-        style={{ background: "linear-gradient(180deg, #0b0d1a 0%, #111827 100%)" }}
+        className="flex-1 overflow-y-auto px-3 py-2 space-y-1 bg-slate-50"
         onScroll={handleScroll}
         data-testid="vibrapp-messages-container"
       >
@@ -794,16 +793,16 @@ export default function Vibrapp() {
         )}
 
         {messages.length === 0 && (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 text-white/50">
-            <MessageCircle className="w-12 h-12 mb-3 opacity-30" />
-            <p className="text-sm" data-testid="text-no-messages">{t("vibrapp.noMessages")}</p>
+          <div className="flex-1 flex flex-col items-center justify-center py-20 text-slate-400">
+            <MessageCircle className="w-12 h-12 mb-3 opacity-40 text-slate-300" />
+            <p className="text-sm text-slate-500" data-testid="text-no-messages">{t("vibrapp.noMessages")}</p>
           </div>
         )}
 
         {groupedMessages.map((group) => (
           <div key={group.date}>
             <div className="flex justify-center py-2">
-              <span className="bg-black/40 text-white/60 text-[10px] px-3 py-1 rounded-full backdrop-blur-sm">
+              <span className="bg-slate-200 text-slate-600 text-[10px] px-3 py-1 rounded-full">
                 {formatDateLabel(group.msgs[0].createdAt)}
               </span>
             </div>
@@ -847,12 +846,12 @@ export default function Vibrapp() {
                     <div
                       className={`rounded-xl px-3 py-1.5 relative ${
                         mine
-                          ? "bg-[#005c4b] text-white rounded-tr-sm"
-                          : "bg-[#1f2937] text-white rounded-tl-sm"
+                          ? "bg-emerald-500 text-white rounded-tr-sm"
+                          : "bg-slate-200 text-slate-900 rounded-tl-sm"
                       }`}
                     >
                       {showName && (
-                        <p className="text-[11px] font-semibold text-emerald-400 mb-0.5" data-testid={`sender-name-${msg.id}`}>
+                        <p className={`text-[11px] font-semibold mb-0.5 ${mine ? "text-white/90" : "text-emerald-600"}`} data-testid={`sender-name-${msg.id}`}>
                           {msg.senderName}
                         </p>
                       )}
@@ -863,7 +862,7 @@ export default function Vibrapp() {
                             <Lock className="w-2.5 h-2.5 text-purple-400" />
                             <p className="text-[10px] text-purple-400 font-medium">{msg.replyToName}</p>
                           </div>
-                          <p className="text-[10px] text-white/50 truncate">{msg.replyToContent}</p>
+                          <p className={`text-[10px] ${mine ? "text-white/60" : "text-slate-600"} truncate`}>{msg.replyToContent}</p>
                         </div>
                       )}
 
@@ -1018,9 +1017,9 @@ export default function Vibrapp() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="px-4 py-1 bg-black/40"
+            className="px-4 py-1 bg-slate-100 border-b border-slate-200"
           >
-            <p className="text-[11px] text-emerald-400 italic" data-testid="text-typing-indicator">
+            <p className="text-[11px] text-emerald-600 italic font-medium" data-testid="text-typing-indicator">
               {typingUsers.length === 1
                 ? `${typingUsers[0].name} ${t("vibrapp.typing")}`
                 : `${typingUsers.map(u => u.name).join(", ")} ${t("vibrapp.typingMultiple")}`
@@ -1047,16 +1046,16 @@ export default function Vibrapp() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="px-4 py-2 bg-black/30 flex items-center justify-between border-b border-white/10"
+              className="px-4 py-2 bg-slate-100 flex items-center justify-between border-b border-slate-200"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-purple-400" />
-                  <p className="text-[10px] text-purple-400 font-medium">{t("vibrapp.privateReply")} → {replyTo.senderName}</p>
+                  <Lock className="w-3 h-3 text-purple-500" />
+                  <p className="text-[10px] text-purple-600 font-medium">{t("vibrapp.privateReply")} → {replyTo.senderName}</p>
                 </div>
-                <p className="text-[11px] text-white/50 truncate">{replyTo.content}</p>
+                <p className="text-[11px] text-slate-600 truncate">{replyTo.content}</p>
               </div>
-              <button onClick={() => setReplyTo(null)} className="ml-2 p-1 text-white/40 hover:text-white" data-testid="button-cancel-reply">
+              <button onClick={() => setReplyTo(null)} className="ml-2 p-1 text-slate-400 hover:text-slate-600" data-testid="button-cancel-reply">
                 <X className="w-4 h-4" />
               </button>
             </motion.div>
@@ -1069,21 +1068,21 @@ export default function Vibrapp() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="px-3 py-2 bg-black/30 border-b border-white/10 flex items-center gap-3"
+              className="px-3 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-3"
               data-testid="media-preview-bar"
             >
               <div className="relative shrink-0">
                 {mediaFileType === "image" ? (
                   <img src={mediaPreviewUrl} alt="preview" className="w-16 h-16 object-cover rounded-lg" data-testid="media-preview-image" />
                 ) : mediaFileType === "audio" ? (
-                  <div className="w-16 h-16 rounded-lg bg-emerald-900/40 flex flex-col items-center justify-center border border-emerald-500/30" data-testid="media-preview-audio">
-                    <Mic className="w-6 h-6 text-emerald-400" />
-                    <span className="text-[9px] text-white/60 mt-0.5">Vocale</span>
+                  <div className="w-16 h-16 rounded-lg bg-emerald-100 flex flex-col items-center justify-center border border-emerald-300" data-testid="media-preview-audio">
+                    <Mic className="w-6 h-6 text-emerald-600" />
+                    <span className="text-[9px] text-emerald-700 mt-0.5">Vocale</span>
                   </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-lg bg-black/50 flex flex-col items-center justify-center border border-white/20" data-testid="media-preview-video">
-                    <Video className="w-6 h-6 text-emerald-400" />
-                    <span className="text-[9px] text-white/60 mt-0.5">Video</span>
+                  <div className="w-16 h-16 rounded-lg bg-blue-100 flex flex-col items-center justify-center border border-blue-300" data-testid="media-preview-video">
+                    <Video className="w-6 h-6 text-blue-600" />
+                    <span className="text-[9px] text-blue-700 mt-0.5">Video</span>
                   </div>
                 )}
               </div>
@@ -1092,8 +1091,8 @@ export default function Vibrapp() {
                   <audio src={mediaPreviewUrl} controls className="w-full h-8 accent-emerald-400" data-testid="audio-preview-player" />
                 ) : (
                   <>
-                    <p className="text-xs text-white/70 truncate">{mediaFile?.name}</p>
-                    <p className="text-[10px] text-white/40">
+                    <p className="text-xs text-slate-700 truncate font-medium">{mediaFile?.name}</p>
+                    <p className="text-[10px] text-slate-500">
                       {mediaFileType === "image" ? <ImageIcon className="w-3 h-3 inline mr-1" /> : <Video className="w-3 h-3 inline mr-1" />}
                       {((mediaFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB
                     </p>
