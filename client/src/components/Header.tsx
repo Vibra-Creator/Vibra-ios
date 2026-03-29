@@ -304,6 +304,8 @@ function LikesReceivedButton() {
 }
 
 export function Header() {
+  const [location] = useLocation();
+  
   return (
     <header className="sticky top-0 z-40 w-full">
       <div className="flex items-center gap-2 px-3 py-2 bg-black/40 backdrop-blur-xl border-b border-green-500/10">
@@ -311,7 +313,7 @@ export function Header() {
           <img src={vibraLogo} alt="Vibra" className="w-9 h-9 object-contain rounded-full shrink-0" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
         </Link>
         <CosmicBanner />
-        <LikesReceivedButton />
+        {location === "/" && <LikesReceivedButton />}
       </div>
     </header>
   );
