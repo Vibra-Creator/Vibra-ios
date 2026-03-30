@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
+import { playNotificationSound, playVibrappSound, initNotificationSound } from "@/lib/notification-sound";
 
 export default function PushSoundHandler() {
   useEffect(() => {
@@ -13,7 +13,12 @@ export default function PushSoundHandler() {
 
     const handleSwMessage = (event: MessageEvent) => {
       if (event.data?.type === "VIBRA_PUSH_RECEIVED") {
-        playNotificationSound();
+        const pushType = event.data?.payload?.type;
+        if (pushType === "vibrapp") {
+          playVibrappSound();
+        } else {
+          playNotificationSound();
+        }
       }
     };
 

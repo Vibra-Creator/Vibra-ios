@@ -3230,7 +3230,7 @@ REGOLE IMPORTANTI:
     );
   }
 
-  async function sendPushToProfile(targetProfileId: string, payload: { title: string; body: string; icon?: string; url?: string }) {
+  async function sendPushToProfile(targetProfileId: string, payload: { title: string; body: string; icon?: string; url?: string; type?: string }) {
     try {
       const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.profileId, targetProfileId));
       for (const sub of subs) {
@@ -3616,6 +3616,7 @@ REGOLE IMPORTANTI:
             body: mediaType === "audio" ? "🎤 Ha inviato un messaggio vocale" : (content || "").trim().substring(0, 100),
             icon: "/icons/icon-192.png",
             url: "/vibrapp",
+            type: "vibrapp",
           });
 
           // If the recipient is a bot, auto-reply after a natural delay (5–15 minutes)
@@ -3632,6 +3633,7 @@ REGOLE IMPORTANTI:
                   body: "La conversazione privata è ora aperta 🎉",
                   icon: "/icons/icon-192.png",
                   url: `/private-room/${privateRoomId}`,
+                  type: "vibrapp",
                 });
                 console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name}`);
               } catch (botErr) {
@@ -3707,6 +3709,7 @@ REGOLE IMPORTANTI:
         body: "La conversazione privata è ora aperta 🎉",
         icon: "/icons/icon-192.png",
         url: `/private-room/${privateRoomId}`,
+        type: "vibrapp",
       });
       res.json({ privateRoomId });
     } catch (err) {
