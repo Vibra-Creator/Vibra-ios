@@ -138,6 +138,8 @@ export default function VideoUpload() {
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/profiles", myProfile.id, "videos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-profile"] });
       toast({ title: "Video pubblicato! 🎉", description: "Il tuo video è ora visibile nel profilo." });
       setLocation("/profile");
     } catch (err: any) {

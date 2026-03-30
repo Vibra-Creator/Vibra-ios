@@ -3934,6 +3934,9 @@ REGOLE IMPORTANTI:
         gifOverlayUrl: gifOverlayUrl || null,
       });
 
+      // Imposta il video appena caricato come video principale del profilo
+      await storage.updateProfile(profile.id, { profileVideoUrl: objectPath });
+
       res.json(video);
     } catch (err) {
       console.error("[profile-videos] finalize error:", err);

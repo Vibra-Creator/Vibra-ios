@@ -607,9 +607,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       staleTime: 5 * 60 * 1000,
     });
     const hasVideos = cardVideos.length > 0;
-    const primaryVideoLocation = profile.profileVideoUrl
-      ? (cardVideos.find(v => v.videoUrl === profile.profileVideoUrl)?.location ?? null)
+    const primaryVideoMeta = profile.profileVideoUrl
+      ? cardVideos.find(v => v.videoUrl === profile.profileVideoUrl) ?? null
       : null;
+    const primaryVideoLocation = primaryVideoMeta?.location ?? null;
+    const primaryVideoCaption = primaryVideoMeta?.caption ?? null;
 
     useEffect(() => {
       const extras = profile.photos || [];
@@ -937,15 +939,29 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
                     </button>
                   </div>
-                  {primaryVideoLocation && (
-                    <div
-                      className="absolute bottom-36 left-3 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 pointer-events-none"
-                      data-testid={`video-location-overlay-${profile.id}`}
-                    >
-                      <MapPin className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
-                      <span className="text-white text-xs font-semibold truncate max-w-[180px] drop-shadow">
-                        {primaryVideoLocation}
-                      </span>
+                  {(primaryVideoLocation || primaryVideoCaption) && (
+                    <div className="absolute bottom-36 left-3 right-3 z-20 flex flex-col items-start gap-1.5 pointer-events-none">
+                      {primaryVideoCaption && (
+                        <div
+                          className="bg-black/60 backdrop-blur-sm rounded-xl px-3 py-1.5 max-w-full"
+                          data-testid={`video-caption-overlay-${profile.id}`}
+                        >
+                          <span className="text-white text-xs font-semibold drop-shadow leading-snug">
+                            {primaryVideoCaption}
+                          </span>
+                        </div>
+                      )}
+                      {primaryVideoLocation && (
+                        <div
+                          className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5"
+                          data-testid={`video-location-overlay-${profile.id}`}
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
+                          <span className="text-white text-xs font-semibold truncate max-w-[180px] drop-shadow">
+                            {primaryVideoLocation}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
