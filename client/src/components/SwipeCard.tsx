@@ -1481,7 +1481,7 @@ interface ActionButtonsProps {
 }
 
 export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, onUndo, undoDisabled, disabled, likeDisabled }: ActionButtonsProps) {
-  if (!onSuperLike) return null;
+  if (!onSuperLike && !onUndo) return null;
   return (
     <div className="flex items-center justify-center gap-6 py-2 pb-3">
       {/* Undo button */}
