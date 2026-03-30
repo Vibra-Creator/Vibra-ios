@@ -97,6 +97,7 @@ export default function Vibrapp() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isAtBottomRef = useRef(true);
+  const replyInputRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["/api/profiles/me"],
