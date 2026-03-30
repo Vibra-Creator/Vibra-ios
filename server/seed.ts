@@ -1809,7 +1809,70 @@ async function createBotUserAccounts() {
 }
 
 async function seedBotVideosByCity() {
-  // Each city has its own list of unique videos — bots are assigned one each in rotation
+  // Pool di video suddivisi per fascia d'età
+  // Giovani (18-25): discoteca, università, palestra, bar cocktail
+  const youngVideos = [
+    "/videos/bot_locali/discoteca-ballo-new-1.mp4",
+    "/videos/bot_locali/universita-atrio-new-1.mp4",
+    "/videos/bot_locali/club-rooftop-new-2.mp4",
+    "/videos/bot_locali/universita-corridoio-new-2.mp4",
+    "/videos/bot_locali/underground-club-new-3.mp4",
+    "/videos/bot_locali/universita-campus-new-3.mp4",
+    "/videos/bot_locali/palestra-spinning-new-3.mp4",
+    "/videos/bot_locali/bar-cocktail-new-2.mp4",
+  ];
+  // Adulti (26-35): bar, ristorante, palestra, discoteca rooftop
+  const adultVideos = [
+    "/videos/bot_locali/bar-aperitivo-new-1.mp4",
+    "/videos/bot_locali/ristorante-sala-new-1.mp4",
+    "/videos/bot_locali/palestra-pesi-new-2.mp4",
+    "/videos/bot_locali/trattoria-ospiti-new-2.mp4",
+    "/videos/bot_locali/palestra-attrezzi-new-1.mp4",
+    "/videos/bot_locali/club-rooftop-new-2.mp4",
+    "/videos/bot_locali/ristorante-rooftop-new-3.mp4",
+    "/videos/bot_locali/bar-cocktail-new-2.mp4",
+  ];
+  // Maturi (36+): ristorante con sala, wine bar, trattoria, palestra
+  const matureVideos = [
+    "/videos/bot_locali/ristorante-sala-new-1.mp4",
+    "/videos/bot_locali/winebar-serata-new-3.mp4",
+    "/videos/bot_locali/trattoria-ospiti-new-2.mp4",
+    "/videos/bot_locali/ristorante-rooftop-new-3.mp4",
+    "/videos/bot_locali/bar-aperitivo-new-1.mp4",
+    "/videos/bot_locali/palestra-attrezzi-new-1.mp4",
+  ];
+
+  const botProfiles = await db
+    .select({ id: profiles.id, age: profiles.age })
+    .from(profiles)
+    .where(eq(profiles.isBot, true))
+    .orderBy(profiles.id);
+
+  let youngIdx = 0, adultIdx = 0, matureIdx = 0;
+  let assigned = 0;
+
+  for (const bot of botProfiles) {
+    const age = bot.age ?? 25;
+    let videoUrl: string;
+    if (age <= 25) {
+      videoUrl = youngVideos[youngIdx % youngVideos.length];
+      youngIdx++;
+    } else if (age <= 35) {
+      videoUrl = adultVideos[adultIdx % adultVideos.length];
+      adultIdx++;
+    } else {
+      videoUrl = matureVideos[matureIdx % matureVideos.length];
+      matureIdx++;
+    }
+    await db.update(profiles).set({ profileVideoUrl: videoUrl }).where(eq(profiles.id, bot.id));
+    assigned++;
+  }
+
+  if (assigned > 0) console.log(`[seed] Assigned age-appropriate themed videos to ${assigned} bot profiles.`);
+}
+
+async function _seedBotVideosByCityLegacy() {
+  // LEGACY — mantenuta per riferimento, non più in uso
   const cityVideos: Record<string, string[]> = {
     Roma:    [
       "/videos/bot_locali/bar-roma.mp4",
