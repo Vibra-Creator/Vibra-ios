@@ -608,6 +608,16 @@ export default function Vibrapp() {
     }
   }, [introColdStatus, introPrivateRoomId, introTarget?.id, profile?.id]);
 
+  useEffect(() => {
+    if (selectedColdMsg) {
+      const timer = setTimeout(() => {
+        replyInputRef.current?.focus();
+        replyInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedColdMsg]);
+
   if (!profile) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -1329,6 +1339,7 @@ export default function Vibrapp() {
               </div>
               <p className="text-white/50 text-xs mb-2">La tua risposta apre una chat privata 🔐</p>
               <textarea
+                ref={replyInputRef}
                 className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-purple-500/50 mb-4"
                 rows={3}
                 maxLength={500}
