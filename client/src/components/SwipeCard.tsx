@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1474,14 +1474,32 @@ interface ActionButtonsProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   onSuperLike?: () => void;
+  onUndo?: () => void;
+  undoDisabled?: boolean;
   disabled?: boolean;
   likeDisabled?: boolean;
 }
 
-export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, disabled, likeDisabled }: ActionButtonsProps) {
+export function ActionButtons({ onSwipeLeft, onSwipeRight, onSuperLike, onUndo, undoDisabled, disabled, likeDisabled }: ActionButtonsProps) {
   if (!onSuperLike) return null;
   return (
     <div className="flex items-center justify-center gap-6 py-2 pb-3">
+      {/* Undo button */}
+      {onUndo && (
+        <motion.button
+          whileHover={{ scale: undoDisabled ? 1 : 1.1 }}
+          whileTap={{ scale: undoDisabled ? 1 : 0.9 }}
+          onClick={onUndo}
+          disabled={undoDisabled}
+          className="w-12 h-12 rounded-full bg-card border border-amber-500/50 flex items-center justify-center shadow-lg disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+          data-testid="button-undo-swipe"
+          title="Annulla ultimo swipe"
+        >
+          <RotateCcw className="w-5 h-5 text-amber-400" />
+        </motion.button>
+      )}
+
+      {/* Super Like */}
       {onSuperLike && (
         <motion.button
           whileHover={{ scale: 1.1 }}

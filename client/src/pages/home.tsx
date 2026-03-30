@@ -25,6 +25,7 @@ export default function Home() {
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
+  const [swipeHistory, setSwipeHistory] = useState<string[]>([]);
   const [globalMuted, setGlobalMuted] = useState(false);
   const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
@@ -175,7 +176,8 @@ export default function Home() {
       });
       return;
     }
-    
+
+    setSwipeHistory(prev => [...prev, currentProfile.id]);
     setSwipedProfiles(prev => {
       const newSet = new Set(prev);
       newSet.add(currentProfile.id);
@@ -186,6 +188,31 @@ export default function Home() {
       liked: direction === "right",
     });
   }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet]);
+
+  const undoMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/swipes/last"),
+    onSuccess: (data: any) => {
+      const undoneId = data?.undoneProfileId;
+      if (undoneId) {
+        setSwipedProfiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(undoneId);
+          return newSet;
+        });
+        setSwipeHistory(prev => prev.filter(id => id !== undoneId));
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
+    },
+    onError: () => {
+      toast({ title: t("common.error"), description: "Impossibile annullare lo swipe", variant: "destructive" });
+    },
+  });
+
+  const handleUndo = useCallback(() => {
+    if (swipeHistory.length === 0) return;
+    undoMutation.mutate();
+  }, [swipeHistory, undoMutation]);
 
   const resetDislikesMutation = useMutation({
     mutationFn: async () => {
@@ -343,6 +370,8 @@ export default function Home() {
               <ActionButtons
                 onSwipeLeft={handleSwipeLeft}
                 onSwipeRight={handleSwipeRight}
+                onUndo={handleUndo}
+                undoDisabled={swipeHistory.length === 0 || undoMutation.isPending}
                 disabled={!currentProfile || swipeMutation.isPending}
                 likeDisabled={currentProfile ? likedIdsSet.has(currentProfile.id) : false}
               />
