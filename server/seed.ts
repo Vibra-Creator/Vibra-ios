@@ -1808,6 +1808,61 @@ async function createBotUserAccounts() {
   }
 }
 
+async function seedBotCities() {
+  // 80% dei bot a Genova e Milano (40% + 40%), 20% in altre città italiane e straniere
+  const altreCity = [
+    "Roma", "London", "Napoli", "Barcelona", "Firenze", "New York",
+    "Torino", "Madrid", "Bologna", "Paris", "Venezia", "Buenos Aires",
+    "Bari", "Berlin", "Palermo", "Amsterdam",
+    "Roma", "London", "Napoli", "Barcelona", "Firenze", "New York",
+    "Torino", "Madrid", "Bologna", "Paris",
+  ];
+
+  const men = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.isBot, true), eq(profiles.gender, "Uomo")))
+    .orderBy(profiles.id);
+
+  const women = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.isBot, true), eq(profiles.gender, "Donna")))
+    .orderBy(profiles.id);
+
+  const menIds = men.map(m => m.id);
+  const womenIds = women.map(w => w.id);
+
+  const genovaSlice = 27;
+  const milanoSlice = 27;
+
+  // Genova
+  for (const id of menIds.slice(0, genovaSlice))
+    await db.update(profiles).set({ location: "Genova" }).where(eq(profiles.id, id));
+  for (const id of womenIds.slice(0, genovaSlice))
+    await db.update(profiles).set({ location: "Genova" }).where(eq(profiles.id, id));
+
+  // Milano
+  for (const id of menIds.slice(genovaSlice, genovaSlice + milanoSlice))
+    await db.update(profiles).set({ location: "Milano" }).where(eq(profiles.id, id));
+  for (const id of womenIds.slice(genovaSlice, genovaSlice + milanoSlice))
+    await db.update(profiles).set({ location: "Milano" }).where(eq(profiles.id, id));
+
+  // Altre città (20% rimanente)
+  const remainMen = menIds.slice(genovaSlice + milanoSlice);
+  const remainWomen = womenIds.slice(genovaSlice + milanoSlice);
+  const remaining = [...remainWomen, ...remainMen];
+  for (let i = 0; i < remaining.length; i++) {
+    await db.update(profiles)
+      .set({ location: altreCity[i % altreCity.length] })
+      .where(eq(profiles.id, remaining[i]));
+  }
+
+  const genovaCount = genovaSlice * 2;
+  const milanoCount = milanoSlice * 2;
+  console.log(`[seed] Città bot: Genova ${genovaCount}, Milano ${milanoCount}, altre ${remaining.length}`);
+}
+
 async function seedBotVideosByCity() {
   // Pool di video suddivisi per fascia d'età
   // Giovani (18-25): discoteca, università, palestra, bar cocktail
@@ -2276,6 +2331,7 @@ export async function seedDatabase() {
     }
 
     await createBotUserAccounts();
+    await seedBotCities();
     await seedBotVideosByCity();
     await ensureAdminAccount();
     await promoteUserToAdmin("famax61@yahoo.com");
