@@ -1864,66 +1864,160 @@ async function seedBotCities() {
 }
 
 async function seedBotVideosByCity() {
-  // Pool di video suddivisi per fascia d'età
-  // Giovani (18-25): discoteca, università, palestra, bar cocktail
-  const youngVideos = [
-    "/videos/bot_locali/discoteca-ballo-new-1.mp4",
-    "/videos/bot_locali/universita-atrio-new-1.mp4",
-    "/videos/bot_locali/club-rooftop-new-2.mp4",
-    "/videos/bot_locali/universita-corridoio-new-2.mp4",
-    "/videos/bot_locali/underground-club-new-3.mp4",
-    "/videos/bot_locali/universita-campus-new-3.mp4",
-    "/videos/bot_locali/palestra-spinning-new-3.mp4",
-    "/videos/bot_locali/bar-cocktail-new-2.mp4",
-  ];
-  // Adulti (26-35): bar, ristorante, palestra, discoteca rooftop
-  const adultVideos = [
-    "/videos/bot_locali/bar-aperitivo-new-1.mp4",
-    "/videos/bot_locali/ristorante-sala-new-1.mp4",
-    "/videos/bot_locali/palestra-pesi-new-2.mp4",
-    "/videos/bot_locali/trattoria-ospiti-new-2.mp4",
-    "/videos/bot_locali/palestra-attrezzi-new-1.mp4",
-    "/videos/bot_locali/club-rooftop-new-2.mp4",
-    "/videos/bot_locali/ristorante-rooftop-new-3.mp4",
-    "/videos/bot_locali/bar-cocktail-new-2.mp4",
-  ];
-  // Maturi (36+): ristorante con sala, wine bar, trattoria, palestra
-  const matureVideos = [
-    "/videos/bot_locali/ristorante-sala-new-1.mp4",
-    "/videos/bot_locali/winebar-serata-new-3.mp4",
-    "/videos/bot_locali/trattoria-ospiti-new-2.mp4",
-    "/videos/bot_locali/ristorante-rooftop-new-3.mp4",
-    "/videos/bot_locali/bar-aperitivo-new-1.mp4",
-    "/videos/bot_locali/palestra-attrezzi-new-1.mp4",
-  ];
+  // Ogni bot ha il suo video esclusivo generato con AI (contenuto, atmosfera e musica diversi)
+  const botPersonalVideos: Record<number, string> = {
+    16:  "/videos/bot_personali/bot-016-giulia.mp4",
+    17:  "/videos/bot_personali/bot-017-martina.mp4",
+    18:  "/videos/bot_personali/bot-018-valentina-m.mp4",
+    19:  "/videos/bot_personali/bot-019-matteo.mp4",
+    20:  "/videos/bot_personali/bot-020-alessia.mp4",
+    21:  "/videos/bot_personali/bot-021-chiara.mp4",
+    22:  "/videos/bot_personali/bot-022-francesca.mp4",
+    23:  "/videos/bot_personali/bot-023-elena.mp4",
+    24:  "/videos/bot_personali/bot-024-aurora-m.mp4",
+    25:  "/videos/bot_personali/bot-025-serena.mp4",
+    31:  "/videos/bot_personali/bot-031-marco.mp4",
+    32:  "/videos/bot_personali/bot-032-luca.mp4",
+    33:  "/videos/bot_personali/bot-033-alessandro.mp4",
+    34:  "/videos/bot_personali/bot-034-andrea.mp4",
+    35:  "/videos/bot_personali/bot-035-tommaso.mp4",
+    36:  "/videos/bot_personali/bot-036-davide.mp4",
+    37:  "/videos/bot_personali/bot-037-federico.mp4",
+    38:  "/videos/bot_personali/bot-038-matteo-k.mp4",
+    39:  "/videos/bot_personali/bot-039-riccardo.mp4",
+    40:  "/videos/bot_personali/bot-040-stefano.mp4",
+    41:  "/videos/bot_personali/bot-041-giorgia.mp4",
+    42:  "/videos/bot_personali/bot-042-lorenzo.mp4",
+    43:  "/videos/bot_personali/bot-043-elisa.mp4",
+    44:  "/videos/bot_personali/bot-044-simone-m.mp4",
+    45:  "/videos/bot_personali/bot-045-roberta.mp4",
+    46:  "/videos/bot_personali/bot-046-fabio.mp4",
+    47:  "/videos/bot_personali/bot-047-anna.mp4",
+    48:  "/videos/bot_personali/bot-048-giuseppe.mp4",
+    49:  "/videos/bot_personali/bot-049-lucia-m.mp4",
+    50:  "/videos/bot_personali/bot-050-daniele.mp4",
+    51:  "/videos/bot_personali/bot-051-ilaria.mp4",
+    52:  "/videos/bot_personali/bot-052-nicola.mp4",
+    53:  "/videos/bot_personali/bot-053-claudia.mp4",
+    54:  "/videos/bot_personali/bot-054-paolo.mp4",
+    55:  "/videos/bot_personali/bot-055-michela.mp4",
+    56:  "/videos/bot_personali/bot-056-emanuele.mp4",
+    57:  "/videos/bot_personali/bot-057-sara-m.mp4",
+    58:  "/videos/bot_personali/bot-058-antonio.mp4",
+    59:  "/videos/bot_personali/bot-059-valentina-b.mp4",
+    60:  "/videos/bot_personali/bot-060-giovanni.mp4",
+    61:  "/videos/bot_personali/bot-061-serena.mp4",
+    62:  "/videos/bot_personali/bot-062-simone.mp4",
+    63:  "/videos/bot_personali/bot-063-massimo.mp4",
+    64:  "/videos/bot_personali/bot-064-marco-a.mp4",
+    65:  "/videos/bot_personali/bot-065-arianna.mp4",
+    66:  "/videos/bot_personali/bot-066-franco.mp4",
+    67:  "/videos/bot_personali/bot-067-riccardo.mp4",
+    68:  "/videos/bot_personali/bot-068-giacomo.mp4",
+    69:  "/videos/bot_personali/bot-069-salvatore.mp4",
+    70:  "/videos/bot_personali/bot-070-piero.mp4",
+    71:  "/videos/bot_personali/bot-071-emily.mp4",
+    72:  "/videos/bot_personali/bot-072-sarah.mp4",
+    73:  "/videos/bot_personali/bot-073-jessica.mp4",
+    74:  "/videos/bot_personali/bot-074-hannah.mp4",
+    75:  "/videos/bot_personali/bot-075-olivia.mp4",
+    76:  "/videos/bot_personali/bot-076-chloe.mp4",
+    77:  "/videos/bot_personali/bot-077-megan.mp4",
+    78:  "/videos/bot_personali/bot-078-lauren.mp4",
+    79:  "/videos/bot_personali/bot-079-sophie.mp4",
+    81:  "/videos/bot_personali/bot-081-james.mp4",
+    82:  "/videos/bot_personali/bot-082-william.mp4",
+    83:  "/videos/bot_personali/bot-083-daniel.mp4",
+    84:  "/videos/bot_personali/bot-084-ryan.mp4",
+    85:  "/videos/bot_personali/bot-085-thomas.mp4",
+    86:  "/videos/bot_personali/bot-086-nathan.mp4",
+    87:  "/videos/bot_personali/bot-087-alex.mp4",
+    88:  "/videos/bot_personali/bot-088-charlie.mp4",
+    89:  "/videos/bot_personali/bot-089-ben.mp4",
+    90:  "/videos/bot_personali/bot-090-jack.mp4",
+    91:  "/videos/bot_personali/bot-091-maria.mp4",
+    92:  "/videos/bot_personali/bot-092-carmen.mp4",
+    93:  "/videos/bot_personali/bot-093-lucia-f.mp4",
+    94:  "/videos/bot_personali/bot-094-isabel.mp4",
+    95:  "/videos/bot_personali/bot-095-paula.mp4",
+    96:  "/videos/bot_personali/bot-096-ana.mp4",
+    97:  "/videos/bot_personali/bot-097-valentina.mp4",
+    98:  "/videos/bot_personali/bot-098-camila.mp4",
+    99:  "/videos/bot_personali/bot-099-sofia.mp4",
+    100: "/videos/bot_personali/bot-100-daniela.mp4",
+    101: "/videos/bot_personali/bot-101-carlos.mp4",
+    102: "/videos/bot_personali/bot-102-alejandro.mp4",
+    103: "/videos/bot_personali/bot-103-diego.mp4",
+    104: "/videos/bot_personali/bot-104-miguel.mp4",
+    105: "/videos/bot_personali/bot-105-pablo.mp4",
+    106: "/videos/bot_personali/bot-106-andres.mp4",
+    107: "/videos/bot_personali/bot-107-santiago.mp4",
+    108: "/videos/bot_personali/bot-108-mateo.mp4",
+    109: "/videos/bot_personali/bot-109-javier.mp4",
+    110: "/videos/bot_personali/bot-110-fernando.mp4",
+    111: "/videos/bot_personali/bot-111-sara.mp4",
+    112: "/videos/bot_personali/bot-112-federica.mp4",
+    113: "/videos/bot_personali/bot-113-elisa.mp4",
+    114: "/videos/bot_personali/bot-114-monica.mp4",
+    115: "/videos/bot_personali/bot-115-giada.mp4",
+    116: "/videos/bot_personali/bot-116-roberta.mp4",
+    117: "/videos/bot_personali/bot-117-patrizia.mp4",
+    118: "/videos/bot_personali/bot-118-noemi.mp4",
+    119: "/videos/bot_personali/bot-119-daniela-g.mp4",
+    120: "/videos/bot_personali/bot-120-aurora.mp4",
+    121: "/videos/bot_personali/bot-121-teresa.mp4",
+    122: "/videos/bot_personali/bot-122-lucia.mp4",
+    123: "/videos/bot_personali/bot-123-angela.mp4",
+    124: "/videos/bot_personali/bot-124-martina-r.mp4",
+    125: "/videos/bot_personali/bot-125-irene.mp4",
+    126: "/videos/bot_personali/bot-126-tommaso.mp4",
+    127: "/videos/bot_personali/bot-127-davide.mp4",
+    128: "/videos/bot_personali/bot-128-luca.mp4",
+    129: "/videos/bot_personali/bot-129-roberto.mp4",
+    130: "/videos/bot_personali/bot-130-simone-g.mp4",
+    131: "/videos/bot_personali/bot-131-massimo-m.mp4",
+    132: "/videos/bot_personali/bot-132-andrea-p.mp4",
+    133: "/videos/bot_personali/bot-133-marco-b.mp4",
+    134: "/videos/bot_personali/bot-134-filippo.mp4",
+    135: "/videos/bot_personali/bot-135-giuseppe-b.mp4",
+    136: "/videos/bot_personali/bot-136-carla.mp4",
+    137: "/videos/bot_personali/bot-137-giovanna.mp4",
+    138: "/videos/bot_personali/bot-138-paola.mp4",
+    139: "/videos/bot_personali/bot-139-maria-grazia.mp4",
+    140: "/videos/bot_personali/bot-140-luisa.mp4",
+    141: "/videos/bot_personali/bot-141-daniela-s.mp4",
+    142: "/videos/bot_personali/bot-142-antonella.mp4",
+    143: "/videos/bot_personali/bot-143-rosaria.mp4",
+    144: "/videos/bot_personali/bot-144-cristina.mp4",
+    145: "/videos/bot_personali/bot-145-marisa.mp4",
+    146: "/videos/bot_personali/bot-146-sergio.mp4",
+    147: "/videos/bot_personali/bot-147-roberto-b.mp4",
+    148: "/videos/bot_personali/bot-148-francesco.mp4",
+    149: "/videos/bot_personali/bot-149-claudio.mp4",
+    150: "/videos/bot_personali/bot-150-enrico.mp4",
+    151: "/videos/bot_personali/bot-151-alberto.mp4",
+    152: "/videos/bot_personali/bot-152-salvatore-p.mp4",
+    153: "/videos/bot_personali/bot-153-giorgio.mp4",
+    154: "/videos/bot_personali/bot-154-luca-m.mp4",
+    155: "/videos/bot_personali/bot-155-pietro.mp4",
+  };
 
   const botProfiles = await db
-    .select({ id: profiles.id, age: profiles.age })
+    .select({ id: profiles.id })
     .from(profiles)
     .where(eq(profiles.isBot, true))
     .orderBy(profiles.id);
 
-  let youngIdx = 0, adultIdx = 0, matureIdx = 0;
   let assigned = 0;
-
   for (const bot of botProfiles) {
-    const age = bot.age ?? 25;
-    let videoUrl: string;
-    if (age <= 25) {
-      videoUrl = youngVideos[youngIdx % youngVideos.length];
-      youngIdx++;
-    } else if (age <= 35) {
-      videoUrl = adultVideos[adultIdx % adultVideos.length];
-      adultIdx++;
-    } else {
-      videoUrl = matureVideos[matureIdx % matureVideos.length];
-      matureIdx++;
+    const videoUrl = botPersonalVideos[bot.id];
+    if (videoUrl) {
+      await db.update(profiles).set({ profileVideoUrl: videoUrl }).where(eq(profiles.id, bot.id));
+      assigned++;
     }
-    await db.update(profiles).set({ profileVideoUrl: videoUrl }).where(eq(profiles.id, bot.id));
-    assigned++;
   }
 
-  if (assigned > 0) console.log(`[seed] Assigned age-appropriate themed videos to ${assigned} bot profiles.`);
+  if (assigned > 0) console.log(`[seed] Assigned ${assigned} unique personal videos to bot profiles.`);
 }
 
 async function _seedBotVideosByCityLegacy() {
