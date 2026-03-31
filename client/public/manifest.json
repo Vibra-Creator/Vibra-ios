@@ -2,7 +2,6 @@
   "name": "Vibra - Incontri Cosmici",
   "short_name": "Vibra",
   "description": "L'app di incontri con tema alieno. Trova la tua connessione cosmica.",
-  "id": "vibra",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -11,6 +10,7 @@
   "theme_color": "#8b5cf6",
   "lang": "it-IT",
   "dir": "ltr",
+  "categories": ["social"],
   "icons": [
     {
       "src": "/apple-touch-icon.png",
@@ -34,12 +34,11 @@
     },
     {
       "src": "/apple-touch-icon.png",
-      "sizes": "540x720",
+      "sizes": "180x180",
       "type": "image/png",
       "form_factor": "narrow"
     }
   ],
-  "categories": ["social"],
   "shortcuts": [
     {
       "name": "Swipa",
@@ -47,7 +46,8 @@
       "icons": [
         {
           "src": "/apple-touch-icon.png",
-          "sizes": "180x180"
+          "sizes": "180x180",
+          "type": "image/png"
         }
       ]
     }
