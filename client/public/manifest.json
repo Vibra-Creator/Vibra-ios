@@ -2,6 +2,8 @@
   "name": "Vibra - Incontri Cosmici",
   "short_name": "Vibra",
   "description": "L'app di incontri con tema alieno. Trova la tua connessione cosmica.",
+  "version": "1.0.1",
+  "version_code": 2,
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
