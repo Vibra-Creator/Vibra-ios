@@ -29,6 +29,12 @@ export async function setupVite(server: Server, app: Express) {
     appType: "custom",
   });
 
+  app.get("/manifest.json", (_req, res) => {
+    res.setHeader("Content-Type", "application/manifest+json");
+    const manifestPath = path.resolve(import.meta.dirname, "..", "client", "public", "manifest.json");
+    res.sendFile(manifestPath);
+  });
+
   app.use(vite.middlewares);
 
   app.use("/{*path}", async (req, res, next) => {
