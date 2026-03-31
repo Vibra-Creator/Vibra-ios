@@ -10,8 +10,33 @@
   "theme_color": "#8b5cf6",
   "lang": "it-IT",
   "dir": "ltr",
+  "id": "com.vibra.alienmatch",
   "categories": ["social"],
   "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "/apple-touch-icon.png",
       "sizes": "180x180",
@@ -39,14 +64,25 @@
       "form_factor": "narrow"
     }
   ],
+  "related_applications": [
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/it/app/vibra-incontri-cosmici/id6789012345"
+    },
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.vibra.alienmatch"
+    }
+  ],
+  "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "Swipa",
       "url": "/",
       "icons": [
         {
-          "src": "/apple-touch-icon.png",
-          "sizes": "180x180",
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
           "type": "image/png"
         }
       ]
