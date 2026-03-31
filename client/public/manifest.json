@@ -7,7 +7,6 @@
   "start_url": "https://vibraalienmatch.com/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#0a0118",
   "theme_color": "#8b5cf6",
