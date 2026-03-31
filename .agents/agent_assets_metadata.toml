@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "u-8Ti9pq5R-EUQHFwz_Z4"
+uri = "file://client/public/icons/icon-192.png"
+type = "image"
+title = "Vibra app icon 192x192"
+
+[[generated]]
+id = "8fl7A34YgtCPXMKc3M21a"
+uri = "file://client/public/icons/icon-512.png"
+type = "image"
+title = "Vibra app icon 512x512"
