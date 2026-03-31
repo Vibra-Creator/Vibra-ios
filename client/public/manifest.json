@@ -5,6 +5,8 @@
   "id": "vibra_incontri_cosmici",
   "start_url": "/",
   "scope": "/",
+  "dir": "ltr",
+  "lang": "it-IT",
   "display": "standalone",
   "background_color": "#0a0118",
   "theme_color": "#8b5cf6",
@@ -71,7 +73,6 @@
     }
   ],
   "categories": ["social", "lifestyle"],
-  "lang": "it-IT",
   "iarc_rating_id": "e84b9519-12ce-4c59-ae9a-f643a9e97df8",
   "shortcuts": [
     {
