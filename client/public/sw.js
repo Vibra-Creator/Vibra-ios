@@ -1,4 +1,4 @@
-const CACHE_VERSION = 23;
+const CACHE_VERSION = 24;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -6,9 +6,7 @@ const PRECACHE_URLS = [
   '/favicon.png',
   '/manifest.json',
   '/vibra-logo.png',
-  '/apple-touch-icon.png',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,8 +35,8 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'Vibra';
     const options = {
       body: data.body || '',
-      icon: data.icon || '/icons/icon-192.png',
-      badge: '/icons/icon-72.png',
+      icon: data.icon || '/favicon.png',
+      badge: '/favicon.png',
       vibrate: isVibrapp
         ? [100, 50, 100, 50, 300, 100, 100, 50, 100]
         : [200, 100, 200, 100, 200],
@@ -110,7 +108,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname === '/favicon.png' || url.pathname === '/manifest.json' || url.pathname.startsWith('/icons/')) {
+  if (url.pathname === '/favicon.png' || url.pathname === '/apple-touch-icon.png' || url.pathname === '/vibra-logo.png' || url.pathname === '/manifest.json') {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
