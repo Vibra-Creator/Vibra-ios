@@ -1808,6 +1808,45 @@ async function createBotUserAccounts() {
   }
 }
 
+async function updateBotCoordinates() {
+  // Mappa città → coordinate geografiche
+  const cityCoords: Record<string, { lat: number; lon: number }> = {
+    "Genova": { lat: 44.4055, lon: 8.9463 },
+    "Milano": { lat: 45.4642, lon: 9.1900 },
+    "Roma": { lat: 41.9028, lon: 12.4964 },
+    "Napoli": { lat: 40.8518, lon: 14.2681 },
+    "Firenze": { lat: 43.7696, lon: 11.2558 },
+    "Torino": { lat: 45.0708, lon: 7.6869 },
+    "Bologna": { lat: 44.4949, lon: 11.3426 },
+    "Venezia": { lat: 45.4408, lon: 12.3155 },
+    "Bari": { lat: 41.1171, lon: 16.8706 },
+    "Palermo": { lat: 38.1157, lon: 13.3615 },
+    "London": { lat: 51.5074, lon: -0.1278 },
+    "Paris": { lat: 48.8566, lon: 2.3522 },
+    "Barcelona": { lat: 41.3851, lon: 2.1734 },
+    "Madrid": { lat: 40.4168, lon: -3.7038 },
+    "New York": { lat: 40.7128, lon: -74.0060 },
+    "Buenos Aires": { lat: -34.6037, lon: -58.3816 },
+    "Berlin": { lat: 52.5200, lon: 13.4050 },
+    "Amsterdam": { lat: 52.3676, lon: 4.9041 },
+  };
+
+  // Aggiorna ogni bot alle coordinate della sua città
+  const bots = await db.select({ id: profiles.id, location: profiles.location }).from(profiles).where(eq(profiles.isBot, true));
+  let updated = 0;
+  for (const bot of bots) {
+    const coords = cityCoords[bot.location];
+    if (coords) {
+      await db.update(profiles).set({
+        profileLatitude: coords.lat,
+        profileLongitude: coords.lon,
+      }).where(eq(profiles.id, bot.id));
+      updated++;
+    }
+  }
+  console.log(`[seed] Coordinate bot aggiornate: ${updated} profili`);
+}
+
 async function seedBotCities() {
   // 80% dei bot a Genova e Milano (40% + 40%), 20% in altre città italiane e straniere
   const altreCity = [
@@ -2426,6 +2465,7 @@ export async function seedDatabase() {
 
     await createBotUserAccounts();
     await seedBotCities();
+    await updateBotCoordinates();
     await seedBotVideosByCity();
     await ensureAdminAccount();
     await promoteUserToAdmin("famax61@yahoo.com");
