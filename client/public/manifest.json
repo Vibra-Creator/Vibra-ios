@@ -2,18 +2,15 @@
   "name": "Vibra - Incontri Cosmici",
   "short_name": "Vibra",
   "description": "L'app di incontri con tema alieno. Trova la tua connessione cosmica.",
-  "id": "vibra_incontri_cosmici",
+  "id": "vibra",
   "start_url": "/",
   "scope": "/",
-  "dir": "ltr",
-  "lang": "it-IT",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0a0118",
   "theme_color": "#8b5cf6",
-  "orientation": "portrait-primary",
-  "launch_handler": {
-    "client_mode": ["navigate-new"]
-  },
+  "lang": "it-IT",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/apple-touch-icon.png",
@@ -22,22 +19,10 @@
       "purpose": "any"
     },
     {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
       "src": "/vibra-logo.png",
       "sizes": "1008x1056",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/vibra-logo.png",
-      "sizes": "1008x1056",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ],
   "screenshots": [
@@ -46,15 +31,18 @@
       "sizes": "1008x1056",
       "type": "image/png",
       "form_factor": "narrow"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ],
-  "categories": ["social", "lifestyle"],
-  "iarc_rating_id": "e84b9519-12ce-4c59-ae9a-f643a9e97df8",
+  "categories": ["social"],
   "shortcuts": [
     {
-      "name": "Swipa Profili",
-      "short_name": "Swipa",
-      "description": "Inizia a fare swipe sui profili",
+      "name": "Swipa",
       "url": "/",
       "icons": [
         {
@@ -63,7 +51,5 @@
         }
       ]
     }
-  ],
-  "prefer_related_applications": false,
-  "related_applications": []
+  ]
 }
