@@ -95,45 +95,9 @@ const DISMISS_KEY = "vibra-push-banner-dismissed";
 const DISMISS_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 
 function NotificationBanner() {
-  const { isSupported, isSubscribed, permission, subscribe } = usePushNotifications();
-  const { toast } = useToast();
-  const [dismissed, setDismissed] = useState(() => {
-    const val = localStorage.getItem(DISMISS_KEY);
-    if (!val) return false;
-    return Date.now() - parseInt(val, 10) < DISMISS_DURATION_MS;
-  });
-
-  if (!isSupported || isSubscribed || permission === "denied" || dismissed) return null;
-
-  const handleEnable = async () => {
-    const ok = await subscribe();
-    if (ok) {
-      toast({ title: "Notifiche attivate!", description: "Riceverai avvisi per messaggi e risposte anche con l'app chiusa." });
-    }
-  };
-
-  const handleDismiss = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    setDismissed(true);
-  };
-
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-purple-900/80 border-b border-purple-500/30 backdrop-blur-sm z-50" data-testid="banner-push-notifications">
-      <Bell className="w-4 h-4 text-purple-300 shrink-0" />
-      <p className="flex-1 text-xs text-white/80">Attiva le notifiche per ricevere messaggi anche con l'app chiusa</p>
-      <Button
-        size="sm"
-        className="text-xs h-7 px-3 bg-purple-600 hover:bg-purple-500 text-white shrink-0"
-        onClick={handleEnable}
-        data-testid="button-banner-enable-push"
-      >
-        Attiva
-      </Button>
-      <button onClick={handleDismiss} className="text-white/50 hover:text-white/80 shrink-0" data-testid="button-banner-dismiss-push">
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
+  // Auto-subscription now happens in the hook, banner is hidden
+  // Users can manage notifications in profile settings instead
+  return null;
 }
 
 function RedirectHome() {

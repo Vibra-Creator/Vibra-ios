@@ -15,15 +15,44 @@ export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [autoSubscribeAttempted, setAutoSubscribeAttempted] = useState(false);
 
   useEffect(() => {
     const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
     setIsSupported(supported);
     if (supported) {
       setPermission(Notification.permission);
-      checkExistingSubscription();
+      checkExistingSubscription().then(() => {
+        // Auto-subscribe if no prior decision has been made
+        if (!localStorage.getItem("vibra-push-decision-made")) {
+          attemptAutoSubscribe();
+        }
+      });
     }
   }, []);
+
+  const attemptAutoSubscribe = async () => {
+    setAutoSubscribeAttempted(true);
+    try {
+      if (Notification.permission === "default") {
+        // Request permission silently (or request if needed)
+        const perm = await Notification.requestPermission();
+        setPermission(perm);
+        if (perm === "granted") {
+          await performSubscribe();
+          localStorage.setItem("vibra-push-decision-made", "true");
+        } else if (perm === "denied") {
+          localStorage.setItem("vibra-push-decision-made", "true");
+        }
+      } else if (Notification.permission === "granted") {
+        // Already granted, subscribe
+        await performSubscribe();
+        localStorage.setItem("vibra-push-decision-made", "true");
+      }
+    } catch (err) {
+      console.error("[push] auto-subscribe error:", err);
+    }
+  };
 
   const checkExistingSubscription = useCallback(async () => {
     try {
@@ -33,14 +62,8 @@ export function usePushNotifications() {
     } catch {}
   }, []);
 
-  const subscribe = useCallback(async () => {
-    if (!isSupported) return false;
-
+  const performSubscribe = useCallback(async () => {
     try {
-      const perm = await Notification.requestPermission();
-      setPermission(perm);
-      if (perm !== "granted") return false;
-
       const res = await fetch("/api/push/vapid-key");
       const { publicKey } = await res.json();
       if (!publicKey) return false;
@@ -77,7 +100,26 @@ export function usePushNotifications() {
       console.error("[push] subscribe error:", err);
       return false;
     }
-  }, [isSupported]);
+  }, []);
+
+  const subscribe = useCallback(async () => {
+    if (!isSupported) return false;
+
+    try {
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+      if (perm !== "granted") return false;
+
+      const result = await performSubscribe();
+      if (result) {
+        localStorage.setItem("vibra-push-decision-made", "true");
+      }
+      return result;
+    } catch (err) {
+      console.error("[push] subscribe error:", err);
+      return false;
+    }
+  }, [isSupported, performSubscribe]);
 
   const unsubscribe = useCallback(async () => {
     try {
