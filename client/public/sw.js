@@ -1,4 +1,4 @@
-const CACHE_VERSION = 24;
+const CACHE_VERSION = 25;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -51,7 +51,11 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification(title, options).then(() => {
         return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
           windowClients.forEach((client) => {
-            client.postMessage({ type: 'VIBRA_PUSH_RECEIVED', payload: data });
+            client.postMessage({ 
+              type: 'VIBRA_PUSH_RECEIVED', 
+              payload: data,
+              shouldPlaySound: isVibrapp 
+            });
           });
         });
       })
