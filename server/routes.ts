@@ -493,6 +493,72 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/profiles/:id/compatibility", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Your profile not found" });
+      
+      const otherProfile = await storage.getProfile(req.params.id);
+      if (!otherProfile) return res.status(404).json({ error: "Profile not found" });
+      
+      // Calculate compatibility score (0-100)
+      let score = 50; // Base score
+      
+      // Age compatibility (±5 years = full points)
+      const ageDiff = Math.abs(myProfile.age - otherProfile.age);
+      if (ageDiff <= 5) score += 15;
+      else if (ageDiff <= 10) score += 10;
+      else if (ageDiff <= 15) score += 5;
+      
+      // Interests overlap (each matching interest +5)
+      const myInterests = myProfile.interests || [];
+      const otherInterests = otherProfile.interests || [];
+      const commonInterests = myInterests.filter(i => otherInterests.includes(i));
+      score += Math.min(commonInterests.length * 5, 15);
+      
+      // Alien type match (+10)
+      if (myProfile.alienType === otherProfile.alienType) score += 10;
+      
+      // Zodiac sign match (+8)
+      if (myProfile.zodiacSign && otherProfile.zodiacSign && myProfile.zodiacSign === otherProfile.zodiacSign) score += 8;
+      
+      // Same location (+5)
+      if (myProfile.location && otherProfile.location && myProfile.location.toLowerCase() === otherProfile.location.toLowerCase()) score += 5;
+      
+      // Gender preference match
+      if (myProfile.preferredGender && otherProfile.gender) {
+        if (myProfile.preferredGender.toLowerCase() === otherProfile.gender.toLowerCase()) score += 7;
+      }
+      if (otherProfile.preferredGender && myProfile.gender) {
+        if (otherProfile.preferredGender.toLowerCase() === myProfile.gender.toLowerCase()) score += 7;
+      }
+      
+      // Love language match (+5)
+      if (myProfile.loveLanguage && otherProfile.loveLanguage && myProfile.loveLanguage === otherProfile.loveLanguage) score += 5;
+      
+      // Communication style match (+3)
+      if (myProfile.communicationStyle && otherProfile.communicationStyle && myProfile.communicationStyle === otherProfile.communicationStyle) score += 3;
+      
+      // Relationship type match (+5)
+      if (myProfile.relationshipType && otherProfile.relationshipType && myProfile.relationshipType === otherProfile.relationshipType) score += 5;
+      
+      // Cap at 100
+      score = Math.min(100, score);
+      
+      res.json({ 
+        score,
+        commonInterests: commonInterests.length,
+        totalInterests: Math.max(myInterests.length, otherInterests.length)
+      });
+    } catch (error) {
+      console.error("Error calculating compatibility:", error);
+      res.status(500).json({ error: "Failed to calculate compatibility" });
+    }
+  });
+
   app.get("/api/my-profile/:userId", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;

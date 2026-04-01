@@ -61,6 +61,16 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
     staleTime: 30000,
   });
 
+  const { data: compatibilityData } = useQuery({
+    queryKey: ['/api/profiles', profile.id, 'compatibility'],
+    queryFn: async () => {
+      const res = await fetch(`/api/profiles/${profile.id}/compatibility`, { credentials: "include" });
+      return res.ok ? res.json() : null;
+    },
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const reportMutation = useMutation({
     mutationFn: (data: { reportedId: string; reason: string }) =>
       apiRequest("POST", "/api/reports", data),
@@ -217,6 +227,12 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                   <Sparkles className="w-3 h-3 mr-1" />
                   {profile.alienType}
                 </Badge>
+                {compatibilityData && (
+                  <Badge variant="secondary" className="bg-gradient-to-r from-pink-500/80 to-purple-500/80 text-white" data-testid={`detail-badge-compatibility-${profile.id}`}>
+                    <Heart className="w-3 h-3 mr-1" />
+                    {compatibilityData.score}%
+                  </Badge>
+                )}
                 {hasPrivateRoom && (
                   <Badge variant="secondary" className="bg-amber-500/80 text-white" data-testid={`detail-badge-private-room-${profile.id}`}>
                     <Lock className="w-3 h-3 mr-1" />
