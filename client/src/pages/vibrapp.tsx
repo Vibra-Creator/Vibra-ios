@@ -670,7 +670,19 @@ export default function Vibrapp() {
     );
   }
 
-  if (introTarget && introTarget.id !== profile?.id) {
+  // Redirect to private room ONLY if replied
+  useEffect(() => {
+    if (introTarget && introTarget.id !== profile?.id && introColdStatus === "replied" && introPrivateRoomId) {
+      sessionStorage.removeItem("vibrapp_intro_target");
+      setIntroTarget(null);
+      setLocation(`/private-room/${introPrivateRoomId}`);
+    }
+  }, [introColdStatus, introPrivateRoomId, introTarget?.id, profile?.id, setLocation]);
+
+  // OLD: Don't show the full DM page, just use the modal compose
+  // Skip this entire section and let showIntroCompose handle it
+  
+  if (false && introTarget && introTarget.id !== profile?.id) {
     if (introColdStatus === "replied" && introPrivateRoomId) {
       return null;
     }
