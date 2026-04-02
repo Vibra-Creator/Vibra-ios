@@ -670,17 +670,9 @@ export default function Vibrapp() {
     );
   }
 
-  // Redirect to private room ONLY if replied
-  useEffect(() => {
-    if (introTarget && introTarget.id !== profile?.id && introColdStatus === "replied" && introPrivateRoomId) {
-      sessionStorage.removeItem("vibrapp_intro_target");
-      setIntroTarget(null);
-      setLocation(`/private-room/${introPrivateRoomId}`);
-    }
-  }, [introColdStatus, introPrivateRoomId, introTarget?.id, profile?.id, setLocation]);
-
-  // OLD: Don't show the full DM page, just use the modal compose
-  // Skip this entire section and let showIntroCompose handle it
+  // NO redirect - stay on Vibrapp like WhatsApp!
+  // Vibrapp is the main chat interface
+  // Private rooms are separate (not used in Vibrapp flow)
   
   if (false && introTarget && introTarget.id !== profile?.id) {
     if (introColdStatus === "replied" && introPrivateRoomId) {
