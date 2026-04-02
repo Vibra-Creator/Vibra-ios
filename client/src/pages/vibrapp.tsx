@@ -56,6 +56,7 @@ export default function Vibrapp() {
   const [messages, setMessages] = useState<VibrappMsg[]>([]);
   const [inputText, setInputText] = useState("");
   const [replyTo, setReplyTo] = useState<VibrappMsg | null>(null);
+  const [notificationMatchId, setNotificationMatchId] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
   const [typingUsers, setTypingUsers] = useState<{ profileId: string; name: string }[]>([]);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
@@ -150,6 +151,13 @@ export default function Vibrapp() {
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const dmId = params.get("dm");
+    const matchId = params.get("matchId");
+    const coldMessageId = params.get("coldMessageId");
+    
+    if (matchId) {
+      setNotificationMatchId(matchId);
+    }
+    
     if (dmId) {
       const raw = sessionStorage.getItem("vibrapp_intro_target");
       if (raw) {
@@ -165,6 +173,18 @@ export default function Vibrapp() {
       }
     } else {
       setIntroTarget(null);
+    }
+    
+    if (coldMessageId) {
+      const raw = sessionStorage.getItem(`vibrapp_intro_${coldMessageId}`);
+      if (raw) {
+        try {
+          const target = JSON.parse(raw) as IntroTarget;
+          setIntroTarget(target);
+          setIntroColdStatus("idle");
+          setIntroCheckDone(false);
+        } catch {}
+      }
     }
   }, [searchString]);
 

@@ -3496,7 +3496,7 @@ REGOLE IMPORTANTI:
           title: "🛸 Vibrapp",
           body: pushBody,
           icon: "/icons/icon-192.png",
-          url: "/vibrapp",
+          url: `/vibrapp?matchId=${data.matchId}`,
           type: "vibrapp",
         };
 
@@ -3716,7 +3716,7 @@ REGOLE IMPORTANTI:
             title: `🛸 ${myProfile.name} ti ha scritto`,
             body: mediaType === "audio" ? "🎤 Ha inviato un messaggio vocale" : (content || "").trim().substring(0, 100),
             icon: "/icons/icon-192.png",
-            url: "/vibrapp",
+            url: result.coldMessage ? `/vibrapp?coldMessageId=${result.coldMessage.id}` : "/vibrapp",
             type: "vibrapp",
           });
 
