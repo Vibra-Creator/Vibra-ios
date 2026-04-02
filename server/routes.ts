@@ -3737,12 +3737,12 @@ REGOLE IMPORTANTI:
               try {
                 const chatHistory = [{ senderId: myProfile.id, content: (content || "").trim() }];
                 const botReplyText = await generateBotReply(targetProfile, myProfile, chatHistory);
-                const { privateRoomId } = await storage.replyColdMessage(coldMsgId, botReplyText);
+                await storage.replyColdMessage(coldMsgId, botReplyText);
                 sendPushToProfile(myProfile.id, {
                   title: `🛸 ${targetProfile.name} ha risposto!`,
-                  body: "La conversazione privata è ora aperta 🎉",
+                  body: botReplyText.substring(0, 100),
                   icon: "/icons/icon-192.png",
-                  url: `/private-room/${privateRoomId}`,
+                  url: `/vibrapp?coldMessageId=${coldMsgId}`,
                   type: "vibrapp",
                 });
                 console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name}`);

@@ -127,7 +127,6 @@ export default function Vibrapp() {
     onSuccess: (data: any, variables) => {
       const status = data.status === "sent" ? "sent" : data.status === "already_replied" ? "replied" : "already_exists";
       setIntroColdStatus(status);
-      if (status === "replied" && data.privateRoomId) setIntroPrivateRoomId(data.privateRoomId);
       if (status === "sent") {
         setIntroSentContent(variables.content);
         setIntroSentAt(new Date().toISOString());
@@ -136,17 +135,22 @@ export default function Vibrapp() {
       setIntroText("");
       if (introAudioUrl) { URL.revokeObjectURL(introAudioUrl); setIntroAudioFile(null); setIntroAudioUrl(null); }
     },
+    onError: (err: any) => {
+      alert(err?.message || "Errore nell'invio della presentazione. Riprova.");
+    },
   });
 
   const replyColdMsgMutation = useMutation({
     mutationFn: async ({ id, content }: { id: string; content: string }) =>
       apiRequest("POST", `/api/cold-messages/${id}/reply`, { content }),
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       setSelectedColdMsg(null);
       setReplyText("");
       refetchColdMsgs();
       queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
-      if (data?.privateRoomId) setLocation(`/private-room/${data.privateRoomId}`);
+    },
+    onError: () => {
+      alert("Errore nell'invio della risposta. Riprova.");
     },
   });
 
