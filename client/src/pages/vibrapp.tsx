@@ -799,6 +799,7 @@ export default function Vibrapp() {
                     setIntroTarget({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl });
                     setSearchQuery("");
                     setSearchResults([]);
+                    setShowIntroCompose(true);
                     sessionStorage.setItem("vibrapp_intro_target", JSON.stringify({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl }));
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 text-left border-b border-white/5 last:border-b-0"
