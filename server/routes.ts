@@ -292,6 +292,15 @@ export async function registerRoutes(
   app.get("/api/profiles", async (req, res) => {
     try {
       const profiles = await storage.getProfiles();
+      const search = (req.query.search as string)?.toLowerCase().trim();
+      
+      if (search) {
+        const filtered = profiles.filter(p => 
+          p.name.toLowerCase().includes(search)
+        );
+        return res.json(filtered);
+      }
+      
       res.json(profiles);
     } catch (error) {
       console.error("Error fetching profiles:", error);

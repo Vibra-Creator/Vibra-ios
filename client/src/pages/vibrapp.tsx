@@ -58,6 +58,8 @@ export default function Vibrapp() {
   const [replyTo, setReplyTo] = useState<VibrappMsg | null>(null);
   const [notificationMatchId, setNotificationMatchId] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{id: string; name: string; age: number; imageUrl: string}>>([]);
   const [typingUsers, setTypingUsers] = useState<{ profileId: string; name: string }[]>([]);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -203,6 +205,28 @@ export default function Vibrapp() {
       })
       .catch(() => setIntroCheckDone(true));
   }, [introTarget?.id, profile?.id]);
+
+  // Search users by name with debounce
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/profiles?search=${encodeURIComponent(searchQuery)}`, { credentials: "include" });
+        if (res.ok) {
+          const profiles = await res.json();
+          setSearchResults(profiles.filter((p: any) => p.id !== profile?.id).slice(0, 8));
+        }
+      } catch (err) {
+        console.error("[vibrapp] search error:", err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, profile?.id]);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -751,6 +775,44 @@ export default function Vibrapp() {
               {t("vibrapp.onlineCount").replace("{count}", String(onlineCount))}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ── Search users for cold messages ──────────────────────────────── */}
+      <div className="bg-[#0a0d1e] border-b border-white/10 px-4 py-2 shrink-0" data-testid="vibrapp-search-section">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder={t("vibrapp.searchUsers") || "🔍 Cerca un utente..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#1f2937] text-white text-sm rounded-lg px-3 py-2 outline-none border border-white/10 focus:border-emerald-500/50"
+            data-testid="input-search-users"
+          />
+          
+          {searchResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-[#1f2937] border border-white/10 rounded-lg overflow-hidden z-50 shadow-lg">
+              {searchResults.map((user) => (
+                <button
+                  key={user.id}
+                  onClick={() => {
+                    setIntroTarget({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl });
+                    setSearchQuery("");
+                    setSearchResults([]);
+                    sessionStorage.setItem("vibrapp_intro_target", JSON.stringify({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl }));
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 text-left border-b border-white/5 last:border-b-0"
+                  data-testid={`search-result-${user.id}`}
+                >
+                  <img src={user.imageUrl} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{user.name}, {user.age}</p>
+                  </div>
+                  <span className="text-white/50 text-xs shrink-0">💬</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
