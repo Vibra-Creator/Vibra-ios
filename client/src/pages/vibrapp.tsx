@@ -645,12 +645,7 @@ export default function Vibrapp() {
 
   const isMine = (msg: VibrappMsg) => msg.senderId === profile?.id;
 
-  useEffect(() => {
-    if (introTarget && profile && introTarget.id !== profile.id && introColdStatus === "replied" && introPrivateRoomId) {
-      sessionStorage.removeItem("vibrapp_intro_target");
-      setLocation(`/private-room/${introPrivateRoomId}`);
-    }
-  }, [introColdStatus, introPrivateRoomId, introTarget?.id, profile?.id]);
+  // NO redirect to private room - stay on Vibrapp!
 
   useEffect(() => {
     if (selectedColdMsg) {
