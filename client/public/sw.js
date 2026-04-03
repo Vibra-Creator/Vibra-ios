@@ -1,4 +1,4 @@
-const CACHE_VERSION = 25;
+const CACHE_VERSION = 26;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -32,30 +32,32 @@ self.addEventListener('push', (event) => {
   try {
     const data = event.data.json();
     const isVibrapp = data.type === 'vibrapp';
+    const isVibrappDm = data.type === 'vibrapp-dm';
+    const isVibrappLike = isVibrapp || isVibrappDm;
     const title = data.title || 'Vibra';
     const options = {
       body: data.body || '',
       icon: data.icon || '/favicon.png',
       badge: '/favicon.png',
-      vibrate: isVibrapp
+      vibrate: isVibrappLike
         ? [100, 50, 100, 50, 300, 100, 100, 50, 100]
         : [200, 100, 200, 100, 200],
       data: { url: data.url || '/', type: data.type },
-      tag: isVibrapp ? 'vibrapp-msg' : 'vibra-' + Date.now(),
+      tag: isVibrappDm ? 'vibrapp-dm-msg' : isVibrapp ? 'vibrapp-msg' : 'vibra-' + Date.now(),
       renotify: true,
-      requireInteraction: isVibrapp,
+      requireInteraction: isVibrappLike,
       silent: false,
     };
 
     event.waitUntil(
       self.registration.showNotification(title, options).then(() => {
-        playNotificationSound(isVibrapp);
+        playNotificationSound(isVibrappLike);
         return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
           windowClients.forEach((client) => {
             client.postMessage({ 
               type: 'VIBRA_PUSH_RECEIVED', 
               payload: data,
-              shouldPlaySound: isVibrapp 
+              shouldPlaySound: isVibrappLike 
             });
           });
         });

@@ -372,6 +372,10 @@ export default function Vibrapp() {
     });
 
     socket.on("vibrapp:dm-message", (msg: any) => {
+      // Defensive guard: only process messages that involve this user
+      const isParticipant = msg.fromProfileId === profile.id || msg.toProfileId === profile.id;
+      if (!isParticipant) return;
+
       const currentDmTarget = dmTargetRef.current;
       const isForOpenThread =
         currentDmTarget &&
@@ -387,7 +391,7 @@ export default function Vibrapp() {
         if (msg.fromProfileId !== profile.id) {
           fetch(`/api/vibrapp-dm/read/${msg.fromProfileId}`, { method: "POST", credentials: "include" }).catch(() => {});
         }
-      } else if (msg.fromProfileId !== profile.id) {
+      } else if (msg.fromProfileId !== profile.id && msg.toProfileId === profile.id) {
         playNotificationSound();
         setDmUnreadCount(c => c + 1);
         queryClient.invalidateQueries({ queryKey: ["/api/vibrapp-dm/unread-count"] });

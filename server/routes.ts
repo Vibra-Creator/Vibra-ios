@@ -3380,7 +3380,7 @@ REGOLE IMPORTANTI:
 
   app.post("/api/push/subscribe", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.session?.userId;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
 
