@@ -229,6 +229,24 @@ export async function registerRoutes(
   cleanExpiredRoomMembers();
   setInterval(cleanExpiredRoomMembers, 30 * 60 * 1000);
 
+  // ─── Ensure vibrapp_dms table exists ─────────────────────────────────────
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS vibrapp_dms (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        from_profile_id VARCHAR NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        to_profile_id VARCHAR NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        read_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS vibrapp_dms_from ON vibrapp_dms(from_profile_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS vibrapp_dms_to ON vibrapp_dms(to_profile_id)`);
+  } catch (e) {
+    console.error("[vibrapp_dms] migration error:", e);
+  }
+
   async function cleanOldVibrappMessages() {
     try {
       const result = await db.execute(sql`
@@ -3919,6 +3937,54 @@ REGOLE IMPORTANTI:
     } catch (err) {
       console.error("[vibrapp-dm conversations]", err);
       res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.post("/api/vibrapp-dm/send", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+
+      const { toProfileId, content } = req.body;
+      if (!toProfileId || typeof content !== "string") {
+        return res.status(400).json({ error: "toProfileId e content richiesti" });
+      }
+      const trimmed = content.trim().substring(0, 1000);
+      if (!trimmed) return res.status(400).json({ error: "Messaggio vuoto" });
+
+      const dm = await storage.sendVibrappDm(myProfile.id, toProfileId, trimmed);
+
+      const dmMsg = {
+        id: dm.id,
+        fromProfileId: dm.fromProfileId,
+        toProfileId: dm.toProfileId,
+        content: dm.content,
+        readAt: dm.readAt,
+        createdAt: dm.createdAt,
+        senderName: myProfile.name,
+        senderImage: myProfile.imageUrl,
+      };
+
+      io.to(`user:${myProfile.id}`).emit("vibrapp:dm-message", dmMsg);
+      io.to(`user:${toProfileId}`).emit("vibrapp:dm-message", dmMsg);
+
+      const isOnline = vibrappOnlineUsers.has(toProfileId);
+      if (!isOnline) {
+        sendPushToProfile(toProfileId, {
+          title: `💬 ${myProfile.name}`,
+          body: trimmed.substring(0, 100),
+          icon: "/icons/icon-192.png",
+          url: `/vibrapp?dm=${myProfile.id}`,
+          type: "vibrapp-dm",
+        });
+      }
+
+      res.json(dmMsg);
+    } catch (err) {
+      console.error("[vibrapp-dm send]", err);
+      res.status(500).json({ error: "Errore invio messaggio" });
     }
   });
 
