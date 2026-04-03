@@ -1399,7 +1399,7 @@ export default function Vibrapp() {
                       data-testid="text-intro-char-count"
                     >
                       {introText.trim().length < 10
-                        ? `min. 10 caratteri (${introText.trim().length}/10)`
+                        ? `min. 10 caratteri — ${introText.trim().length}/500`
                         : `${introText.trim().length}/500`}
                     </span>
                     <button
