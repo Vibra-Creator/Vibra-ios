@@ -329,6 +329,7 @@ export default function Vibrapp() {
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      if (newMsgBannerTimerRef.current) clearTimeout(newMsgBannerTimerRef.current);
     };
   }, [profile?.id]);
 
@@ -1306,7 +1307,7 @@ export default function Vibrapp() {
               {inputText.trim() || mediaFile ? (
                 <Button
                   onClick={sendMessage}
-                  disabled={(!inputText.trim() && !mediaFile) || isUploading}
+                  disabled={(!inputText.trim() && !mediaFile) || isUploading || !socketConnected}
                   className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 p-0 shrink-0 disabled:opacity-30"
                   data-testid="button-send-message"
                 >
