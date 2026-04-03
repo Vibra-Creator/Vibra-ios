@@ -183,18 +183,21 @@ export default function Vibrapp() {
     }
     
     if (dmId) {
-      const raw = sessionStorage.getItem("vibrapp_intro_target");
-      if (raw) {
-        try {
-          const target = JSON.parse(raw) as IntroTarget;
-          if (target.id === dmId) {
-            setIntroTarget(target);
-            setIntroColdStatus("idle");
-            setIntroCheckDone(false);
-            setIntroPrivateRoomId(null);
+      // Push deeplink: open DM panel with the sender
+      // Fetch their profile from the profiles endpoint
+      fetch(`/api/profiles/${dmId}`, { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then((p: any) => {
+          if (p) {
+            setDmTarget({
+              id: p.id,
+              name: p.name,
+              age: p.age,
+              imageUrl: p.imageUrl || "",
+            });
           }
-        } catch {}
-      }
+        })
+        .catch(() => {});
     } else {
       setIntroTarget(null);
     }
@@ -239,7 +242,7 @@ export default function Vibrapp() {
         .then(r => r.json())
         .then((msgs: any[]) => {
           setDmMessages(msgs);
-          setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "instant" as any }), 80);
+          setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior }), 80);
         })
         .catch(() => {})
         .finally(() => setDmLoading(false));
@@ -387,6 +390,7 @@ export default function Vibrapp() {
       } else if (msg.fromProfileId !== profile.id) {
         playNotificationSound();
         setDmUnreadCount(c => c + 1);
+        queryClient.invalidateQueries({ queryKey: ["/api/vibrapp-dm/unread-count"] });
         const preview = msg.content ? msg.content.substring(0, 60) : "📩 Messaggio";
         const senderName = msg.senderName || "Qualcuno";
         setDmBanner({ name: senderName, text: preview, fromId: msg.fromProfileId });
