@@ -93,6 +93,9 @@ export default function Vibrapp() {
   const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const introAudioChunksRef = useRef<Blob[]>([]);
   const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [newMsgBanner, setNewMsgBanner] = useState<{ name: string; text: string } | null>(null);
+  const newMsgBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -257,6 +260,19 @@ export default function Vibrapp() {
     const socket = io(window.location.origin, { path: "/vibrapp-socket" });
     socketRef.current = socket;
 
+    socket.on("connect", () => {
+      setSocketConnected(true);
+    });
+
+    socket.on("disconnect", () => {
+      setSocketConnected(false);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("[vibrapp] socket connect error:", err.message);
+      setSocketConnected(false);
+    });
+
     socket.on("vibrapp:new-message", (msg: VibrappMsg) => {
       setMessages(prev => {
         if (prev.some(m => m.id === msg.id)) return prev;
@@ -267,8 +283,12 @@ export default function Vibrapp() {
       }
       if (msg.senderId !== profile.id) {
         socket.emit("vibrapp:read", { messageId: msg.id });
-        if (msg.replyToId && msg.replyToSenderId === profile.id) {
-          playNotificationSound();
+        playNotificationSound();
+        if (!isAtBottomRef.current) {
+          const preview = msg.content ? msg.content.substring(0, 60) : "🖼️ Media";
+          setNewMsgBanner({ name: msg.senderName, text: preview });
+          if (newMsgBannerTimerRef.current) clearTimeout(newMsgBannerTimerRef.current);
+          newMsgBannerTimerRef.current = setTimeout(() => setNewMsgBanner(null), 5000);
         }
       }
     });
@@ -1126,7 +1146,24 @@ export default function Vibrapp() {
         )}
       </AnimatePresence>
 
-      {showScrollDown && (
+      <AnimatePresence>
+        {newMsgBanner && (
+          <motion.button
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            onClick={() => { scrollToBottom(); setNewMsgBanner(null); }}
+            className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-emerald-700/90 backdrop-blur-sm text-white text-xs rounded-full px-4 py-2 shadow-lg border border-emerald-500/40 max-w-[85%]"
+            data-testid="banner-new-message"
+          >
+            <span className="text-base shrink-0">🛸</span>
+            <span className="truncate"><strong>{newMsgBanner.name}</strong>: {newMsgBanner.text}</span>
+            <ArrowDown className="w-3.5 h-3.5 shrink-0 opacity-70" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {showScrollDown && !newMsgBanner && (
         <button
           onClick={scrollToBottom}
           className="absolute bottom-24 right-4 z-30 w-10 h-10 rounded-full bg-gray-800 border border-white/20 flex items-center justify-center shadow-lg"
@@ -1261,8 +1298,9 @@ export default function Vibrapp() {
                     sendMessage();
                   }
                 }}
-                placeholder={t("vibrapp.placeholder")}
-                className="flex-1 bg-white/10 text-white placeholder:text-white/40 rounded-full px-4 py-2.5 text-sm border border-white/10 focus:border-emerald-500 focus:outline-none transition-colors"
+                placeholder={socketConnected ? t("vibrapp.placeholder") : "⏳ Connessione in corso..."}
+                disabled={!socketConnected}
+                className="flex-1 bg-white/10 text-white placeholder:text-white/40 rounded-full px-4 py-2.5 text-sm border border-white/10 focus:border-emerald-500 focus:outline-none transition-colors disabled:opacity-50"
                 data-testid="input-vibrapp-message"
               />
               {inputText.trim() || mediaFile ? (

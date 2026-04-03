@@ -7,7 +7,10 @@ import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 
+let _sessionMiddleware: ReturnType<typeof session> | null = null;
+
 export function getSession() {
+  if (_sessionMiddleware) return _sessionMiddleware;
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
@@ -16,7 +19,7 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
-  return session({
+  _sessionMiddleware = session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
@@ -29,6 +32,7 @@ export function getSession() {
       maxAge: sessionTtl,
     },
   });
+  return _sessionMiddleware;
 }
 
 export async function setupAuth(app: Express) {
