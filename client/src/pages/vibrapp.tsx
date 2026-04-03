@@ -207,6 +207,7 @@ export default function Vibrapp() {
           if (data.replied && data.privateRoomId) setIntroPrivateRoomId(data.privateRoomId);
           if (data.content) setIntroSentContent(data.content);
           if (data.createdAt) setIntroSentAt(data.createdAt);
+          setShowIntroCompose(false);
         }
         setIntroCheckDone(true);
       })
@@ -821,6 +822,9 @@ export default function Vibrapp() {
                   key={user.id}
                   onClick={() => {
                     setIntroTarget({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl });
+                    setIntroColdStatus("idle");
+                    setIntroCheckDone(false);
+                    setIntroPrivateRoomId(null);
                     setSearchQuery("");
                     setSearchResults([]);
                     setShowIntroCompose(true);
@@ -864,6 +868,16 @@ export default function Vibrapp() {
                 data-testid="button-send-intro"
               >
                 🛸 Scrivi
+              </Button>
+            )}
+            {(introColdStatus === "replied" && introPrivateRoomId) && (
+              <Button
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 h-8 shrink-0"
+                onClick={() => setLocation(`/private-room/${introPrivateRoomId}`)}
+                data-testid="button-go-private-room"
+              >
+                💬 Chat
               </Button>
             )}
             <button onClick={() => { setIntroTarget(null); sessionStorage.removeItem("vibrapp_intro_target"); }} className="text-white/30 hover:text-white/60 ml-1" data-testid="button-dismiss-intro">
