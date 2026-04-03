@@ -3710,7 +3710,7 @@ REGOLE IMPORTANTI:
   // ─── Cold Messages (Intro DM) ─────────────────────────────────────────────
   app.post("/api/cold-messages", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
@@ -3762,7 +3762,7 @@ REGOLE IMPORTANTI:
 
   app.get("/api/cold-messages/pending-count", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.json({ count: 0 });
@@ -3776,7 +3776,7 @@ REGOLE IMPORTANTI:
 
   app.get("/api/cold-messages/received", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
@@ -3790,7 +3790,7 @@ REGOLE IMPORTANTI:
 
   app.get("/api/cold-messages/check/:toProfileId", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
@@ -3803,7 +3803,7 @@ REGOLE IMPORTANTI:
 
   app.post("/api/cold-messages/:id/reply", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });

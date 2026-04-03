@@ -1385,7 +1385,7 @@ export default function Vibrapp() {
               ) : (
                 <>
                   <textarea
-                    className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-emerald-500/50 mb-2"
+                    className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-emerald-500/50 mb-1"
                     rows={4}
                     maxLength={500}
                     placeholder="Ciao! Mi chiamo... Ho visto il tuo profilo e mi piacerebbe conoscerti 🛸"
@@ -1393,7 +1393,15 @@ export default function Vibrapp() {
                     onChange={e => setIntroText(e.target.value)}
                     data-testid="input-intro-text"
                   />
-                  <div className="flex items-center justify-end mb-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`text-xs transition-colors ${introText.trim().length < 10 ? "text-orange-400" : "text-white/30"}`}
+                      data-testid="text-intro-char-count"
+                    >
+                      {introText.trim().length < 10
+                        ? `min. 10 caratteri (${introText.trim().length}/10)`
+                        : `${introText.trim().length}/500`}
+                    </span>
                     <button
                       onClick={introStartRecording}
                       className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
