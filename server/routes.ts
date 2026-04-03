@@ -3618,6 +3618,44 @@ REGOLE IMPORTANTI:
       }
     });
 
+    // ─── Vibrapp DM (1:1 direct messages) ───────────────────────────────
+    socket.on("vibrapp:dm-send", async (data: { toProfileId: string; content: string }) => {
+      try {
+        if (!data.toProfileId || typeof data.content !== "string") return;
+        const content = data.content.trim().substring(0, 1000);
+        if (!content) return;
+
+        const dm = await storage.sendVibrappDm(profileId, data.toProfileId, content);
+
+        const dmMsg = {
+          id: dm.id,
+          fromProfileId: dm.fromProfileId,
+          toProfileId: dm.toProfileId,
+          content: dm.content,
+          readAt: dm.readAt,
+          createdAt: dm.createdAt,
+          senderName: userProfile.name,
+          senderImage: userProfile.imageUrl,
+        };
+
+        io.to(`user:${profileId}`).emit("vibrapp:dm-message", dmMsg);
+        io.to(`user:${data.toProfileId}`).emit("vibrapp:dm-message", dmMsg);
+
+        const isOnline = vibrappOnlineUsers.has(data.toProfileId);
+        if (!isOnline) {
+          sendPushToProfile(data.toProfileId, {
+            title: `💬 ${userProfile.name}`,
+            body: content.substring(0, 100),
+            icon: "/icons/icon-192.png",
+            url: `/vibrapp?dm=${profileId}`,
+            type: "vibrapp-dm",
+          });
+        }
+      } catch (err) {
+        console.error("[vibrapp] dm-send error:", err);
+      }
+    });
+
     socket.on("disconnect", () => {
       const sockets = vibrappOnlineUsers.get(profileId);
       if (sockets) {
@@ -3824,6 +3862,62 @@ REGOLE IMPORTANTI:
       res.json({ privateRoomId });
     } catch (err) {
       console.error("[cold-messages reply]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  // ─── Vibrapp DM REST endpoints ────────────────────────────────────────────
+  app.get("/api/vibrapp-dm/thread/:otherProfileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const thread = await storage.getVibrappDmThread(myProfile.id, req.params.otherProfileId);
+      await storage.markVibrappDmRead(myProfile.id, req.params.otherProfileId);
+      res.json(thread);
+    } catch (err) {
+      console.error("[vibrapp-dm thread]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.get("/api/vibrapp-dm/unread-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.json({ count: 0 });
+      const count = await storage.getVibrappDmUnreadCount(myProfile.id);
+      res.json({ count });
+    } catch (err) {
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.post("/api/vibrapp-dm/read/:otherProfileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      await storage.markVibrappDmRead(myProfile.id, req.params.otherProfileId);
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.get("/api/vibrapp-dm/conversations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.json([]);
+      const convos = await storage.getVibrappDmConversations(myProfile.id);
+      res.json(convos);
+    } catch (err) {
+      console.error("[vibrapp-dm conversations]", err);
       res.status(500).json({ error: "Errore" });
     }
   });

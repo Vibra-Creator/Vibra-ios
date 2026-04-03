@@ -350,14 +350,21 @@ export function BottomNav() {
     refetchInterval: 15000,
   });
 
+  const { data: vibrappDmUnread } = useQuery<{ count: number }>({
+    queryKey: ["/api/vibrapp-dm/unread-count"],
+    enabled: !!user,
+    refetchInterval: 15000,
+  });
+
   const pendingRoomCount = privateRoomPending?.count || 0;
   const unrepliedRatingCount = ratingCount?.count || 0;
   const pendingIntroCount = coldMsgPending?.count || 0;
   const vibrappUnreadCount = vibrappUnread?.count || 0;
-  const vibrappBadge = location === "/vibrapp" ? 0 : (pendingIntroCount + vibrappUnreadCount);
+  const vibrappDmUnreadCount = vibrappDmUnread?.count || 0;
+  const vibrappBadge = location === "/vibrapp" ? 0 : (pendingIntroCount + vibrappUnreadCount + vibrappDmUnreadCount);
 
   useEffect(() => {
-    const totalBadge = pendingIntroCount + vibrappUnreadCount;
+    const totalBadge = pendingIntroCount + vibrappUnreadCount + vibrappDmUnreadCount;
     try {
       if ("setAppBadge" in navigator) {
         if (totalBadge > 0) {
@@ -367,7 +374,7 @@ export function BottomNav() {
         }
       }
     } catch {}
-  }, [pendingIntroCount, vibrappUnreadCount]);
+  }, [pendingIntroCount, vibrappUnreadCount, vibrappDmUnreadCount]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {

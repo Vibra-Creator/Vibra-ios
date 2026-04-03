@@ -30,6 +30,9 @@ interface VibrappMsg {
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
 const MAX_VIDEO_DURATION = 12;
 
+interface DmTarget { id: string; name: string; age: number; imageUrl: string }
+interface DmMessage { id: string; fromProfileId: string; toProfileId: string; content: string; readAt: string | null; createdAt: string; senderName?: string; senderImage?: string | null }
+
 interface IntroTarget {
   id: string;
   name: string;
@@ -104,6 +107,18 @@ export default function Vibrapp() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isAtBottomRef = useRef(true);
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // ─── Vibrapp DM (1:1 direct messages) ───────────────────────────────────
+  const [dmTarget, setDmTarget] = useState<DmTarget | null>(null);
+  const [dmMessages, setDmMessages] = useState<DmMessage[]>([]);
+  const [dmInput, setDmInput] = useState("");
+  const [dmLoading, setDmLoading] = useState(false);
+  const [dmUnreadCount, setDmUnreadCount] = useState(0);
+  const [dmBanner, setDmBanner] = useState<{ name: string; text: string; fromId: string } | null>(null);
+  const dmBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const dmMessagesEndRef = useRef<HTMLDivElement>(null);
+  const dmInputRef = useRef<HTMLInputElement>(null);
+  const dmTargetRef = useRef<DmTarget | null>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["/api/profiles/me"],
@@ -213,6 +228,32 @@ export default function Vibrapp() {
       })
       .catch(() => setIntroCheckDone(true));
   }, [introTarget?.id, profile?.id]);
+
+  // Keep dmTargetRef in sync with dmTarget state (for use in socket closure)
+  useEffect(() => {
+    dmTargetRef.current = dmTarget;
+    if (dmTarget && profile?.id) {
+      setDmLoading(true);
+      setDmMessages([]);
+      fetch(`/api/vibrapp-dm/thread/${dmTarget.id}`, { credentials: "include" })
+        .then(r => r.json())
+        .then((msgs: any[]) => {
+          setDmMessages(msgs);
+          setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "instant" as any }), 80);
+        })
+        .catch(() => {})
+        .finally(() => setDmLoading(false));
+    }
+  }, [dmTarget?.id, profile?.id]);
+
+  // Fetch DM unread count on load
+  useEffect(() => {
+    if (!profile?.id) return;
+    fetch("/api/vibrapp-dm/unread-count", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setDmUnreadCount(d.count ?? 0))
+      .catch(() => {});
+  }, [profile?.id]);
 
   // Search users by name with debounce
   useEffect(() => {
@@ -327,10 +368,38 @@ export default function Vibrapp() {
       setMessages(prev => prev.filter(m => m.id !== data.messageId));
     });
 
+    socket.on("vibrapp:dm-message", (msg: any) => {
+      const currentDmTarget = dmTargetRef.current;
+      const isForOpenThread =
+        currentDmTarget &&
+        ((msg.fromProfileId === currentDmTarget.id && msg.toProfileId === profile.id) ||
+          (msg.fromProfileId === profile.id && msg.toProfileId === currentDmTarget.id));
+
+      if (isForOpenThread) {
+        setDmMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+        if (msg.fromProfileId !== profile.id) {
+          fetch(`/api/vibrapp-dm/read/${msg.fromProfileId}`, { method: "POST", credentials: "include" }).catch(() => {});
+        }
+      } else if (msg.fromProfileId !== profile.id) {
+        playNotificationSound();
+        setDmUnreadCount(c => c + 1);
+        const preview = msg.content ? msg.content.substring(0, 60) : "📩 Messaggio";
+        const senderName = msg.senderName || "Qualcuno";
+        setDmBanner({ name: senderName, text: preview, fromId: msg.fromProfileId });
+        if (dmBannerTimerRef.current) clearTimeout(dmBannerTimerRef.current);
+        dmBannerTimerRef.current = setTimeout(() => setDmBanner(null), 5000);
+      }
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
       if (newMsgBannerTimerRef.current) clearTimeout(newMsgBannerTimerRef.current);
+      if (dmBannerTimerRef.current) clearTimeout(dmBannerTimerRef.current);
     };
   }, [profile?.id]);
 
@@ -641,6 +710,21 @@ export default function Vibrapp() {
     socketRef.current.emit("vibrapp:delete", { messageId });
   }, [profile, t]);
 
+  const sendDm = useCallback(() => {
+    const text = dmInput.trim();
+    if (!text || !dmTarget || !socketRef.current || !profile) return;
+    socketRef.current.emit("vibrapp:dm-send", { toProfileId: dmTarget.id, content: text });
+    setDmInput("");
+    dmInputRef.current?.focus();
+  }, [dmInput, dmTarget, profile]);
+
+  const openDmPanel = useCallback((user: { id: string; name: string; age: number; imageUrl: string }) => {
+    setDmTarget({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl });
+    setSearchQuery("");
+    setSearchResults([]);
+    setDmUnreadCount(0);
+  }, []);
+
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -820,16 +904,7 @@ export default function Vibrapp() {
               {searchResults.map((user) => (
                 <button
                   key={user.id}
-                  onClick={() => {
-                    setIntroTarget({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl });
-                    setIntroColdStatus("idle");
-                    setIntroCheckDone(false);
-                    setIntroPrivateRoomId(null);
-                    setSearchQuery("");
-                    setSearchResults([]);
-                    setShowIntroCompose(true);
-                    sessionStorage.setItem("vibrapp_intro_target", JSON.stringify({ id: user.id, name: user.name, age: user.age, imageUrl: user.imageUrl }));
-                  }}
+                  onClick={() => openDmPanel(user)}
                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 text-left border-b border-white/5 last:border-b-0"
                   data-testid={`search-result-${user.id}`}
                 >
@@ -1551,6 +1626,124 @@ export default function Vibrapp() {
           onClose={() => setViewedSenderProfile(null)}
         />
       )}
+
+      {/* ── DM Banner (incoming DM while panel is closed) ─────────────────── */}
+      <AnimatePresence>
+        {dmBanner && (
+          <motion.button
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            onClick={() => {
+              setDmBanner(null);
+              if (dmBannerTimerRef.current) clearTimeout(dmBannerTimerRef.current);
+              setDmTarget({ id: dmBanner.fromId, name: dmBanner.name, age: 0, imageUrl: "" });
+            }}
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 bg-[#1a5c4a]/95 backdrop-blur-sm text-white text-xs rounded-full px-4 py-2.5 shadow-xl border border-emerald-500/40 max-w-[85vw]"
+            data-testid="banner-dm-new"
+          >
+            <span className="text-base shrink-0">💬</span>
+            <span className="truncate"><strong>{dmBanner.name}</strong>: {dmBanner.text}</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* ── DM Panel (WhatsApp-style 1:1 DM) ─────────────────────────────── */}
+      <AnimatePresence>
+        {dmTarget && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed inset-0 z-[150] flex flex-col bg-[#0a0d1e]"
+            data-testid="dm-panel"
+          >
+            {/* DM Header */}
+            <div className="bg-gradient-to-r from-[#075e54] to-[#128c7e] px-4 py-3 flex items-center gap-3 shrink-0 shadow-lg">
+              <button
+                onClick={() => { setDmTarget(null); setDmMessages([]); setDmInput(""); }}
+                className="text-white/80 hover:text-white mr-1"
+                data-testid="button-close-dm-panel"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              {dmTarget.imageUrl ? (
+                <img src={dmTarget.imageUrl} alt={dmTarget.name} className="w-10 h-10 rounded-full object-cover border-2 border-white/30" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30">
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-base leading-tight truncate">
+                  {dmTarget.name}{dmTarget.age > 0 ? `, ${dmTarget.age}` : ""}
+                </p>
+                <p className="text-white/60 text-xs">💬 Messaggio diretto</p>
+              </div>
+            </div>
+
+            {/* DM Messages */}
+            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1 bg-slate-50" data-testid="dm-messages-container">
+              {dmLoading && (
+                <div className="flex justify-center py-10">
+                  <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+                </div>
+              )}
+              {!dmLoading && dmMessages.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                  <MessageCircle className="w-12 h-12 mb-3 opacity-30" />
+                  <p className="text-sm">Inizia la conversazione con {dmTarget.name} 🛸</p>
+                </div>
+              )}
+              {dmMessages.map((msg) => {
+                const mine = msg.fromProfileId === profile?.id;
+                return (
+                  <div key={msg.id} className={`flex ${mine ? "justify-end" : "justify-start"} mb-1`} data-testid={`dm-msg-${msg.id}`}>
+                    <div className={`max-w-[75%] rounded-xl px-3 py-2 ${mine ? "bg-emerald-500 text-white rounded-tr-sm" : "bg-slate-200 text-slate-900 rounded-tl-sm"}`}>
+                      <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
+                      <div className="flex items-center gap-1 mt-0.5 justify-end">
+                        <span className="text-[9px] opacity-60">{formatTime(msg.createdAt)}</span>
+                        {mine && (
+                          msg.readAt
+                            ? <CheckCheck className="w-3 h-3 text-blue-200" />
+                            : <Check className="w-3 h-3 text-white/40" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={dmMessagesEndRef} />
+            </div>
+
+            {/* DM Input */}
+            <div className="shrink-0 bg-[#1a1a2e] border-t border-white/10 pb-safe" data-testid="dm-input-area">
+              <div className="flex items-center gap-2 px-3 py-2">
+                <input
+                  ref={dmInputRef}
+                  type="text"
+                  value={dmInput}
+                  onChange={e => setDmInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendDm(); } }}
+                  placeholder={socketConnected ? `Scrivi a ${dmTarget.name}…` : "⏳ Connessione in corso..."}
+                  disabled={!socketConnected}
+                  className="flex-1 bg-white/10 text-white placeholder:text-white/40 rounded-full px-4 py-2.5 text-sm border border-white/10 focus:border-emerald-500 focus:outline-none transition-colors disabled:opacity-50"
+                  data-testid="input-dm-message"
+                />
+                <Button
+                  onClick={sendDm}
+                  disabled={!dmInput.trim() || !socketConnected}
+                  className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 p-0 shrink-0 disabled:opacity-30"
+                  data-testid="button-send-dm"
+                >
+                  <Send className="w-4 h-4 text-white" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -475,3 +475,15 @@ export const deletedBotIds = pgTable("deleted_bot_ids", {
   botId: varchar("bot_id").primaryKey(),
   deletedAt: timestamp("deleted_at").defaultNow().notNull(),
 });
+
+// ─── Vibrapp DMs (1:1 direct messages inside Vibrapp) ───────────────────────
+export const vibrappDms = pgTable("vibrapp_dms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromProfileId: varchar("from_profile_id").notNull(),
+  toProfileId: varchar("to_profile_id").notNull(),
+  content: text("content").notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type VibrappDm = typeof vibrappDms.$inferSelect;

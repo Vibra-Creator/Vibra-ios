@@ -16,6 +16,7 @@ import {
   type ProfileReaction, type ReactionType,
   type CosmicSignal, type SignalComment,
   type ProfileFavorite,
+  type VibrappDm,
   users, profiles, swipes, matches, messages,
   rooms, roomMembers, roomMessages, privateRooms, privateRoomRequests, privateRoomMessages,
   dailyChallenges, challengeSubmissions,
@@ -33,6 +34,7 @@ import {
   signalLikes,
   signalComments,
   deletedBotIds,
+  vibrappDms,
   type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
@@ -181,6 +183,13 @@ export interface IStorage {
   addFavorite(profileId: string, favoritedProfileId: string): Promise<ProfileFavorite>;
   removeFavorite(profileId: string, favoritedProfileId: string): Promise<void>;
   isFavorite(profileId: string, favoritedProfileId: string): Promise<boolean>;
+
+  // Vibrapp DMs
+  sendVibrappDm(fromProfileId: string, toProfileId: string, content: string): Promise<VibrappDm>;
+  getVibrappDmThread(myProfileId: string, otherProfileId: string, limit?: number): Promise<VibrappDm[]>;
+  markVibrappDmRead(myProfileId: string, otherProfileId: string): Promise<void>;
+  getVibrappDmUnreadCount(myProfileId: string): Promise<number>;
+  getVibrappDmConversations(myProfileId: string): Promise<Array<{ otherProfileId: string; lastMessage: VibrappDm; unreadCount: number }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1290,6 +1299,82 @@ export class DatabaseStorage implements IStorage {
   async isFavorite(profileId: string, favoritedProfileId: string): Promise<boolean> {
     const [existing] = await db.select().from(profileFavorites).where(and(eq(profileFavorites.profileId, profileId), eq(profileFavorites.favoritedProfileId, favoritedProfileId)));
     return !!existing;
+  }
+
+  async sendVibrappDm(fromProfileId: string, toProfileId: string, content: string): Promise<VibrappDm> {
+    const [dm] = await db.insert(vibrappDms).values({ fromProfileId, toProfileId, content }).returning();
+    return dm;
+  }
+
+  async getVibrappDmThread(myProfileId: string, otherProfileId: string, limit = 100): Promise<VibrappDm[]> {
+    return db.select().from(vibrappDms)
+      .where(
+        or(
+          and(eq(vibrappDms.fromProfileId, myProfileId), eq(vibrappDms.toProfileId, otherProfileId)),
+          and(eq(vibrappDms.fromProfileId, otherProfileId), eq(vibrappDms.toProfileId, myProfileId))
+        )
+      )
+      .orderBy(vibrappDms.createdAt)
+      .limit(limit);
+  }
+
+  async markVibrappDmRead(myProfileId: string, otherProfileId: string): Promise<void> {
+    await db.update(vibrappDms)
+      .set({ readAt: new Date() })
+      .where(
+        and(
+          eq(vibrappDms.fromProfileId, otherProfileId),
+          eq(vibrappDms.toProfileId, myProfileId),
+          sql`${vibrappDms.readAt} IS NULL`
+        )
+      );
+  }
+
+  async getVibrappDmUnreadCount(myProfileId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(vibrappDms)
+      .where(and(eq(vibrappDms.toProfileId, myProfileId), sql`${vibrappDms.readAt} IS NULL`));
+    return Number(result[0]?.count ?? 0);
+  }
+
+  async getVibrappDmConversations(myProfileId: string): Promise<Array<{ otherProfileId: string; lastMessage: VibrappDm; unreadCount: number }>> {
+    const rows = await db.execute(sql`
+      SELECT DISTINCT ON (other_id) other_id,
+        id, from_profile_id, to_profile_id, content, read_at, created_at,
+        unread
+      FROM (
+        SELECT
+          CASE WHEN from_profile_id = ${myProfileId} THEN to_profile_id ELSE from_profile_id END AS other_id,
+          id, from_profile_id, to_profile_id, content, read_at, created_at,
+          (to_profile_id = ${myProfileId} AND read_at IS NULL)::int AS unread
+        FROM vibrapp_dms
+        WHERE from_profile_id = ${myProfileId} OR to_profile_id = ${myProfileId}
+      ) sub
+      ORDER BY other_id, created_at DESC
+    `);
+
+    const otherIds = (rows.rows as any[]).map(r => r.other_id as string);
+    if (!otherIds.length) return [];
+
+    const unreadCounts = await db.execute(sql`
+      SELECT from_profile_id AS other_id, COUNT(*) AS cnt
+      FROM vibrapp_dms
+      WHERE to_profile_id = ${myProfileId} AND read_at IS NULL
+      GROUP BY from_profile_id
+    `);
+    const unreadMap = new Map<string, number>();
+    for (const r of (unreadCounts.rows as any[])) {
+      unreadMap.set(r.other_id as string, Number(r.cnt));
+    }
+
+    return (rows.rows as any[]).map(r => ({
+      otherProfileId: r.other_id as string,
+      lastMessage: {
+        id: r.id, fromProfileId: r.from_profile_id, toProfileId: r.to_profile_id,
+        content: r.content, readAt: r.read_at, createdAt: r.created_at,
+      } as VibrappDm,
+      unreadCount: unreadMap.get(r.other_id as string) ?? 0,
+    }));
   }
 }
 
