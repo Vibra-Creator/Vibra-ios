@@ -371,16 +371,28 @@ export default function Vibrapp() {
       setMessages(prev => prev.filter(m => m.id !== data.messageId));
     });
 
-    socket.on("vibrapp:dm-message", (msg: any) => {
-      // Defensive guard: only process messages that involve this user
-      const isParticipant = msg.fromProfileId === profile.id || msg.toProfileId === profile.id;
-      if (!isParticipant) return;
+    // vibrapp:dm-sent — server sends ONLY to the message sender; no banner/sound
+    socket.on("vibrapp:dm-sent", (msg: any) => {
+      const currentDmTarget = dmTargetRef.current;
+      if (!currentDmTarget) return;
+      const isForOpenThread =
+        msg.fromProfileId === profile.id && msg.toProfileId === currentDmTarget.id;
+      if (isForOpenThread) {
+        setDmMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      }
+    });
 
+    // vibrapp:dm-message — server sends ONLY to the recipient; always show banner/sound
+    socket.on("vibrapp:dm-message", (msg: any) => {
       const currentDmTarget = dmTargetRef.current;
       const isForOpenThread =
         currentDmTarget &&
-        ((msg.fromProfileId === currentDmTarget.id && msg.toProfileId === profile.id) ||
-          (msg.fromProfileId === profile.id && msg.toProfileId === currentDmTarget.id));
+        msg.fromProfileId === currentDmTarget.id &&
+        msg.toProfileId === profile.id;
 
       if (isForOpenThread) {
         setDmMessages(prev => {
@@ -388,10 +400,8 @@ export default function Vibrapp() {
           return [...prev, msg];
         });
         setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-        if (msg.fromProfileId !== profile.id) {
-          fetch(`/api/vibrapp-dm/read/${msg.fromProfileId}`, { method: "POST", credentials: "include" }).catch(() => {});
-        }
-      } else if (msg.fromProfileId !== profile.id && msg.toProfileId === profile.id) {
+        fetch(`/api/vibrapp-dm/read/${msg.fromProfileId}`, { method: "POST", credentials: "include" }).catch(() => {});
+      } else {
         playNotificationSound();
         setDmUnreadCount(c => c + 1);
         queryClient.invalidateQueries({ queryKey: ["/api/vibrapp-dm/unread-count"] });

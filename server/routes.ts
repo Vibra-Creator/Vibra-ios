@@ -3656,7 +3656,7 @@ REGOLE IMPORTANTI:
           senderImage: userProfile.imageUrl,
         };
 
-        io.to(`user:${profileId}`).emit("vibrapp:dm-message", dmMsg);
+        io.to(`user:${profileId}`).emit("vibrapp:dm-sent", dmMsg);
         io.to(`user:${data.toProfileId}`).emit("vibrapp:dm-message", dmMsg);
 
         const isOnline = vibrappOnlineUsers.has(data.toProfileId);
@@ -3967,7 +3967,7 @@ REGOLE IMPORTANTI:
         senderImage: myProfile.imageUrl,
       };
 
-      io.to(`user:${myProfile.id}`).emit("vibrapp:dm-message", dmMsg);
+      io.to(`user:${myProfile.id}`).emit("vibrapp:dm-sent", dmMsg);
       io.to(`user:${toProfileId}`).emit("vibrapp:dm-message", dmMsg);
 
       const isOnline = vibrappOnlineUsers.has(toProfileId);
