@@ -388,6 +388,9 @@ export default function Vibrapp() {
 
     // vibrapp:dm-message — server sends ONLY to the recipient; always show banner/sound
     socket.on("vibrapp:dm-message", (msg: any) => {
+      // Absolute guard: never process our own sent messages (handles self-DM edge cases)
+      if (msg.fromProfileId === profile.id) return;
+
       const currentDmTarget = dmTargetRef.current;
       const isForOpenThread =
         currentDmTarget &&

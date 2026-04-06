@@ -307,19 +307,29 @@ export async function registerRoutes(
     }
   });
   
-  app.get("/api/profiles", async (req, res) => {
+  app.get("/api/profiles", async (req: any, res) => {
     try {
       const profiles = await storage.getProfiles();
       const search = (req.query.search as string)?.toLowerCase().trim();
+
+      // Exclude the currently authenticated user from results
+      const currentUserId = req.user?.claims?.sub || req.session?.userId;
+      let myProfileId: string | null = null;
+      if (currentUserId) {
+        try {
+          const me = await storage.getProfileByUserId(currentUserId);
+          myProfileId = me?.id ?? null;
+        } catch {}
+      }
       
       if (search) {
         const filtered = profiles.filter(p => 
-          p.name.toLowerCase().includes(search)
+          p.name.toLowerCase().includes(search) && p.id !== myProfileId
         );
         return res.json(filtered);
       }
       
-      res.json(profiles);
+      res.json(myProfileId ? profiles.filter(p => p.id !== myProfileId) : profiles);
     } catch (error) {
       console.error("Error fetching profiles:", error);
       res.status(500).json({ error: "Failed to fetch profiles" });
@@ -3389,17 +3399,16 @@ REGOLE IMPORTANTI:
         return res.status(400).json({ error: "Invalid subscription" });
       }
 
-      const existing = await db.select().from(pushSubscriptions)
-        .where(and(eq(pushSubscriptions.profileId, profile.id), eq(pushSubscriptions.endpoint, endpoint)));
+      // Remove any existing subscription with this endpoint (any profile) so one
+      // device can only be linked to one profile at a time.
+      await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
 
-      if (existing.length === 0) {
-        await db.insert(pushSubscriptions).values({
-          profileId: profile.id,
-          endpoint,
-          p256dh: keys.p256dh,
-          auth: keys.auth,
-        });
-      }
+      await db.insert(pushSubscriptions).values({
+        profileId: profile.id,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+      });
 
       res.json({ success: true });
     } catch (err) {
@@ -3640,6 +3649,7 @@ REGOLE IMPORTANTI:
     socket.on("vibrapp:dm-send", async (data: { toProfileId: string; content: string }) => {
       try {
         if (!data.toProfileId || typeof data.content !== "string") return;
+        if (data.toProfileId === profileId) return; // prevent self-DM
         const content = data.content.trim().substring(0, 1000);
         if (!content) return;
 
@@ -3950,6 +3960,9 @@ REGOLE IMPORTANTI:
       const { toProfileId, content } = req.body;
       if (!toProfileId || typeof content !== "string") {
         return res.status(400).json({ error: "toProfileId e content richiesti" });
+      }
+      if (toProfileId === myProfile.id) {
+        return res.status(400).json({ error: "Non puoi inviare un messaggio a te stesso" });
       }
       const trimmed = content.trim().substring(0, 1000);
       if (!trimmed) return res.status(400).json({ error: "Messaggio vuoto" });
