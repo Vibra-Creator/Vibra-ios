@@ -12,8 +12,16 @@ export function serveStatic(app: Express) {
 
   app.get("/manifest.json", (_req, res) => {
     res.setHeader("Content-Type", "application/manifest+json");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=3600");
     res.sendFile(path.resolve(distPath, "manifest.json"));
   });
+
+  app.use("/icons", (_req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    next();
+  }, express.static(path.join(distPath, "icons")));
 
   app.use(express.static(distPath));
 
