@@ -89,6 +89,15 @@
       "purpose": "any"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/images/feature-graphic-playstore-1024x500.png",
+      "sizes": "1024x500",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vibra - Incontri Cosmici"
+    }
+  ],
   "related_applications": [
     {
       "platform": "play",
