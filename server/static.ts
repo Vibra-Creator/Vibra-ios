@@ -13,7 +13,7 @@ export function serveStatic(app: Express) {
   app.get("/manifest.json", (_req, res) => {
     res.setHeader("Content-Type", "application/manifest+json");
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(path.resolve(distPath, "manifest.json"));
   });
 
