@@ -4,7 +4,7 @@
   "description": "L'app di incontri con tema alieno. Trova la tua connessione cosmica.",
   "version": "1.0.5",
   "version_code": 6,
-  "start_url": "/?source=pwa",
+  "start_url": "https://vibraalienmatch.com/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
