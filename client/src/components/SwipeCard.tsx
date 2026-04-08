@@ -682,19 +682,25 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         if (video.readyState >= 3) {
           tryPlay();
         } else {
-          // Aspetta il canplay per play istantaneo
+          // Aspetta il canplay SENZA chiamare load() — load() azzera il preload già fatto!
+          // Se il video non ha ancora iniziato a caricarsi (readyState 0), allora sì lo avviamo
           const onReady = () => {
             tryPlay();
             video.removeEventListener("canplay", onReady);
           };
           video.addEventListener("canplay", onReady);
-          video.load();
+          if (video.readyState === 0) {
+            // Non ancora avviato: avvia il caricamento
+            video.load();
+          }
+          // Se readyState > 0, sta già caricando: aspetta solo canplay
           return () => video.removeEventListener("canplay", onReady);
         }
       } else {
-        // Seconda card: buffer in anticipo senza riprodurre (TikTok preload)
+        // Seconda card: buffer in anticipo senza riprodurre
         video.pause();
-        if (video.readyState < 3) {
+        if (video.readyState === 0) {
+          // Avvia preload solo se non già in corso
           video.load();
         }
       }
