@@ -581,6 +581,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
     const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? false);
+    const [isVideoBuffering, setIsVideoBuffering] = useState(false);
     const [showSignalCompose, setShowSignalCompose] = useState(false);
     const [signalText, setSignalText] = useState("");
     const [signalSent, setSignalSent] = useState(false);
@@ -655,54 +656,100 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       setIsCardMuted(globalMuted ?? false);
     }, [globalMuted]);
 
+    // Handler per buffering a metà riproduzione (rete lenta durante play)
+    useEffect(() => {
+      if (!isTop) return;
+      const video = cardVideoRef.current;
+      if (!video) return;
+      const onWaiting = () => setIsVideoBuffering(true);
+      const onPlaying = () => setIsVideoBuffering(false);
+      const onCanPlayThrough = () => setIsVideoBuffering(false);
+      video.addEventListener("waiting", onWaiting);
+      video.addEventListener("playing", onPlaying);
+      video.addEventListener("canplaythrough", onCanPlayThrough);
+      return () => {
+        video.removeEventListener("waiting", onWaiting);
+        video.removeEventListener("playing", onPlaying);
+        video.removeEventListener("canplaythrough", onCanPlayThrough);
+      };
+    }, [isTop]);
+
+    // TikTok-style video play/pause con buffering indicator
     useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !profile.profileVideoUrl) return;
+
       const wantAudio = !(globalMuted ?? false);
-      const tryPlay = () => {
-        video.currentTime = 0;
-        video.muted = true; // parte sempre muted per garantire autoplay
+
+      const doPlay = () => {
+        video.muted = true;
         video.volume = 1;
         const p = video.play();
         if (p) p.then(() => {
-          // video in play muted: ora sblocca audio se l'utente lo vuole
+          setIsVideoBuffering(false);
           if (wantAudio) {
-            video.muted = false; // non lancia errori, Chrome lo permette dopo interazione
-            // verifica se il browser ha effettivamente sbloccato l'audio
-            setTimeout(() => {
-              if (video.muted) {
-                setIsCardMuted(true); // aggiorna l'icona se il browser ha bloccato
-              }
-            }, 150);
+            video.muted = false;
+            setTimeout(() => { if (video.muted) setIsCardMuted(true); }, 150);
           }
-        }).catch(() => {});
+        }).catch(() => {
+          // Autoplay bloccato: riprova sempre muted
+          video.muted = true;
+          video.play().catch(() => {});
+        });
       };
+
       if (isTop) {
-        // TikTok-style: se il video è già bufferizzato sufficiente, riparte subito
-        if (video.readyState >= 3) {
-          tryPlay();
+        // Mostra spinner solo se non ancora pronto
+        if (video.readyState >= 2) {
+          // Già bufferizzato: play immediato senza spinner
+          setIsVideoBuffering(false);
+          doPlay();
         } else {
-          // Aspetta il canplay SENZA chiamare load() — load() azzera il preload già fatto!
-          // Se il video non ha ancora iniziato a caricarsi (readyState 0), allora sì lo avviamo
-          const onReady = () => {
-            tryPlay();
-            video.removeEventListener("canplay", onReady);
+          setIsVideoBuffering(true);
+          const onCanPlay = () => {
+            setIsVideoBuffering(false);
+            doPlay();
+            cleanup();
           };
-          video.addEventListener("canplay", onReady);
-          if (video.readyState === 0) {
-            // Non ancora avviato: avvia il caricamento
-            video.load();
-          }
-          // Se readyState > 0, sta già caricando: aspetta solo canplay
-          return () => video.removeEventListener("canplay", onReady);
+          const onPlaying = () => {
+            setIsVideoBuffering(false);
+            cleanup();
+          };
+          // Timeout di sicurezza: dopo 2.5s prova a fare play comunque
+          const timeout = setTimeout(() => {
+            setIsVideoBuffering(false);
+            doPlay();
+            cleanup();
+          }, 2500);
+
+          const cleanup = () => {
+            video.removeEventListener("canplay", onCanPlay);
+            video.removeEventListener("playing", onPlaying);
+            clearTimeout(timeout);
+          };
+
+          video.addEventListener("canplay", onCanPlay);
+          video.addEventListener("playing", onPlaying);
+
+          // Avvia caricamento solo se non già in corso
+          if (video.readyState === 0) video.load();
+
+          return cleanup;
         }
+
+        // Buffering durante la riproduzione (rete lenta)
+        const onWaiting = () => setIsVideoBuffering(true);
+        const onPlaying2 = () => setIsVideoBuffering(false);
+        video.addEventListener("waiting", onWaiting);
+        video.addEventListener("playing", onPlaying2);
+        return () => {
+          video.removeEventListener("waiting", onWaiting);
+          video.removeEventListener("playing", onPlaying2);
+        };
       } else {
-        // Seconda card: buffer in anticipo senza riprodurre
+        // Seconda card: preload silenzioso senza play
         video.pause();
-        if (video.readyState === 0) {
-          // Avvia preload solo se non già in corso
-          video.load();
-        }
+        if (video.readyState === 0) video.load();
       }
     }, [isTop, profile.profileVideoUrl]);
 
@@ -953,6 +1000,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ willChange: "transform" }}
                     {...(isTop ? { fetchPriority: "high" } as any : {})}
                   />
+                  {/* Spinner TikTok-style durante buffering */}
+                  {isTop && isVideoBuffering && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                      <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin" />
+                    </div>
+                  )}
                   <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
                     <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-none">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="5" width="14" height="14" rx="2"/></svg>
