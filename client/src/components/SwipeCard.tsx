@@ -340,9 +340,23 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                           src={`/api/video-stream/${video.id}`}
                           controls
                           playsInline
-                          preload="metadata"
+                          preload={idx === 0 ? "auto" : "metadata"}
                           className="w-full max-h-64 object-contain"
                           data-testid={`profile-video-${idx}`}
+                          ref={(el) => {
+                            if (!el) return;
+                            const obs = new IntersectionObserver(
+                              ([entry]) => {
+                                if (entry.isIntersecting) {
+                                  el.load();
+                                } else {
+                                  el.pause();
+                                }
+                              },
+                              { threshold: 0.5 }
+                            );
+                            obs.observe(el);
+                          }}
                         />
                         {/* Location overlay */}
                         {(video as any).location && (

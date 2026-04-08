@@ -4062,11 +4062,20 @@ REGOLE IMPORTANTI:
       const totalSize = parseInt(String(metadata.size || "0"), 10);
       const contentType = (metadata.contentType as string) || "video/mp4";
 
+      const etag = `"vid-${req.params.videoId}"`;
+      res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+      res.setHeader("ETag", etag);
+      if (req.headers["if-none-match"] === etag) {
+        res.writeHead(304);
+        return res.end();
+      }
+
+      const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB per chunk (was 1MB)
       const rangeHeader = req.headers.range;
       if (rangeHeader) {
         const parts = rangeHeader.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1024 * 1024 - 1, totalSize - 1);
+        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
         const chunkSize = end - start + 1;
         res.writeHead(206, {
           "Content-Range": `bytes ${start}-${end}/${totalSize}`,
