@@ -993,8 +993,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     playsInline
                     preload="auto"
                     src={profile.profileVideoUrl ?? undefined}
-                    className="w-full h-full object-cover object-top cursor-pointer"
-                    onClick={handleImageTap}
+                    className="w-full h-full object-cover object-top"
                     poster={profile.imageUrl ?? undefined}
                     data-testid={`profile-video-${profile.id}`}
                     style={{ willChange: "transform" }}
@@ -1007,9 +1006,17 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   )}
                   <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-                    <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="5" width="14" height="14" rx="2"/></svg>
-                    </div>
+                    {/* Pulsante profilo: apre il dettaglio senza dover toccare il video */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); if (isTop) setShowDetail(true); }}
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
+                      data-testid="button-card-open-profile"
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      <User className="w-6 h-6 text-white" />
+                    </button>
+                    {/* Pulsante mute */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1022,8 +1029,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           if (!newMuted) cardVideoRef.current.volume = 1;
                         }
                       }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
                       data-testid="button-card-mute-toggle"
+                      style={{ touchAction: "manipulation" }}
                     >
                       {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
                     </button>
@@ -1091,12 +1099,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 </div>
               )}
 
-              {profile.profileVideoUrl && !alreadyLiked && (
-                <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5 px-1.5 py-px rounded-full bg-black/50 backdrop-blur-sm border border-white/20" data-testid={`video-indicator-${profile.id}`}>
-                  <Play className="w-2.5 h-2.5 text-white fill-white" />
-                  <span className="text-white text-[8px] font-bold">VIDEO</span>
-                </div>
-              )}
 
               {isTop && (
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
