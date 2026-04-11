@@ -2042,16 +2042,33 @@ async function seedBotVideosByCity() {
     Treviso: ["/videos/bot_locali/bacaro-venezia.mp4"],
   };
 
-  // Rimuovi prima tutti i video personali dai bot italiani
-  const italianCities = Object.keys(cityVideos);
-  await db.update(profiles)
-    .set({ profileVideoUrl: null })
-    .where(
-      and(
-        eq(profiles.isBot, true),
-        sql`${profiles.location} = ANY(${sql`ARRAY[${sql.join(italianCities.map(c => sql`${c}`), sql`, `)}]`})`
-      )
-    );
+  // Video generici (nessun riferimento geografico — overflow universale)
+  const genericVideos: string[] = [
+    "/videos/bot_locali/discoteca-ballo-new-1.mp4",
+    "/videos/bot_locali/bar-aperitivo-new-1.mp4",
+    "/videos/bot_locali/bar-cocktail-new-2.mp4",
+    "/videos/bot_locali/club-rooftop-new-2.mp4",
+    "/videos/bot_locali/underground-club-new-3.mp4",
+    "/videos/bot_locali/ristorante-rooftop-new-3.mp4",
+    "/videos/bot_locali/ristorante-sala-new-1.mp4",
+    "/videos/bot_locali/trattoria-ospiti-new-2.mp4",
+    "/videos/bot_locali/winebar-serata-new-3.mp4",
+    "/videos/bot_locali/palestra-attrezzi-new-1.mp4",
+    "/videos/bot_locali/palestra-pesi-new-2.mp4",
+    "/videos/bot_locali/palestra-spinning-new-3.mp4",
+    "/videos/bot_locali/universita-atrio-new-1.mp4",
+    "/videos/bot_locali/universita-campus-new-3.mp4",
+    "/videos/bot_locali/universita-corridoio-new-2.mp4",
+  ];
+
+  // Pool globale unico: city-specific + generici (nessun duplicato possibile)
+  const allVideos: string[] = [
+    ...Object.values(cityVideos).flat(),
+    ...genericVideos,
+  ];
+
+  // Reset tutti i bot
+  await db.update(profiles).set({ profileVideoUrl: null }).where(eq(profiles.isBot, true));
 
   const botProfiles = await db
     .select({ id: profiles.id, location: profiles.location })
@@ -2059,21 +2076,40 @@ async function seedBotVideosByCity() {
     .where(eq(profiles.isBot, true))
     .orderBy(profiles.id);
 
-  const cityIndex: Record<string, number> = {};
+  // Traccia globale: ogni video usato al massimo una volta
+  const usedVideos = new Set<string>();
+
+  const pickUnused = (list: string[]): string | null => {
+    for (const v of list) {
+      if (!usedVideos.has(v)) return v;
+    }
+    return null;
+  };
+
   let assigned = 0;
+  let nulled = 0;
 
   for (const bot of botProfiles) {
     const city = bot.location || "";
-    const videos = cityVideos[city];
-    if (!videos) continue;
-    if (cityIndex[city] === undefined) cityIndex[city] = 0;
-    const videoUrl = videos[cityIndex[city] % videos.length];
-    cityIndex[city]++;
-    await db.update(profiles).set({ profileVideoUrl: videoUrl }).where(eq(profiles.id, bot.id));
-    assigned++;
+    const cityList = cityVideos[city] || [];
+
+    // 1° priorità: video della propria città
+    let picked = pickUnused(cityList);
+    // 2° priorità: video generici (nessun luogo specifico)
+    if (!picked) picked = pickUnused(genericVideos);
+    // 3° priorità: qualsiasi video ancora non usato nel pool
+    if (!picked) picked = pickUnused(allVideos);
+
+    if (picked) {
+      usedVideos.add(picked);
+      await db.update(profiles).set({ profileVideoUrl: picked }).where(eq(profiles.id, bot.id));
+      assigned++;
+    } else {
+      nulled++;
+    }
   }
 
-  if (assigned > 0) console.log(`[seed] Assigned ${assigned} city venue videos to bot profiles (no face mismatch).`);
+  console.log(`[seed] Assigned ${assigned} UNIQUE city venue videos to bot profiles (${nulled} bots senza video → foto profilo).`);
 }
 
 async function _seedBotPersonalVideosLegacy_UNUSED() {
