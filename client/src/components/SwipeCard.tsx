@@ -747,9 +747,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           video.removeEventListener("playing", onPlaying2);
         };
       } else {
-        // Seconda card: preload silenzioso senza play
-        video.pause();
-        if (video.readyState === 0) video.load();
+        // Seconda card: play silenzioso in background → zero attesa allo swipe
+        // (TikTok-style: il video è già in riproduzione quando diventa top)
+        video.muted = true;
+        video.play().catch(() => {
+          // Fallback se autoplay bloccato: almeno bufferizza
+          if (video.readyState === 0) video.load();
+        });
       }
     }, [isTop, profile.profileVideoUrl]);
 
@@ -972,7 +976,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
             y: isTop ? exitY || 0 : 20,
             x: exitX,
           }}
-          exit={{ x: exitX, y: exitY, opacity: 0 }}
+          exit={{ x: exitX, y: exitY, opacity: 0, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }}
           transition={{ type: "spring", stiffness: 500, damping: 40 }}
           data-testid={`swipe-card-${profile.id}`}
         >
@@ -997,7 +1001,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     poster={profile.imageUrl ?? undefined}
                     data-testid={`profile-video-${profile.id}`}
                     style={{ willChange: "transform" }}
-                    {...(isTop ? { fetchPriority: "high" } as any : {})}
+                    fetchPriority="high"
                   />
                   {/* Spinner TikTok-style durante buffering */}
                   {isTop && isVideoBuffering && (
