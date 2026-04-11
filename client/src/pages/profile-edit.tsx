@@ -177,7 +177,7 @@ export default function ProfileEdit() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [profileVideoUrl, setProfileVideoUrl] = useState<string | null>(null);
   const [ratingEnabled, setRatingEnabled] = useState(false);
-  const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
+  const [locationSharingEnabled, setLocationSharingEnabled] = useState(true);
   const [maxDistanceKm, setMaxDistanceKm] = useState<number>(0);
   const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
   const [profileLongitude, setProfileLongitude] = useState<number | null>(null);
@@ -261,12 +261,30 @@ export default function ProfileEdit() {
       setUploadedPhotos(existingProfile.photos || []);
       setProfileVideoUrl(existingProfile.profileVideoUrl || null);
       setRatingEnabled(existingProfile.ratingEnabled || false);
-      setLocationSharingEnabled(existingProfile.locationSharingEnabled || false);
+      setLocationSharingEnabled(existingProfile.locationSharingEnabled ?? true);
       if (existingProfile.maxDistanceKm != null) setMaxDistanceKm(existingProfile.maxDistanceKm);
       if (existingProfile.profileLatitude) setProfileLatitude(existingProfile.profileLatitude);
       if (existingProfile.profileLongitude) setProfileLongitude(existingProfile.profileLongitude);
     }
   }, [existingProfile]);
+
+  // Auto-richiesta GPS: se la posizione è attiva ma le coordinate mancano, richiedi subito
+  useEffect(() => {
+    if (!locationSharingEnabled) return;
+    if (profileLatitude && profileLongitude) return;
+    if (!navigator.geolocation) return;
+    const timer = setTimeout(() => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setProfileLatitude(pos.coords.latitude);
+          setProfileLongitude(pos.coords.longitude);
+        },
+        () => {},
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [locationSharingEnabled, profileLatitude, profileLongitude]);
 
   const createMutation = useMutation({
     mutationFn: async (data: ProfileFormValues & { interests: string[]; languages: string[] }) => {

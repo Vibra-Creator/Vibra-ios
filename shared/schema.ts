@@ -45,7 +45,7 @@ export const profiles = pgTable("profiles", {
   photos: text("photos").array(),
   points: integer("points").default(0),
   ratingEnabled: boolean("rating_enabled").default(false),
-  locationSharingEnabled: boolean("location_sharing_enabled").default(false),
+  locationSharingEnabled: boolean("location_sharing_enabled").default(true),
   profileLatitude: doublePrecision("profile_latitude"),
   profileLongitude: doublePrecision("profile_longitude"),
   maxDistanceKm: integer("max_distance_km"),
