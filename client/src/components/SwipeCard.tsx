@@ -93,7 +93,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
 
   if (!isOpen) return null;
 
-  const allPhotos = [...new Set([profile.imageUrl, ...(profile.photos || [])].filter(Boolean))] as string[];
+    const allPhotos = Array.from(new Set([profile.imageUrl, ...(profile.photos || [])].filter(Boolean))) as string[];
 
   const detailItems = [
     { label: t("swipe.alienType"), value: profile.alienType, icon: Sparkles },
@@ -952,12 +952,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       }
     };
 
-    const handleImageTap = () => {
-      if (!isDraggingRef.current && isTop && !profile.profileVideoUrl) {
-        setShowDetail(true);
-      }
-    };
-
     return (
       <>
         <motion.div
@@ -1001,7 +995,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     poster={profile.imageUrl ?? undefined}
                     data-testid={`profile-video-${profile.id}`}
                     style={{ willChange: "transform" }}
-                    fetchPriority="high"
                   />
                   {/* Spinner TikTok-style durante buffering */}
                   {isTop && isVideoBuffering && (
@@ -1078,8 +1071,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   <img
                     src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
                     alt={profile.name}
-                    className={`w-full h-full object-cover object-top cursor-pointer transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
-                    onClick={handleImageTap}
+                    className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
                     data-testid={`profile-image-${profile.id}`}
