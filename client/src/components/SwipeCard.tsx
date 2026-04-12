@@ -953,7 +953,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     };
 
     const handleImageTap = () => {
-      if (!isDraggingRef.current && isTop) {
+      if (!isDraggingRef.current && isTop && !profile.profileVideoUrl) {
         setShowDetail(true);
       }
     };

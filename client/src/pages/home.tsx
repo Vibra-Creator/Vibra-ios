@@ -333,13 +333,14 @@ export default function Home() {
       {bgLayer}
 
       <div className="w-full relative z-10 flex-1 min-h-0">
-        {availableProfiles.slice(2, 7).filter(p => p.profileVideoUrl).map(p => (
+        {availableProfiles.slice(1, 5).filter(p => p.profileVideoUrl).map(p => (
           <video
             key={`preload-${p.id}`}
             src={p.profileVideoUrl ?? undefined}
             preload="auto"
             muted
             playsInline
+            autoPlay
             className="absolute w-0 h-0 opacity-0 pointer-events-none"
             aria-hidden="true"
           />
