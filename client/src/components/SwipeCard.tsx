@@ -1003,7 +1003,27 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   )}
                   <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-                    {/* Pulsante profilo: apre il dettaglio senza dover toccare il video */}
+                    {/* Pulsante video */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const video = cardVideoRef.current;
+                        if (!video) return;
+                        if (video.paused) {
+                          video.muted = true;
+                          video.play().catch(() => {});
+                        } else {
+                          video.pause();
+                        }
+                      }}
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
+                      data-testid="button-card-video-toggle"
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      <Play className="w-6 h-6 text-white fill-white" />
+                    </button>
+                    {/* Pulsante profilo */}
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); if (isTop) setShowDetail(true); }}
@@ -1011,7 +1031,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid="button-card-open-profile"
                       style={{ touchAction: "manipulation" }}
                     >
-                      <Play className="w-6 h-6 text-white fill-white" />
+                      <User className="w-6 h-6 text-white" />
                     </button>
                     {/* Pulsante mute */}
                     <button
