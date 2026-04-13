@@ -747,11 +747,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           video.removeEventListener("playing", onPlaying2);
         };
       } else {
-        // Seconda card: play silenzioso in background → zero attesa allo swipe
-        // (TikTok-style: il video è già in riproduzione quando diventa top)
+        // Prewarm della card successiva: carica e prova a partire in background
         video.muted = true;
-        video.play().catch(() => {
-          // Fallback se autoplay bloccato: almeno bufferizza
+        video.preload = "auto";
+        video.load();
+        video.play().then(() => {
+          video.pause();
+          video.currentTime = 0;
+        }).catch(() => {
           if (video.readyState === 0) video.load();
         });
       }
@@ -1018,20 +1021,30 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         }
                       }}
                       className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-video-toggle"
+                    data-testid="button-card-profile-toggle"
                       style={{ touchAction: "manipulation" }}
                     >
-                      <Play className="w-6 h-6 text-white fill-white" />
+                      <User className="w-6 h-6 text-white" />
                     </button>
                     {/* Pulsante profilo */}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); if (isTop) setShowDetail(true); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const video = cardVideoRef.current;
+                        if (!video) return;
+                        if (video.paused) {
+                          video.muted = true;
+                          video.play().catch(() => {});
+                        } else {
+                          video.pause();
+                        }
+                      }}
                       className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-open-profile"
+                      data-testid="button-card-video-toggle"
                       style={{ touchAction: "manipulation" }}
                     >
-                      <User className="w-6 h-6 text-white" />
+                      <Play className="w-6 h-6 text-white fill-white" />
                     </button>
                     {/* Pulsante mute */}
                     <button
