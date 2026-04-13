@@ -419,6 +419,8 @@ export const cosmicSignals = pgTable("cosmic_signals", {
   content: text("content").default("").notNull(),
   mediaUrl: text("media_url"),
   mediaType: varchar("media_type", { length: 16 }), // 'text' | 'image' | 'video' | 'audio'
+  textColor: text("text_color"),
+  backgroundColor: text("background_color"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at"),
 });
