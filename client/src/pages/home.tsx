@@ -381,14 +381,6 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden">
       {bgLayer}
-      <button
-        type="button"
-        onClick={() => setShowPostComposer(true)}
-        className="fixed left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-fuchsia-500/90 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20"
-        data-testid="button-open-post-composer"
-      >
-        <PenSquare className="w-6 h-6 text-white" />
-      </button>
       {showPostComposer && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/60">
           <div className="w-full max-w-sm aspect-[3/4] rounded-3xl p-4 border border-white/15 backdrop-blur-xl flex flex-col" style={{ background: postBg }}>
@@ -490,7 +482,7 @@ export default function Home() {
             }
           />
         )}
-        <div className="fixed right-4 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-2">
+        <div className="fixed right-4 bottom-36 z-30 flex flex-col gap-2">
           <button type="button" onClick={() => setShowPostComposer(true)} className="w-12 h-12 rounded-full bg-fuchsia-500/90 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20" data-testid="button-open-post-composer">
             <PenSquare className="w-6 h-6 text-white" />
           </button>

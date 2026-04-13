@@ -42,8 +42,6 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
   const { t } = useLanguage();
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
-  const [modalMuted, setModalMuted] = useState(false);
-  const modalVideoRef = useRef<HTMLVideoElement>(null);
 
   const { data: profileVideos = [] } = useQuery<ProfileVideo[]>({
     queryKey: ['/api/profiles', profile.id, 'videos'],
@@ -129,56 +127,23 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
             data-testid="profile-detail-modal"
           >
             <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-              {profile.profileVideoUrl ? (
-                <div>
-                  <video
-                    ref={modalVideoRef}
-                    key={profile.profileVideoUrl}
-                    autoPlay
-                    loop
-                    playsInline
-                    className="w-full aspect-[3/4] object-cover object-top"
-                    poster={profile.imageUrl}
-                    data-testid="detail-profile-video"
-                    onCanPlay={(e) => {
-                      const v = e.currentTarget;
-                      v.muted = false;
-                      v.volume = 1;
-                      const p = v.play();
-                      if (p) p.catch(() => { v.muted = true; setModalMuted(true); v.play().catch(() => {}); });
-                    }}
-                  >
-                    <source src={profile.profileVideoUrl} />
-                  </video>
-                  <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-                    <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="5" width="14" height="14" rx="2"/></svg>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newMuted = !modalMuted;
-                        setModalMuted(newMuted);
-                        if (modalVideoRef.current) {
-                          modalVideoRef.current.muted = newMuted;
-                          if (!newMuted) modalVideoRef.current.volume = 1;
-                        }
-                      }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
-                      data-testid="button-modal-mute-toggle"
-                    >
-                      {modalMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <img
-                  src={profile.imageUrl}
-                  alt={profile.name}
-                  className="w-full aspect-[3/4] object-cover object-top"
-                  data-testid="detail-profile-image"
-                />
+              {/* Sempre foto statica nel dettaglio */}
+              <img
+                src={profile.imageUrl}
+                alt={profile.name}
+                className="w-full aspect-[3/4] object-cover object-top"
+                data-testid="detail-profile-image"
+              />
+              {/* Se ha un video, mostra il bottone Play per tornare al video */}
+              {profile.profileVideoUrl && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onClose(); }}
+                  className="absolute top-3 left-3 z-10 w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                  data-testid="button-modal-back-to-video"
+                >
+                  <Play className="w-6 h-6 text-white fill-white" />
+                </button>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
               {allPhotos.length > 1 && (
@@ -1093,7 +1058,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
 
               {isTop && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+                <div className="absolute right-2 top-[18%] z-20 flex flex-col items-center gap-2 pointer-events-auto">
                   <motion.button
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
