@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw, PenSquare } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -531,10 +531,11 @@ interface SwipeCardProps {
   topOverlay?: React.ReactNode;
   globalMuted?: boolean;
   onMutedChange?: (muted: boolean) => void;
+  onOpenPostComposer?: () => void;
 }
 
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
-  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange }, ref) {
+  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange, onOpenPostComposer }, ref) {
     const [exitX, setExitX] = useState(0);
     const [exitY, setExitY] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
@@ -1038,7 +1039,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
 
               {isTop && (
-                <div className="absolute right-2 top-[18%] z-20 flex flex-col items-center gap-2 pointer-events-auto">
+                <div className="absolute right-2 top-[5%] z-20 flex flex-col items-center gap-2 pointer-events-auto">
                   <motion.button
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
@@ -1171,6 +1172,21 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                     <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
                   </motion.button>
+
+                  {onOpenPostComposer && (
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenPostComposer(); }}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ touchAction: "none" }}
+                      data-testid="button-open-post-composer"
+                    >
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center bg-fuchsia-500/90 backdrop-blur-sm border border-white/20" style={{ boxShadow: "0 0 14px rgba(217,70,239,0.5)" }}>
+                        <PenSquare className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
+                    </motion.button>
+                  )}
                 </div>
               )}
               

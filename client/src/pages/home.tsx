@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles, PenSquare, Image as ImageIcon, Video, Type, X } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Video, Type, X } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
@@ -470,6 +470,7 @@ export default function Home() {
             alreadyLiked={likedIdsSet.has(currentProfile.id)}
             globalMuted={globalMuted}
             onMutedChange={setGlobalMuted}
+            onOpenPostComposer={() => setShowPostComposer(true)}
             actionButtons={
               <ActionButtons
                 onSwipeLeft={handleSwipeLeft}
@@ -482,11 +483,6 @@ export default function Home() {
             }
           />
         )}
-        <div className="fixed right-4 bottom-36 z-30 flex flex-col gap-2">
-          <button type="button" onClick={() => setShowPostComposer(true)} className="w-12 h-12 rounded-full bg-fuchsia-500/90 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20" data-testid="button-open-post-composer">
-            <PenSquare className="w-6 h-6 text-white" />
-          </button>
-        </div>
       </div>
 
       {matchModalElement}
