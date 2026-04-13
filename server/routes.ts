@@ -281,7 +281,7 @@ export async function registerRoutes(
 
   app.get("/api/profiles/me", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
       }
