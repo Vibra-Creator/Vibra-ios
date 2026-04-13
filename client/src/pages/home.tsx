@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles, PenSquare } from "lucide-react";
+import { Sparkles, PenSquare, Image as ImageIcon, Video, Type, X } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
@@ -31,6 +31,10 @@ export default function Home() {
   const [postText, setPostText] = useState("");
   const [postBg, setPostBg] = useState("#7c3aed");
   const [postTextColor, setPostTextColor] = useState("#ffffff");
+  const [postMediaType, setPostMediaType] = useState<"text" | "image" | "video">("text");
+  const [postMediaUrl, setPostMediaUrl] = useState("");
+  const [postMediaFile, setPostMediaFile] = useState<File | null>(null);
+  const [postMediaPreview, setPostMediaPreview] = useState<string | null>(null);
   const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
@@ -246,15 +250,38 @@ export default function Home() {
 
   const createPostMutation = useMutation({
     mutationFn: async () => {
+      let mediaUrl = postMediaUrl.trim();
+      if (postMediaFile) {
+        const uploadRes = await fetch("/api/signals/request-upload", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contentType: postMediaFile.type, size: postMediaFile.size }),
+        });
+        if (!uploadRes.ok) throw new Error("Upload fallito");
+        const { uploadURL, objectPath } = await uploadRes.json();
+        const putRes = await fetch(uploadURL, {
+          method: "PUT",
+          body: postMediaFile,
+          headers: { "Content-Type": postMediaFile.type },
+        });
+        if (!putRes.ok) throw new Error("Upload fallito");
+        mediaUrl = objectPath;
+      }
       return apiRequest("POST", "/api/signals", {
         content: postText.trim(),
-        mediaType: "text",
+        mediaType: postMediaType,
+        mediaUrl: mediaUrl || undefined,
         textColor: postTextColor,
         backgroundColor: postBg,
       });
     },
     onSuccess: () => {
       setPostText("");
+      setPostMediaUrl("");
+      setPostMediaFile(null);
+      setPostMediaPreview(null);
+      setPostMediaType("text");
       setShowPostComposer(false);
       queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
       toast({ title: "Post pubblicato", description: "Si vedrà subito nel feed." });
@@ -361,16 +388,47 @@ export default function Home() {
         <PenSquare className="w-6 h-6 text-white" />
       </button>
       {showPostComposer && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center p-4 bg-black/60">
-          <div className="w-full max-w-md rounded-3xl p-4 border border-white/15 backdrop-blur-xl" style={{ background: postBg }}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/60">
+          <div className="w-full max-w-sm aspect-[3/4] rounded-3xl p-4 border border-white/15 backdrop-blur-xl flex flex-col" style={{ background: postBg }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setPostMediaType("text")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-text"><Type className="w-5 h-5 text-white" /></button>
+                <button type="button" onClick={() => setPostMediaType("image")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-image"><ImageIcon className="w-5 h-5 text-white" /></button>
+                <button type="button" onClick={() => setPostMediaType("video")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-video"><Video className="w-5 h-5 text-white" /></button>
+              </div>
+              <button type="button" onClick={() => setShowPostComposer(false)} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-close-post-composer"><X className="w-5 h-5 text-white" /></button>
+            </div>
+            <div className="flex-1 flex flex-col gap-3 min-h-0">
             <textarea
               value={postText}
               onChange={(e) => setPostText(e.target.value)}
               placeholder={t("home.postPlaceholder")}
-              className="w-full min-h-32 rounded-2xl p-4 bg-black/20 text-white placeholder:text-white/60 outline-none resize-none"
+              className="w-full flex-1 rounded-2xl p-4 bg-black/20 text-white placeholder:text-white/60 outline-none resize-none"
               data-testid="textarea-post-content"
             />
-            <div className="flex items-center gap-2 mt-3">
+            {postMediaType !== "text" && (
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept={postMediaType === "image" ? "image/*" : "video/*"}
+                  capture="environment"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setPostMediaFile(file);
+                    setPostMediaPreview(file ? URL.createObjectURL(file) : null);
+                  }}
+                  className="hidden"
+                  id="post-media-input"
+                  data-testid="input-post-media"
+                />
+                <label htmlFor="post-media-input" className="block w-full rounded-2xl border border-dashed border-white/30 px-4 py-5 text-center text-white/80" data-testid="button-upload-media">
+                  Carica da rullino
+                </label>
+                {postMediaPreview && postMediaType === "image" && <img src={postMediaPreview} alt="" className="w-full max-h-40 object-cover rounded-2xl" />}
+                {postMediaPreview && postMediaType === "video" && <video src={postMediaPreview} controls className="w-full max-h-40 rounded-2xl" />}
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-auto">
               {["#7c3aed", "#db2777", "#0f766e", "#1d4ed8"].map(color => (
                 <button key={color} type="button" onClick={() => setPostBg(color)} className="w-8 h-8 rounded-full border border-white/30" style={{ backgroundColor: color }} data-testid={`button-post-bg-${color}`} />
               ))}
@@ -378,6 +436,7 @@ export default function Home() {
                 <Button variant="ghost" onClick={() => setShowPostComposer(false)} data-testid="button-cancel-post">{t("common.cancel")}</Button>
                 <Button disabled={!postText.trim() || createPostMutation.isPending} onClick={() => createPostMutation.mutate()} data-testid="button-submit-post">{t("home.publishPost")}</Button>
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -430,6 +489,11 @@ export default function Home() {
             }
           />
         )}
+        <div className="fixed right-4 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-2">
+          <button type="button" onClick={() => setShowPostComposer(true)} className="w-12 h-12 rounded-full bg-fuchsia-500/90 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20" data-testid="button-open-post-composer">
+            <PenSquare className="w-6 h-6 text-white" />
+          </button>
+        </div>
       </div>
 
       {matchModalElement}
