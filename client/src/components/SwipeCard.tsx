@@ -1011,7 +1011,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid="button-card-open-profile"
                       style={{ touchAction: "manipulation" }}
                     >
-                      <User className="w-6 h-6 text-white" />
+                      <Play className="w-6 h-6 text-white fill-white" />
                     </button>
                     {/* Pulsante mute */}
                     <button
