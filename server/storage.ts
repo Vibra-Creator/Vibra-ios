@@ -171,7 +171,7 @@ export interface IStorage {
   // Cosmic Signals
   getSignalsFeed(myProfileId: string, limit?: number): Promise<Array<CosmicSignal & { profile: Profile; likesCount: number; commentsCount: number; hasLiked: boolean }>>;
   getProfileSignals(profileId: string, limit?: number): Promise<Pick<CosmicSignal, "id" | "content" | "mediaUrl" | "mediaType" | "createdAt">[]>;
-  createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string; toProfileId?: string }): Promise<CosmicSignal>;
+  createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string; toProfileId?: string; textColor?: string | null; backgroundColor?: string | null }): Promise<CosmicSignal>;
   deleteSignal(id: string, profileId: string): Promise<void>;
   toggleSignalLike(signalId: string, profileId: string): Promise<{ liked: boolean; count: number }>;
   getSignalComments(signalId: string): Promise<Array<SignalComment & { profile: Profile }>>;
@@ -1211,13 +1211,15 @@ export class DatabaseStorage implements IStorage {
     })).filter(s => s.profile);
   }
 
-  async createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string; toProfileId?: string }): Promise<CosmicSignal> {
+  async createSignal(data: { profileId: string; content: string; mediaUrl?: string; mediaType?: string; toProfileId?: string; textColor?: string | null; backgroundColor?: string | null }): Promise<CosmicSignal> {
     const [signal] = await db.insert(cosmicSignals).values({
       profileId: data.profileId,
       toProfileId: data.toProfileId || null,
       content: data.content,
       mediaUrl: data.mediaUrl || null,
       mediaType: data.mediaType || "text",
+      textColor: data.textColor || null,
+      backgroundColor: data.backgroundColor || null,
     }).returning();
     return signal;
   }
