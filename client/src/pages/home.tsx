@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { Sparkles, PenSquare } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
@@ -27,6 +27,10 @@ export default function Home() {
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
   const [swipeHistory, setSwipeHistory] = useState<string[]>([]);
   const [globalMuted, setGlobalMuted] = useState(false);
+  const [showPostComposer, setShowPostComposer] = useState(false);
+  const [postText, setPostText] = useState("");
+  const [postBg, setPostBg] = useState("#7c3aed");
+  const [postTextColor, setPostTextColor] = useState("#ffffff");
   const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
@@ -240,6 +244,23 @@ export default function Home() {
     </div>
   );
 
+  const createPostMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/signals", {
+        content: postText.trim(),
+        mediaType: "text",
+        textColor: postTextColor,
+        backgroundColor: postBg,
+      });
+    },
+    onSuccess: () => {
+      setPostText("");
+      setShowPostComposer(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
+      toast({ title: "Post pubblicato", description: "Si vedrà subito nel feed." });
+    },
+  });
+
   const loadingState = isGuest ? guestLoading : (profileLoading || isLoading);
 
   const matchModalElement = !isGuest ? (
@@ -331,6 +352,36 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden">
       {bgLayer}
+      <button
+        type="button"
+        onClick={() => setShowPostComposer(true)}
+        className="fixed left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-fuchsia-500/90 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20"
+        data-testid="button-open-post-composer"
+      >
+        <PenSquare className="w-6 h-6 text-white" />
+      </button>
+      {showPostComposer && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center p-4 bg-black/60">
+          <div className="w-full max-w-md rounded-3xl p-4 border border-white/15 backdrop-blur-xl" style={{ background: postBg }}>
+            <textarea
+              value={postText}
+              onChange={(e) => setPostText(e.target.value)}
+              placeholder={t("home.postPlaceholder")}
+              className="w-full min-h-32 rounded-2xl p-4 bg-black/20 text-white placeholder:text-white/60 outline-none resize-none"
+              data-testid="textarea-post-content"
+            />
+            <div className="flex items-center gap-2 mt-3">
+              {["#7c3aed", "#db2777", "#0f766e", "#1d4ed8"].map(color => (
+                <button key={color} type="button" onClick={() => setPostBg(color)} className="w-8 h-8 rounded-full border border-white/30" style={{ backgroundColor: color }} data-testid={`button-post-bg-${color}`} />
+              ))}
+              <div className="ml-auto flex gap-2">
+                <Button variant="ghost" onClick={() => setShowPostComposer(false)} data-testid="button-cancel-post">{t("common.cancel")}</Button>
+                <Button disabled={!postText.trim() || createPostMutation.isPending} onClick={() => createPostMutation.mutate()} data-testid="button-submit-post">{t("home.publishPost")}</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="w-full relative z-10 flex-1 min-h-0">
         {availableProfiles.slice(1, 5).filter(p => p.profileVideoUrl).map(p => (
