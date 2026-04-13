@@ -1588,7 +1588,7 @@ export async function registerRoutes(
         console.log(`[admin-video] GCS PUT OK`);
 
         try {
-          await objectStorageService.trySetObjectEntityAclPolicy(objectPath, { visibility: "public" });
+        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, { visibility: "public", owner: null as any });
         } catch (aclErr: any) {
           console.log(`[admin-video] ACL set FAILED (non-fatal): ${aclErr?.message}`);
         }

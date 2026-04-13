@@ -985,13 +985,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVideosForInactiveProfiles(cutoffDate: Date): Promise<ProfileVideo[]> {
-    return db.select({ 
-      id: profileVideos.id, 
-      profileId: profileVideos.profileId, 
-      videoUrl: profileVideos.videoUrl, 
-      thumbnailUrl: profileVideos.thumbnailUrl, 
-      createdAt: profileVideos.createdAt 
-    })
+    return db.select()
     .from(profileVideos)
     .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
     .where(lt(profiles.lastActiveAt, cutoffDate));
