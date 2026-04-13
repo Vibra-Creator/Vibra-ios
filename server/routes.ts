@@ -4176,6 +4176,7 @@ REGOLE IMPORTANTI:
       try {
         await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
           visibility: "public",
+          owner: null as any,
         });
       } catch (aclErr) {
         console.error("[profile-videos] ACL set error (non-fatal):", aclErr);
