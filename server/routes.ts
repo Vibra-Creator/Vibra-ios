@@ -3532,7 +3532,7 @@ REGOLE IMPORTANTI:
           title: "🛸 Vibrapp",
           body: pushBody,
           icon: "/icons/icon-192.png",
-          url: `/vibrapp?matchId=${data.matchId}`,
+          url: `/vibrapp`,
           type: "vibrapp",
         };
 
