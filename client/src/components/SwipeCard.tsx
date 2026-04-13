@@ -979,26 +979,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     >
                       <User className="w-6 h-6 text-white" />
                     </button>
-                    {/* Pulsante profilo */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const video = cardVideoRef.current;
-                        if (!video) return;
-                        if (video.paused) {
-                          video.muted = true;
-                          video.play().catch(() => {});
-                        } else {
-                          video.pause();
-                        }
-                      }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-video-toggle"
-                      style={{ touchAction: "manipulation" }}
-                    >
-                      <Play className="w-6 h-6 text-white fill-white" />
-                    </button>
                     {/* Pulsante mute */}
                     <button
                       type="button"
