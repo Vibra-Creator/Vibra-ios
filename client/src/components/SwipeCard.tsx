@@ -130,7 +130,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
           >
             <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClose(); }}>
               {profile.profileVideoUrl ? (
-                <>
+                <div>
                   <video
                     ref={modalVideoRef}
                     key={profile.profileVideoUrl}
@@ -171,7 +171,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                       {modalMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
                 <img
                   src={profile.imageUrl}
