@@ -633,6 +633,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const { t } = useLanguage();
     const [, navigate] = useLocation();
 
+    const { data: cardVideos = [] } = useQuery<ProfileVideo[]>({
+      queryKey: ['/api/profiles', profile.id, 'videos'],
+      staleTime: 5 * 60 * 1000,
+    });
+    const hasVideos = cardVideos.length > 0;
+
     useEffect(() => {
       const extras = profile.photos || [];
       extras.forEach((url: string) => {
