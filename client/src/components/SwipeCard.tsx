@@ -1042,18 +1042,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 <div className="absolute right-2 top-[5%] z-20 flex flex-col items-center gap-2 pointer-events-auto">
                   <motion.button
                     whileTap={{ scale: 0.88 }}
-                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowDetail(true); }}
-                    className="flex flex-col items-center gap-0.5"
-                    style={{ touchAction: "none" }}
-                    data-testid={`button-profile-detail-${profile.id}`}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Profilo</span>
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.88 }}
                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
                     className="flex flex-col items-center gap-0.5"
                     style={{ touchAction: "none" }}
