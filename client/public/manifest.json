@@ -2,8 +2,8 @@
   "name": "Vibra - Incontri Cosmici",
   "short_name": "Vibra",
   "description": "L'app di incontri con tema alieno. Trova la tua connessione cosmica.",
-  "version": "1.0.5",
-  "version_code": 6,
+  "version": "1.0.8",
+  "version_code": 8,
   "start_url": "https://vibraalienmatch.com",
   "scope": "https://vibraalienmatch.com/",
   "display": "standalone",
@@ -13,7 +13,7 @@
   "lang": "it-IT",
   "dir": "ltr",
   "id": "com.vibraalienmatch.twa",
-  "categories": ["social"],
+  "categories": ["social", "lifestyle"],
   "iarc_rating_id": "e84b9519-12ce-4c59-ae9a-f643a9e97df8",
   "icons": [
     {
@@ -101,7 +101,8 @@
   "related_applications": [
     {
       "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.vibra.alienmatch"
+      "url": "https://play.google.com/store/apps/details?id=com.vibraalienmatch.twa",
+      "id": "com.vibraalienmatch.twa"
     }
   ],
   "prefer_related_applications": false,

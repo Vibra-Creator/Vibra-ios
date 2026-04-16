@@ -183,8 +183,30 @@ export async function registerRoutes(
     next();
   });
 
+  app.get("/.well-known/assetlinks.json", (_req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.json([
+      {
+        relation: ["delegate_permission/common.handle_all_urls"],
+        target: {
+          namespace: "android_app",
+          package_name: "com.vibraalienmatch.twa",
+          sha256_cert_fingerprints: [
+            "D9:EC:7E:4C:61:8D:77:88:EC:09:58:D6:F7:BA:78:9F:B0:94:6D:65:1F:42:8D:B9:3F:2E:F3:D5:C9:49:FF:2D"
+          ]
+        }
+      }
+    ]);
+  });
+
+  app.get("/upload_certificate.pem", (_req, res) => {
+    res.status(404).send("Not found");
+  });
+
   app.get("/download/upload_certificate.pem", (req, res) => {
-    const pemPath = path.join(process.cwd(), "client", "public", "upload_certificate.pem");
+    const pemPath = path.join(process.cwd(), "server", "upload_certificate.pem");
     if (fs.existsSync(pemPath)) {
       res.setHeader("Content-Type", "application/x-pem-file");
       res.setHeader("Content-Disposition", "attachment; filename=upload_certificate.pem");

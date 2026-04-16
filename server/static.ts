@@ -10,6 +10,18 @@ export function serveStatic(app: Express) {
     );
   }
 
+  app.get("/.well-known/assetlinks.json", (_req, res) => {
+    const filePath = path.resolve(distPath, ".well-known/assetlinks.json");
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.sendFile(filePath);
+  });
+
+  app.get("/upload_certificate.pem", (_req, res) => {
+    res.status(404).send("Not found");
+  });
+
   app.get("/manifest.json", (_req, res) => {
     res.setHeader("Content-Type", "application/manifest+json");
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -23,9 +35,8 @@ export function serveStatic(app: Express) {
     next();
   }, express.static(path.join(distPath, "icons")));
 
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, { dotfiles: "allow" }));
 
-  // fall through to index.html if the file doesn't exist
   app.use("/{*path}", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
