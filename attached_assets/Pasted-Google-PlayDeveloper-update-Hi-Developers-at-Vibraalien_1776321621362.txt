@@ -1,0 +1,110 @@
+Google PlayDeveloper update
+Hi Developers at Vibraalien,
+
+When reviewing your app, Vibra (com.vibraalienmatch.twa), we found that it doesn’t comply with one or more of our Google Play policies, which has affected your app’s status.
+
+Publishing Status
+App Status: Rejected
+
+Changes to your app weren’t published because of the policy issue(s) listed below. If you have an older version of your app, it will still be available on Google Play.
+
+You can learn more about this issue and how to fix it on Play Console.
+
+Go to Play Console
+
+
+Issue found: Violation of Content Ratings policy
+
+After reviewing your app, we believe that the content rating is not accurate. Follow the numbered steps in this email to retake your app’s rating questionnaire. Be sure to provide complete and accurate responses. To better understand the ratings categories, regional coverage, and content ratings policy, see the Content ratings for apps and games article.
+
+If you have questions about the rating assigned to your app, contact the rating authority directly using the link provided in your certificate email.
+Issue details
+
+We found an issue in the following area(s):
+
+Full description (it-IT): "Vibra is the dating app"
+To resolve this issue, follow these steps:
+
+Read the Content Ratings page to better understand content ratings and how they’re used. 
+Review the Ratings questionnaire help page for definitions of terms and content examples.
+Make sure your app category or tag is accurate in your app’s store listing page.
+Choose a category and add tags 
+Your app or game can have a maximum of five tags. If your app has more than five relevant tags, we recommend you choose those that are most strongly associated with your app. Below are steps on how to choose a category and add tags to your app:
+Note: It may take up to 24 hours for changes to reflect on your app's page on Google Play.
+
+Follow these steps on Store settings page to change your App Category 
+In the App category section, select an application type and category.
+In the same section, select Manage tags to start choosing and applying tags.
+Select tags under "Suggested tags" to add them. If you think other tags will better reflect your app or game, you can use Search tags, the category filter, or scroll through the list under "Other tags" to find and add them.
+Save your changes.
+Follow these steps to take the rating questionnaire. It’s critical to provide complete and accurate responses to every question.
+Go to the App content page (Policy > App content).
+Click Start.
+Review the information about the questionnaire and enter your email address. 
+Your email address will be used for correspondence with International Age Rating Coalition (IARC).
+Select a category and click Next.
+Complete the questionnaire. 
+To change any of your responses after you’ve completed a section, click Edit.
+If you’ve started taking the questionnaire and want to finish later, click Save draft. Each app can have one draft questionnaire at a time.
+Your responses will generate calculated ratings shown on the Summary ;page. Review the ratings and click Submit. If you don’t think the ratings accurately reflect your content, you can retake the questionnaire. Click Start new questionnaire on the Content rating page.
+After you’ve submitted the calculated ratings, you can review them along with your questionnaires in the "Target audience and content" section of the App content page.
+About the Content Ratings policy
+
+Content ratings on Google Play are provided by the International Age Rating Coalition (IARC) and are designed to help developers communicate locally relevant content ratings to users. Regional IARC authorities maintain guidelines which are used to determine the maturity level of the content in an app. We don’t allow apps without a content rating on Google Play. Content ratings are used to inform consumers, especially parents, of potentially objectionable content that exists within an app.
+
+Issue found: Violation of Broken Functionality policy
+
+Your app has the following functionality issue(s):
+
+Problems loading
+Your app does not open or load
+Issue details
+
+We found an issue in the following area(s):
+
+Version code 7: In-app experience: Please see attached screenshot IN_APP_EXPERIENCE-8376.png
+To resolve this issue, follow these steps:
+
+Make sure to fix all broken experiences within your app.
+
+Go to Android vitals to learn more about broken experiences within your app, and make use of test tracks to thoroughly test the quality and functionality of your app with users, to capture valuable feedback, and identify bugs before attempting another review.
+
+About the Broken Functionality policy
+
+We don't allow apps that crash, force close, freeze, or otherwise function abnormally. Below are a few examples of common violations:
+Apps that don't install
+Apps that install, but don't load
+Apps that load, but are not responsive
+You can learn more about our policies by watching this video on tips to help you stay on the right side of Google Play policy.
+
+Before you send your app for review, make sure that it complies with all Developer Program policies. If you repeatedly violate our policies, you may be prevented from publishing updates to your app, or your app may be suspended.
+
+For more information about how to avoid policy violations, read Helpful tips to get your app published on Google Play.
+
+
+
+Visit Google Play’s Academy for App Success to get contextual learning on this Google Play policy.
+You have two different paths for an appeal, depending on whether you disagree with the rating assigned by IARC or a policy decision made by Google.
+
+To appeal the rating assigned by IARC:
+
+You should follow this path if you believe the content rating assigned by IARC does not accurately reflect the answers you provided in the questionnaire (e.g., you believe your app should be rated E but received a T). IARC does not receive your app information until it is published. Once your app is live, you will get a "Live Rating Notice" email, and you can appeal your rating directly to IARC using the link provided in that email.
+
+To appeal a policy violation decision made by Google:
+
+You should follow this path if Google has flagged your app for having an inaccurate age rating and you believe this decision is incorrect (e.g., you answered the questionnaire honestly to receive an E rating, but Google’s review team believes your app is a T and has taken enforcement action).
+
+If you agree with Google's feedback and have fixed the violation, you can directly submit an updated version of your app without an appeal. If you believe Google's decision is incorrect, you can appeal the violation decision. It may take up to 7 days, or longer in exceptional cases, to receive a response.
+Learn More
+
+To learn more about the enforcement process, visit the Help Center. For the latest updates on Google Play’s policies, watch Android Developers’ #PolicyBytes. Choose your preferred language by changing the audio track in the settings.
+
+Thanks for your continued support in helping to make Google Play a positive experience for both developers and consumers.
+
+Help us improve the Google Play experience by completing our two question survey.
+
+The Google Play Team
+
+If you are located in the EU, you may have additional redress options. Learn more about those potential options in the EU Out-of-Court Dispute Resolution Help Center. Routing ID: ZLFS
+
+Play academy
