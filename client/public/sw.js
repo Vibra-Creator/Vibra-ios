@@ -1,4 +1,4 @@
-const CACHE_VERSION = 28;
+const CACHE_VERSION = 29;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -105,13 +105,16 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
-      fetch(event.request, { cache: 'no-cache' }).then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
-        }
-        return response;
-      }).catch(() => caches.match('/'))
+      caches.match('/').then((cached) => {
+        const networkFetch = fetch(event.request, { cache: 'no-cache' }).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+          }
+          return response;
+        }).catch(() => cached || new Response('', { status: 503 }));
+        return cached || networkFetch;
+      })
     );
     return;
   }
