@@ -194,7 +194,8 @@ export async function registerRoutes(
           namespace: "android_app",
           package_name: "com.vibraalienmatch.twa",
           sha256_cert_fingerprints: [
-            "D9:EC:7E:4C:61:8D:77:88:EC:09:58:D6:F7:BA:78:9F:B0:94:6D:65:1F:42:8D:B9:3F:2E:F3:D5:C9:49:FF:2D"
+            "D9:EC:7E:4C:61:8D:77:88:EC:09:58:D6:F7:BA:78:9F:B0:94:6D:65:1F:42:8D:B9:3F:2E:F3:D5:C9:49:FF:2D",
+            "F2:3F:20:9E:5D:14:A2:21:35:C4:6E:9A:E2:3F:FA:01:AC:F4:94:B7:15:7C:72:55:F0:36:6E:9E:B3:34:3C:7C"
           ]
         }
       }
