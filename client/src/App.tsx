@@ -253,7 +253,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="h-full flex items-center justify-center" style={{ background: "#0a0118" }}>
         <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
       </div>
     );
@@ -309,8 +309,12 @@ function App() {
   useEffect(() => {
     const htmlSplash = document.getElementById("html-splash");
     if (htmlSplash) {
-      htmlSplash.style.opacity = "0";
-      setTimeout(() => htmlSplash.remove(), 500);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          htmlSplash.style.opacity = "0";
+          setTimeout(() => htmlSplash.remove(), 500);
+        });
+      });
     }
   }, []);
 
