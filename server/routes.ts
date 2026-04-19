@@ -4240,7 +4240,7 @@ REGOLE IMPORTANTI:
       const userId = req.user?.claims?.sub;
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
-      const { content, mediaUrl, mediaType, toProfileId } = req.body;
+      const { content, mediaUrl, mediaType, toProfileId, textColor, backgroundColor } = req.body;
       if (!content?.trim() && !mediaUrl) return res.status(400).json({ error: "Contenuto richiesto" });
       if (mediaUrl) {
         const objectStorageService = new ObjectStorageService();
@@ -4252,6 +4252,8 @@ REGOLE IMPORTANTI:
         mediaUrl: mediaUrl || undefined,
         mediaType: mediaType || "text",
         toProfileId: toProfileId || undefined,
+        textColor: textColor || null,
+        backgroundColor: backgroundColor || null,
       });
       res.json(signal);
     } catch (err) {
