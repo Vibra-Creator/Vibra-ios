@@ -607,10 +607,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     queryKey: ['/api/signals/profile', profile.id],
     staleTime: 60 * 1000,
   });
-  const { data: profilePosts = [] } = useQuery<any[]>({
-    queryKey: ['/api/signals/profile', profile.id, 'posts'],
-    staleTime: 60 * 1000,
-  });
+  const profileMedia = [...profileSignals]
+    .filter((signal: any) => signal.mediaUrl)
+    .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  const activeProfileMedia = profileMedia[0] || null;
     const hasVideos = cardVideos.length > 0;
 
     useEffect(() => {
@@ -953,7 +953,31 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               : undefined
           }>
             <div className="relative h-full overflow-hidden">
-              {profile.profileVideoUrl ? (
+              {activeProfileMedia ? (
+                <>
+                  {activeProfileMedia.mediaType === "video" ? (
+                    <video
+                      key={activeProfileMedia.id}
+                      autoPlay
+                      loop
+                      playsInline
+                      muted
+                      preload="auto"
+                      src={activeProfileMedia.mediaUrl}
+                      className="absolute inset-0 w-full h-full object-cover object-top z-10"
+                      data-testid={`profile-media-video-${profile.id}`}
+                    />
+                  ) : (
+                    <img
+                      key={activeProfileMedia.id}
+                      src={activeProfileMedia.mediaUrl}
+                      alt={profile.name}
+                      className="absolute inset-0 w-full h-full object-cover object-top z-10"
+                      data-testid={`profile-media-image-${profile.id}`}
+                    />
+                  )}
+                </>
+              ) : profile.profileVideoUrl ? (
                 <>
                   <video
                     ref={cardVideoRef}
