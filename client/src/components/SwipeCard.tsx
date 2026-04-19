@@ -603,6 +603,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       queryKey: ['/api/profiles', profile.id, 'videos'],
       staleTime: 5 * 60 * 1000,
     });
+  const { data: profileSignals = [] } = useQuery<any[]>({
+    queryKey: ['/api/signals/profile', profile.id],
+    staleTime: 60 * 1000,
+  });
     const hasVideos = cardVideos.length > 0;
 
     useEffect(() => {
@@ -1244,6 +1248,33 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   </div>
                 </div>
+                {profileSignals.length > 0 && (
+                  <div className="px-4 pb-2 pointer-events-auto">
+                    <div className="flex gap-2 overflow-x-auto scrollbar-none">
+                      {profileSignals.slice(0, 3).map((signal: any) => (
+                        <div
+                          key={signal.id}
+                          className="min-w-[180px] max-w-[240px] rounded-2xl p-3 border border-white/15 backdrop-blur-md"
+                          style={{
+                            background: signal.backgroundColor || "rgba(255,255,255,0.08)",
+                            color: signal.textColor || "#ffffff",
+                          }}
+                          data-testid={`signal-card-${signal.id}`}
+                        >
+                          <div className="text-xs font-semibold line-clamp-4">
+                            {signal.content || " "}
+                          </div>
+                          {signal.mediaUrl && signal.mediaType === "image" && (
+                            <img src={signal.mediaUrl} alt="" className="mt-2 w-full h-24 object-cover rounded-xl" />
+                          )}
+                          {signal.mediaUrl && signal.mediaType === "video" && (
+                            <video src={signal.mediaUrl} controls className="mt-2 w-full h-24 object-cover rounded-xl" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {isTop && <ReactionBar profileId={profile.id} />}
                 {actionButtons && (
                   <div className="pointer-events-auto pb-safe px-4">
