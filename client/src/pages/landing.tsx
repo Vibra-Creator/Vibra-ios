@@ -12,7 +12,7 @@ import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_177048012
 export default function Landing() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const [showPromo, setShowPromo] = useState(true);
+  const [showPromo, setShowPromo] = useState(false);
   const { enterGuestMode } = useGuest();
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
