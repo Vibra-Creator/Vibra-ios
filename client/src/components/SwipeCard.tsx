@@ -607,6 +607,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     queryKey: ['/api/signals/profile', profile.id],
     staleTime: 60 * 1000,
   });
+  const { data: profilePosts = [] } = useQuery<any[]>({
+    queryKey: ['/api/signals/profile', profile.id, 'posts'],
+    staleTime: 60 * 1000,
+  });
     const hasVideos = cardVideos.length > 0;
 
     useEffect(() => {
@@ -1248,10 +1252,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   </div>
                 </div>
-                {profileSignals.length > 0 && (
+                {(profileSignals.length > 0 || profilePosts.length > 0) && (
                   <div className="px-4 pb-2 pointer-events-auto">
                     <div className="flex gap-2 overflow-x-auto scrollbar-none">
-                      {profileSignals.slice(0, 3).map((signal: any) => (
+                      {[...profileSignals, ...profilePosts].slice(0, 3).map((signal: any) => (
                         <div
                           key={signal.id}
                           className="min-w-[180px] max-w-[240px] rounded-2xl p-3 border border-white/15 backdrop-blur-md"
