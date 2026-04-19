@@ -223,6 +223,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(profiles);
   }
 
+  async getProfilesByIds(ids: string[]): Promise<Profile[]> {
+    if (!ids.length) return [];
+    return db.select().from(profiles).where(inArray(profiles.id, ids));
+  }
+
   async getSwipedProfileIds(swiperId: string): Promise<string[]> {
     const result = await db.select({ swipedId: swipes.swipedId }).from(swipes).where(eq(swipes.swiperId, swiperId));
     return result.map(r => r.swipedId);

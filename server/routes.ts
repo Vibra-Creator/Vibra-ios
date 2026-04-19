@@ -370,6 +370,7 @@ export async function registerRoutes(
       const allProfiles = await storage.getProfiles();
       const swipedIds = await storage.getSwipedProfileIds(profileId);
       const likedIds = await storage.getLikedProfileIds(profileId);
+      const favoriteIds = new Set((await storage.getFavorites(profileId)).map(f => f.favoritedProfileId));
       const swipedSet = new Set(swipedIds); // exclude ALL swiped (liked + disliked)
       const blockedIds = await storage.getBlockedIds(profileId);
       const blockedSet = new Set(blockedIds);
@@ -426,6 +427,9 @@ export async function registerRoutes(
 
       const now = new Date();
       swipable.sort((a, b) => {
+        const aFav = favoriteIds.has(a.id) ? 1 : 0;
+        const bFav = favoriteIds.has(b.id) ? 1 : 0;
+        if (bFav !== aFav) return bFav - aFav;
         const aHL = a.highlightedUntil && new Date(a.highlightedUntil) > now ? 1 : 0;
         const bHL = b.highlightedUntil && new Date(b.highlightedUntil) > now ? 1 : 0;
         return bHL - aHL;
@@ -443,6 +447,19 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching swipable profiles:", error);
       res.status(500).json({ error: "Failed to fetch profiles" });
+    }
+  });
+
+  app.get("/api/favorites", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      const favorites = await storage.getFavorites(myProfile.id);
+      res.json(favorites);
+    } catch (error) {
+      console.error("[favorites] list error:", error);
+      res.status(500).json({ error: "Errore nel recupero preferiti" });
     }
   });
 

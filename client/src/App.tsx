@@ -35,6 +35,7 @@ import LocationMap from "@/pages/location-map";
 import Onboarding from "@/pages/onboarding";
 import ForgotPassword from "@/pages/forgot-password";
 import VideoUpload from "@/pages/video-upload";
+import Favorites from "@/pages/favorites";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
@@ -132,6 +133,7 @@ function AuthenticatedRouter() {
       <Route path="/vibing" component={Vibing} />
       <Route path="/vibrapp" component={VibrappChat} />
       <Route path="/signals" component={Signals} />
+      <Route path="/favorites" component={Favorites} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
       <Route component={NotFound} />
