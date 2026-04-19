@@ -386,7 +386,7 @@ export default function Home() {
           <div className="w-full max-w-sm aspect-[3/4] rounded-3xl p-4 border border-white/15 backdrop-blur-xl flex flex-col" style={{ background: postBg }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setPostMediaType("text")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-text"><Type className="w-5 h-5 text-white" /></button>
+                <button type="button" onClick={() => setPostMediaType("text")} className="w-9 h-9 rounded-full bg-primary flex items-center justify-center" data-testid="button-post-type-text"><Type className="w-5 h-5 text-white" /></button>
                 <button type="button" onClick={() => setPostMediaType("image")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-image"><ImageIcon className="w-5 h-5 text-white" /></button>
                 <button type="button" onClick={() => setPostMediaType("video")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-video"><Video className="w-5 h-5 text-white" /></button>
               </div>
@@ -410,13 +410,10 @@ export default function Home() {
                       setPostMediaFile(file);
                       setPostMediaPreview(file ? URL.createObjectURL(file) : null);
                     }}
-                    className="hidden"
+                    className="block w-full rounded-2xl border border-dashed border-white/30 px-4 py-5 text-center text-white/80 bg-black/20"
                     id="post-media-input"
                     data-testid="input-post-media"
                   />
-                  <label htmlFor="post-media-input" className="block w-full rounded-2xl border border-dashed border-white/30 px-4 py-5 text-center text-white/80" data-testid="button-upload-media">
-                    Carica da rullino
-                  </label>
                   {postMediaPreview && postMediaType === "image" && <img src={postMediaPreview} alt="" className="w-full max-h-40 object-cover rounded-2xl" />}
                   {postMediaPreview && postMediaType === "video" && <video src={postMediaPreview} controls className="w-full max-h-40 rounded-2xl" />}
                 </div>

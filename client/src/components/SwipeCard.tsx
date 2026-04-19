@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw, PenSquare } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw, Plus } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1181,8 +1181,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid="button-open-post-composer"
                     >
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center bg-fuchsia-500/90 backdrop-blur-sm border border-white/20" style={{ boxShadow: "0 0 14px rgba(217,70,239,0.5)" }}>
-                        <PenSquare className="w-6 h-6 text-white" />
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center bg-fuchsia-500/90 backdrop-blur-sm border border-white/20" style={{ boxShadow: "0 0 14px rgba(217,70,239,0.5)" }}>
+                        <Plus className="w-8 h-8 text-white" />
                       </div>
                       <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
                     </motion.button>
