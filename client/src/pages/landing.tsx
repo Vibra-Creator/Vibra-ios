@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Zap, Star, UserPlus, ArrowRight, Trophy, Radio } from "lucide-react";
+import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Zap, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_177048012
 export default function Landing() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  const [showPromo, setShowPromo] = useState(true);
   const { enterGuestMode } = useGuest();
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
@@ -71,6 +72,42 @@ export default function Landing() {
 
   return (
     <div className="relative h-full overflow-y-auto">
+      {showPromo && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-[#12061f]/95 p-5 shadow-2xl shadow-black/40">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Promo Android</p>
+                <h2 className="text-2xl font-bold text-white mt-1">Scarica Vibra su Google Play</h2>
+              </div>
+              <button type="button" onClick={() => setShowPromo(false)} className="text-white/60 hover:text-white" data-testid="button-close-promo">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-white/70 mb-5">
+              Accedi, registrati oppure installa l’app Android per vivere Vibra sul tuo telefono.
+            </p>
+            <div className="flex flex-col gap-3">
+              <a href="https://play.google.com/store/apps/details?id=com.vibra.app" target="_blank" rel="noreferrer" data-testid="link-google-play">
+                <Button className="w-full h-12 bg-white text-black hover:bg-white/90">
+                  <Play className="w-4 h-4 mr-2 fill-current" />
+                  Scarica su Google Play
+                </Button>
+              </a>
+              <Link href="/register">
+                <Button className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-promo-register">
+                  Registrati
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button variant="outline" className="w-full h-12 border-white/20 text-white hover:bg-white/10" data-testid="button-promo-login">
+                  Accedi
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="fixed inset-0 z-0">
         {!videoPlaying && (
           <div className="absolute inset-0" style={{ background: "#0a0118" }}>
