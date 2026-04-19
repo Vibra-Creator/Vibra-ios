@@ -12,6 +12,14 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useLocation } from "wouter";
 import type { Profile, ProfileVideo } from "@shared/schema";
 
+const SIGNAL_OPTIONS = [
+  { icon: "☕", title: "Caffè?", description: "Mi piacerebbe prendere un caffè con te." },
+  { icon: "🛍️", title: "Shopping?", description: "Vorrei fare shopping insieme a te." },
+  { icon: "🍸", title: "Aperitivo?", description: "Ti andrebbe un aperitivo in relax?" },
+  { icon: "🚶", title: "Passeggiata?", description: "Mi piacerebbe fare due passi con te." },
+  { icon: "🎬", title: "Cine-serata?", description: "Mi piacerebbe una serata cinema con te." },
+];
+
 function getActivityStatus(lastActiveAt: string | Date | null | undefined, t: (key: string) => string): { label: string; color: string; isOnline: boolean } {
   if (!lastActiveAt) return { label: "", color: "", isOnline: false };
   const now = new Date();
@@ -58,14 +66,6 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
     enabled: isOpen,
     staleTime: 30000,
   });
-  const signalOptions = [
-    { icon: "☕", title: "Caffè?", description: "Mi piacerebbe prendere un caffè con te." },
-    { icon: "🛍️", title: "Shopping?", description: "Vorrei fare shopping insieme a te." },
-    { icon: "🍸", title: "Aperitivo?", description: "Ti andrebbe un aperitivo in relax?" },
-    { icon: "🚶", title: "Passeggiata?", description: "Mi piacerebbe fare due passi con te." },
-    { icon: "🎬", title: "Cine-serata?", description: "Mi piacerebbe una serata cinema con te." },
-  ];
-
   const { data: compatibilityData } = useQuery({
     queryKey: ['/api/profiles', profile.id, 'compatibility'],
     queryFn: async () => {
@@ -1546,7 +1546,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-2 mb-3">
-                      {signalOptions.map((option) => (
+                      {SIGNAL_OPTIONS.map((option) => (
                         <button
                           key={option.title}
                           type="button"
