@@ -58,6 +58,13 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
     enabled: isOpen,
     staleTime: 30000,
   });
+  const signalOptions = [
+    { icon: "☕", title: "Caffè", description: "Mi piacerebbe prendere un caffè con te." },
+    { icon: "🛍️", title: "Shopping", description: "Vorrei fare shopping insieme a te." },
+    { icon: "🍸", title: "Aperitivo", description: "Ti andrebbe un aperitivo in relax?" },
+    { icon: "🚶", title: "Passeggiata", description: "Mi piacerebbe fare due passi con te." },
+    { icon: "🎬", title: "Cine-serata", description: "Mi piacerebbe una serata cinema con te." },
+  ];
 
   const { data: compatibilityData } = useQuery({
     queryKey: ['/api/profiles', profile.id, 'compatibility'],
@@ -1538,16 +1545,25 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         <p className="text-green-700 text-xs flex items-center gap-1"><Radio className="w-3 h-3" /> {t("swipe.sendSignalDirect")}</p>
                       </div>
                     </div>
-                    <textarea
-                      className="w-full bg-green-50 border border-green-400 text-green-900 text-sm rounded-xl p-3 resize-none outline-none focus:border-green-600 focus:ring-1 focus:ring-green-400 mb-3"
-                      rows={3}
-                      maxLength={300}
-                      placeholder={`Scrivi qualcosa a ${profile.name}…`}
-                      value={signalText}
-                      onChange={e => setSignalText(e.target.value)}
-                      data-testid="input-signal-text"
-                      autoFocus
-                    />
+                    <div className="grid grid-cols-1 gap-2 mb-3">
+                      {signalOptions.map((option) => (
+                        <button
+                          key={option.title}
+                          type="button"
+                          onClick={() => setSignalText(`${option.icon} ${option.title} — ${option.description}`)}
+                          className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${signalText.startsWith(option.icon) ? "bg-green-600 text-white border-green-700" : "bg-green-50 text-green-900 border-green-300 hover:bg-green-100"}`}
+                          data-testid={`button-signal-option-${option.title.toLowerCase().replace(/\s+/g, "-")}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="text-xl leading-none">{option.icon}</span>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-sm">{option.title}</div>
+                              <div className={`text-xs leading-snug ${signalText.startsWith(option.icon) ? "text-white/80" : "text-green-700"}`}>{option.description}</div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setShowSignalCompose(false); setSignalText(""); }}
