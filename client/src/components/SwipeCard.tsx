@@ -59,11 +59,11 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
     staleTime: 30000,
   });
   const signalOptions = [
-    { icon: "☕", title: "Caffè", description: "Mi piacerebbe prendere un caffè con te." },
-    { icon: "🛍️", title: "Shopping", description: "Vorrei fare shopping insieme a te." },
-    { icon: "🍸", title: "Aperitivo", description: "Ti andrebbe un aperitivo in relax?" },
-    { icon: "🚶", title: "Passeggiata", description: "Mi piacerebbe fare due passi con te." },
-    { icon: "🎬", title: "Cine-serata", description: "Mi piacerebbe una serata cinema con te." },
+    { icon: "☕", title: "Caffè?", description: "Mi piacerebbe prendere un caffè con te." },
+    { icon: "🛍️", title: "Shopping?", description: "Vorrei fare shopping insieme a te." },
+    { icon: "🍸", title: "Aperitivo?", description: "Ti andrebbe un aperitivo in relax?" },
+    { icon: "🚶", title: "Passeggiata?", description: "Mi piacerebbe fare due passi con te." },
+    { icon: "🎬", title: "Cine-serata?", description: "Mi piacerebbe una serata cinema con te." },
   ];
 
   const { data: compatibilityData } = useQuery({
