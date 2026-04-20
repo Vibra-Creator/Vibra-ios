@@ -2047,6 +2047,7 @@ async function seedBotVideosByCity() {
 
   let assigned = 0;
   let nulled = 0;
+  let fallbackIndex = 0;
 
   for (const bot of botProfiles) {
     const city = bot.location || "";
@@ -2058,17 +2059,23 @@ async function seedBotVideosByCity() {
     if (!picked) picked = pickUnused(genericVideos);
     // 3° priorità: qualsiasi video ancora non usato nel pool
     if (!picked) picked = pickUnused(allVideos);
+    // 4° priorità: riusa un video web già presente, ma non lasciare il bot senza video
+    if (!picked && allVideos.length > 0) {
+      picked = allVideos[fallbackIndex % allVideos.length];
+      fallbackIndex++;
+    }
 
     if (picked) {
       usedVideos.add(picked);
       await db.update(profiles).set({ profileVideoUrl: picked }).where(eq(profiles.id, bot.id));
       assigned++;
     } else {
+      await db.update(profiles).set({ profileVideoUrl: null }).where(eq(profiles.id, bot.id));
       nulled++;
     }
   }
 
-  console.log(`[seed] Assigned ${assigned} UNIQUE city venue videos to bot profiles (${nulled} bots senza video → foto profilo).`);
+  console.log(`[seed] Assigned ${assigned} web bot videos to bot profiles (${nulled} bots senza video).`);
 }
 
 async function _seedBotPersonalVideosLegacy_UNUSED() {
