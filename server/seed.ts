@@ -1906,54 +1906,54 @@ async function seedBotVideosByCity() {
   // Video web veri per i bot, vari e con colori naturali
   const cityVideos: Record<string, string[]> = {
     Roma:    [
-      "https://filesamples.com/samples/video/mp4/sample_640x360.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-cottonbro-4871679.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-vlada-karpovich-6115008.mp4",
       "https://archive.org/download/PexelsVideos/pexels-anna-shvets-4126767.mp4",
     ],
     Milano:  [
-      "https://filesamples.com/samples/video/mp4/sample_960x400_ocean_with_audio.mp4",
       "https://archive.org/download/PexelsVideos/pexels-polina-kovaleva-5648615.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-ksenia-chernaya-6088281.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-cottonbro-5378701.mp4",
     ],
     Bologna: [
       "https://archive.org/download/PexelsVideos/pexels-bertellifotografia-8327829.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-rodnae-productions-7089939.mp4",
       "https://archive.org/download/PexelsVideos/pexels-ron-lach-8262806.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
     ],
     Firenze: [
-      "https://archive.org/download/PexelsVideos/pexels-vlada-karpovich-6115008.mp4",
       "https://archive.org/download/PexelsVideos/pexels-kindel-media-8454326.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-vlada-karpovich-6115008.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-tima-miroshnichenko-6823470.mp4",
     ],
     Napoli:  [
-      "https://archive.org/download/PexelsVideos/pexels-anna-nekrashevich-7552935.mp4",
       "https://archive.org/download/PexelsVideos/pexels-maksim-goncharenok-9667828.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-anna-nekrashevich-7552935.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-tima-miroshnichenko-6823470.mp4",
     ],
     Bari:    [
-      "https://archive.org/download/PexelsVideos/pexels-antoni-shkraba-8049507.mp4",
       "https://archive.org/download/PexelsVideos/pexels-julia-m-cameron-6994741.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-antoni-shkraba-8049507.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-rodnae-productions-7862602.mp4",
     ],
     Palermo: [
       "https://archive.org/download/PexelsVideos/pexels-lisa-fotios-11521049.mp4",
       "https://archive.org/download/PexelsVideos/pexels-ron-lach-10148777.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-pixabay-856399.mp4",
     ],
     Genova:  [
-      "https://archive.org/download/PexelsVideos/pexels-ivan-samkov-8494845.mp4",
       "https://archive.org/download/PexelsVideos/pexels-cottonbro-4055167.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-ivan-samkov-8494845.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-pixabay-856543.mp4",
     ],
     Torino:  [
-      "https://archive.org/download/PexelsVideos/pexels-rodnae-productions-5380780.mp4",
       "https://archive.org/download/PexelsVideos/pexels-ketut-subiyanto-4473868.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-rodnae-productions-5380780.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-fauxels-3184418.mp4",
     ],
     Verona:  [
       "https://archive.org/download/PexelsVideos/pexels-godisable-jacob-6816355.mp4",
       "https://archive.org/download/PexelsVideos/pexels-anastasia-shuraeva-5705435.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-fauxels-3184357.mp4",
     ],
     Venezia: [
       "https://archive.org/download/PexelsVideos/pexels-pixabay-856399.mp4",
@@ -1961,64 +1961,63 @@ async function seedBotVideosByCity() {
     ],
     Cagliari:[
       "https://archive.org/download/PexelsVideos/pexels-evg-kowalievska-1170986.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-polina-zimmerman-3958297.mp4",
     ],
     Catania: [
       "https://archive.org/download/PexelsVideos/pexels-monica-silvestre-713149.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-olia-danilevich-4974916.mp4",
     ],
     Padova:  [
       "https://archive.org/download/PexelsVideos/pexels-mart-production-8197439.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-tima-miroshnichenko-6590938.mp4",
     ],
     Salerno: [
       "https://archive.org/download/PexelsVideos/pexels-tima-miroshnichenko-6823470.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-cottonbro-4101147.mp4",
     ],
     Perugia: [
       "https://archive.org/download/PexelsVideos/pexels-fauxels-3184357.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-rodnae-productions-7464611.mp4",
     ],
     Siena:   [
       "https://archive.org/download/PexelsVideos/pexels-rodnae-productions-7464611.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-olia-danilevich-4974916.mp4",
     ],
     Trento:  [
       "https://archive.org/download/PexelsVideos/pexels-mart-production-7260596.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-cottonbro-5378701.mp4",
     ],
     Brescia: [
       "https://archive.org/download/PexelsVideos/pexels-tima-miroshnichenko-6590938.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-polina-kovaleva-5648615.mp4",
     ],
     Livorno: [
       "https://archive.org/download/PexelsVideos/pexels-pixabay-856543.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://archive.org/download/PexelsVideos/pexels-anna-shvets-4126767.mp4",
     ],
     Modena:  [
       "https://archive.org/download/PexelsVideos/pexels-kampus-production-7668777.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+      "https://archive.org/download/PexelsVideos/pexels-vlada-karpovich-6115008.mp4",
     ],
-    Arezzo:  ["https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"],
-    Lecce:   ["https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm"],
+    Arezzo:  ["https://archive.org/download/PexelsVideos/pexels-julia-m-cameron-6995807.mp4"],
+    Lecce:   ["https://archive.org/download/PexelsVideos/pexels-mikhail-nilov-6963922.mp4"],
     Amalfi:  ["https://archive.org/download/PexelsVideos/pexels-julia-m-cameron-6995807.mp4"],
     Trieste: ["https://archive.org/download/PexelsVideos/pexels-oleksandr-p-4347826.mp4"],
-    Parma:   ["https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"],
-    Ancona:  ["https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm"],
+    Parma:   ["https://archive.org/download/PexelsVideos/pexels-jonathanborba-3094224.mp4"],
+    Ancona:  ["https://archive.org/download/PexelsVideos/pexels-polina-zimmerman-3958297.mp4"],
     Taranto: ["https://archive.org/download/PexelsVideos/pexels-mikhail-nilov-6963922.mp4"],
-    Messina: ["https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"],
+    Messina: ["https://archive.org/download/PexelsVideos/pexels-anna-shvets-4126767.mp4"],
     Treviso: ["https://archive.org/download/PexelsVideos/pexels-jonathanborba-3094224.mp4"],
   };
 
   // Video generici (nessun riferimento geografico — overflow universale)
   const genericVideos: string[] = [
-    "https://filesamples.com/samples/video/mp4/sample_1280x720.mp4",
     "https://archive.org/download/PexelsVideos/pexels-cottonbro-4101147.mp4",
     "https://archive.org/download/PexelsVideos/pexels-polina-zimmerman-3958297.mp4",
     "https://archive.org/download/PexelsVideos/pexels-ketut-subiyanto-4473868.mp4",
     "https://archive.org/download/PexelsVideos/pexels-fauxels-3184418.mp4",
     "https://archive.org/download/PexelsVideos/pexels-olia-danilevich-4974916.mp4",
-    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    "https://archive.org/download/PexelsVideos/pexels-rodnae-productions-7089939.mp4",
   ];
 
   // Pool globale unico: city-specific + generici (nessun duplicato possibile)

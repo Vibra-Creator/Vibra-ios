@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "u-8Ti9pq5R-EUQHFwz_Z4"
@@ -12,3 +11,9 @@ id = "8fl7A34YgtCPXMKc3M21a"
 uri = "file://client/public/icons/icon-512.png"
 type = "image"
 title = "Vibra icon 512x512"
+
+[[outputs]]
+id = "1NNPbQfN3vKgn-l0kiIBi"
+uri = "file://src/assets/images/placeholder.png"
+type = "image"
+title = "No call. Need web video sources, not images."
