@@ -135,7 +135,8 @@ export default function Home() {
     onError: (error: Error) => {
       console.error("[Swipe error]", error.message);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
-      if (error.message.includes("Already swiped")) {
+      // Silenzia errori 400 (duplicati, validazione) — non mostrare banner rosso
+      if (error.message.startsWith("400") || error.message.includes("Already swiped")) {
         return;
       }
       toast({
@@ -174,6 +175,8 @@ export default function Home() {
       blockIfGuest(direction === "right" ? t("home.like") : t("home.dislike"));
       return;
     }
+    if (!myProfile?.id) return;
+    if (swipeMutation.isPending) return;
 
     if (likedIdsSet.has(currentProfile.id)) {
       setSwipedProfiles(prev => {
@@ -194,7 +197,7 @@ export default function Home() {
       profileId: currentProfile.id,
       liked: direction === "right",
     });
-  }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet]);
+  }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet, myProfile?.id]);
 
   const undoMutation = useMutation({
     mutationFn: () => apiRequest("DELETE", "/api/swipes/last"),
