@@ -1004,8 +1004,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     data-testid={`profile-video-${profile.id}`}
                     style={{ willChange: "transform" }}
                   />
-                  {/* Spinner TikTok-style durante buffering */}
-                  {isTop && isVideoBuffering && (
+                  {/* Spinner TikTok-style durante buffering — mai sui bot (poster già visibile) */}
+                  {isTop && isVideoBuffering && !profile.isBot && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                       <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin" />
                     </div>
