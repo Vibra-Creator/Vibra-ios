@@ -550,7 +550,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [showStories, setShowStories] = useState(false);
     const [selectedRating, setSelectedRating] = useState<number | null>(null);
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(() => {
+      if (!profile.imageUrl) return false;
+      const img = new window.Image();
+      img.src = profile.imageUrl;
+      return img.complete;
+    });
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
     const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? false);
