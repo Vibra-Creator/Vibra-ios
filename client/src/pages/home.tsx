@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Sparkles, Image as ImageIcon, Video, Type, X } from "lucide-react";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
@@ -111,6 +111,9 @@ export default function Home() {
     enabled: !!profiles && profiles.length > 0,
   });
 
+  const pendingSwipeRef = useRef<{ profileId: string; liked: boolean } | null>(null);
+  const swipeMutateRef = useRef<((p: { profileId: string; liked: boolean }) => void) | null>(null);
+
   const swipeMutation = useMutation({
     mutationFn: async ({ profileId, liked }: { profileId: string; liked: boolean }) => {
       const response = await apiRequest("POST", "/api/swipe", {
@@ -145,7 +148,15 @@ export default function Home() {
         variant: "destructive",
       });
     },
+    onSettled: () => {
+      // Drain the queue: if a swipe arrived while this mutation was in flight, execute it now
+      const queued = pendingSwipeRef.current;
+      pendingSwipeRef.current = null;
+      if (queued) swipeMutateRef.current?.(queued);
+    },
   });
+
+  swipeMutateRef.current = swipeMutation.mutate;
 
   const allProfiles = isGuest ? (guestProfiles || []) : (profiles || []);
   const availableProfiles = allProfiles.filter(p => 
@@ -176,8 +187,8 @@ export default function Home() {
       return;
     }
     if (!myProfile?.id) return;
-    if (swipeMutation.isPending) return;
 
+    // Rimuovi sempre la card dall'UI subito — evita card bloccata a metà schermo
     if (likedIdsSet.has(currentProfile.id)) {
       setSwipedProfiles(prev => {
         const newSet = new Set(prev);
@@ -193,10 +204,16 @@ export default function Home() {
       newSet.add(currentProfile.id);
       return newSet;
     });
-    swipeMutation.mutate({
-      profileId: currentProfile.id,
-      liked: direction === "right",
-    });
+
+    const payload = { profileId: currentProfile.id, liked: direction === "right" };
+
+    if (swipeMutation.isPending) {
+      // Salva in coda — eseguito nell'onSettled della mutazione in corso
+      pendingSwipeRef.current = payload;
+      return;
+    }
+
+    swipeMutation.mutate(payload);
   }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet, myProfile?.id]);
 
   const undoMutation = useMutation({
