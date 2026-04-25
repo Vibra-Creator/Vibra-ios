@@ -1,4 +1,4 @@
-const CACHE_VERSION = 30;
+const CACHE_VERSION = 31;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [

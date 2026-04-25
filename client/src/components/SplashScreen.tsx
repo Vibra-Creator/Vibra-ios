@@ -30,11 +30,11 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
   useEffect(() => {
     const t0 = setTimeout(() => setPhase(1), 50);
-    const t1 = setTimeout(() => setPhase(2), 600);
-    const t2 = setTimeout(() => setPhase(3), 1200);
+    const t1 = setTimeout(() => setPhase(2), 400);
+    const t2 = setTimeout(() => setPhase(3), 800);
 
-    const flashStart = 1600;
-    const flashDuration = 700;
+    const flashStart = 900;
+    const flashDuration = 320;
     const flashTimers: ReturnType<typeof setTimeout>[] = [];
 
     for (let i = 0; i < flashPhrases.length; i++) {
@@ -43,7 +43,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
     const t3 = setTimeout(() => {
       if (!showCopyright) dismiss();
-    }, flashStart + flashPhrases.length * flashDuration + 800);
+    }, flashStart + flashPhrases.length * flashDuration + 400);
 
     return () => {
       clearTimeout(t0);
