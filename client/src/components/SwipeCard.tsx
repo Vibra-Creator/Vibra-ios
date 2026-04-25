@@ -1062,6 +1062,20 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     onError={() => setImageError(true)}
                     data-testid={`profile-image-${profile.id}`}
                   />
+                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDetail(true);
+                      }}
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
+                      data-testid="button-card-profile-toggle"
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      <User className="w-6 h-6 text-white" />
+                    </button>
+                  </div>
                 </>
               )}
               
