@@ -134,7 +134,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  await seedDatabase();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -175,6 +174,9 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
       startAutoBackup();
       startBotMatchJob();
+
+      // Run seed in background — non-blocking so server starts instantly
+      seedDatabase().catch((err) => console.error("[seed] background error:", err));
     },
   );
 })();
