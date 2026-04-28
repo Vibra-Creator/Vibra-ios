@@ -252,23 +252,25 @@ export async function registerRoutes(
   cleanExpiredRoomMembers();
   setInterval(cleanExpiredRoomMembers, 30 * 60 * 1000);
 
-  // ─── Ensure vibrapp_dms table exists ─────────────────────────────────────
-  try {
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS vibrapp_dms (
-        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-        from_profile_id VARCHAR NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-        to_profile_id VARCHAR NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-        content TEXT NOT NULL,
-        read_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-    await db.execute(sql`CREATE INDEX IF NOT EXISTS vibrapp_dms_from ON vibrapp_dms(from_profile_id)`);
-    await db.execute(sql`CREATE INDEX IF NOT EXISTS vibrapp_dms_to ON vibrapp_dms(to_profile_id)`);
-  } catch (e) {
-    console.error("[vibrapp_dms] migration error:", e);
-  }
+  // ─── Ensure vibrapp_dms table exists (background, non-blocking) ─────────
+  (async () => {
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS vibrapp_dms (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          from_profile_id VARCHAR NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+          to_profile_id VARCHAR NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+          content TEXT NOT NULL,
+          read_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS vibrapp_dms_from ON vibrapp_dms(from_profile_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS vibrapp_dms_to ON vibrapp_dms(to_profile_id)`);
+    } catch (e) {
+      console.error("[vibrapp_dms] migration error:", e);
+    }
+  })();
 
   async function cleanOldVibrappMessages() {
     try {

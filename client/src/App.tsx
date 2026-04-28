@@ -304,8 +304,12 @@ function AppContent() {
 
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
-    const seen = sessionStorage.getItem("vibra-splash-seen");
-    return !seen;
+    try {
+      const seen = localStorage.getItem("vibra-splash-seen");
+      return !seen;
+    } catch {
+      return false; // se localStorage non è disponibile, salta la splash
+    }
   });
 
   useEffect(() => {
@@ -322,7 +326,7 @@ function App() {
 
   const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
-    sessionStorage.setItem("vibra-splash-seen", "1");
+    try { localStorage.setItem("vibra-splash-seen", "1"); } catch {}
   }, []);
 
   return (

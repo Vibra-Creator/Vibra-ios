@@ -1,4 +1,4 @@
-const CACHE_VERSION = 31;
+const CACHE_VERSION = 32;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -104,17 +104,18 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname === '/' || url.pathname === '/index.html') {
+    // Network-first: always try to get the latest HTML.
+    // Fall back to cache only if network fails (offline / server down).
     event.respondWith(
-      caches.match('/').then((cached) => {
-        const networkFetch = fetch(event.request, { cache: 'no-cache' }).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
-          }
-          return response;
-        }).catch(() => cached || new Response('', { status: 503 }));
-        return cached || networkFetch;
-      })
+      fetch(event.request, { cache: 'no-cache' }).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/', clone));
+        }
+        return response;
+      }).catch(() =>
+        caches.match('/').then((cached) => cached || new Response('', { status: 503 }))
+      )
     );
     return;
   }
