@@ -2075,6 +2075,13 @@ export async function registerRoutes(
               senderId: otherProfile.id,
               content: botReply,
             });
+            // Notify the real user that the bot replied
+            sendPushToProfile(userProfile.id, {
+              title: otherProfile.name,
+              body: botReply.substring(0, 100),
+              icon: "/icons/icon-192.png",
+              url: `/chat/${matchId}`,
+            });
           } catch (err) {
             console.error("Bot auto-reply error:", err);
           }
