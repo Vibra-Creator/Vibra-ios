@@ -3943,6 +3943,21 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // DELETE a received cold message (recipient only)
+  app.delete("/api/cold-messages/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      await storage.deleteColdMessage(req.params.id, myProfile.id);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[cold-messages delete]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
   // ─── Vibrapp DM REST endpoints ────────────────────────────────────────────
   app.get("/api/vibrapp-dm/thread/:otherProfileId", isAuthenticated, async (req: any, res) => {
     try {

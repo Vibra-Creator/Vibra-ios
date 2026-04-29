@@ -190,6 +190,9 @@ export interface IStorage {
   markVibrappDmRead(myProfileId: string, otherProfileId: string): Promise<void>;
   getVibrappDmUnreadCount(myProfileId: string): Promise<number>;
   getVibrappDmConversations(myProfileId: string): Promise<Array<{ otherProfileId: string; lastMessage: VibrappDm; unreadCount: number }>>;
+
+  // Cold Messages
+  deleteColdMessage(messageId: string, toProfileId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1075,6 +1078,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(coldMessages.id, messageId));
 
     return { privateRoomId: room.id };
+  }
+
+  async deleteColdMessage(messageId: string, toProfileId: string): Promise<void> {
+    await db.delete(coldMessages).where(
+      and(eq(coldMessages.id, messageId), eq(coldMessages.toProfileId, toProfileId))
+    );
   }
 
   async getReceivedReactions(toProfileId: string, limit = 50): Promise<Array<{ id: string; reaction: string; createdAt: Date; fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {

@@ -172,6 +172,22 @@ export default function Vibrapp() {
     },
   });
 
+  const [coldMsgDeleteConfirm, setColdMsgDeleteConfirm] = useState(false);
+
+  const deleteColdMsgMutation = useMutation({
+    mutationFn: async (id: string) =>
+      apiRequest("DELETE", `/api/cold-messages/${id}`),
+    onSuccess: () => {
+      setSelectedColdMsg(null);
+      setColdMsgDeleteConfirm(false);
+      refetchColdMsgs();
+      queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
+    },
+    onError: () => {
+      alert("Errore nella cancellazione. Riprova.");
+    },
+  });
+
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const dmId = params.get("dm");
@@ -991,7 +1007,7 @@ export default function Vibrapp() {
             {receivedColdMsgs.filter(m => !m.replied).map(msg => (
               <button
                 key={msg.id}
-                onClick={() => { setSelectedColdMsg(msg); setReplyText(""); }}
+                onClick={() => { setSelectedColdMsg(msg); setReplyText(""); setColdMsgDeleteConfirm(false); }}
                 className="flex flex-col items-center gap-1 shrink-0"
                 data-testid={`intro-bubble-${msg.id}`}
               >
@@ -1591,19 +1607,51 @@ export default function Vibrapp() {
                 onChange={e => setReplyText(e.target.value)}
                 data-testid="input-cold-reply"
               />
-              <div className="flex gap-2">
-                <Button variant="ghost" className="flex-1 text-white/60" onClick={() => setSelectedColdMsg(null)} data-testid="button-cancel-cold-reply">
-                  Chiudi
-                </Button>
-                <Button
-                  className="flex-1 bg-purple-600 hover:bg-purple-500 text-white"
-                  disabled={replyText.trim().length < 5 || replyColdMsgMutation.isPending}
-                  onClick={() => replyColdMsgMutation.mutate({ id: selectedColdMsg.id, content: replyText })}
-                  data-testid="button-confirm-cold-reply"
-                >
-                  {replyColdMsgMutation.isPending ? "Apertura..." : "🔐 Apri chat privata"}
-                </Button>
-              </div>
+              {coldMsgDeleteConfirm ? (
+                <div className="space-y-2">
+                  <p className="text-white/70 text-sm text-center">Cancellare questa presentazione?</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 text-white/60"
+                      onClick={() => setColdMsgDeleteConfirm(false)}
+                      data-testid="button-cancel-delete-confirm"
+                    >
+                      Annulla
+                    </Button>
+                    <Button
+                      className="flex-1 bg-red-600 hover:bg-red-500 text-white"
+                      disabled={deleteColdMsgMutation.isPending}
+                      onClick={() => deleteColdMsgMutation.mutate(selectedColdMsg.id)}
+                      data-testid="button-confirm-delete-coldmsg"
+                    >
+                      {deleteColdMsgMutation.isPending ? "..." : "🗑️ Sì, cancella"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    className="text-red-400/70 hover:text-red-400 hover:bg-red-900/20 px-3"
+                    onClick={() => setColdMsgDeleteConfirm(true)}
+                    data-testid="button-delete-coldmsg"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" className="flex-1 text-white/60" onClick={() => { setSelectedColdMsg(null); setColdMsgDeleteConfirm(false); }} data-testid="button-cancel-cold-reply">
+                    Chiudi
+                  </Button>
+                  <Button
+                    className="flex-1 bg-purple-600 hover:bg-purple-500 text-white"
+                    disabled={replyText.trim().length < 5 || replyColdMsgMutation.isPending}
+                    onClick={() => replyColdMsgMutation.mutate({ id: selectedColdMsg.id, content: replyText })}
+                    data-testid="button-confirm-cold-reply"
+                  >
+                    {replyColdMsgMutation.isPending ? "Apertura..." : "🔐 Apri chat privata"}
+                  </Button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
