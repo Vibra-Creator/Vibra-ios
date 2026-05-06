@@ -930,9 +930,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         setVibSent(true);
         setVibText("");
         vibClearAudio();
-        // Bot "va online" dopo 25-35s, inizia a scrivere dopo altri 5s
-        const onlineDelay = 25_000 + Math.random() * 10_000;
-        const typingDelay = onlineDelay + 4_000 + Math.random() * 4_000;
+        // Bot va online tra 45-70s (prima che risponda, che avviene tra 60-120s)
+        const onlineDelay = 45_000 + Math.random() * 25_000;
+        // Inizia a scrivere 10-20s dopo essere andato online
+        const typingDelay = onlineDelay + 10_000 + Math.random() * 10_000;
         vibOnlineTimerRef.current = setTimeout(() => setVibBotOnline(true), onlineDelay);
         vibTypingTimerRef.current = setTimeout(() => setVibShowTyping(true), typingDelay);
       },

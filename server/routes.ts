@@ -3913,7 +3913,7 @@ REGOLE IMPORTANTI:
           // Se il destinatario è un bot: risposta rapida (45–90s) + like back + possibile match
           if (targetProfile.isBot && result.coldMessage) {
             const coldMsgId = result.coldMessage.id;
-            const delayMs = 45_000 + Math.random() * 45_000; // 45–90 secondi
+            const delayMs = 60_000 + Math.random() * 60_000; // 60–120 secondi
             setTimeout(async () => {
               try {
                 // 1. Genera risposta
