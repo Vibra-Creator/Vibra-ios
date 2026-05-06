@@ -1073,11 +1073,71 @@ export class DatabaseStorage implements IStorage {
       status: "approved",
     });
 
+    // Inserisci il messaggio originale dell'utente nella room
+    if (msg.content?.trim()) {
+      await db.insert(privateRoomMessages).values({
+        roomId: room.id,
+        senderId: fromProfile[0].id,
+        senderName: fromProfile[0].name,
+        senderImage: fromProfile[0].imageUrl,
+        content: msg.content,
+      });
+    }
+
+    // Inserisci la risposta nella room
+    await db.insert(privateRoomMessages).values({
+      roomId: room.id,
+      senderId: toProfile[0].id,
+      senderName: toProfile[0].name,
+      senderImage: toProfile[0].imageUrl,
+      content: replyContent,
+    });
+
     await db.update(coldMessages)
       .set({ replied: true, replyContent, privateRoomId: room.id })
       .where(eq(coldMessages.id, messageId));
 
     return { privateRoomId: room.id };
+  }
+
+  async getSentColdMessages(fromProfileId: string): Promise<Array<{
+    id: string; toProfileId: string; content: string; mediaUrl: string | null; mediaType: string | null;
+    replied: boolean; replyContent: string | null; privateRoomId: string | null; createdAt: Date;
+    toProfile: { id: string; name: string; imageUrl: string; age: number };
+  }>> {
+    const rows = await db
+      .select({
+        id: coldMessages.id,
+        toProfileId: coldMessages.toProfileId,
+        content: coldMessages.content,
+        mediaUrl: coldMessages.mediaUrl,
+        mediaType: coldMessages.mediaType,
+        replied: coldMessages.replied,
+        replyContent: coldMessages.replyContent,
+        privateRoomId: coldMessages.privateRoomId,
+        createdAt: coldMessages.createdAt,
+        toId: profiles.id,
+        toName: profiles.name,
+        toImage: profiles.imageUrl,
+        toAge: profiles.age,
+      })
+      .from(coldMessages)
+      .innerJoin(profiles, eq(profiles.id, coldMessages.toProfileId))
+      .where(eq(coldMessages.fromProfileId, fromProfileId))
+      .orderBy(desc(coldMessages.createdAt));
+
+    return rows.map(r => ({
+      id: r.id,
+      toProfileId: r.toProfileId,
+      content: r.content,
+      mediaUrl: r.mediaUrl,
+      mediaType: r.mediaType,
+      replied: r.replied,
+      replyContent: r.replyContent,
+      privateRoomId: r.privateRoomId,
+      createdAt: r.createdAt,
+      toProfile: { id: r.toId, name: r.toName, imageUrl: r.toImage ?? "", age: r.toAge ?? 0 },
+    }));
   }
 
   async deleteColdMessage(messageId: string, toProfileId: string): Promise<void> {

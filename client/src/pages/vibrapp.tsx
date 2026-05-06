@@ -52,6 +52,19 @@ interface ReceivedColdMsg {
   fromProfile: { id: string; name: string; imageUrl: string; age: number };
 }
 
+interface SentColdMsg {
+  id: string;
+  toProfileId: string;
+  content: string;
+  mediaUrl: string | null;
+  mediaType: string | null;
+  replied: boolean;
+  replyContent: string | null;
+  privateRoomId: string | null;
+  createdAt: string;
+  toProfile: { id: string; name: string; imageUrl: string; age: number };
+}
+
 export default function Vibrapp() {
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
@@ -137,6 +150,17 @@ export default function Vibrapp() {
       return res.json();
     },
     enabled: !!profile,
+  });
+
+  const { data: sentColdMsgs, refetch: refetchSentColdMsgs } = useQuery<SentColdMsg[]>({
+    queryKey: ["/api/cold-messages/sent"],
+    queryFn: async () => {
+      const res = await fetch("/api/cold-messages/sent", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!profile,
+    refetchInterval: 30_000,
   });
 
   const sendColdMsgMutation = useMutation({
@@ -1016,6 +1040,40 @@ export default function Vibrapp() {
                   <span className="absolute -bottom-1 -right-1 text-[14px]">🛸</span>
                 </div>
                 <span className="text-white/70 text-[10px] truncate max-w-[52px]">{msg.fromProfile.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Sent intros strip (with reply status) ─────────────────────────── */}
+      {sentColdMsgs && sentColdMsgs.length > 0 && (
+        <div className="bg-[#0a0d1e] border-b border-emerald-900/30 px-4 py-2 shrink-0" data-testid="sent-intros-strip">
+          <p className="text-emerald-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">📨 Le tue presentazioni</p>
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            {sentColdMsgs.map(msg => (
+              <button
+                key={msg.id}
+                onClick={() => {
+                  if (msg.replied && msg.privateRoomId) {
+                    setLocation(`/private-room/${msg.privateRoomId}`);
+                  }
+                }}
+                className="flex flex-col items-center gap-1 shrink-0"
+                data-testid={`sent-intro-bubble-${msg.id}`}
+              >
+                <div className="relative">
+                  <img src={msg.toProfile.imageUrl} alt={msg.toProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500/60" />
+                  {msg.replied ? (
+                    <span className="absolute -bottom-1 -right-1 text-[14px]">💬</span>
+                  ) : (
+                    <span className="absolute -bottom-1 -right-1 text-[14px]">⏳</span>
+                  )}
+                </div>
+                <span className="text-white/70 text-[10px] truncate max-w-[52px]">{msg.toProfile.name}</span>
+                {msg.replied && (
+                  <span className="text-emerald-400 text-[9px] font-semibold -mt-0.5">Ha risposto!</span>
+                )}
               </button>
             ))}
           </div>

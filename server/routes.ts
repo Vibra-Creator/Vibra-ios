@@ -3990,6 +3990,20 @@ REGOLE IMPORTANTI:
     }
   });
 
+  app.get("/api/cold-messages/sent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const messages = await storage.getSentColdMessages(myProfile.id);
+      res.json(messages);
+    } catch (err) {
+      console.error("[cold-messages sent]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
   app.get("/api/cold-messages/received", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.session?.userId;
