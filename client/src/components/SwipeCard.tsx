@@ -570,7 +570,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [vibSent, setVibSent] = useState(false);
     const [vibSentContent, setVibSentContent] = useState("");
     const [vibReply, setVibReply] = useState<string | null>(null);
+    const [vibPrivateRoomId, setVibPrivateRoomId] = useState<string | null>(null);
+    const [vibChatMsgs, setVibChatMsgs] = useState<{ role: "me" | "bot"; text: string }[]>([]);
+    const [vibContinueText, setVibContinueText] = useState("");
+    const [vibWaitingBotReply, setVibWaitingBotReply] = useState(false);
     const vibPollRef = useRef<NodeJS.Timeout | null>(null);
+    const vibRoomPollRef = useRef<NodeJS.Timeout | null>(null);
+    const vibKnownMsgCountRef = useRef(0);
+    const vibChatEndRef = useRef<HTMLDivElement | null>(null);
     const [vibIsRecording, setVibIsRecording] = useState(false);
     const [vibRecordingDuration, setVibRecordingDuration] = useState(0);
     const [vibAudioFile, setVibAudioFile] = useState<File | null>(null);
@@ -580,7 +587,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const vibAudioChunksRef = useRef<Blob[]>([]);
     const vibTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Polling per risposta bot nel pannello vibrapp inline
+    // Scorro sempre in fondo quando arrivano nuovi messaggi
+    useEffect(() => {
+      vibChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [vibChatMsgs, vibWaitingBotReply]);
+
+    // Polling per risposta bot (cold message check → prima risposta)
     useEffect(() => {
       if (!vibSent || vibReply !== null) return;
       const poll = async () => {
@@ -590,6 +602,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           const data = await res.json();
           if (data.replied && data.replyContent) {
             setVibReply(data.replyContent);
+            setVibPrivateRoomId(data.privateRoomId ?? null);
+            setVibChatMsgs([{ role: "bot", text: data.replyContent }]);
+            vibKnownMsgCountRef.current = 2; // msg utente + prima risposta già in state
             if (vibPollRef.current) clearInterval(vibPollRef.current);
           }
         } catch {}
@@ -598,13 +613,63 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       return () => { if (vibPollRef.current) clearInterval(vibPollRef.current); };
     }, [vibSent, vibReply, profile.id]);
 
+    // Polling messaggi della private room (conversazione continuata)
+    useEffect(() => {
+      if (!vibPrivateRoomId) return;
+      const pollRoom = async () => {
+        try {
+          const res = await fetch(`/api/private-rooms/${vibPrivateRoomId}/messages`, { credentials: "include" });
+          if (!res.ok) return;
+          const msgs: any[] = await res.json();
+          const newMsgs = msgs.slice(vibKnownMsgCountRef.current);
+          if (newMsgs.length > 0) {
+            const myProfileId = msgs.find((m: any) => m.senderId !== profile.id)?.senderId; // heuristic
+            setVibChatMsgs(prev => {
+              const additions = newMsgs.map((m: any) => ({ role: m.senderId === profile.id ? "bot" as const : "me" as const, text: m.content }));
+              // Solo i messaggi bot nuovi (non quello che abbiamo appena inviato noi)
+              const botAdditions = newMsgs
+                .filter((m: any) => m.senderId === profile.id)
+                .map((m: any) => ({ role: "bot" as const, text: m.content }));
+              if (botAdditions.length > 0) setVibWaitingBotReply(false);
+              return botAdditions.length > 0 ? [...prev, ...botAdditions] : prev;
+            });
+            vibKnownMsgCountRef.current = msgs.length;
+          }
+        } catch {}
+      };
+      vibRoomPollRef.current = setInterval(pollRoom, 4000);
+      return () => { if (vibRoomPollRef.current) clearInterval(vibRoomPollRef.current); };
+    }, [vibPrivateRoomId, profile.id]);
+
+    const vibSendContinue = useCallback(async () => {
+      const text = vibContinueText.trim();
+      if (!text || !vibPrivateRoomId) return;
+      setVibChatMsgs(prev => [...prev, { role: "me", text }]);
+      setVibContinueText("");
+      setVibWaitingBotReply(true);
+      vibKnownMsgCountRef.current += 1;
+      try {
+        await fetch(`/api/private-rooms/${vibPrivateRoomId}/messages`, {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: text }),
+        });
+      } catch {}
+    }, [vibContinueText, vibPrivateRoomId]);
+
     const vibClose = useCallback(async () => {
       if (vibPollRef.current) clearInterval(vibPollRef.current);
+      if (vibRoomPollRef.current) clearInterval(vibRoomPollRef.current);
       try { await fetch(`/api/cold-messages/sent/${profile.id}`, { method: "DELETE", credentials: "include" }); } catch {}
       setShowVibCompose(false);
       setVibSent(false);
       setVibSentContent("");
       setVibReply(null);
+      setVibPrivateRoomId(null);
+      setVibChatMsgs([]);
+      setVibContinueText("");
+      setVibWaitingBotReply(false);
+      vibKnownMsgCountRef.current = 0;
       setVibText("");
       vibCancelRecording?.();
       vibClearAudio?.();
@@ -1525,50 +1590,89 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               >
                 <div className="w-10 h-1 bg-teal-400 rounded-full mx-auto mb-4" />
                 {vibSent ? (
-                  <div className="flex flex-col gap-3">
-                    {/* Header bot */}
-                    <div className="flex items-center gap-3 mb-1">
-                      <img src={profile.imageUrl} alt={profile.name} className="w-9 h-9 rounded-full object-cover border-2 border-teal-600/60" />
-                      <div>
-                        <p className="text-teal-900 font-bold text-sm">{profile.name}</p>
-                        <p className="text-teal-600 text-xs">{vibReply ? "Ha risposto!" : "Sta scrivendo…"}</p>
+                  <div className="flex flex-col" style={{ height: "min(60vh, 420px)" }}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <img src={profile.imageUrl} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-teal-600/60" />
+                        <div>
+                          <p className="text-teal-900 font-bold text-sm leading-tight">{profile.name}</p>
+                          <p className="text-teal-600 text-[10px]">
+                            {!vibReply ? "Sta scrivendo…" : vibWaitingBotReply ? "Sta rispondendo…" : "Online"}
+                          </p>
+                        </div>
                       </div>
+                      <button onClick={vibClose} className="text-red-400 hover:text-red-600 text-xs flex items-center gap-1" data-testid="button-vib-close">
+                        🗑 Chiudi
+                      </button>
                     </div>
 
-                    {/* Bubble utente */}
-                    {vibSentContent && (
-                      <div className="flex justify-end">
-                        <div className="bg-teal-600 text-white rounded-2xl rounded-tr-sm px-3.5 py-2 max-w-[82%]">
-                          <p className="text-sm leading-relaxed break-words">{vibSentContent}</p>
+                    {/* Chat scrollabile */}
+                    <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1 mb-3">
+                      {/* Primo messaggio utente */}
+                      {vibSentContent && (
+                        <div className="flex justify-end">
+                          <div className="bg-teal-600 text-white rounded-2xl rounded-tr-sm px-3 py-2 max-w-[82%]">
+                            <p className="text-sm leading-relaxed break-words">{vibSentContent}</p>
+                          </div>
                         </div>
+                      )}
+
+                      {/* Prima risposta bot o puntini attesa */}
+                      {!vibReply ? (
+                        <div className="flex justify-start">
+                          <div className="bg-white border border-teal-200 rounded-2xl rounded-tl-sm px-4 py-2.5 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {/* Messaggi successivi (me + bot) */}
+                      {vibChatMsgs.map((m, i) => (
+                        <div key={i} className={`flex ${m.role === "me" ? "justify-end" : "justify-start"}`}>
+                          <div className={`rounded-2xl px-3 py-2 max-w-[82%] ${m.role === "me" ? "bg-teal-600 text-white rounded-tr-sm" : "bg-white border border-teal-200 text-teal-900 rounded-tl-sm"}`}>
+                            <p className="text-sm leading-relaxed break-words">{m.text}</p>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Puntini attesa risposta bot (dopo i follow-up) */}
+                      {vibWaitingBotReply && (
+                        <div className="flex justify-start">
+                          <div className="bg-white border border-teal-200 rounded-2xl rounded-tl-sm px-4 py-2.5 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
+                        </div>
+                      )}
+                      <div ref={vibChatEndRef} />
+                    </div>
+
+                    {/* Input di continuazione — appare dopo la prima risposta */}
+                    {vibReply && (
+                      <div className="shrink-0 flex items-center gap-2 bg-white border border-teal-300 rounded-2xl px-3 py-2">
+                        <input
+                          type="text"
+                          className="flex-1 bg-transparent text-teal-900 text-sm outline-none placeholder:text-teal-400"
+                          placeholder={`Rispondi a ${profile.name}…`}
+                          value={vibContinueText}
+                          onChange={e => setVibContinueText(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); vibSendContinue(); } }}
+                          data-testid="input-vib-continue"
+                        />
+                        <button
+                          onClick={vibSendContinue}
+                          disabled={!vibContinueText.trim() || vibWaitingBotReply}
+                          className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center disabled:opacity-40 shrink-0"
+                          data-testid="button-vib-send-continue"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+                        </button>
                       </div>
                     )}
-
-                    {/* Risposta bot o indicatore attesa */}
-                    {vibReply ? (
-                      <div className="flex justify-start">
-                        <div className="bg-white border border-teal-200 text-teal-900 rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[82%]">
-                          <p className="text-sm leading-relaxed break-words">{vibReply}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-start">
-                        <div className="bg-white border border-teal-200 rounded-2xl rounded-tl-sm px-4 py-2.5 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Chiudi e cancella */}
-                    <button
-                      onClick={vibClose}
-                      className="mt-2 w-full py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
-                      data-testid="button-vib-close"
-                    >
-                      🗑 Chiudi e cancella conversazione
-                    </button>
                   </div>
                 ) : (
                   <>
