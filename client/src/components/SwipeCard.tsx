@@ -574,6 +574,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [vibChatMsgs, setVibChatMsgs] = useState<{ role: "me" | "bot"; text: string }[]>([]);
     const [vibContinueText, setVibContinueText] = useState("");
     const [vibWaitingBotReply, setVibWaitingBotReply] = useState(false);
+    const [vibBotOnline, setVibBotOnline] = useState(false);
+    const [vibShowTyping, setVibShowTyping] = useState(false);
+    const vibOnlineTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const vibTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
     const vibPollRef = useRef<NodeJS.Timeout | null>(null);
     const vibRoomPollRef = useRef<NodeJS.Timeout | null>(null);
     const vibKnownMsgCountRef = useRef(0);
@@ -601,6 +605,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           if (!res.ok) return;
           const data = await res.json();
           if (data.replied && data.replyContent) {
+            // Cancella i timer online/typing — non servono più
+            if (vibOnlineTimerRef.current) clearTimeout(vibOnlineTimerRef.current);
+            if (vibTypingTimerRef.current) clearTimeout(vibTypingTimerRef.current);
+            setVibBotOnline(true);
+            setVibShowTyping(false);
             setVibReply(data.replyContent);
             setVibPrivateRoomId(data.privateRoomId ?? null);
             setVibChatMsgs([{ role: "bot", text: data.replyContent }]);
@@ -660,6 +669,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const vibClose = useCallback(async () => {
       if (vibPollRef.current) clearInterval(vibPollRef.current);
       if (vibRoomPollRef.current) clearInterval(vibRoomPollRef.current);
+      if (vibOnlineTimerRef.current) clearTimeout(vibOnlineTimerRef.current);
+      if (vibTypingTimerRef.current) clearTimeout(vibTypingTimerRef.current);
       try { await fetch(`/api/cold-messages/sent/${profile.id}`, { method: "DELETE", credentials: "include" }); } catch {}
       setShowVibCompose(false);
       setVibSent(false);
@@ -669,6 +680,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       setVibChatMsgs([]);
       setVibContinueText("");
       setVibWaitingBotReply(false);
+      setVibBotOnline(false);
+      setVibShowTyping(false);
       vibKnownMsgCountRef.current = 0;
       setVibText("");
       vibCancelRecording?.();
@@ -917,6 +930,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         setVibSent(true);
         setVibText("");
         vibClearAudio();
+        // Bot "va online" dopo 25-35s, inizia a scrivere dopo altri 5s
+        const onlineDelay = 25_000 + Math.random() * 10_000;
+        const typingDelay = onlineDelay + 4_000 + Math.random() * 4_000;
+        vibOnlineTimerRef.current = setTimeout(() => setVibBotOnline(true), onlineDelay);
+        vibTypingTimerRef.current = setTimeout(() => setVibShowTyping(true), typingDelay);
       },
       onError: () => toast({ title: "Errore", description: "Impossibile inviare il messaggio", variant: "destructive" }),
     });
@@ -1594,11 +1612,22 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3 shrink-0">
                       <div className="flex items-center gap-2">
-                        <img src={profile.imageUrl} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-teal-600/60" />
+                        <div className="relative">
+                          <img src={profile.imageUrl} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-teal-600/60" />
+                          {(vibBotOnline || vibReply) && (
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white" />
+                          )}
+                        </div>
                         <div>
                           <p className="text-teal-900 font-bold text-sm leading-tight">{profile.name}</p>
                           <p className="text-teal-600 text-[10px]">
-                            {!vibReply ? "Sta scrivendo…" : vibWaitingBotReply ? "Sta rispondendo…" : "Online"}
+                            {!vibBotOnline && !vibReply
+                              ? "Offline"
+                              : vibShowTyping && !vibReply
+                              ? "Sta scrivendo…"
+                              : vibWaitingBotReply
+                              ? "Sta rispondendo…"
+                              : "Online"}
                           </p>
                         </div>
                       </div>
@@ -1618,8 +1647,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         </div>
                       )}
 
-                      {/* Prima risposta bot o puntini attesa */}
-                      {!vibReply ? (
+                      {/* Prima risposta bot o puntini attesa (solo quando online e sta scrivendo) */}
+                      {!vibReply && vibShowTyping && (
                         <div className="flex justify-start">
                           <div className="bg-white border border-teal-200 rounded-2xl rounded-tl-sm px-4 py-2.5 flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -1627,7 +1656,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                             <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "300ms" }} />
                           </div>
                         </div>
-                      ) : null}
+                      )}
 
                       {/* Messaggi successivi (me + bot) */}
                       {vibChatMsgs.map((m, i) => (
