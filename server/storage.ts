@@ -1146,6 +1146,12 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  async deleteSentColdMessage(fromProfileId: string, toProfileId: string): Promise<void> {
+    await db.delete(coldMessages).where(
+      and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId))
+    );
+  }
+
   async getReceivedReactions(toProfileId: string, limit = 50): Promise<Array<{ id: string; reaction: string; createdAt: Date; fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {
     const rows = await db
       .select({

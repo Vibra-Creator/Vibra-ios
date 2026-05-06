@@ -4025,7 +4025,7 @@ REGOLE IMPORTANTI:
       const myProfile = await storage.getProfileByUserId(userId);
       if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
       const msg = await storage.getColdMessageBetween(myProfile.id, req.params.toProfileId);
-      res.json({ exists: !!msg, replied: msg?.replied ?? false, privateRoomId: msg?.privateRoomId ?? null, content: msg?.content ?? null, mediaUrl: msg?.mediaUrl ?? null, mediaType: msg?.mediaType ?? null, createdAt: msg?.createdAt ?? null });
+      res.json({ id: msg?.id ?? null, exists: !!msg, replied: msg?.replied ?? false, replyContent: msg?.replyContent ?? null, privateRoomId: msg?.privateRoomId ?? null, content: msg?.content ?? null, mediaUrl: msg?.mediaUrl ?? null, mediaType: msg?.mediaType ?? null, createdAt: msg?.createdAt ?? null });
     } catch (err) {
       res.status(500).json({ error: "Errore" });
     }
@@ -4069,6 +4069,21 @@ REGOLE IMPORTANTI:
       res.json({ ok: true });
     } catch (err) {
       console.error("[cold-messages delete]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  // Cancella una cold message inviata dal mittente (usato dal pannello SwipeCard dopo la conversazione)
+  app.delete("/api/cold-messages/sent/:toProfileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+      await storage.deleteSentColdMessage(myProfile.id, req.params.toProfileId);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[cold-messages delete sent]", err);
       res.status(500).json({ error: "Errore" });
     }
   });

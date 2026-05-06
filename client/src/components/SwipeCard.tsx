@@ -568,6 +568,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [showVibCompose, setShowVibCompose] = useState(false);
     const [vibText, setVibText] = useState("");
     const [vibSent, setVibSent] = useState(false);
+    const [vibSentContent, setVibSentContent] = useState("");
+    const [vibReply, setVibReply] = useState<string | null>(null);
+    const vibPollRef = useRef<NodeJS.Timeout | null>(null);
     const [vibIsRecording, setVibIsRecording] = useState(false);
     const [vibRecordingDuration, setVibRecordingDuration] = useState(0);
     const [vibAudioFile, setVibAudioFile] = useState<File | null>(null);
@@ -576,6 +579,36 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const vibMediaRecorderRef = useRef<MediaRecorder | null>(null);
     const vibAudioChunksRef = useRef<Blob[]>([]);
     const vibTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Polling per risposta bot nel pannello vibrapp inline
+    useEffect(() => {
+      if (!vibSent || vibReply !== null) return;
+      const poll = async () => {
+        try {
+          const res = await fetch(`/api/cold-messages/check/${profile.id}`, { credentials: "include" });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.replied && data.replyContent) {
+            setVibReply(data.replyContent);
+            if (vibPollRef.current) clearInterval(vibPollRef.current);
+          }
+        } catch {}
+      };
+      vibPollRef.current = setInterval(poll, 5000);
+      return () => { if (vibPollRef.current) clearInterval(vibPollRef.current); };
+    }, [vibSent, vibReply, profile.id]);
+
+    const vibClose = useCallback(async () => {
+      if (vibPollRef.current) clearInterval(vibPollRef.current);
+      try { await fetch(`/api/cold-messages/sent/${profile.id}`, { method: "DELETE", credentials: "include" }); } catch {}
+      setShowVibCompose(false);
+      setVibSent(false);
+      setVibSentContent("");
+      setVibReply(null);
+      setVibText("");
+      vibCancelRecording?.();
+      vibClearAudio?.();
+    }, [profile.id]);
 
     const [keyboardPadding, setKeyboardPadding] = useState(0);
     const [navHeight, setNavHeight] = useState(130);
@@ -814,10 +847,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const sendColdMsgMutation = useMutation({
       mutationFn: (vars: { toProfileId: string; content: string; mediaUrl?: string; mediaType?: string }) =>
         apiRequest("POST", "/api/cold-messages", vars),
-      onSuccess: () => {
+      onSuccess: (_data: any, vars: any) => {
+        setVibSentContent(vars.content || "");
         setVibSent(true);
         setVibText("");
-        setTimeout(() => { setShowVibCompose(false); setVibSent(false); }, 1800);
+        vibClearAudio();
       },
       onError: () => toast({ title: "Errore", description: "Impossibile inviare il messaggio", variant: "destructive" }),
     });
@@ -1476,7 +1510,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] flex items-end justify-center"
               style={{ paddingBottom: `${navHeight + keyboardPadding}px` }}
-              onClick={() => { setShowVibCompose(false); setVibText(""); setVibSent(false); vibCancelRecording(); vibClearAudio(); }}
+              onClick={vibClose}
               data-testid="vibrapp-compose-overlay"
             >
               <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
@@ -1491,10 +1525,50 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               >
                 <div className="w-10 h-1 bg-teal-400 rounded-full mx-auto mb-4" />
                 {vibSent ? (
-                  <div className="text-center py-6">
-                    <div className="text-5xl mb-3">💬</div>
-                    <p className="text-teal-900 font-bold text-lg">Messaggio inviato!</p>
-                    <p className="text-teal-700 text-sm mt-1">{profile.name} lo vedrà nel Vibrapp</p>
+                  <div className="flex flex-col gap-3">
+                    {/* Header bot */}
+                    <div className="flex items-center gap-3 mb-1">
+                      <img src={profile.imageUrl} alt={profile.name} className="w-9 h-9 rounded-full object-cover border-2 border-teal-600/60" />
+                      <div>
+                        <p className="text-teal-900 font-bold text-sm">{profile.name}</p>
+                        <p className="text-teal-600 text-xs">{vibReply ? "Ha risposto!" : "Sta scrivendo…"}</p>
+                      </div>
+                    </div>
+
+                    {/* Bubble utente */}
+                    {vibSentContent && (
+                      <div className="flex justify-end">
+                        <div className="bg-teal-600 text-white rounded-2xl rounded-tr-sm px-3.5 py-2 max-w-[82%]">
+                          <p className="text-sm leading-relaxed break-words">{vibSentContent}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Risposta bot o indicatore attesa */}
+                    {vibReply ? (
+                      <div className="flex justify-start">
+                        <div className="bg-white border border-teal-200 text-teal-900 rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[82%]">
+                          <p className="text-sm leading-relaxed break-words">{vibReply}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-start">
+                        <div className="bg-white border border-teal-200 rounded-2xl rounded-tl-sm px-4 py-2.5 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chiudi e cancella */}
+                    <button
+                      onClick={vibClose}
+                      className="mt-2 w-full py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
+                      data-testid="button-vib-close"
+                    >
+                      🗑 Chiudi e cancella conversazione
+                    </button>
                   </div>
                 ) : (
                   <>
@@ -1558,7 +1632,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
                     <div className="flex gap-2">
                       <button
-                        onClick={() => { setShowVibCompose(false); setVibText(""); vibCancelRecording(); vibClearAudio(); }}
+                        onClick={vibClose}
                         className="flex-1 py-2.5 rounded-xl border border-teal-400 text-teal-700 text-sm font-medium hover:bg-teal-200 transition-colors"
                         data-testid="button-cancel-vib"
                       >Annulla</button>
