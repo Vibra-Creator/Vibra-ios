@@ -478,11 +478,26 @@ export async function registerRoutes(
       });
 
       const profilesWithDistance = swipable.map(p => {
+        let base: any = { ...p };
+
+        // Per i bot: simula presenza online casuale (50% online, 50% offline con tempo variabile)
+        if (p.isBot) {
+          const now = Date.now();
+          if (Math.random() < 0.5) {
+            // Online: connesso 1–4 minuti fa
+            base.lastActiveAt = new Date(now - (60_000 + Math.random() * 180_000));
+          } else {
+            // Offline: visto 2–72 ore fa (aspetto realistico)
+            const hoursAgo = 2 + Math.random() * 70;
+            base.lastActiveAt = new Date(now - hoursAgo * 3_600_000);
+          }
+        }
+
         if (myProfile?.profileLatitude && myProfile?.profileLongitude && p.profileLatitude && p.profileLongitude) {
           const dist = haversineKm(myProfile.profileLatitude, myProfile.profileLongitude, p.profileLatitude, p.profileLongitude);
-          return { ...p, distanceKm: Math.round(dist) };
+          base.distanceKm = Math.round(dist);
         }
-        return p;
+        return base;
       });
 
       res.json({ profiles: profilesWithDistance, likedIds });

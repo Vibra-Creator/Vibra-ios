@@ -31,10 +31,9 @@ function getActivityStatus(lastActiveAt: string | Date | null | undefined, t: (k
 
   if (diffMin < 5) return { label: t("swipe.activeNow"), color: "bg-green-500", isOnline: true };
   if (diffMin < 60) return { label: `${diffMin} ${t("swipe.minAgo")}`, color: "bg-green-400", isOnline: true };
-  if (diffHours < 2) return { label: t("swipe.hourAgo"), color: "bg-yellow-400", isOnline: false };
-  if (diffHours < 6) return { label: `${diffHours} ${t("swipe.hoursAgo")}`, color: "bg-yellow-500", isOnline: false };
-  if (diffHours < 24) return { label: `${diffHours} ${t("swipe.hoursAgo")}`, color: "bg-orange-400", isOnline: false };
-  if (diffDays < 3) return { label: `${diffDays}${t("swipe.daysAgo")}`, color: "bg-orange-500", isOnline: false };
+  if (diffHours < 2) return { label: `Visto ${t("swipe.hourAgo")}`, color: "bg-gray-400", isOnline: false };
+  if (diffHours < 24) return { label: `Visto ${diffHours} ${t("swipe.hoursAgo")}`, color: "bg-gray-400", isOnline: false };
+  if (diffDays < 7) return { label: `Visto ${diffDays}${t("swipe.daysAgo")}`, color: "bg-gray-500", isOnline: false };
   return { label: "", color: "", isOnline: false };
 }
 
