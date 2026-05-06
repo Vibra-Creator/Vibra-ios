@@ -137,6 +137,46 @@ REGOLE IMPORTANTI:
   }
 }
 
+// Genera il primo messaggio del bot dopo un match (mai ripetuto, personalizzato)
+async function generateBotOpener(botProfile: any, userProfile: any): Promise<string> {
+  try {
+    const systemPrompt = `Sei ${botProfile.name}, ${botProfile.gender === "Uomo" ? "un ragazzo" : "una ragazza"} di ${botProfile.age} anni che vive a ${botProfile.location}. ${botProfile.bio || ""}
+I tuoi interessi sono: ${(botProfile.interests || []).join(", ")}.
+${botProfile.communicationStyle ? `Stile comunicativo: ${botProfile.communicationStyle}.` : ""}
+
+Hai appena fatto match su un'app di incontri con ${userProfile.name}, ${userProfile.age} anni${userProfile.location ? ` di ${userProfile.location}` : ""}.
+
+REGOLE:
+- Scrivi UN solo primo messaggio breve e naturale (1-2 frasi max).
+- Usa italiano colloquiale, stile WhatsApp.
+- Sii ${botProfile.gender === "Uomo" ? "spontaneo e genuino" : "spontanea e genuina"}, non troppo formale né troppo entusiasta.
+- Puoi fare riferimento a qualcosa di specifico del tuo profilo o degli interessi in comune, oppure fare una domanda leggera.
+- NON dire "Ciao [nome]!" come prima parola — sii originale.
+- Usa al massimo 1 emoji oppure nessuna.
+- Non rivelare mai di essere un bot.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: "[Invia il tuo primo messaggio dopo il match]" },
+      ],
+      max_tokens: 80,
+      temperature: 1.0,
+    });
+    return response.choices[0]?.message?.content?.trim() || "Ciao! Bello fare match con te 😊";
+  } catch {
+    const fallbacks = [
+      "Ciao! Finalmente un match interessante 😊",
+      "Ehi, piacere di conoscerti!",
+      "Ciao! Cosa ti ha convinto a swipare? 😄",
+      "Oh ciao! Speravo in un match così",
+      "Ehi! Dimmi qualcosa di te",
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+}
+
 const uploadsDir = path.join(process.cwd(), "uploads");
 fs.mkdirSync(path.join(uploadsDir, "profiles"), { recursive: true });
 fs.mkdirSync(path.join(uploadsDir, "challenges"), { recursive: true });
@@ -1055,6 +1095,32 @@ export async function registerRoutes(
                     ON CONFLICT (real_profile_id, match_date) DO NOTHING`
               );
               console.log(`[SWIPE] BOT MATCH (random) ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+
+              // ── Bot invia il primo messaggio dopo il match (30–90 secondi) ─
+              const botMatchId = matchData.id;
+              const botProfileForOpener = swipedProfile;
+              const openerDelayMs = 30_000 + Math.random() * 60_000;
+              setTimeout(async () => {
+                try {
+                  const realUserProfile = await storage.getProfile(validatedData.swiperId);
+                  if (!realUserProfile) return;
+                  const opener = await generateBotOpener(botProfileForOpener, realUserProfile);
+                  await storage.createMessage({
+                    matchId: botMatchId,
+                    senderId: botProfileForOpener.id,
+                    content: opener,
+                  });
+                  sendPushToProfile(validatedData.swiperId, {
+                    title: `💫 ${botProfileForOpener.name} ti ha scritto!`,
+                    body: opener.substring(0, 100),
+                    icon: "/icons/icon-192.png",
+                    url: `/chat/${botMatchId}`,
+                  });
+                  console.log(`[BOT] Opener inviato da ${botProfileForOpener.name} → match ${botMatchId}`);
+                } catch (err) {
+                  console.error("[BOT] Opener error:", err);
+                }
+              }, openerDelayMs);
             } else {
               console.log(`[SWIPE] Bot like recorded, no match today (used=${alreadyUsed}, lucky=${lucky})`);
             }
