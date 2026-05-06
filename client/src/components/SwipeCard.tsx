@@ -929,12 +929,24 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         setVibSent(true);
         setVibText("");
         vibClearAudio();
-        // Bot va online tra 45-70s (prima che risponda, che avviene tra 60-120s)
-        const onlineDelay = 45_000 + Math.random() * 25_000;
-        // Inizia a scrivere 10-20s dopo essere andato online
-        const typingDelay = onlineDelay + 10_000 + Math.random() * 10_000;
-        vibOnlineTimerRef.current = setTimeout(() => setVibBotOnline(true), onlineDelay);
-        vibTypingTimerRef.current = setTimeout(() => setVibShowTyping(true), typingDelay);
+
+        // Se il bot era già online (lastActiveAt < 60 min) i puntini arrivano prima
+        const laa = (profile as any).lastActiveAt;
+        const diffMin = laa ? (Date.now() - new Date(laa).getTime()) / 60000 : 999;
+        const alreadyOnline = diffMin < 60;
+
+        if (alreadyOnline) {
+          // Bot già online — inizia a scrivere in 5-15s
+          setVibBotOnline(true);
+          const typingDelay = 5_000 + Math.random() * 10_000;
+          vibTypingTimerRef.current = setTimeout(() => setVibShowTyping(true), typingDelay);
+        } else {
+          // Bot offline — va online tra 45-70s, poi scrive
+          const onlineDelay = 45_000 + Math.random() * 25_000;
+          const typingDelay = onlineDelay + 10_000 + Math.random() * 10_000;
+          vibOnlineTimerRef.current = setTimeout(() => setVibBotOnline(true), onlineDelay);
+          vibTypingTimerRef.current = setTimeout(() => setVibShowTyping(true), typingDelay);
+        }
       },
       onError: () => toast({ title: "Errore", description: "Impossibile inviare il messaggio", variant: "destructive" }),
     });
@@ -1297,6 +1309,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => {
                       e.stopPropagation(); e.preventDefault();
+                      // Se il profilo risulta già online (lastActiveAt < 60 min), mostralo subito online
+                      const laa = (profile as any).lastActiveAt;
+                      if (laa) {
+                        const diffMin = (Date.now() - new Date(laa).getTime()) / 60000;
+                        if (diffMin < 60) { setVibBotOnline(true); setVibShowTyping(false); }
+                      }
                       setShowVibCompose(true);
                     }}
                     className="flex flex-col items-center gap-0.5"
