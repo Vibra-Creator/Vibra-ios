@@ -1,4 +1,4 @@
-const CACHE_VERSION = 32;
+const CACHE_VERSION = 33;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -75,16 +75,17 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/';
+  const relUrl = event.notification.data?.url || '/';
+  // client.navigate e clients.openWindow richiedono URL assoluti
+  const absUrl = relUrl.startsWith('http') ? relUrl : (self.location.origin + relUrl);
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(url);
-          return client.focus();
+          return client.navigate(absUrl).then(() => client.focus());
         }
       }
-      return clients.openWindow(url);
+      return clients.openWindow(absUrl);
     })
   );
 });

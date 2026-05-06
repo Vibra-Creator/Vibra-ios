@@ -251,6 +251,32 @@ export default function Vibrapp() {
           setIntroColdStatus("idle");
           setIntroCheckDone(false);
         } catch {}
+      } else {
+        // Sessione nuova (es. tap su notifica push): recupera il cold message dall'API
+        fetch(`/api/cold-messages/${coldMessageId}`, { credentials: "include" })
+          .then(r => r.ok ? r.json() : null)
+          .then((data: any) => {
+            if (!data || !data.otherProfile) return;
+            const target: IntroTarget = {
+              id: data.otherProfile.id,
+              name: data.otherProfile.name,
+              age: data.otherProfile.age,
+              imageUrl: data.otherProfile.imageUrl || "",
+            };
+            // Salva in sessionStorage per uso futuro
+            sessionStorage.setItem(`vibrapp_intro_${coldMessageId}`, JSON.stringify(target));
+            setIntroTarget(target);
+            if (data.replied && data.privateRoomId) {
+              setIntroColdStatus("replied");
+              setIntroPrivateRoomId(data.privateRoomId);
+            } else {
+              setIntroColdStatus(data.isSentByMe ? "already_exists" : "idle");
+            }
+            if (data.content) setIntroSentContent(data.content);
+            if (data.createdAt) setIntroSentAt(data.createdAt);
+            setIntroCheckDone(true);
+          })
+          .catch(() => {});
       }
     }
   }, [searchString]);

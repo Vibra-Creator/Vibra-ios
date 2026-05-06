@@ -4046,6 +4046,32 @@ REGOLE IMPORTANTI:
     }
   });
 
+  // Recupera cold message per ID (usato dal deeplink da notifica push)
+  app.get("/api/cold-messages/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const msg = await storage.getColdMessageById(req.params.id);
+      if (!msg) return res.status(404).json({ error: "Messaggio non trovato" });
+      // Autorizzato solo se è il mittente o il destinatario
+      if (msg.fromProfileId !== myProfile.id && msg.toProfileId !== myProfile.id) {
+        return res.status(403).json({ error: "Non autorizzato" });
+      }
+      // Restituisce anche il profilo dell'altra persona
+      const otherProfileId = msg.fromProfileId === myProfile.id ? msg.toProfileId : msg.fromProfileId;
+      const otherProfile = await storage.getProfile(otherProfileId);
+      res.json({
+        ...msg,
+        otherProfile: otherProfile ? { id: otherProfile.id, name: otherProfile.name, age: otherProfile.age, imageUrl: otherProfile.imageUrl } : null,
+        isSentByMe: msg.fromProfileId === myProfile.id,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
   app.post("/api/cold-messages/:id/reply", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.session?.userId;
