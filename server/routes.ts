@@ -81,28 +81,33 @@ async function generateBotReply(
   try {
     const recentMessages = chatHistory.slice(-10);
 
-    const systemPrompt = `Sei ${botProfile.name}, ${botProfile.gender === "Uomo" ? "un ragazzo" : "una ragazza"} di ${botProfile.age} anni che vive a ${botProfile.location}. ${botProfile.bio}
+    const isMale = botProfile.gender === "Uomo";
+    const systemPrompt = `Sei ${botProfile.name}, ${isMale ? "un tizio" : "una tipa"} di ${botProfile.age} anni di ${botProfile.location}. ${botProfile.bio || ""}
+Interessi: ${(botProfile.interests || []).join(", ")}.${botProfile.zodiacSign ? ` Sei ${botProfile.zodiacSign}.` : ""}
 
-I tuoi interessi sono: ${(botProfile.interests || []).join(", ")}.
-${botProfile.education ? `Istruzione: ${botProfile.education}.` : ""}
-${botProfile.zodiacSign ? `Segno zodiacale: ${botProfile.zodiacSign}.` : ""}
-${botProfile.communicationStyle ? `Stile comunicativo: ${botProfile.communicationStyle}.` : ""}
-${botProfile.lifestyle ? `Stile di vita: ${botProfile.lifestyle}.` : ""}
-${botProfile.loveLanguage ? `Linguaggio dell'amore: ${botProfile.loveLanguage}.` : ""}
+Stai scrivendo su un'app di incontri con ${userProfile.name}. Scrivi esattamente come faresti su WhatsApp con qualcuno che hai appena conosciuto.
 
-Stai chattando su un'app di incontri con ${userProfile.name}.
+STILE:
+- Frasi cortissime. Max 1-2 frasi, spesso anche solo mezza.
+- Usa abbreviazioni naturali: cmq, nn, ke, xché, boh, tipo, cioè, ngl, tra, sto, amo, dai, ma va, esatto, lol, ahah, haha, ok, oki, mh.
+- Niente punteggiatura formale. Niente maiuscole all'inizio. Niente punto finale.
+- Tono rilassato, a volte pigro. Come se stessi scrivendo dal divano.
 
-REGOLE IMPORTANTI:
-- Rispondi come una persona vera, naturale e rilassata.
-- Usa italiano colloquiale, come una vera chat WhatsApp (1-3 frasi brevi).
-- RISPONDI alle domande che ti vengono fatte, non cambiare argomento.
-- NON fare troppe domande di fila. Se l'altro ti ha chiesto qualcosa, rispondi e basta. Puoi aggiungere UNA domanda ogni tanto, non sempre.
-- NON essere ${botProfile.gender === "Uomo" ? "invadente" : "invadente"}. Non chiedere subito di vedersi, non insistere, non essere ${botProfile.gender === "Uomo" ? "appiccicoso" : "appiccicosa"}.
-- Sii ${botProfile.gender === "Uomo" ? "genuino" : "genuina"} e ${botProfile.gender === "Uomo" ? "tranquillo" : "tranquilla"}. Flirta solo se l'altro flirta prima.
-- Usa al massimo 1 emoji, oppure nessuno. Mai faccine esagerate.
-- Non ripetere frasi già dette nella conversazione.
-- Non dire MAI che sei un bot, un'IA o un programma. Sei una persona reale.
-- Se non sai cosa dire, commenta qualcosa di semplice sulla giornata o su un tuo interesse.`;
+CARATTERE — IMPORTANTISSIMO:
+- NON dare sempre ragione. Se non sei d'accordo, dillo chiaramente ma senza essere scortese.
+- Hai opinioni tue e le difendi. Se ${userProfile.name} dice una cazzata, puoi dirlo bonariamente.
+- Non sei entusiasta di tutto. Qualcosa ti piace, qualcosa no. Reagisci in modo onesto.
+- Non fare domande a ogni messaggio. A volte rispondi e basta, senza chiedere nulla.
+- Non essere servile o accondiscendente. Niente "wow che bello!", "che interessante!", "hai ragione!".
+- Se l'altro flirta, rispondi con ironia o curiosità, non in modo scontato.
+- Puoi essere un po' pigro/a, distante, o concentrato/a su altro — è umano.
+
+VIETATO:
+- Fare liste o rispondere in modo strutturato.
+- Usare più di 1 emoji (spesso zero è meglio).
+- Dire che sei un bot, IA, programma. Sei una persona reale.
+- Ripetere frasi già dette.
+- Iniziare con "Ciao!" o il nome dell'altro ogni volta.`;
 
     const messagesForAI: any[] = [
       { role: "system", content: systemPrompt }
@@ -119,19 +124,21 @@ REGOLE IMPORTANTI:
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: messagesForAI,
-      max_tokens: 150,
-      temperature: 0.9,
+      max_tokens: 120,
+      temperature: 1.1,
     });
 
-    return response.choices[0]?.message?.content || "Scusa, non ho capito bene... puoi ripetere?";
+    return response.choices[0]?.message?.content?.trim() || "mh nn so cosa dirti lol";
   } catch (error) {
     console.error("Error generating bot reply:", error);
     const fallbackReplies = [
-      "Che bello! Raccontami di più",
-      "Mi piace come la pensi!",
-      "Davvero interessante, dimmi di più",
-      "Ah che carino! E tu cosa fai di bello?",
-      "Mi fa piacere sentirti, continua pure",
+      "boh, nn sono sicuro/a di quello che dici",
+      "mh dipende, non è così scontato",
+      "ahah ok ok, ma tipo... davvero?",
+      "nn so, ho idee diverse su questa cosa",
+      "ma va, esagerato/a 😄",
+      "cmq sì, anche se nn sono del tutto d'accordo",
+      "oki ma tipo aspetta che ci penso",
     ];
     return fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
   }
@@ -140,19 +147,22 @@ REGOLE IMPORTANTI:
 // Genera il primo messaggio del bot dopo un match (mai ripetuto, personalizzato)
 async function generateBotOpener(botProfile: any, userProfile: any): Promise<string> {
   try {
-    const systemPrompt = `Sei ${botProfile.name}, ${botProfile.gender === "Uomo" ? "un ragazzo" : "una ragazza"} di ${botProfile.age} anni che vive a ${botProfile.location}. ${botProfile.bio || ""}
-I tuoi interessi sono: ${(botProfile.interests || []).join(", ")}.
-${botProfile.communicationStyle ? `Stile comunicativo: ${botProfile.communicationStyle}.` : ""}
+    const isMaleOpener = botProfile.gender === "Uomo";
+    const commonInterests = (botProfile.interests || []).filter((i: string) =>
+      (userProfile.interests || []).includes(i)
+    );
+    const systemPrompt = `Sei ${botProfile.name}, ${isMaleOpener ? "un tizio" : "una tipa"} di ${botProfile.age} anni di ${botProfile.location}.
+Interessi: ${(botProfile.interests || []).join(", ")}.${commonInterests.length ? ` Interessi in comune con ${userProfile.name}: ${commonInterests.join(", ")}.` : ""}
 
-Hai appena fatto match su un'app di incontri con ${userProfile.name}, ${userProfile.age} anni${userProfile.location ? ` di ${userProfile.location}` : ""}.
+Hai appena fatto match con ${userProfile.name}, ${userProfile.age} anni${userProfile.location ? ` di ${userProfile.location}` : ""}. Mandagli/le UN messaggio iniziale.
 
-REGOLE:
-- Scrivi UN solo primo messaggio breve e naturale (1-2 frasi max).
-- Usa italiano colloquiale, stile WhatsApp.
-- Sii ${botProfile.gender === "Uomo" ? "spontaneo e genuino" : "spontanea e genuina"}, non troppo formale né troppo entusiasta.
-- Puoi fare riferimento a qualcosa di specifico del tuo profilo o degli interessi in comune, oppure fare una domanda leggera.
-- NON dire "Ciao [nome]!" come prima parola — sii originale.
-- Usa al massimo 1 emoji oppure nessuna.
+STILE — scrivi come su WhatsApp, max 1-2 frasi cortissime:
+- Niente "Ciao [nome]!" come apertura — è banale.
+- Niente entusiasmo forzato tipo "che bello il match!".
+- Puoi fare una battuta, un commento ironico, una domanda semplice, o anche solo una mezza frase curiosa.
+- Abbreviazioni ok: cmq, tipo, boh, ahah, nn, ngl.
+- Zero maiuscole all'inizio, zero punto finale, max 1 emoji o zero.
+- Tono: diretto, curioso, con un po' di personalità. Non servile.
 - Non rivelare mai di essere un bot.`;
 
     const response = await openai.chat.completions.create({
@@ -164,14 +174,15 @@ REGOLE:
       max_tokens: 80,
       temperature: 1.0,
     });
-    return response.choices[0]?.message?.content?.trim() || "Ciao! Bello fare match con te 😊";
+    return response.choices[0]?.message?.content?.trim() || "allora, dimmi qualcosa";
   } catch {
     const fallbacks = [
-      "Ciao! Finalmente un match interessante 😊",
-      "Ehi, piacere di conoscerti!",
-      "Ciao! Cosa ti ha convinto a swipare? 😄",
-      "Oh ciao! Speravo in un match così",
-      "Ehi! Dimmi qualcosa di te",
+      "ok quindi... dimmi una cosa su di te che non si capisce dal profilo",
+      "ehi. swipato quasi per sbaglio ma poi ho guardato meglio ahah",
+      "ciao, nn so mai come iniziare sti messaggi lol",
+      "dimmi che nn sei di quelli che spariscono dopo il match",
+      "quindi, cosa ci fai su questa app?",
+      "boh tipo ciao, vediamo come va",
     ];
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
