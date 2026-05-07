@@ -3925,62 +3925,76 @@ REGOLE IMPORTANTI:
             type: "vibrapp",
           });
 
-          // Se il destinatario è un bot: risposta rapida (45–90s) + like back + possibile match
+          // Se il destinatario è un bot: risposta proporzionale alla lunghezza del testo
           if (targetProfile.isBot && result.coldMessage) {
             const coldMsgId = result.coldMessage.id;
-            const delayMs = 60_000 + Math.random() * 60_000; // 60–120 secondi
-            setTimeout(async () => {
+            // Genera subito la risposta per calcolare il delay realistico dalla lunghezza
+            (async () => {
               try {
-                // 1. Genera risposta
                 const chatHistory = [{ senderId: myProfile.id, content: (content || "").trim() }];
                 const botReplyText = await generateBotReply(targetProfile, myProfile, chatHistory);
-                const replyResult = await storage.replyColdMessage(coldMsgId, botReplyText);
-                sendPushToProfile(myProfile.id, {
-                  title: `🛸 ${targetProfile.name} ha risposto!`,
-                  body: botReplyText.substring(0, 100),
-                  icon: "/icons/icon-192.png",
-                  url: `/vibrapp?coldMessageId=${coldMsgId}`,
-                  type: "vibrapp",
-                });
-                console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name}`);
 
-                // 2. Bot mette like all'utente (se non lo ha già fatto)
-                const existingBotLike = await storage.getSwipe(targetProfile.id, myProfile.id);
-                if (!existingBotLike) {
-                  await storage.createSwipe({ swiperId: targetProfile.id, swipedId: myProfile.id, liked: true });
-                }
+                // Delay proporzionale: ~3.5 chars/sec (velocità di scrittura realistica)
+                // min 8s, max 40s di "digitazione" + tempo di lettura/online
+                const typingMs = Math.max(8_000, Math.min(40_000, botReplyText.length * 285));
+                // 50% bot online (legge subito, 3-8s), 50% offline (si connette in 30-55s)
+                const botOnline = Math.random() < 0.5;
+                const readDelay = botOnline
+                  ? 3_000 + Math.random() * 5_000
+                  : 30_000 + Math.random() * 25_000;
+                const totalDelay = readDelay + typingMs;
 
-                // 3. Controlla se l'utente aveva già messo like al bot → crea match
-                const userAlreadyLiked = await storage.getSwipe(myProfile.id, targetProfile.id);
-                const existingMatch = await storage.getMatch(myProfile.id, targetProfile.id);
-                if (userAlreadyLiked?.liked && !existingMatch) {
-                  const newMatch = await storage.createMatch({
-                    profile1Id: myProfile.id,
-                    profile2Id: targetProfile.id,
-                  });
-                  // Opener del bot nella nuova chat
-                  const opener = await generateBotOpener(targetProfile, myProfile);
-                  await storage.createMessage({ matchId: newMatch.id, senderId: targetProfile.id, content: opener });
-                  sendPushToProfile(myProfile.id, {
-                    title: `💫 Match con ${targetProfile.name}!`,
-                    body: opener.substring(0, 100),
-                    icon: "/icons/icon-192.png",
-                    url: `/chat/${newMatch.id}`,
-                  });
-                  console.log(`[BOT] Match creato dopo cold message: ${targetProfile.name} <-> ${myProfile.name}`);
-                } else if (!userAlreadyLiked?.liked) {
-                  // Utente non ha ancora swipato il bot → notifica il like ricevuto
-                  sendPushToProfile(myProfile.id, {
-                    title: `❤️ ${targetProfile.name} ti ha messo like!`,
-                    body: "Swipa per fare match e continuare a chattare",
-                    icon: "/icons/icon-192.png",
-                    url: "/",
-                  });
-                }
+                setTimeout(async () => {
+                    try {
+                      const replyResult = await storage.replyColdMessage(coldMsgId, botReplyText);
+                      sendPushToProfile(myProfile.id, {
+                        title: `🛸 ${targetProfile.name} ha risposto!`,
+                        body: botReplyText.substring(0, 100),
+                        icon: "/icons/icon-192.png",
+                        url: `/vibrapp?coldMessageId=${coldMsgId}`,
+                        type: "vibrapp",
+                      });
+                      console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name} (delay=${Math.round(totalDelay/1000)}s)`);
+
+                      // 2. Bot mette like all'utente (se non lo ha già fatto)
+                      const existingBotLike = await storage.getSwipe(targetProfile.id, myProfile.id);
+                      if (!existingBotLike) {
+                        await storage.createSwipe({ swiperId: targetProfile.id, swipedId: myProfile.id, liked: true });
+                      }
+
+                      // 3. Controlla se l'utente aveva già messo like al bot → crea match
+                      const userAlreadyLiked = await storage.getSwipe(myProfile.id, targetProfile.id);
+                      const existingMatch = await storage.getMatch(myProfile.id, targetProfile.id);
+                      if (userAlreadyLiked?.liked && !existingMatch) {
+                        const newMatch = await storage.createMatch({
+                          profile1Id: myProfile.id,
+                          profile2Id: targetProfile.id,
+                        });
+                        const opener = await generateBotOpener(targetProfile, myProfile);
+                        await storage.createMessage({ matchId: newMatch.id, senderId: targetProfile.id, content: opener });
+                        sendPushToProfile(myProfile.id, {
+                          title: `💫 Match con ${targetProfile.name}!`,
+                          body: opener.substring(0, 100),
+                          icon: "/icons/icon-192.png",
+                          url: `/chat/${newMatch.id}`,
+                        });
+                        console.log(`[BOT] Match creato dopo cold message: ${targetProfile.name} <-> ${myProfile.name}`);
+                      } else if (!userAlreadyLiked?.liked) {
+                        sendPushToProfile(myProfile.id, {
+                          title: `❤️ ${targetProfile.name} ti ha messo like!`,
+                          body: "Swipa per fare match e continuare a chattare",
+                          icon: "/icons/icon-192.png",
+                          url: "/",
+                        });
+                      }
+                    } catch (innerErr) {
+                      console.error("[BOT] Cold message save-reply error:", innerErr);
+                    }
+                  }, totalDelay);
               } catch (botErr) {
                 console.error("[BOT] Cold message auto-reply error:", botErr);
               }
-            }, delayMs);
+            })();
           }
         }
       }

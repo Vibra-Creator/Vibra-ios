@@ -670,7 +670,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       if (vibRoomPollRef.current) clearInterval(vibRoomPollRef.current);
       if (vibOnlineTimerRef.current) clearTimeout(vibOnlineTimerRef.current);
       if (vibTypingTimerRef.current) clearTimeout(vibTypingTimerRef.current);
-      try { await fetch(`/api/cold-messages/sent/${profile.id}`, { method: "DELETE", credentials: "include" }); } catch {}
+      // NON cancellare il cold message: il bot risponde comunque e manda la notifica push
       setShowVibCompose(false);
       setVibSent(false);
       setVibSentContent("");
@@ -936,14 +936,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         const alreadyOnline = diffMin < 60;
 
         if (alreadyOnline) {
-          // Bot già online — inizia a scrivere in 5-15s
+          // Bot già online — legge subito, inizia a scrivere in 3-8s
           setVibBotOnline(true);
-          const typingDelay = 5_000 + Math.random() * 10_000;
+          const typingDelay = 3_000 + Math.random() * 5_000;
           vibTypingTimerRef.current = setTimeout(() => setVibShowTyping(true), typingDelay);
         } else {
-          // Bot offline — va online tra 45-70s, poi scrive
-          const onlineDelay = 45_000 + Math.random() * 25_000;
-          const typingDelay = onlineDelay + 10_000 + Math.random() * 10_000;
+          // Bot offline — va online tra 35-60s, poi scrive dopo 4-8s
+          const onlineDelay = 35_000 + Math.random() * 25_000;
+          const typingDelay = onlineDelay + 4_000 + Math.random() * 4_000;
           vibOnlineTimerRef.current = setTimeout(() => setVibBotOnline(true), onlineDelay);
           vibTypingTimerRef.current = setTimeout(() => setVibShowTyping(true), typingDelay);
         }
