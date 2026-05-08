@@ -942,7 +942,7 @@ export default function Vibrapp() {
               <p className="text-white/30 text-xs text-right">{introText.length}/500</p>
               <Button
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 text-base font-semibold rounded-xl"
-                disabled={introText.trim().length < 10 || sendColdMsgMutation.isPending}
+                disabled={!introText.trim() || sendColdMsgMutation.isPending}
                 onClick={() => sendColdMsgMutation.mutate({ toProfileId: introTarget.id, content: introText })}
                 data-testid="button-send-dm-intro"
               >
@@ -1605,12 +1605,10 @@ export default function Vibrapp() {
                   />
                   <div className="flex items-center justify-between mb-3">
                     <span
-                      className={`text-xs transition-colors ${introText.trim().length < 10 ? "text-orange-400" : "text-white/30"}`}
+                      className={`text-xs transition-colors ${!introText.trim() ? "text-orange-400" : "text-white/30"}`}
                       data-testid="text-intro-char-count"
                     >
-                      {introText.trim().length < 10
-                        ? `min. 10 caratteri — ${introText.trim().length}/500`
-                        : `${introText.trim().length}/500`}
+                      {introText.trim() ? `${introText.trim().length}/500` : "scrivi un messaggio"}
                     </span>
                     <button
                       onClick={introStartRecording}
@@ -1630,7 +1628,7 @@ export default function Vibrapp() {
                 </Button>
                 <Button
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white"
-                  disabled={(!introAudioFile && introText.trim().length < 10) || sendColdMsgMutation.isPending || introIsUploading || introIsRecording}
+                  disabled={(!introAudioFile && !introText.trim()) || sendColdMsgMutation.isPending || introIsUploading || introIsRecording}
                   onClick={introSubmit}
                   data-testid="button-confirm-intro"
                 >
