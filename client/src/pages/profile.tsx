@@ -830,33 +830,28 @@ export default function ProfilePage() {
             {t("profile.guide")}
           </Button>
           {!pushSupported ? (
-            <div
-              className="w-full flex flex-col gap-1 rounded-lg border border-white/20 bg-white/5 px-4 py-3"
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3"
+              onClick={() => toast({
+                title: "Notifiche non disponibili",
+                description: 'Su iPhone: tocca Condividi → "Aggiungi a schermata Home". Su Android usa Chrome.',
+              })}
               data-testid="button-push-notifications"
             >
-              <div className="flex items-center gap-3 text-white/80">
-                <BellOff className="w-5 h-5 shrink-0 text-white/60" />
-                <span className="text-sm font-medium">Notifiche non disponibili</span>
-              </div>
-              <p className="text-xs text-white/50 pl-8 leading-relaxed">
-                Per ricevere notifiche, installa Vibra come app: tocca{" "}
-                <strong className="text-white/70">Condividi → Aggiungi a schermata Home</strong>{" "}
-                su iPhone, oppure usa Chrome su Android.
-              </p>
-            </div>
+              <Bell className="w-5 h-5" />
+              {t("push.enable")}
+            </Button>
           ) : pushPermission === "denied" ? (
-            <div
-              className="w-full flex flex-col gap-1 rounded-lg border border-yellow-400/30 bg-yellow-400/5 px-4 py-3"
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 text-yellow-400 border-yellow-400/30"
+              onClick={() => toast({ title: t("push.denied"), variant: "destructive" })}
               data-testid="button-push-notifications"
             >
-              <div className="flex items-center gap-3 text-yellow-300">
-                <BellOff className="w-5 h-5 shrink-0" />
-                <span className="text-sm font-medium">Notifiche bloccate</span>
-              </div>
-              <p className="text-xs text-yellow-200/60 pl-8 leading-relaxed">
-                Vai nelle impostazioni del browser e consenti le notifiche per Vibra.
-              </p>
-            </div>
+              <BellOff className="w-5 h-5" />
+              {t("push.enable")}
+            </Button>
           ) : (
             <Button
               variant="outline"
