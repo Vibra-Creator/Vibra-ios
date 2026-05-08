@@ -709,12 +709,12 @@ export default function ProfilePage() {
               <Sparkles className="w-3 h-3 mr-1" />
               {profile.alienType}
             </Badge>
-            <h1 className="text-2xl font-bold text-white" data-testid="user-profile-name">
+            <h1 className="text-3xl font-bold text-white" data-testid="user-profile-name">
               {profile.name}, {profile.age}
             </h1>
             <div className="flex items-center gap-1 text-white/80">
               <MapPin className="w-4 h-4" />
-              <span className="text-sm">{profile.location}</span>
+              <span className="text-base">{profile.location}</span>
             </div>
           </div>
         </div>
@@ -741,8 +741,8 @@ export default function ProfilePage() {
             >
               <div className="text-center p-4">
                 <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
-                <div className="text-xs text-white/60">{stat.label}</div>
+                <div className="text-3xl font-bold text-white">{stat.value}</div>
+                <div className="text-sm text-white/60">{stat.label}</div>
               </div>
             </motion.div>
           ))}
@@ -750,17 +750,17 @@ export default function ProfilePage() {
 
         <div className="space-y-4">
           <div>
-            <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
+            <h3 className="text-base font-semibold mb-2 flex items-center gap-2 text-white">
               <User className="w-4 h-4 text-primary" />
               {t("profile.bio")}
             </h3>
-            <p className="text-white/60 text-sm" data-testid="user-profile-bio">
+            <p className="text-white/60 text-base" data-testid="user-profile-bio">
               {profile.bio}
             </p>
           </div>
           
           <div>
-            <h3 className="font-semibold mb-2 flex items-center gap-2 text-white">
+            <h3 className="text-base font-semibold mb-2 flex items-center gap-2 text-white">
               <Sparkles className="w-4 h-4 text-secondary" />
               {t("profile.interests")}
             </h3>
@@ -799,7 +799,7 @@ export default function ProfilePage() {
                     </div>
                     <span className="absolute -bottom-1 -right-1 text-lg leading-none">{REACTION_EMOJI[r.reaction] ?? r.reaction}</span>
                   </div>
-                  <span className="text-[10px] text-white/70 truncate max-w-[56px]">{r.fromProfile.name}</span>
+                  <span className="text-xs text-white/70 truncate max-w-[56px]">{r.fromProfile.name}</span>
                 </button>
               ))}
             </div>
@@ -813,7 +813,7 @@ export default function ProfilePage() {
         <div className="space-y-2">
           <Button 
             variant="outline" 
-            className="w-full justify-start gap-3"
+            className="w-full justify-start gap-3 text-base h-12"
             onClick={() => setLocation("/profile/edit")}
             data-testid="button-edit-full-profile"
           >
@@ -822,7 +822,7 @@ export default function ProfilePage() {
           </Button>
           <Button 
             variant="outline" 
-            className="w-full justify-start gap-3"
+            className="w-full justify-start gap-3 text-base h-12"
             onClick={() => setLocation("/onboarding")}
             data-testid="button-guide"
           >
@@ -832,7 +832,7 @@ export default function ProfilePage() {
           {!pushSupported ? (
             <Button
               variant="outline"
-              className="w-full justify-start gap-3"
+              className="w-full justify-start gap-3 text-base h-12"
               onClick={() => toast({
                 title: "Notifiche non disponibili",
                 description: 'Su iPhone: tocca Condividi → "Aggiungi a schermata Home". Su Android usa Chrome.',
@@ -845,7 +845,7 @@ export default function ProfilePage() {
           ) : pushPermission === "denied" ? (
             <Button
               variant="outline"
-              className="w-full justify-start gap-3 text-yellow-400 border-yellow-400/30"
+              className="w-full justify-start gap-3 text-base h-12 text-yellow-400 border-yellow-400/30"
               onClick={() => toast({ title: t("push.denied"), variant: "destructive" })}
               data-testid="button-push-notifications"
             >
@@ -855,7 +855,7 @@ export default function ProfilePage() {
           ) : (
             <Button
               variant="outline"
-              className={`w-full justify-start gap-3 ${pushSubscribed ? "text-green-400 border-green-400/30" : ""}`}
+              className={`w-full justify-start gap-3 text-base h-12 ${pushSubscribed ? "text-green-400 border-green-400/30" : ""}`}
               onClick={async () => {
                 if (pushSubscribed) {
                   await pushUnsubscribe();
@@ -874,7 +874,7 @@ export default function ProfilePage() {
           )}
           <Button 
             variant="outline" 
-            className="w-full justify-start gap-3"
+            className="w-full justify-start gap-3 text-base h-12"
             onClick={() => setLocation("/profile/edit")}
             data-testid="button-settings"
           >
@@ -884,7 +884,7 @@ export default function ProfilePage() {
           <ChangePasswordDialog />
           <Button 
             variant="outline" 
-            className="w-full justify-start gap-3 text-red-400 border-red-400/30 hover:text-red-300"
+            className="w-full justify-start gap-3 text-base h-12 text-red-400 border-red-400/30 hover:text-red-300"
             onClick={() => logout()}
             disabled={isLoggingOut}
             data-testid="button-logout"
@@ -895,7 +895,7 @@ export default function ProfilePage() {
 
           <Button 
             variant="outline" 
-            className="w-full justify-start gap-3"
+            className="w-full justify-start gap-3 text-base h-12"
             onClick={handleExportData}
             data-testid="button-export-data"
           >
@@ -907,7 +907,7 @@ export default function ProfilePage() {
             <AlertDialogTrigger asChild>
               <Button 
                 variant="outline" 
-                className="w-full justify-start gap-3 text-red-500 border-red-500/30"
+                className="w-full justify-start gap-3 text-base h-12 text-red-500 border-red-500/30"
                 data-testid="button-delete-profile"
               >
                 <Trash2 className="w-5 h-5" />
@@ -939,7 +939,7 @@ export default function ProfilePage() {
             <AlertDialogTrigger asChild>
               <Button 
                 variant="outline" 
-                className="w-full justify-start gap-3 text-red-600 border-red-600/30"
+                className="w-full justify-start gap-3 text-base h-12 text-red-600 border-red-600/30"
                 data-testid="button-delete-account"
               >
                 <X className="w-5 h-5" />
