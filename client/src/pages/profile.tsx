@@ -829,18 +829,34 @@ export default function ProfilePage() {
             <HelpCircle className="w-5 h-5" />
             {t("profile.guide")}
           </Button>
-          {pushSupported && (
-            <Button 
-              variant="outline" 
+          {!pushSupported ? (
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 text-white/40 border-white/10 cursor-not-allowed"
+              disabled
+              data-testid="button-push-notifications"
+            >
+              <BellOff className="w-5 h-5" />
+              Notifiche non supportate da questo browser
+            </Button>
+          ) : pushPermission === "denied" ? (
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 text-yellow-400 border-yellow-400/30"
+              onClick={() => toast({ title: t("push.denied"), variant: "destructive" })}
+              data-testid="button-push-notifications"
+            >
+              <BellOff className="w-5 h-5" />
+              Notifiche bloccate — abilita dalle impostazioni browser
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
               className={`w-full justify-start gap-3 ${pushSubscribed ? "text-green-400 border-green-400/30" : ""}`}
               onClick={async () => {
                 if (pushSubscribed) {
                   await pushUnsubscribe();
                 } else {
-                  if (pushPermission === "denied") {
-                    toast({ title: t("push.denied"), variant: "destructive" });
-                    return;
-                  }
                   const ok = await pushSubscribe();
                   if (ok) {
                     toast({ title: t("push.success"), description: t("push.successDesc") });
