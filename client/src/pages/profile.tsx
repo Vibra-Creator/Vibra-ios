@@ -884,7 +884,7 @@ export default function ProfilePage() {
           <ChangePasswordDialog />
           <Button 
             variant="outline" 
-            className="w-full justify-start gap-3 text-base h-12 text-red-400 border-red-400/30 hover:text-red-300"
+            className="w-full justify-start gap-3 text-xl h-12 text-black border-red-400/30 hover:text-black"
             onClick={() => logout()}
             disabled={isLoggingOut}
             data-testid="button-logout"
@@ -907,7 +907,7 @@ export default function ProfilePage() {
             <AlertDialogTrigger asChild>
               <Button 
                 variant="outline" 
-                className="w-full justify-start gap-3 text-base h-12 text-red-500 border-red-500/30"
+                className="w-full justify-start gap-3 text-xl h-12 text-black border-red-500/30"
                 data-testid="button-delete-profile"
               >
                 <Trash2 className="w-5 h-5" />
@@ -939,7 +939,7 @@ export default function ProfilePage() {
             <AlertDialogTrigger asChild>
               <Button 
                 variant="outline" 
-                className="w-full justify-start gap-3 text-base h-12 text-red-600 border-red-600/30"
+                className="w-full justify-start gap-3 text-xl h-12 text-black border-red-600/30"
                 data-testid="button-delete-account"
               >
                 <X className="w-5 h-5" />
