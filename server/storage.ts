@@ -1043,6 +1043,7 @@ export class DatabaseStorage implements IStorage {
   async getColdMessageBetween(fromProfileId: string, toProfileId: string): Promise<ColdMessage | null> {
     const [msg] = await db.select().from(coldMessages)
       .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
+      .orderBy(desc(coldMessages.createdAt))
       .limit(1);
     return msg ?? null;
   }
