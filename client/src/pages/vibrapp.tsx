@@ -202,6 +202,32 @@ export default function Vibrapp() {
     setColdMsgDeleteConfirm(false);
   }, []);
 
+  const refreshSelectedColdMessage = useCallback(async (msg: ReceivedColdMsg) => {
+    const res = await fetch(`/api/cold-messages/${msg.id}`, { credentials: "include" });
+    if (!res.ok) {
+      setSelectedColdMsg(msg);
+      setReplyText("");
+      setColdMsgDeleteConfirm(false);
+      return;
+    }
+    const data = await res.json();
+    if (data?.otherProfile) {
+      setSelectedColdMsg({
+        ...msg,
+        content: data.content ?? msg.content,
+        mediaUrl: data.mediaUrl ?? msg.mediaUrl,
+        mediaType: data.mediaType ?? msg.mediaType,
+        replied: data.replied ?? msg.replied,
+        replyContent: data.replyContent ?? msg.replyContent,
+        privateRoomId: data.privateRoomId ?? msg.privateRoomId,
+      });
+    } else {
+      setSelectedColdMsg(msg);
+    }
+    setReplyText("");
+    setColdMsgDeleteConfirm(false);
+  }, []);
+
   const [coldMsgDeleteConfirm, setColdMsgDeleteConfirm] = useState(false);
 
   const deleteColdMsgMutation = useMutation({
@@ -1063,7 +1089,7 @@ export default function Vibrapp() {
             {receivedColdMsgs.filter(m => !m.replied).map(msg => (
               <button
                 key={msg.id}
-                onClick={() => openColdMessage(msg)}
+                onClick={() => { void refreshSelectedColdMessage(msg); }}
                 className="flex flex-col items-center gap-1 shrink-0"
                 data-testid={`intro-bubble-${msg.id}`}
               >
