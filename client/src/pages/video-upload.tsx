@@ -137,11 +137,16 @@ export default function VideoUpload() {
         gifOverlayUrl: selectedGif || null,
       });
 
+      // Imposta automaticamente come video principale della card
+      await apiRequest("POST", "/api/profiles/set-main-video", { videoUrl: objectPath });
+
       queryClient.invalidateQueries({ queryKey: ["/api/profiles", myProfile.id, "videos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-profile"] });
-      toast({ title: "Video pubblicato! 🎉", description: "Il tuo video è ora visibile nel profilo." });
-      setLocation("/profile");
+      queryClient.removeQueries({ queryKey: ["/api/profiles/swipable"] });
+      toast({ title: "Video pubblicato! 🎉", description: "Il tuo video è ora visibile nella card." });
+      if (window.history.length > 1) window.history.back();
+      else setLocation("/profile");
     } catch (err: any) {
       const msg = err?.message || "";
       let body: any = {};
