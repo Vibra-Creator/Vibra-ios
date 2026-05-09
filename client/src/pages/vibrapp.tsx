@@ -196,6 +196,12 @@ export default function Vibrapp() {
     },
   });
 
+  const openColdMessage = useCallback((msg: ReceivedColdMsg) => {
+    setSelectedColdMsg(msg);
+    setReplyText("");
+    setColdMsgDeleteConfirm(false);
+  }, []);
+
   const [coldMsgDeleteConfirm, setColdMsgDeleteConfirm] = useState(false);
 
   const deleteColdMsgMutation = useMutation({
@@ -1057,7 +1063,7 @@ export default function Vibrapp() {
             {receivedColdMsgs.filter(m => !m.replied).map(msg => (
               <button
                 key={msg.id}
-                onClick={() => { setSelectedColdMsg(msg); setReplyText(""); setColdMsgDeleteConfirm(false); }}
+                onClick={() => openColdMessage(msg)}
                 className="flex flex-col items-center gap-1 shrink-0"
                 data-testid={`intro-bubble-${msg.id}`}
               >
