@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles, Image as ImageIcon, Video, Type, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { SwipeCard, ActionButtons } from "@/components/SwipeCard";
 import { MatchModal } from "@/components/MatchModal";
 import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
 import { ActivityToastSystem } from "@/components/ActivityFeed";
+import { ProfileVideosSection } from "@/components/ProfileVideosSection";
 import { Button } from "@/components/ui/button";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,13 +29,7 @@ export default function Home() {
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
   const [swipeHistory, setSwipeHistory] = useState<string[]>([]);
   const [globalMuted, setGlobalMuted] = useState(false);
-  const [showPostComposer, setShowPostComposer] = useState(false);
-  const [postText, setPostText] = useState("");
-  const [postBg, setPostBg] = useState("#7c3aed");
-  const [postTextColor, setPostTextColor] = useState("#ffffff");
-  const [postMediaType, setPostMediaType] = useState<"text" | "image" | "video">("text");
-  const [postMediaFile, setPostMediaFile] = useState<File | null>(null);
-  const [postMediaPreview, setPostMediaPreview] = useState<string | null>(null);
+  const [showVideoDrawer, setShowVideoDrawer] = useState(false);
   const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
@@ -267,49 +263,6 @@ export default function Home() {
     </div>
   );
 
-  const createPostMutation = useMutation({
-    mutationFn: async () => {
-      if (postMediaFile) {
-        const uploadRes = await fetch("/api/signals/request-upload", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contentType: postMediaFile.type, size: postMediaFile.size }),
-        });
-        if (!uploadRes.ok) throw new Error("Upload fallito");
-        const { uploadURL, objectPath } = await uploadRes.json();
-        const putRes = await fetch(uploadURL, {
-          method: "PUT",
-          body: postMediaFile,
-          headers: { "Content-Type": postMediaFile.type },
-        });
-        if (!putRes.ok) throw new Error("Upload fallito");
-        return apiRequest("POST", "/api/signals", {
-          content: postText.trim(),
-          mediaType: postMediaType,
-          mediaUrl: objectPath,
-          textColor: postTextColor,
-          backgroundColor: postBg,
-        });
-      }
-      return apiRequest("POST", "/api/signals", {
-        content: postText.trim(),
-        mediaType: postMediaType,
-        textColor: postTextColor,
-        backgroundColor: postBg,
-      });
-    },
-    onSuccess: () => {
-      setPostText("");
-      setPostMediaFile(null);
-      setPostMediaPreview(null);
-      setPostMediaType("text");
-      setShowPostComposer(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
-      toast({ title: "Post pubblicato", description: "Si vedrà subito nel feed." });
-    },
-  });
-
   const loadingState = isGuest ? guestLoading : (profileLoading || isLoading);
 
   const matchModalElement = !isGuest ? (
@@ -401,56 +354,52 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden">
       {bgLayer}
-      {showPostComposer && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/60">
-          <div className="w-full max-w-sm aspect-[3/4] rounded-3xl p-4 border border-white/15 backdrop-blur-xl flex flex-col" style={{ background: postBg }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setPostMediaType("text")} className="w-9 h-9 rounded-full bg-primary flex items-center justify-center" data-testid="button-post-type-text"><Type className="w-5 h-5 text-white" /></button>
-                <button type="button" onClick={() => setPostMediaType("image")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-image"><ImageIcon className="w-5 h-5 text-white" /></button>
-                <button type="button" onClick={() => setPostMediaType("video")} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-post-type-video"><Video className="w-5 h-5 text-white" /></button>
+
+      {/* ── Drawer video: stesso sistema della sezione Video nel Profilo ── */}
+      <AnimatePresence>
+        {showVideoDrawer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center"
+            onClick={() => setShowVideoDrawer(false)}
+            data-testid="video-drawer-overlay"
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="w-full max-w-lg bg-[#0a0a1a] rounded-t-3xl border-t border-white/10 max-h-[85vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+              data-testid="video-drawer-panel"
+            >
+              <div className="flex items-center justify-between px-5 pt-4 pb-2 sticky top-0 bg-[#0a0a1a] z-10 border-b border-white/5">
+                <h2 className="text-white font-bold text-lg">I tuoi video</h2>
+                <button
+                  onClick={() => setShowVideoDrawer(false)}
+                  className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
+                  data-testid="button-close-video-drawer"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
               </div>
-              <button type="button" onClick={() => setShowPostComposer(false)} className="w-9 h-9 rounded-full bg-black/20 flex items-center justify-center" data-testid="button-close-post-composer"><X className="w-5 h-5 text-white" /></button>
-            </div>
-            <div className="flex-1 flex flex-col gap-3 min-h-0">
-              <textarea
-                value={postText}
-                onChange={(e) => setPostText(e.target.value)}
-                placeholder={t("home.postPlaceholder")}
-                className="w-full flex-1 rounded-2xl p-4 bg-black/20 text-white placeholder:text-white/60 outline-none resize-none"
-                data-testid="textarea-post-content"
-              />
-              {postMediaType !== "text" && (
-                <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept={postMediaType === "image" ? "image/*" : "video/*"}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      setPostMediaFile(file);
-                      setPostMediaPreview(file ? URL.createObjectURL(file) : null);
-                    }}
-                    className="block w-full rounded-2xl border border-dashed border-white/30 px-4 py-5 text-center text-white/80 bg-black/20"
-                    id="post-media-input"
-                    data-testid="input-post-media"
+              <div className="p-4">
+                {myProfile ? (
+                  <ProfileVideosSection
+                    profileId={myProfile.id}
+                    currentMainVideoUrl={myProfile.profileVideoUrl}
+                    onMainVideoChanged={() => setShowVideoDrawer(false)}
                   />
-                  {postMediaPreview && postMediaType === "image" && <img src={postMediaPreview} alt="" className="w-full max-h-40 object-cover rounded-2xl" />}
-                  {postMediaPreview && postMediaType === "video" && <video src={postMediaPreview} controls className="w-full max-h-40 rounded-2xl" />}
-                </div>
-              )}
-              <div className="flex items-center gap-2 mt-auto">
-                {["#7c3aed", "#db2777", "#0f766e", "#1d4ed8"].map(color => (
-                  <button key={color} type="button" onClick={() => setPostBg(color)} className="w-8 h-8 rounded-full border border-white/30" style={{ backgroundColor: color }} data-testid={`button-post-bg-${color}`} />
-                ))}
-                <div className="ml-auto flex gap-2">
-                  <Button variant="ghost" onClick={() => setShowPostComposer(false)} data-testid="button-cancel-post">{t("common.cancel")}</Button>
-                  <Button disabled={!postText.trim() || createPostMutation.isPending} onClick={() => createPostMutation.mutate()} data-testid="button-submit-post">{t("home.publishPost")}</Button>
-                </div>
+                ) : (
+                  <p className="text-white/50 text-sm text-center py-8">Crea prima il tuo profilo.</p>
+                )}
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="w-full relative z-10 flex-1 min-h-0">
         {availableProfiles.slice(1, 5).filter(p => p.profileVideoUrl).map(p => (
@@ -487,7 +436,7 @@ export default function Home() {
             alreadyLiked={likedIdsSet.has(currentProfile.id)}
             globalMuted={globalMuted}
             onMutedChange={setGlobalMuted}
-            onOpenPostComposer={() => setLocation("/video-upload")}
+            onOpenPostComposer={() => setShowVideoDrawer(true)}
             actionButtons={
               <ActionButtons
                 onSwipeLeft={handleSwipeLeft}
