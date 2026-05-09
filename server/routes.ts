@@ -4369,7 +4369,88 @@ REGOLE IMPORTANTI:
     }
   });
 
-  // ─── Profile Videos ───────────────────────────────────────────────────────
+  // ─── Profile Videos (user) ────────────────────────────────────────────────
+
+  app.post("/api/profiles/videos/request-upload", isAuthenticated, async (req: any, res) => {
+    try {
+      const { contentType, size } = req.body;
+      const ALLOWED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/mov"];
+      if (!ALLOWED_VIDEO.includes(contentType)) {
+        return res.status(400).json({ error: "Formato video non supportato. Usa MP4, WebM o MOV." });
+      }
+      const MAX_SIZE = 50 * 1024 * 1024;
+      if (size && size > MAX_SIZE) {
+        return res.status(400).json({ error: "Video troppo grande. Massimo 50 MB." });
+      }
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      res.json({ uploadURL, objectPath });
+    } catch (err) {
+      console.error("[profile-videos] request-upload error:", err);
+      res.status(500).json({ error: "Upload non disponibile" });
+    }
+  });
+
+  app.post("/api/profiles/videos", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "Profilo non trovato" });
+
+      const { objectPath, thumbnailBase64, caption, location, gifOverlayUrl } = req.body;
+      if (!objectPath) return res.status(400).json({ error: "objectPath richiesto" });
+
+      try {
+        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, { owner: userId, visibility: "public" });
+      } catch {}
+
+      if (thumbnailBase64) {
+        try {
+          const thumbnailBuf = Buffer.from(thumbnailBase64, "base64");
+          const thumbUploadURL = await objectStorageService.getObjectEntityUploadURL();
+          const thumbPath = objectStorageService.normalizeObjectEntityPath(thumbUploadURL);
+          await fetch(thumbUploadURL, { method: "PUT", body: thumbnailBuf, headers: { "Content-Type": "image/jpeg" } });
+          await objectStorageService.trySetObjectEntityAclPolicy(thumbPath, { owner: userId, visibility: "public" }).catch(() => {});
+        } catch {}
+      }
+
+      const video = await storage.addProfileVideo({
+        profileId: userProfile.id,
+        videoUrl: objectPath,
+        thumbnailUrl: null,
+        location: location || null,
+        caption: caption || null,
+        gifOverlayUrl: gifOverlayUrl || null,
+      });
+
+      res.json(video);
+    } catch (err: any) {
+      console.error("[profile-videos] save error:", err?.message || err);
+      res.status(500).json({ error: "Errore nel salvataggio del video" });
+    }
+  });
+
+  app.delete("/api/profiles/videos/:videoId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(404).json({ error: "Profilo non trovato" });
+
+      const video = await storage.getProfileVideoById(req.params.videoId);
+      if (!video) return res.status(404).json({ error: "Video non trovato" });
+      if (video.profileId !== userProfile.id) return res.status(403).json({ error: "Non autorizzato" });
+
+      try { await objectStorageService.deleteObject(video.videoUrl); } catch {}
+      await storage.deleteProfileVideo(req.params.videoId);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[profile-videos] delete error:", err);
+      res.status(500).json({ error: "Errore nell'eliminazione" });
+    }
+  });
+
   app.get("/api/profiles/:profileId/videos", async (req, res) => {
     try {
       const videos = await storage.getProfileVideos(req.params.profileId);

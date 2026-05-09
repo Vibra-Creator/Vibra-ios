@@ -487,7 +487,7 @@ export default function Home() {
             alreadyLiked={likedIdsSet.has(currentProfile.id)}
             globalMuted={globalMuted}
             onMutedChange={setGlobalMuted}
-            onOpenPostComposer={() => setShowPostComposer(true)}
+            onOpenPostComposer={() => setLocation("/video-upload")}
             actionButtons={
               <ActionButtons
                 onSwipeLeft={handleSwipeLeft}

@@ -38,7 +38,7 @@ export default function VideoUpload() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
-  const [location, setLocationText] = useState("");
+  const [locationText, setLocationText] = useState("");
   const [selectedGif, setSelectedGif] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"caption" | "location" | "gif">("caption");
   const [isUploading, setIsUploading] = useState(false);
@@ -133,7 +133,7 @@ export default function VideoUpload() {
         objectPath,
         thumbnailBase64,
         caption: caption.trim() || null,
-        location: location.trim() || null,
+        location: locationText.trim() || null,
         gifOverlayUrl: selectedGif || null,
       });
 
@@ -148,8 +148,6 @@ export default function VideoUpload() {
       try { const i = msg.indexOf("{"); if (i !== -1) body = JSON.parse(msg.slice(i)); } catch {}
       if (body?.error === "rejected") {
         toast({ title: "Contenuto non approvato", description: "Il video non è stato approvato dalla moderazione.", variant: "destructive" });
-      } else if (body?.error === "max_videos") {
-        toast({ title: "Limite raggiunto", description: "Hai già 4 video. Caricandone uno nuovo, il più vecchio verrà eliminato automaticamente.", variant: "destructive" });
       } else {
         toast({ title: "Errore", description: "Impossibile pubblicare il video.", variant: "destructive" });
       }
@@ -163,7 +161,11 @@ export default function VideoUpload() {
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-black/80 border-b border-white/10 shrink-0">
         <button
-          onClick={() => { if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl); setLocation("/profile"); }}
+          onClick={() => {
+            if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+            if (window.history.length > 1) window.history.back();
+            else setLocation("/profile");
+          }}
           className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
           data-testid="button-back-video-upload"
         >
@@ -239,10 +241,10 @@ export default function VideoUpload() {
             )}
 
             {/* Location overlay — top left */}
-            {location && (
+            {locationText && (
               <div className="absolute top-3 left-3 flex items-center gap-1 bg-black/70 rounded-full px-2.5 py-1 max-w-[60%]">
                 <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
-                <span className="text-white text-[11px] font-medium truncate">{location}</span>
+                <span className="text-white text-[11px] font-medium truncate">{locationText}</span>
               </div>
             )}
 
@@ -340,7 +342,7 @@ export default function VideoUpload() {
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
                     <Input
-                      value={location}
+                      value={locationText}
                       onChange={e => setLocationText(e.target.value)}
                       placeholder="es. Roma, Via del Corso..."
                       maxLength={50}
@@ -348,7 +350,7 @@ export default function VideoUpload() {
                       data-testid="input-video-location"
                     />
                   </div>
-                  <p className="text-white/30 text-xs text-right">{location.length}/50</p>
+                  <p className="text-white/30 text-xs text-right">{locationText.length}/50</p>
                   <p className="text-white/40 text-[11px]">Il luogo apparirà in overlay in alto a sinistra del video.</p>
                 </motion.div>
               )}
