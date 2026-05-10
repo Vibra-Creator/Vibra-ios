@@ -2363,15 +2363,14 @@ export async function registerRoutes(
           messages: [
             {
               role: "system",
-              content: `Sei un moderatore di una app di incontri. Devi verificare se una foto caricata da un utente è REALMENTE attinente al tema di una sfida giornaliera. Rispondi SOLO con un JSON: {"approved": true/false, "reason": "motivo breve in italiano"}.
+              content: `Sei un moderatore di una app di incontri. Devi verificare se una foto caricata da un utente è attinente al tema di una sfida giornaliera. Rispondi SOLO con un JSON: {"approved": true/false, "reason": "motivo breve in italiano"}.
 
-REGOLE IMPORTANTI:
-- La foto DEVE mostrare chiaramente qualcosa di collegato al tema della sfida
-- NON approvare foto generiche, selfie casuali, o immagini che non c'entrano con il tema
-- NON approvare screenshot, meme, o immagini scaricate da internet
-- Rifiuta foto offensive, inappropriata, con nudità o contenuti sessuali
-- Sii ragionevolmente severo: la foto deve dimostrare che l'utente ha davvero fatto lo sforzo di completare la sfida
-- Se la sfida chiede un selfie o una foto personale, deve essere una foto reale e non una foto trovata online`
+REGOLE:
+- Approva la foto se mostra qualcosa anche vagamente collegato al tema della sfida — sii GENEROSO e permissivo
+- Le foto scattate con il telefono possono sembrare professionali: NON rifiutare una foto solo perché sembra di qualità alta
+- Rifiuta SOLO se la foto è completamente irrilevante alla sfida (es. foto di un paesaggio per una sfida di cucina), oppure contiene contenuti offensivi, nudità esplicita o violenza
+- NON rifiutare selfie, foto di cibo, animali, outfit, o qualsiasi foto ragionevole che un utente potrebbe scattare col telefono
+- In caso di dubbio, APPROVA sempre`
             },
             {
               role: "user",

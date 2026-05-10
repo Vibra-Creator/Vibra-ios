@@ -132,32 +132,51 @@ export default function Challenges() {
     mutationFn: async ({ challengeId, file }: { challengeId: string; file: File }) => {
       const formData = new FormData();
       formData.append("photo", file);
-      const response = await fetch(`/api/challenges/${challengeId}/submit`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Upload failed");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
+      try {
+        const response = await fetch(`/api/challenges/${challengeId}/submit`, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!response.ok) {
+          let errMsg = t("challenges.uploadError");
+          try { const err = await response.json(); errMsg = err.error || errMsg; } catch {}
+          throw new Error(errMsg);
+        }
+        return response.json();
+      } catch (e: any) {
+        clearTimeout(timeout);
+        if (e.name === "AbortError") throw new Error("Connessione troppo lenta. Riprova con una foto più piccola.");
+        throw e;
       }
-      return response.json();
     },
     onSuccess: (data: any) => {
+      queryClient.setQueryData(["/api/challenges/submissions/me"], (old: any) => {
+        const existing = Array.isArray(old) ? old : [];
+        const alreadyThere = existing.some((s: any) => s.id === data.id);
+        return alreadyThere ? existing : [...existing, data];
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/challenges/submissions/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       toast({
         title: t("challenges.photoSent"),
         description: t("challenges.photoSentDesc"),
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges/submissions/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       resetUpload();
     },
     onError: (error: Error) => {
-      const isAiRejection = error.message?.includes("non approvata") || error.message?.includes("non sembra");
+      const isAiRejection = error.message?.includes("non approvata") || error.message?.includes("non sembra") || error.message?.includes("Foto non");
       toast({
         title: isAiRejection ? t("challenges.photoInvalid") : t("common.error"),
-        description: error.message || t("challenges.uploadError"),
+        description: isAiRejection
+          ? `${error.message} Scatta una foto chiara e attinente alla sfida.`
+          : error.message || t("challenges.uploadError"),
         variant: "destructive",
+        duration: 6000,
       });
       resetUpload();
     },
