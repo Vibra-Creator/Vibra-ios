@@ -4331,6 +4331,54 @@ REGOLE:
     }
   });
 
+  // ─── Video Stream by objectPath (Range-request aware) ────────────────────
+  app.get("/api/video-stream-object", async (req, res) => {
+    try {
+      const objectPath = req.query.path as string;
+      if (!objectPath) return res.status(400).end();
+
+      const file = await objectStorageService.getObjectEntityFile(objectPath);
+      const [metadata] = await file.getMetadata();
+      const totalSize = parseInt(String(metadata.size || "0"), 10);
+      const contentType = (metadata.contentType as string) || "video/mp4";
+
+      const safeTag = objectPath.replace(/[^a-z0-9]/gi, "").slice(-32);
+      const etag = `"obj-${safeTag}"`;
+      res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+      res.setHeader("ETag", etag);
+      if (req.headers["if-none-match"] === etag) {
+        res.writeHead(304);
+        return res.end();
+      }
+
+      const CHUNK_SIZE = 4 * 1024 * 1024;
+      const rangeHeader = req.headers.range;
+      if (rangeHeader) {
+        const parts = rangeHeader.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
+        const chunkSize = end - start + 1;
+        res.writeHead(206, {
+          "Content-Range": `bytes ${start}-${end}/${totalSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type": contentType,
+        });
+        file.createReadStream({ start, end }).pipe(res);
+      } else {
+        res.writeHead(200, {
+          "Content-Length": totalSize,
+          "Content-Type": contentType,
+          "Accept-Ranges": "bytes",
+        });
+        file.createReadStream().pipe(res);
+      }
+    } catch (err) {
+      console.error("[video-stream-object]", err);
+      if (!res.headersSent) res.status(500).end();
+    }
+  });
+
   // ─── Video Stream (Range-request aware, no ACL required) ─────────────────
   app.get("/api/video-stream/:videoId", async (req, res) => {
     try {

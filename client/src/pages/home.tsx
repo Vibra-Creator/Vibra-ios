@@ -405,7 +405,7 @@ export default function Home() {
         {availableProfiles.slice(1, 5).filter(p => p.profileVideoUrl).map(p => (
           <video
             key={`preload-${p.id}`}
-            src={p.profileVideoUrl ?? undefined}
+            src={p.profileVideoUrl?.startsWith("/objects/") ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}` : (p.profileVideoUrl ?? undefined)}
             preload="auto"
             muted
             playsInline

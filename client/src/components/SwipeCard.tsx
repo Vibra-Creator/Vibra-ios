@@ -540,6 +540,14 @@ interface SwipeCardProps {
   onOpenPostComposer?: () => void;
 }
 
+function resolveVideoSrc(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("/objects/")) {
+    return `/api/video-stream-object?path=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
   function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange, onOpenPostComposer }, ref) {
     const [exitX, setExitX] = useState(0);
@@ -1179,7 +1187,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     loop
                     playsInline
                     preload="auto"
-                    src={profile.profileVideoUrl ?? undefined}
+                    src={resolveVideoSrc(profile.profileVideoUrl)}
                     className="w-full h-full object-cover object-top"
                     poster={profile.imageUrl ?? undefined}
                     data-testid={`profile-video-${profile.id}`}
