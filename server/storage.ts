@@ -99,6 +99,7 @@ export interface IStorage {
   getChallengeSubmissions(profileId: string): Promise<ChallengeSubmission[]>;
   getAllChallengeSubmissions(): Promise<ChallengeSubmission[]>;
   updateChallengeSubmissionStatus(id: string, status: string): Promise<ChallengeSubmission | undefined>;
+  deleteChallengeSubmission(id: string): Promise<void>;
   
   getVirtualGifts(): Promise<VirtualGift[]>;
   getVirtualGift(id: string): Promise<VirtualGift | undefined>;
@@ -618,6 +619,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllChallengeSubmissions(): Promise<ChallengeSubmission[]> {
     return db.select().from(challengeSubmissions).orderBy(desc(challengeSubmissions.createdAt));
+  }
+
+  async deleteChallengeSubmission(id: string): Promise<void> {
+    await db.delete(challengeSubmissions).where(eq(challengeSubmissions.id, id));
   }
 
   async updateChallengeSubmissionStatus(id: string, status: string): Promise<ChallengeSubmission | undefined> {

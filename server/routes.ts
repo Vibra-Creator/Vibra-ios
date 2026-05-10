@@ -2432,6 +2432,27 @@ REGOLE:
     }
   });
 
+  app.delete("/api/challenges/submissions/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userProfile = await storage.getProfileByUserId(userId);
+      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      const [sub] = await db.select().from(challengeSubmissions).where(eq(challengeSubmissions.id, req.params.id));
+      if (!sub) return res.status(404).json({ error: "Submission non trovata" });
+      if (sub.profileId !== userProfile.id) return res.status(403).json({ error: "Non autorizzato" });
+      if (sub.status === "approved") return res.status(400).json({ error: "Non puoi eliminare una submission già approvata" });
+      if (sub.imageUrl) {
+        try { await objectStorageService.deleteObject(sub.imageUrl); } catch {}
+      }
+      await storage.deleteChallengeSubmission(sub.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting user submission:", error);
+      res.status(500).json({ error: "Errore nell'eliminazione" });
+    }
+  });
+
   app.get("/api/challenges/submissions/me", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;

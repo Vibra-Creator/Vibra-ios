@@ -182,6 +182,31 @@ export default function Challenges() {
     },
   });
 
+  const deleteSubmissionMutation = useMutation({
+    mutationFn: async (submissionId: string) => {
+      const response = await fetch(`/api/challenges/submissions/${submissionId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        let errMsg = "Errore nell'eliminazione";
+        try { const err = await response.json(); errMsg = err.error || errMsg; } catch {}
+        throw new Error(errMsg);
+      }
+      return response.json();
+    },
+    onSuccess: (_data, submissionId) => {
+      queryClient.setQueryData(["/api/challenges/submissions/me"], (old: any) => {
+        return Array.isArray(old) ? old.filter((s: any) => s.id !== submissionId) : [];
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/challenges/submissions/me"] });
+      toast({ title: "Segnalazione rimossa", description: "Ora puoi caricare una nuova foto." });
+    },
+    onError: (error: Error) => {
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+    },
+  });
+
   const defaultChallenges: DailyChallenge[] = getDefaultChallenges(t);
 
   const challengeItTitles = [
@@ -541,16 +566,27 @@ export default function Challenges() {
                           />
                         </div>
                       ) : isPending ? (
-                        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 relative">
-                          <img
-                            src={submission!.imageUrl}
-                            alt={t("challenges.pendingAlt")}
-                            className="w-full h-full object-cover opacity-60"
-                            data-testid={`img-pending-${challenge.id}`}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Clock className="w-5 h-5 text-amber-400" />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="w-14 h-14 rounded-lg overflow-hidden relative">
+                            <img
+                              src={submission!.imageUrl}
+                              alt={t("challenges.pendingAlt")}
+                              className="w-full h-full object-cover opacity-60"
+                              data-testid={`img-pending-${challenge.id}`}
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Clock className="w-4 h-4 text-amber-400" />
+                            </div>
                           </div>
+                          <button
+                            onClick={() => deleteSubmissionMutation.mutate(submission!.id)}
+                            disabled={deleteSubmissionMutation.isPending}
+                            className="w-7 h-7 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 hover:bg-red-500/40 transition-colors"
+                            title="Cancella e ricarica"
+                            data-testid={`button-delete-submission-${challenge.id}`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       ) : (
                         <Button
