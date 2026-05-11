@@ -313,11 +313,11 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
     }
   };
 
-  const pickTypes: Array<{ type: "text" | "image" | "video" | "audio"; icon: string; label: string; accept: string }> = [
-    { type: "video", icon: "🎥", label: "Video", accept: "video/*" },
-    { type: "audio", icon: "🎙️", label: "Audio", accept: "audio/*" },
-    { type: "text", icon: "✍️", label: "Testo", accept: "" },
-    { type: "image", icon: "📷", label: "Foto", accept: "image/*" },
+  const pickTypes: Array<{ type: "text" | "image" | "video" | "audio"; icon: string; label: string; sublabel: string; accept: string }> = [
+    { type: "text",  icon: "🌌", label: "Pensiero Galattico", sublabel: "Scrivi un messaggio",      accept: "" },
+    { type: "image", icon: "🛸", label: "Visione Cosmica",    sublabel: "Condividi una foto",       accept: "image/*" },
+    { type: "video", icon: "⚡", label: "Impulso Stellare",   sublabel: "Lancia un video",          accept: "video/*" },
+    { type: "audio", icon: "🎵", label: "Onda Vibrazionale",  sublabel: "Trasmetti un audio",       accept: "audio/*" },
   ];
 
   return (
@@ -334,7 +334,7 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
 
         {step === "choose" && (
           <div className="px-6 pb-8">
-            <h2 className="text-white text-xl font-bold text-center mb-6">✨ Create Cosmic Signal</h2>
+            <h2 className="text-white text-xl font-bold text-center mb-6">🛸 Scegli il tuo Segnale Cosmico</h2>
             <div className="grid grid-cols-2 gap-4">
               {pickTypes.map(pt => (
                 <button
@@ -348,11 +348,14 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
                       setStep("compose");
                     }
                   }}
-                  className="flex flex-col items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-purple-500/20 hover:border-purple-500/40 transition-all active:scale-95"
+                  className="flex flex-col items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-purple-500/20 hover:border-purple-500/40 transition-all active:scale-95"
                   data-testid={`button-signal-type-${pt.type}`}
                 >
                   <span className="text-4xl">{pt.icon}</span>
-                  <span className="text-white font-semibold">{pt.label}</span>
+                  <div className="text-center">
+                    <p className="text-white font-semibold text-sm leading-tight">{pt.label}</p>
+                    <p className="text-white/40 text-xs mt-0.5">{pt.sublabel}</p>
+                  </div>
                 </button>
               ))}
             </div>
@@ -366,9 +369,9 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
                 <X className="w-5 h-5" />
               </button>
               <h2 className="text-white text-lg font-bold flex-1 text-center">
-                {mediaType === "text" ? "✍️ Scrivi il tuo segnale" :
-                  mediaType === "image" ? "📷 Aggiungi una foto" :
-                  mediaType === "video" ? "🎥 Carica un video" : "🎙️ Carica un audio"}
+                {mediaType === "text" ? "🌌 Pensiero Galattico" :
+                  mediaType === "image" ? "🛸 Visione Cosmica" :
+                  mediaType === "video" ? "⚡ Impulso Stellare" : "🎵 Onda Vibrazionale"}
               </h2>
             </div>
 
