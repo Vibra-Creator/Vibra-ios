@@ -49,7 +49,7 @@ function SignalMediaPlayer({ mediaUrl, mediaType }: { mediaUrl: string; mediaTyp
   if (mediaType === "image") {
     return (
       <div className="mt-2 rounded-xl overflow-hidden max-h-72">
-        <img src={src} alt="signal media" className="w-full object-cover" />
+        <img src={src} alt="visione cosmica" className="w-full object-cover" />
       </div>
     );
   }
@@ -89,7 +89,7 @@ function CommentsModal({ signal, myProfileId, onClose }: { signal: Signal; myPro
       queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
       setText("");
     },
-    onError: () => toast({ title: "Errore", description: "Impossibile aggiungere commento", variant: "destructive" }),
+    onError: () => toast({ title: "Errore", description: "Trasmissione interrotta", variant: "destructive" }),
   });
 
   return (
@@ -99,7 +99,7 @@ function CommentsModal({ signal, myProfileId, onClose }: { signal: Signal; myPro
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-white/10">
-          <span className="text-white font-semibold">Commenti ({comments.length})</span>
+          <span className="text-white font-semibold">🌀 Risonanze ({comments.length})</span>
           <button onClick={onClose} data-testid="button-close-comments">
             <X className="w-5 h-5 text-white/60" />
           </button>
@@ -112,7 +112,7 @@ function CommentsModal({ signal, myProfileId, onClose }: { signal: Signal; myPro
             </div>
           )}
           {!isLoading && comments.length === 0 && (
-            <p className="text-white/40 text-sm text-center py-6">Nessun commento. Sii il primo!</p>
+            <p className="text-white/40 text-sm text-center py-6">Nessuna risonanza ancora. Sii il primo a vibrare!</p>
           )}
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2" data-testid={`comment-item-${c.id}`}>
@@ -130,7 +130,7 @@ function CommentsModal({ signal, myProfileId, onClose }: { signal: Signal; myPro
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={e => e.key === "Enter" && !e.shiftKey && text.trim() && addComment.mutate()}
-            placeholder="Scrivi un commento…"
+            placeholder="Trasmetti la tua risonanza…"
             className="flex-1 bg-white/10 rounded-full px-4 py-2 text-sm text-white placeholder-white/40 outline-none border border-white/10 focus:border-purple-500/50"
             data-testid="input-signal-comment"
           />
@@ -181,10 +181,15 @@ function SignalCard({
   const deleteMut = useMutation({
     mutationFn: () => apiRequest("DELETE", `/api/signals/${signal.id}`, {}),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/signals"] }),
-    onError: () => toast({ title: "Errore", description: "Impossibile eliminare", variant: "destructive" }),
+    onError: () => toast({ title: "Errore", description: "Impossibile rimuovere il segnale", variant: "destructive" }),
   });
 
   const isOwn = signal.profileId === myProfileId;
+
+  const signalTypeIcon = signal.mediaType === "image" ? "🛸"
+    : signal.mediaType === "video" ? "⚡"
+    : signal.mediaType === "audio" ? "🎵"
+    : "🌌";
 
   return (
     <>
@@ -210,16 +215,19 @@ function SignalCard({
               <p className="text-white/40 text-xs">{signal.profile.location} · {timeAgo(signal.createdAt)}</p>
             </div>
           </button>
-          {isOwn && (
-            <button
-              onClick={() => deleteMut.mutate()}
-              disabled={deleteMut.isPending}
-              className="text-white/30 hover:text-red-400 transition-colors"
-              data-testid={`button-delete-signal-${signal.id}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{signalTypeIcon}</span>
+            {isOwn && (
+              <button
+                onClick={() => deleteMut.mutate()}
+                disabled={deleteMut.isPending}
+                className="text-white/30 hover:text-red-400 transition-colors"
+                data-testid={`button-delete-signal-${signal.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {signal.content && (
@@ -239,9 +247,9 @@ function SignalCard({
             data-testid={`button-like-signal-${signal.id}`}
           >
             <Heart
-              className={`w-4 h-4 transition-all ${localLiked ? "text-red-500 fill-red-500 scale-110" : "text-white/50"}`}
+              className={`w-4 h-4 transition-all ${localLiked ? "text-purple-400 fill-purple-400 scale-110" : "text-white/50"}`}
             />
-            <span className={localLiked ? "text-red-400" : "text-white/50"}>{localLikes}</span>
+            <span className={localLiked ? "text-purple-300" : "text-white/50"}>{localLikes}</span>
           </button>
 
           <button
@@ -253,7 +261,7 @@ function SignalCard({
             <span>{signal.commentsCount}</span>
           </button>
 
-          <span className="ml-auto text-xs text-purple-400/60">👽 reply</span>
+          <span className="ml-auto text-xs text-purple-400/60">🌀 risuona</span>
         </div>
       </motion.div>
 
@@ -284,9 +292,9 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
       onClose();
-      toast({ title: "Segnale inviato! 🛸", description: "Il tuo Cosmic Signal è live" });
+      toast({ title: "Segnale trasmesso! 🛸", description: "La tua frequenza cosmica è nell'universo" });
     },
-    onError: () => toast({ title: "Errore", description: "Impossibile inviare il segnale", variant: "destructive" }),
+    onError: () => toast({ title: "Errore", description: "Trasmissione fallita, riprova", variant: "destructive" }),
   });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,25 +308,32 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
         credentials: "include",
         body: JSON.stringify({ contentType: file.type, size: file.size }),
       });
-      if (!urlRes.ok) throw new Error("Upload non disponibile");
+      if (!urlRes.ok) throw new Error("Canale non disponibile");
       const { uploadURL, objectPath, mediaType: detectedType } = await urlRes.json();
       await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
       setMediaUrl(objectPath);
       setMediaType(detectedType as "image" | "video" | "audio");
-      toast({ title: "File caricato ✓" });
+      toast({ title: "Frequenza acquisita ✓" });
     } catch {
-      toast({ title: "Errore upload", variant: "destructive" });
+      toast({ title: "Errore trasmissione", variant: "destructive" });
     } finally {
       setUploading(false);
     }
   };
 
   const pickTypes: Array<{ type: "text" | "image" | "video" | "audio"; icon: string; label: string; sublabel: string; accept: string }> = [
-    { type: "text",  icon: "🌌", label: "Pensiero Galattico", sublabel: "Scrivi un messaggio",      accept: "" },
-    { type: "image", icon: "🛸", label: "Visione Cosmica",    sublabel: "Condividi una foto",       accept: "image/*" },
-    { type: "video", icon: "⚡", label: "Impulso Stellare",   sublabel: "Lancia un video",          accept: "video/*" },
-    { type: "audio", icon: "🎵", label: "Onda Vibrazionale",  sublabel: "Trasmetti un audio",       accept: "audio/*" },
+    { type: "text",  icon: "🌌", label: "Pensiero Galattico", sublabel: "Trasmetti un pensiero",   accept: "" },
+    { type: "image", icon: "🛸", label: "Visione Cosmica",    sublabel: "Condividi una visione",   accept: "image/*" },
+    { type: "video", icon: "⚡", label: "Impulso Stellare",   sublabel: "Lancia un impulso",       accept: "video/*" },
+    { type: "audio", icon: "🎵", label: "Onda Vibrazionale",  sublabel: "Emetti la tua frequenza", accept: "audio/*" },
   ];
+
+  const placeholders: Record<string, string> = {
+    text:  'Es. "Oggi la galassia vibra di energia positiva ✨"',
+    image: 'Aggiungi una nota alla tua visione cosmica…',
+    video: 'Descrivi il tuo impulso stellare…',
+    audio: 'Descrivi la tua onda vibrazionale…',
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
@@ -334,7 +349,8 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
 
         {step === "choose" && (
           <div className="px-6 pb-8">
-            <h2 className="text-white text-xl font-bold text-center mb-6">🛸 Scegli il tuo Segnale Cosmico</h2>
+            <h2 className="text-white text-xl font-bold text-center mb-1">🛸 Scegli il tuo Segnale</h2>
+            <p className="text-white/40 text-xs text-center mb-6">Quale frequenza vuoi trasmettere nell'universo?</p>
             <div className="grid grid-cols-2 gap-4">
               {pickTypes.map(pt => (
                 <button
@@ -378,7 +394,7 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
             <textarea
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder='Es. "Condividi la tua vibrazione del momento ✨"'
+              placeholder={placeholders[mediaType] || placeholders.text}
               rows={3}
               className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm outline-none focus:border-purple-500/50 resize-none"
               data-testid="input-signal-text"
@@ -405,13 +421,13 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
                     ) : (
                       <>
                         <Camera className="w-4 h-4" />
-                        Tocca per scegliere il file
+                        Tocca per caricare la frequenza
                       </>
                     )}
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
-                    <span className="text-green-400 text-sm flex-1">✓ File caricato</span>
+                    <span className="text-green-400 text-sm flex-1">✓ Frequenza acquisita</span>
                     <button onClick={() => setMediaUrl(null)} className="text-white/40 hover:text-white">
                       <X className="w-4 h-4" />
                     </button>
@@ -431,7 +447,7 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
               ) : (
                 <>
                   <Radio className="w-4 h-4" />
-                  Invia Segnale Cosmico
+                  Trasmetti nell'Universo
                 </>
               )}
             </button>
@@ -492,7 +508,7 @@ function ProfileSheet({ profileId, onClose }: { profileId: string; onClose: () =
             </div>
           </div>
         ) : (
-          <p className="text-white/50 text-center py-8 text-sm">Profilo non trovato</p>
+          <p className="text-white/50 text-center py-8 text-sm">👽 Entità non rintracciata nella galassia</p>
         )}
       </motion.div>
     </div>
@@ -530,7 +546,10 @@ export default function Signals() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-2">
           <Radio className="w-5 h-5 text-purple-400" />
-          <h1 className="text-white font-bold text-lg">Cosmic Signals</h1>
+          <div>
+            <h1 className="text-white font-bold text-lg leading-tight">Cosmic Signals</h1>
+            <p className="text-white/40 text-xs">Frequenze dall'universo Vibra</p>
+          </div>
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -538,7 +557,7 @@ export default function Signals() {
           data-testid="button-create-signal"
         >
           <Radio className="w-3.5 h-3.5" />
-          Invia Signal
+          Trasmetti
         </button>
       </div>
 
@@ -552,14 +571,14 @@ export default function Signals() {
         {!isLoading && signals.length === 0 && (
           <div className="text-center py-16 space-y-3">
             <div className="text-5xl">📡</div>
-            <p className="text-white/60 text-sm">Nessun segnale cosmico ancora.</p>
-            <p className="text-white/40 text-xs">Sii il primo a inviarne uno!</p>
+            <p className="text-white/60 text-sm">Nessuna frequenza cosmica rilevata.</p>
+            <p className="text-white/40 text-xs">Avvia la prima trasmissione nell'universo!</p>
             <button
               onClick={() => setShowCreate(true)}
               className="mt-2 px-6 py-2.5 rounded-full bg-purple-600 text-white text-sm font-semibold"
               data-testid="button-create-signal-empty"
             >
-              Crea il tuo segnale
+              🛸 Avvia Trasmissione
             </button>
           </div>
         )}
@@ -578,6 +597,9 @@ export default function Signals() {
         {showCreate && myProfile && (
           <CreateSignalSheet myProfile={myProfile} onClose={() => setShowCreate(false)} />
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {viewProfileId && (
           <ProfileSheet profileId={viewProfileId} onClose={() => setViewProfileId(null)} />
         )}
