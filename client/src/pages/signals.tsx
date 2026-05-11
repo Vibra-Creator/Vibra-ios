@@ -375,7 +375,7 @@ function CreateSignalSheet({ myProfile, onClose }: { myProfile: SignalProfile; o
             <textarea
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder='Es. "Qualcuno vuole bere un drink stasera? 🍸"'
+              placeholder='Es. "Condividi la tua vibrazione del momento ✨"'
               rows={3}
               className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm outline-none focus:border-purple-500/50 resize-none"
               data-testid="input-signal-text"
