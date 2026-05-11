@@ -214,7 +214,7 @@ function ReferralSection() {
           onClick={async () => {
             const url = "https://vibraalienmatch.com";
             if (navigator.share) {
-              try { await navigator.share({ title: "Vibra – Alien Dating App 👽", text: "Unisciti a me su Vibra, l'app cosmica degli incontri 🛸", url }); } catch {}
+              try { await navigator.share({ title: "Vibra – Cosmic Community 👽", text: "Unisciti a me su Vibra, la community cosmica delle connessioni 🛸", url }); } catch {}
             } else {
               await navigator.clipboard.writeText(url);
               toast({ title: "Link copiato!", description: "vibraalienmatch.com copiato negli appunti" });

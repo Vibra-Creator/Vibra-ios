@@ -268,7 +268,7 @@ export default function Terms() {
               <h2 className="text-lg font-semibold text-foreground mb-3">18. Limitazione di Responsabilità</h2>
               <p>
                 Vibra non è responsabile per le azioni degli utenti. Ti consigliamo di usare 
-                prudenza quando incontri persone conosciute tramite l'app e di seguire le 
+                prudenza quando interagisci con persone conosciute tramite l'app e di seguire le 
                 nostre linee guida sulla sicurezza. Vibra non garantisce la veridicità 
                 delle informazioni presenti nei profili degli utenti.
               </p>
