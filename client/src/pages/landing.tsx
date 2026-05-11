@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Zap, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Zap, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -374,7 +374,7 @@ export default function Landing() {
             viewport={{ once: true }}
             className="bg-gradient-to-br from-primary/20 via-accent/10 to-primary/20 border border-primary/20 rounded-3xl p-10 md:p-16 backdrop-blur-md"
           >
-            <Heart className="w-12 h-12 text-pink-400 mx-auto mb-6" />
+            <Rocket className="w-12 h-12 text-pink-400 mx-auto mb-6 rotate-[-20deg]" />
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
               {t("landing.readyTitle")}
             </h2>
