@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Zap, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Zap, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -175,7 +175,7 @@ export default function Landing() {
               transition={{ delay: 0.1 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-sm mb-6"
             >
-              <Heart className="w-4 h-4 text-pink-400" />
+              <Rocket className="w-4 h-4 text-pink-400 rotate-[-20deg]" />
               <span className="text-sm font-medium text-white/90">{t("landing.badge")}</span>
             </motion.div>
 
@@ -240,7 +240,7 @@ export default function Landing() {
                 <span>{t("landing.free")}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Heart className="w-4 h-4 text-pink-400" />
+                <Rocket className="w-4 h-4 text-pink-400 rotate-[-20deg]" />
                 <span>{t("landing.noCost")}</span>
               </div>
             </div>
