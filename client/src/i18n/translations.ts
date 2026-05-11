@@ -334,7 +334,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "swipe.share": "Condividi",
     "swipe.signalSent": "Signal inviato!",
     "swipe.signalSentDesc": "{name} lo vedrà nei suoi Like & Signal",
-    "swipe.sendSignalDirect": "Invia un Cosmic Signal diretto",
+    "swipe.sendSignalDirect": "Trasmetti un Segnale Cosmico",
 
     // Vibing
     "vibing.title": "Sto Vibing Ora",
@@ -1240,7 +1240,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "swipe.share": "Share",
     "swipe.signalSent": "Signal sent!",
     "swipe.signalSentDesc": "{name} will see it in their Likes & Signals",
-    "swipe.sendSignalDirect": "Send a direct Cosmic Signal",
+    "swipe.sendSignalDirect": "Transmit a Cosmic Signal",
 
     // Vibing
     "vibing.title": "Vibing Now",
@@ -2145,7 +2145,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "swipe.share": "Compartir",
     "swipe.signalSent": "¡Señal enviada!",
     "swipe.signalSentDesc": "{name} lo verá en sus Me gusta y señales",
-    "swipe.sendSignalDirect": "Enviar una señal cósmica directa",
+    "swipe.sendSignalDirect": "Transmitir una Señal Cósmica",
 
     // Vibing
     "vibing.title": "Vibing Ahora",
