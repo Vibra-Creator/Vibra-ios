@@ -15,7 +15,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.admin": "Admin",
 
     // Landing
-    "landing.badge": "🛸 Connessione Cosmica 🛸",
+    "landing.badge": "Connessione Cosmica",
     "landing.hero": "Trova chi vibra come te",
     "landing.heroHighlight": "vibrare",
     "landing.subtitle": "Esplora, vibra, connettiti. La community cosmica dove le energie si incontrano.",
@@ -23,7 +23,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "landing.explore": "Esplora senza account",
     "landing.free": "Gratis per 30 giorni",
     "landing.knowVibra": "🛸 Conosci Vibra",
-    "landing.noCost": "Nessun costo nascosto 🛸",
+    "landing.noCost": "Nessun costo nascosto",
     "landing.adminAccess": "Accesso Admin",
     "landing.login": "Accedi",
     "landing.features": "Funzionalità",
@@ -921,7 +921,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.admin": "Admin",
 
     // Landing
-    "landing.badge": "🛸 Cosmic Community 🛸",
+    "landing.badge": "Cosmic Community",
     "landing.hero": "Find who vibes like you",
     "landing.heroHighlight": "vibrate",
     "landing.subtitle": "Explore, vibe, connect. The cosmic community where energies meet.",
@@ -929,7 +929,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "landing.explore": "Explore without an account",
     "landing.free": "Free for 30 days",
     "landing.knowVibra": "🛸 Discover Vibra",
-    "landing.noCost": "No hidden costs 🛸",
+    "landing.noCost": "No hidden costs",
     "landing.adminAccess": "Admin Access",
     "landing.login": "Sign In",
     "landing.features": "Features",
@@ -1826,7 +1826,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "nav.admin": "Admin",
 
     // Landing
-    "landing.badge": "🛸 Comunidad Cósmica 🛸",
+    "landing.badge": "Comunidad Cósmica",
     "landing.hero": "Encuentra quien vibra como tú",
     "landing.heroHighlight": "vibrar",
     "landing.subtitle": "Explora, vibra, conecta. La comunidad cósmica donde las energías se encuentran.",
@@ -1834,7 +1834,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "landing.explore": "Explorar sin cuenta",
     "landing.free": "Gratis por 30 días",
     "landing.knowVibra": "🛸 Conoce Vibra",
-    "landing.noCost": "Sin costos ocultos 🛸",
+    "landing.noCost": "Sin costos ocultos",
     "landing.adminAccess": "Acceso Admin",
     "landing.login": "Iniciar Sesión",
     "landing.features": "Funciones",
