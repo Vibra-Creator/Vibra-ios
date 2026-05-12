@@ -244,6 +244,89 @@ function ReferralSection() {
   );
 }
 
+function BadgeSection({ profileId, profileName }: { profileId: string; profileName: string }) {
+  const { toast } = useToast();
+  const profileUrl = `${window.location.origin}/p/${profileId}`;
+  const badgeUrl   = `${window.location.origin}/api/badge/${profileId}`;
+  const embedCode  = `<a href="${profileUrl}" target="_blank" rel="noopener"><img src="${badgeUrl}" alt="${profileName} su Vibra" width="380" height="110" /></a>`;
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({ title: "Copiato!", description: label });
+    }).catch(() => {
+      toast({ title: "Errore", description: "Non riuscito a copiare", variant: "destructive" });
+    });
+  };
+
+  const shareProfile = () => {
+    if (navigator.share) {
+      navigator.share({ title: `${profileName} su Vibra`, text: `Guardami su Vibra 🛸`, url: profileUrl }).catch(() => {});
+    } else {
+      copyToClipboard(profileUrl, "Link profilo copiato negli appunti");
+    }
+  };
+
+  return (
+    <div className="p-5 rounded-xl bg-gradient-to-br from-purple-500/15 via-primary/10 to-cyan-500/15 border border-primary/30 backdrop-blur-md space-y-4" data-testid="badge-section">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center shrink-0">
+          <Star className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <p className="font-bold text-white text-lg leading-tight">Il tuo Badge Vibra</p>
+          <p className="text-xs text-white/55">Condividi il tuo profilo ovunque</p>
+        </div>
+      </div>
+
+      {/* Badge preview */}
+      <div className="rounded-xl overflow-hidden border border-white/10 bg-black/40">
+        <img
+          src={`/api/badge/${profileId}`}
+          alt={`Badge di ${profileName}`}
+          width={380}
+          height={110}
+          className="w-full h-auto"
+          data-testid="img-badge-preview"
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={shareProfile}
+          className="flex items-center justify-center gap-2 h-11 rounded-xl bg-primary/20 border border-primary/30 text-white text-sm font-semibold active:scale-95 transition-transform"
+          data-testid="button-share-badge-profile"
+        >
+          <Share2 className="w-4 h-4" />
+          Condividi link
+        </button>
+        <button
+          onClick={() => copyToClipboard(embedCode, "Codice embed copiato")}
+          className="flex items-center justify-center gap-2 h-11 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-semibold active:scale-95 transition-transform"
+          data-testid="button-copy-embed"
+        >
+          <Download className="w-4 h-4" />
+          Copia embed
+        </button>
+      </div>
+
+      {/* Link display */}
+      <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 gap-2">
+        <span className="text-white/45 text-xs truncate flex-1 select-all" data-testid="text-profile-link">
+          {profileUrl}
+        </span>
+        <button
+          onClick={() => copyToClipboard(profileUrl, "Link profilo copiato")}
+          className="text-primary text-xs font-semibold shrink-0 active:opacity-60 transition-opacity"
+          data-testid="button-copy-profile-link"
+        >
+          Copia
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ChangePasswordDialog() {
   const [open, setOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -677,6 +760,8 @@ export default function ProfilePage() {
         <PrimaImpressioneToggle profile={profile} />
 
         <ReferralSection />
+
+        <BadgeSection profileId={profile.id} profileName={profile.name} />
 
         <div className="space-y-2">
           <Button 

@@ -36,6 +36,7 @@ import Onboarding from "@/pages/onboarding";
 import ForgotPassword from "@/pages/forgot-password";
 import VideoUpload from "@/pages/video-upload";
 import Favorites from "@/pages/favorites";
+import PublicProfile from "@/pages/public-profile";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
@@ -136,6 +137,7 @@ function AuthenticatedRouter() {
       <Route path="/favorites" component={Favorites} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
+      <Route path="/p/:profileId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -181,6 +183,7 @@ function GuestRouter() {
       <Route path="/prima-impressione" component={PrimaImpressione} />
       <Route path="/vibing" component={Vibing} />
       <Route path="/signals" component={Signals} />
+      <Route path="/p/:profileId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -197,13 +200,14 @@ function UnauthenticatedRouter() {
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/p/:profileId" component={PublicProfile} />
       <Route path="/" component={Landing} />
       <Route component={Landing} />
     </Switch>
   );
 }
 
-const pagesWithOwnBackground = ["/login", "/register", "/forgot-password", "/", "/privacy", "/terms", "/onboarding", "/profile/edit"];
+const pagesWithOwnBackground = ["/login", "/register", "/forgot-password", "/", "/privacy", "/terms", "/onboarding", "/profile/edit", "/p/"];
 
 function GuestBanner() {
   const { exitGuestMode } = useGuest();
@@ -303,7 +307,10 @@ function AppContent() {
 }
 
 function App() {
+  const currentPath = window.location.pathname;
   const [showSplash, setShowSplash] = useState(() => {
+    // Mai mostrare la splash sui profili pubblici (/p/...)
+    if (currentPath.startsWith("/p/")) return false;
     try {
       const seen = localStorage.getItem("vibra-splash-seen");
       return !seen;

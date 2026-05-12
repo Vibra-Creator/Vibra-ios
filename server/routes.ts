@@ -4828,6 +4828,85 @@ REGOLE:
     }
   });
 
+  // ─── BADGE & PROFILO PUBBLICO ────────────────────────────────────────────────
+
+  app.get("/api/badge/:profileId", async (req, res) => {
+    try {
+      const profile = await storage.getProfile(req.params.profileId);
+      if (!profile) return res.status(404).send("Not found");
+
+      const esc = (s: string) => s
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+      const name     = esc(`${profile.name}, ${profile.age}`);
+      const location = profile.location ? esc(`📍 ${profile.location}`) : "";
+      const alien    = profile.alienType ? esc(profile.alienType) : "Vibrante";
+
+      const svg = `<svg width="380" height="110" viewBox="0 0 380 110" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg${profile.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D0B1E"/>
+      <stop offset="100%" stop-color="#1a0f2e"/>
+    </linearGradient>
+    <linearGradient id="br${profile.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9b5de5"/>
+      <stop offset="50%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#f72585"/>
+    </linearGradient>
+  </defs>
+  <rect width="380" height="110" rx="18" fill="url(#br${profile.id})"/>
+  <rect x="2" y="2" width="376" height="106" rx="16" fill="url(#bg${profile.id})"/>
+  <circle cx="60" cy="55" r="32" fill="#1a0530" stroke="rgba(155,93,229,0.7)" stroke-width="1.5"/>
+  <text x="60" y="66" text-anchor="middle" font-size="28">🛸</text>
+  <text x="108" y="40" font-family="system-ui,sans-serif" font-weight="700" font-size="21" fill="white">${name}</text>
+  <text x="108" y="60" font-family="system-ui,sans-serif" font-size="13" fill="rgba(255,255,255,0.55)">${location}</text>
+  <text x="108" y="80" font-family="system-ui,sans-serif" font-size="12" fill="rgba(155,93,229,0.95)">✨ ${alien} · Trovami su Vibra</text>
+  <line x1="310" y1="18" x2="310" y2="92" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+  <text x="344" y="48" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="15" fill="rgba(155,93,229,0.95)">Vibra</text>
+  <text x="344" y="72" text-anchor="middle" font-size="20">🛸</text>
+</svg>`;
+
+      res.setHeader("Content-Type", "image/svg+xml");
+      res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+      res.send(svg);
+    } catch (err) {
+      console.error("Badge error:", err);
+      res.status(500).send("Error generating badge");
+    }
+  });
+
+  app.get("/api/public/profile/:profileId", async (req, res) => {
+    try {
+      const profile = await storage.getProfile(req.params.profileId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      // Restituisce solo i campi pubblici sicuri (no userId, no dati privati)
+      const pub = {
+        id: profile.id,
+        name: profile.name,
+        age: profile.age,
+        imageUrl: profile.imageUrl,
+        photos: profile.photos || [],
+        bio: profile.bio,
+        location: profile.location,
+        interests: profile.interests || [],
+        alienType: profile.alienType,
+        isVerified: profile.isVerified,
+        profileVideoUrl: profile.profileVideoUrl,
+        height: profile.height,
+        zodiacSign: profile.zodiacSign,
+        loveLanguage: profile.loveLanguage,
+        education: profile.education,
+        lifestyle: profile.lifestyle,
+      };
+      res.setHeader("Cache-Control", "public, max-age=60");
+      res.json(pub);
+    } catch (err) {
+      console.error("Public profile error:", err);
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return httpServer;
