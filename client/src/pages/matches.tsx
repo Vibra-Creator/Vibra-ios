@@ -191,7 +191,7 @@ export default function Matches() {
                 data-testid="tab-matches"
               >
                 <Sparkles className="w-4 h-4" />
-                Match
+                Radar Hit
                 {(matches?.length ?? 0) > 0 && (
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${activeTab === "matches" ? "bg-white/20" : "bg-accent text-white"}`}>
                     {matches?.length}
@@ -243,7 +243,7 @@ export default function Matches() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-pink-500/30 to-rose-500/30 flex items-center justify-center">
                 <Heart className="w-8 h-8 text-pink-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Nessun like o Signal ancora</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Nessun like o segnale ancora</h3>
               <p className="text-white/60 text-sm">
                 Quando qualcuno mette like o ti invia un Signal, lo vedrai qui. Continua a esplorare!
               </p>
