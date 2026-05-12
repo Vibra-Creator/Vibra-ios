@@ -737,12 +737,18 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     queryKey: ['/api/signals/profile', profile.id],
     staleTime: 60 * 1000,
   });
+  // Single source of truth: profileVideoUrl ha sempre priorità; per non-bot usa cardVideos come fallback
+  const primaryVideoUrl: string | null = profile.profileVideoUrl
+    ? (resolveVideoSrc(profile.profileVideoUrl) ?? null)
+    : (profile.isBot === false && cardVideos.length > 0 && cardVideos[0]?.videoUrl)
+      ? (resolveVideoSrc(cardVideos[0].videoUrl) ?? null)
+      : null;
+  const hasVideo = !!primaryVideoUrl;
+  // Signal media: solo se non c'è video primario
   const profileMedia = [...profileSignals]
     .filter((signal: any) => signal.mediaUrl)
     .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  const activeProfileMedia = profileMedia[0] || null;
-    const hasVideos = cardVideos.length > 0;
-    const shouldUseProfileVideo = !!profile.profileVideoUrl || (activeProfileMedia?.mediaType === "video" && activeProfileMedia?.mediaUrl) || (profile.isBot === false && cardVideos.length > 0);
+  const activeProfileMedia = !hasVideo ? (profileMedia[0] ?? null) : null;
 
     useEffect(() => {
       const extras = profile.photos || [];
@@ -756,110 +762,76 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       setIsCardMuted(globalMuted ?? false);
     }, [globalMuted]);
 
-    // Handler per buffering a metà riproduzione (rete lenta durante play)
+    // Unico effect che gestisce preload, buffering e play/pause — TikTok style
     useEffect(() => {
-      if (!isTop) return;
       const video = cardVideoRef.current;
-      if (!video) return;
-      const onWaiting = () => setIsVideoBuffering(true);
-      const onPlaying = () => setIsVideoBuffering(false);
-      const onCanPlayThrough = () => setIsVideoBuffering(false);
-      video.addEventListener("waiting", onWaiting);
-      video.addEventListener("playing", onPlaying);
-      video.addEventListener("canplaythrough", onCanPlayThrough);
-      return () => {
-        video.removeEventListener("waiting", onWaiting);
-        video.removeEventListener("playing", onPlaying);
-        video.removeEventListener("canplaythrough", onCanPlayThrough);
-      };
-    }, [isTop]);
+      if (!video || !hasVideo || !primaryVideoUrl) return;
 
-    // TikTok-style video play/pause con buffering indicator
-    useEffect(() => {
-      const video = cardVideoRef.current;
-      const hasVideo = shouldUseProfileVideo;
-      if (!video || !hasVideo) return;
+      // Assicura src corretto (senza ricaricare se già settato)
+      if (!video.src || !video.src.includes(encodeURIComponent(primaryVideoUrl.split("/").pop() ?? "")) && !video.src.endsWith(primaryVideoUrl)) {
+        video.src = primaryVideoUrl;
+        video.load();
+      } else if (video.readyState === 0) {
+        video.load();
+      }
+
+      video.preload = "auto";
 
       const wantAudio = !(globalMuted ?? false);
 
-      const doPlay = () => {
-        video.muted = true;
-        video.volume = 1;
-        const p = video.play();
-        if (p) p.then(() => {
+      const doPlay = async () => {
+        try {
+          video.muted = true;
+          video.volume = 1;
+          await video.play();
           setIsVideoBuffering(false);
           if (wantAudio) {
             video.muted = false;
             setTimeout(() => { if (video.muted) setIsCardMuted(true); }, 150);
           }
-        }).catch(() => {
-          // Autoplay bloccato: riprova sempre muted
-          video.muted = true;
-          video.play().catch(() => {});
-        });
+        } catch {
+          // Autoplay bloccato: riprova muted
+          try { video.muted = true; await video.play(); } catch {}
+        }
       };
 
       if (isTop) {
-        // Mostra spinner solo se non ancora pronto
+        const onWaiting  = () => setIsVideoBuffering(true);
+        const onPlaying  = () => setIsVideoBuffering(false);
+        const onCanPlay  = () => setIsVideoBuffering(false);
+        video.addEventListener("waiting",      onWaiting);
+        video.addEventListener("playing",      onPlaying);
+        video.addEventListener("canplaythrough", onCanPlay);
+
         if (video.readyState >= 2) {
-          // Già bufferizzato: play immediato senza spinner
+          // Già bufferizzato → play immediato
           setIsVideoBuffering(false);
           doPlay();
         } else {
+          // Mostra spinner e aspetta canplay (max 3 s)
           setIsVideoBuffering(true);
-          const onCanPlay = () => {
-            setIsVideoBuffering(false);
-            doPlay();
-            cleanup();
-          };
-          const onPlaying = () => {
-            setIsVideoBuffering(false);
-            cleanup();
-          };
-          // Timeout di sicurezza: dopo 2.5s prova a fare play comunque
-          const timeout = setTimeout(() => {
-            setIsVideoBuffering(false);
-            doPlay();
-            cleanup();
-          }, 2500);
-
+          const onReady = () => { cleanup(); setIsVideoBuffering(false); doPlay(); };
+          const timeout = setTimeout(() => { cleanup(); setIsVideoBuffering(false); doPlay(); }, 3000);
           const cleanup = () => {
-            video.removeEventListener("canplay", onCanPlay);
-            video.removeEventListener("playing", onPlaying);
+            video.removeEventListener("canplay", onReady);
             clearTimeout(timeout);
           };
-
-          video.addEventListener("canplay", onCanPlay);
-          video.addEventListener("playing", onPlaying);
-
-          // Avvia caricamento solo se non già in corso
-          if (video.readyState === 0) video.load();
-
-          return cleanup;
+          video.addEventListener("canplay", onReady);
         }
 
-        // Buffering durante la riproduzione (rete lenta)
-        const onWaiting = () => setIsVideoBuffering(true);
-        const onPlaying2 = () => setIsVideoBuffering(false);
-        video.addEventListener("waiting", onWaiting);
-        video.addEventListener("playing", onPlaying2);
         return () => {
-          video.removeEventListener("waiting", onWaiting);
-          video.removeEventListener("playing", onPlaying2);
+          video.removeEventListener("waiting",       onWaiting);
+          video.removeEventListener("playing",       onPlaying);
+          video.removeEventListener("canplaythrough", onCanPlay);
         };
       } else {
-        // Prewarm della card successiva: carica e prova a partire in background
+        // Card non in cima: pre-warm silenzioso — carica e metti in pausa
         video.muted = true;
-        video.preload = "auto";
-        video.load();
-        video.play().then(() => {
-          video.pause();
-          video.currentTime = 0;
-        }).catch(() => {
-          if (video.readyState === 0) video.load();
-        });
+        video.play()
+          .then(() => { video.pause(); video.currentTime = 0; })
+          .catch(() => { if (video.readyState === 0) video.load(); });
       }
-    }, [isTop, shouldUseProfileVideo]);
+    }, [isTop, hasVideo, primaryVideoUrl, globalMuted]);
 
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {
@@ -1104,22 +1076,23 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               : undefined
           }>
             <div className="relative h-full overflow-hidden">
-              {profile.profileVideoUrl || (profile.isBot === false && cardVideos.length > 0) ? (
+              {hasVideo ? (
+                /* ── RAMO 1: profilo con video (profileVideoUrl o cardVideo non-bot) ── */
                 <>
                   <video
                     ref={cardVideoRef}
-                    key={profile.profileVideoUrl || activeProfileMedia?.id || profile.id}
-                    autoPlay
+                    key={primaryVideoUrl}
                     loop
                     playsInline
+                    muted
                     preload="auto"
-                    src={resolveVideoSrc(profile.profileVideoUrl || cardVideos[0]?.videoUrl || activeProfileMedia?.mediaUrl || "")}
+                    src={primaryVideoUrl ?? undefined}
                     poster={profile.imageUrl ?? undefined}
                     className="absolute inset-0 w-full h-full object-cover object-top z-10"
                     style={{ willChange: "transform" }}
                     data-testid={`profile-video-${profile.id}`}
                   />
-                  {isTop && isVideoBuffering && !profile.isBot && (
+                  {isTop && isVideoBuffering && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                       <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin" />
                     </div>
@@ -1155,6 +1128,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   </div>
                 </>
               ) : activeProfileMedia ? (
+                /* ── RAMO 2: media da Cosmic Signal (immagine o video) ── */
                 <>
                   {activeProfileMedia.mediaType === "video" ? (
                     <>
@@ -1164,6 +1138,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         autoPlay
                         loop
                         playsInline
+                        muted
                         preload="auto"
                         src={activeProfileMedia.mediaUrl}
                         poster={profile.imageUrl ?? undefined}
@@ -1177,118 +1152,45 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         </div>
                       )}
                       <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
                           className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                          data-testid="button-card-profile-toggle"
-                          style={{ touchAction: "manipulation" }}
-                        >
+                          data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
                           <User className="w-6 h-6 text-white" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const newMuted = !isCardMuted;
-                            setIsCardMuted(newMuted);
-                            onMutedChange?.(newMuted);
-                            if (cardVideoRef.current) {
-                              cardVideoRef.current.muted = newMuted;
-                              if (!newMuted) cardVideoRef.current.volume = 1;
-                            }
-                          }}
+                        <button type="button" onClick={(e) => {
+                          e.stopPropagation();
+                          const newMuted = !isCardMuted;
+                          setIsCardMuted(newMuted);
+                          onMutedChange?.(newMuted);
+                          if (cardVideoRef.current) { cardVideoRef.current.muted = newMuted; if (!newMuted) cardVideoRef.current.volume = 1; }
+                        }}
                           className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                          data-testid="button-card-mute-toggle"
-                          style={{ touchAction: "manipulation" }}
-                        >
+                          data-testid="button-card-mute-toggle" style={{ touchAction: "manipulation" }}>
                           {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
                         </button>
                       </div>
                     </>
                   ) : (
                     <>
-                      <img
-                        key={activeProfileMedia.id}
-                        src={activeProfileMedia.mediaUrl}
-                        alt={profile.name}
+                      <img key={activeProfileMedia.id} src={activeProfileMedia.mediaUrl} alt={profile.name}
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
-                        data-testid={`profile-media-image-${profile.id}`}
-                      />
+                        data-testid={`profile-media-image-${profile.id}`} />
                       <div className="absolute top-3 left-3 z-30">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
                           className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                          data-testid="button-card-profile-toggle"
-                          style={{ touchAction: "manipulation" }}
-                        >
+                          data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
                           <User className="w-6 h-6 text-white" />
                         </button>
                       </div>
                     </>
                   )}
                 </>
-              ) : profile.profileVideoUrl ? (
-                <>
-                  <video
-                    ref={cardVideoRef}
-                    key={profile.profileVideoUrl}
-                    autoPlay
-                    loop
-                    playsInline
-                    preload="auto"
-                    src={resolveVideoSrc(profile.profileVideoUrl)}
-                    className="w-full h-full object-cover object-top"
-                    poster={profile.imageUrl ?? undefined}
-                    data-testid={`profile-video-${profile.id}`}
-                    style={{ willChange: "transform" }}
-                  />
-                  {/* Spinner TikTok-style durante buffering — mai sui bot (poster già visibile) */}
-                  {isTop && isVideoBuffering && !profile.isBot && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                      <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin" />
-                    </div>
-                  )}
-                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-                    {/* Pulsante video */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowDetail(true);
-                      }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                    data-testid="button-card-profile-toggle"
-                      style={{ touchAction: "manipulation" }}
-                    >
-                      <User className="w-6 h-6 text-white" />
-                    </button>
-                    {/* Pulsante mute */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newMuted = !isCardMuted;
-                        setIsCardMuted(newMuted);
-                        onMutedChange?.(newMuted);
-                        if (cardVideoRef.current) {
-                          cardVideoRef.current.muted = newMuted;
-                          if (!newMuted) cardVideoRef.current.volume = 1;
-                        }
-                      }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-mute-toggle"
-                      style={{ touchAction: "manipulation" }}
-                    >
-                      {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
-                    </button>
-                  </div>
-                </>
               ) : (
+                /* ── RAMO 3: foto statica ── */
                 <>
                   {!imageLoaded && !imageError && (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-purple-900/50 to-black/80 animate-pulse" data-testid={`image-loading-${profile.id}`}>
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-purple-900/50 to-black/80 animate-pulse"
+                      data-testid={`image-loading-${profile.id}`}>
                       <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
                         <User className="w-8 h-8 text-white/40" />
                       </div>
@@ -1297,22 +1199,15 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   <img
                     src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
                     alt={profile.name}
-                    className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                    className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
                     data-testid={`profile-image-${profile.id}`}
                   />
-                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowDetail(true);
-                      }}
+                  <div className="absolute top-3 left-3 z-30">
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
                       className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-profile-toggle"
-                      style={{ touchAction: "manipulation" }}
-                    >
+                      data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
                       <User className="w-6 h-6 text-white" />
                     </button>
                   </div>
@@ -1345,7 +1240,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-stories-${profile.id}`}
                   >
-                    <div className={`relative w-12 h-12 rounded-full p-[2.5px] ${hasVideos ? "bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400" : "bg-white/20"}`}>
+                    <div className={`relative w-12 h-12 rounded-full p-[2.5px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400" : "bg-white/20"}`}>
                       <div className="w-full h-full rounded-full bg-black/70 overflow-hidden border border-black/40">
                         {profile.imageUrl ? (
                           <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
@@ -1355,7 +1250,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           </div>
                         )}
                       </div>
-                      {hasVideos && (
+                      {cardVideos.length > 0 && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-black flex items-center justify-center border border-cyan-400/60">
                           <Play className="w-2 h-2 text-cyan-400 fill-cyan-400" />
                         </div>
