@@ -301,7 +301,7 @@ export default function Landing() {
             <div className="grid grid-cols-3 gap-4">
               {[
                 { value: "1.2K+", label: t("landing.stats.users"), icon: Users },
-                { value: "500+", label: t("landing.stats.matches"), icon: Heart },
+                { value: "500+", label: t("landing.stats.matches"), icon: Rocket },
                 { value: "10K+", label: t("landing.stats.messages"), icon: MessageCircle },
               ].map((stat, i) => (
                 <motion.div
