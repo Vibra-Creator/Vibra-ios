@@ -742,6 +742,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   const activeProfileMedia = profileMedia[0] || null;
     const hasVideos = cardVideos.length > 0;
+    const shouldUseProfileVideo = !!profile.profileVideoUrl || (activeProfileMedia?.mediaType === "video" && activeProfileMedia?.mediaUrl) || (profile.isBot === false && cardVideos.length > 0);
 
     useEffect(() => {
       const extras = profile.photos || [];
@@ -776,7 +777,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     // TikTok-style video play/pause con buffering indicator
     useEffect(() => {
       const video = cardVideoRef.current;
-      const hasVideo = !!(profile.profileVideoUrl || (activeProfileMedia?.mediaType === "video" && activeProfileMedia?.mediaUrl));
+      const hasVideo = shouldUseProfileVideo;
       if (!video || !hasVideo) return;
 
       const wantAudio = !(globalMuted ?? false);
@@ -858,7 +859,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           if (video.readyState === 0) video.load();
         });
       }
-    }, [isTop, profile.profileVideoUrl, activeProfileMedia?.id]);
+    }, [isTop, shouldUseProfileVideo]);
 
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {
