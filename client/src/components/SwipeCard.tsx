@@ -1104,7 +1104,57 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               : undefined
           }>
             <div className="relative h-full overflow-hidden">
-              {activeProfileMedia ? (
+              {profile.profileVideoUrl || (profile.isBot === false && cardVideos.length > 0) ? (
+                <>
+                  <video
+                    ref={cardVideoRef}
+                    key={profile.profileVideoUrl || activeProfileMedia?.id || profile.id}
+                    autoPlay
+                    loop
+                    playsInline
+                    preload="auto"
+                    src={resolveVideoSrc(profile.profileVideoUrl || cardVideos[0]?.videoUrl || activeProfileMedia?.mediaUrl || "")}
+                    poster={profile.imageUrl ?? undefined}
+                    className="absolute inset-0 w-full h-full object-cover object-top z-10"
+                    style={{ willChange: "transform" }}
+                    data-testid={`profile-video-${profile.id}`}
+                  />
+                  {isTop && isVideoBuffering && !profile.isBot && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                      <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin" />
+                    </div>
+                  )}
+                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
+                      data-testid="button-card-profile-toggle"
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      <User className="w-6 h-6 text-white" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newMuted = !isCardMuted;
+                        setIsCardMuted(newMuted);
+                        onMutedChange?.(newMuted);
+                        if (cardVideoRef.current) {
+                          cardVideoRef.current.muted = newMuted;
+                          if (!newMuted) cardVideoRef.current.volume = 1;
+                        }
+                      }}
+                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
+                      data-testid="button-card-mute-toggle"
+                      style={{ touchAction: "manipulation" }}
+                    >
+                      {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
+                    </button>
+                  </div>
+                </>
+              ) : activeProfileMedia ? (
                 <>
                   {activeProfileMedia.mediaType === "video" ? (
                     <>
