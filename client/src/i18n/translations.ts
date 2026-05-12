@@ -153,7 +153,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "home.profilesRestored": "Profili ripristinati!",
     "home.profilesRestoredDesc": "Tutti i profili sono di nuovo disponibili (i Radar Hit restano).",
     "home.swipeError": "Si è verificato un errore durante lo swipe. Riprova.",
-    "home.like": "Like",
+    "home.like": "Vibe",
     "home.dislike": "scartare un profilo",
     "home.restoreError": "Non è stato possibile ripristinare i profili.",
     "stories.title": "Storie",
@@ -333,7 +333,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // SwipeCard buttons
     "swipe.share": "Condividi",
     "swipe.signalSent": "Signal inviato!",
-    "swipe.signalSentDesc": "{name} lo vedrà nei suoi Like & Signal",
+    "swipe.signalSentDesc": "{name} lo vedrà nei suoi Vibe & Signals",
     "swipe.sendSignalDirect": "Trasmetti un Segnale Cosmico",
 
     // Vibing
@@ -1059,16 +1059,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     "home.profilesRestored": "Profiles restored!",
     "home.profilesRestoredDesc": "All profiles are available again (matches remain).",
     "home.swipeError": "An error occurred while swiping. Please try again.",
-    "home.like": "like",
+    "home.like": "vibe",
     "home.dislike": "discard a profile",
     "home.restoreError": "Could not restore profiles.",
     "stories.title": "Stories",
 
     // Matches
-    "matches.title": "Your Matches",
-    "matches.registerPrompt": "Sign up to see your matches",
+    "matches.title": "Your Radar Hit",
+    "matches.registerPrompt": "Sign up to see your Radar Hit",
     "matches.cosmicConnections": "cosmic connections",
-    "matches.guestTitle": "You'll see your matches here when you sign up!",
+    "matches.guestTitle": "You'll see your Radar Hit here when you sign up!",
     "matches.guestDesc": "Create a free account to start finding your cosmic connections and chat with them.",
     "matches.guestCta": "Sign Up Free",
 
@@ -1239,7 +1239,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // SwipeCard buttons
     "swipe.share": "Share",
     "swipe.signalSent": "Signal sent!",
-    "swipe.signalSentDesc": "{name} will see it in their Likes & Signals",
+    "swipe.signalSentDesc": "{name} will see it in their Vibes & Signals",
     "swipe.sendSignalDirect": "Transmit a Cosmic Signal",
 
     // Vibing
@@ -1964,16 +1964,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     "home.profilesRestored": "¡Perfiles restaurados!",
     "home.profilesRestoredDesc": "Todos los perfiles están disponibles de nuevo (los matches se mantienen).",
     "home.swipeError": "Ocurrió un error al deslizar. Inténtalo de nuevo.",
-    "home.like": "dar like",
+    "home.like": "dar vibe",
     "home.dislike": "descartar un perfil",
     "home.restoreError": "No se pudieron restaurar los perfiles.",
     "stories.title": "Historias",
 
     // Matches
-    "matches.title": "Tus Matches",
-    "matches.registerPrompt": "Regístrate para ver tus matches",
+    "matches.title": "Tus Radar Hit",
+    "matches.registerPrompt": "Regístrate para ver tus Radar Hit",
     "matches.cosmicConnections": "conexiones cósmicas",
-    "matches.guestTitle": "¡Aquí verás tus matches cuando te registres!",
+    "matches.guestTitle": "¡Aquí verás tus Radar Hit cuando te registres!",
     "matches.guestDesc": "Crea una cuenta gratuita para encontrar tus conexiones cósmicas y chatear con ellas.",
     "matches.guestCta": "Regístrate Gratis",
 
@@ -2144,7 +2144,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // SwipeCard buttons
     "swipe.share": "Compartir",
     "swipe.signalSent": "¡Señal enviada!",
-    "swipe.signalSentDesc": "{name} lo verá en sus Me gusta y señales",
+    "swipe.signalSentDesc": "{name} lo verá en sus Vibras y señales",
     "swipe.sendSignalDirect": "Transmitir una Señal Cósmica",
 
     // Vibing

@@ -60,8 +60,8 @@ function LikerCard({ profile, index, onViewProfile }: { profile: Profile; index:
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         <div className="absolute top-3 left-3">
-          <Badge variant="secondary" className="bg-pink-500/80 text-white backdrop-blur-sm text-xs">
-            <Heart className="w-3 h-3 mr-1 fill-white" /> Ti ha messo like
+            <Badge variant="secondary" className="bg-pink-500/80 text-white backdrop-blur-sm text-xs">
+            <Heart className="w-3 h-3 mr-1 fill-white" /> Sente la tua Vibe
           </Badge>
         </div>
         <div className="absolute bottom-3 left-3 right-3">
@@ -75,7 +75,7 @@ function LikerCard({ profile, index, onViewProfile }: { profile: Profile; index:
         </div>
       </div>
       <div className="p-2 flex gap-2">
-        <Button
+          <Button
           variant="outline"
           size="sm"
           className="flex-1 border-red-400/40 text-red-400 hover:bg-red-500/10"
@@ -85,14 +85,14 @@ function LikerCard({ profile, index, onViewProfile }: { profile: Profile; index:
         >
           No
         </Button>
-        <Button
+          <Button
           size="sm"
           className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white border-0"
           disabled={swipeMutation.isPending}
           onClick={() => swipeMutation.mutate(true)}
           data-testid={`button-like-liker-${profile.id}`}
         >
-          <Heart className="w-3 h-3 mr-1 fill-white" /> Like
+          <Heart className="w-3 h-3 mr-1 fill-white" /> Vibe
         </Button>
       </div>
     </motion.div>
@@ -174,7 +174,7 @@ export default function Matches() {
                 data-testid="tab-likers"
               >
                 <Heart className="w-4 h-4" />
-                Like & Signal
+                Vibe & Signal
                 {likersCount > 0 && (
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${activeTab === "likers" ? "bg-white/20" : "bg-pink-500 text-white"}`}>
                     {likersCount}
@@ -243,9 +243,9 @@ export default function Matches() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-pink-500/30 to-rose-500/30 flex items-center justify-center">
                 <Heart className="w-8 h-8 text-pink-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Nessun like o segnale ancora</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Nessuna vibe o segnale ancora</h3>
               <p className="text-white/60 text-sm">
-                Quando qualcuno mette like o ti invia un Signal, lo vedrai qui. Continua a esplorare!
+                Quando qualcuno mette vibe o ti invia un Signal, lo vedrai qui. Continua a esplorare!
               </p>
               <Button className="mt-4 bg-gradient-to-r from-pink-500 to-rose-500" onClick={() => setLocation("/")}>
                 Esplora profili
@@ -293,7 +293,7 @@ export default function Matches() {
               )}
               {likers && likers.length > 0 && (
                 <div>
-                  {receivedSignals.length > 0 && <p className="text-pink-400 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 fill-pink-400" /> Like ricevuti</p>}
+                  {receivedSignals.length > 0 && <p className="text-pink-400 text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5"><Heart className="w-3.5 h-3.5 fill-pink-400" /> Vibe ricevute</p>}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {likers.map((profile, index) => (
                       <LikerCard key={profile.id} profile={profile} index={index} onViewProfile={setSelectedLiker} />
