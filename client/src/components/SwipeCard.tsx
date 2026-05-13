@@ -803,13 +803,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         video.addEventListener("playing",      onPlaying);
         video.addEventListener("canplaythrough", onCanPlay);
 
-        if (video.readyState >= 1) {
-          // Metadati disponibili → play senza spinner
+        if (video.readyState >= 2) {
+          // Dati disponibili → play immediato
           setIsVideoBuffering(false);
           doPlay();
         } else {
-          // Spinner solo se readyState === 0 (nessun dato caricato)
-          setIsVideoBuffering(true);
+          // Attende canplay (max 3 s) senza mostrare spinner
+          setIsVideoBuffering(false);
           const onReady = () => { cleanup(); setIsVideoBuffering(false); doPlay(); };
           const timeout = setTimeout(() => { cleanup(); setIsVideoBuffering(false); doPlay(); }, 3000);
           const cleanup = () => {
