@@ -23,6 +23,28 @@ interface SwipableResponse {
 }
 
 export default function Home() {
+  useEffect(() => {
+    document.title = "Vibra - Swipe e Match Cosmici";
+    const setMeta = (name: string, content: string, isProperty = false) => {
+      const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(isProperty ? "property" : "name", name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    const desc = "Scorri profili alieni, fai match e chatta su Vibra, la dating app cosmica in italiano.";
+    setMeta("description", desc);
+    setMeta("og:title", "Vibra - Swipe e Match Cosmici", true);
+    setMeta("og:description", desc, true);
+    setMeta("og:type", "website", true);
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", "Vibra - Swipe e Match Cosmici");
+    setMeta("twitter:description", desc);
+  }, []);
+
   const [showMatch, setShowMatch] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);

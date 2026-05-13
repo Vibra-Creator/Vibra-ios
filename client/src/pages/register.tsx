@@ -16,6 +16,28 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Register() {
+  useEffect(() => {
+    document.title = "Vibra - Registrati";
+    const setMeta = (name: string, content: string, isProperty = false) => {
+      const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(isProperty ? "property" : "name", name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    const desc = "Crea il tuo account Vibra e inizia a conoscere nuove persone nella community cosmica.";
+    setMeta("description", desc);
+    setMeta("og:title", "Vibra - Registrati", true);
+    setMeta("og:description", desc, true);
+    setMeta("og:type", "website", true);
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", "Vibra - Registrati");
+    setMeta("twitter:description", desc);
+  }, []);
+
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");

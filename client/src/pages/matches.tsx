@@ -100,6 +100,28 @@ function LikerCard({ profile, index, onViewProfile }: { profile: Profile; index:
 }
 
 export default function Matches() {
+  useEffect(() => {
+    document.title = "Vibra - I tuoi match";
+    const setMeta = (name: string, content: string, isProperty = false) => {
+      const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(isProperty ? "property" : "name", name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    const desc = "Rivedi i tuoi match, chi ti ha messo like e continua le conversazioni su Vibra.";
+    setMeta("description", desc);
+    setMeta("og:title", "Vibra - I tuoi match", true);
+    setMeta("og:description", desc, true);
+    setMeta("og:type", "website", true);
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", "Vibra - I tuoi match");
+    setMeta("twitter:description", desc);
+  }, []);
+
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { isGuest } = useGuest();

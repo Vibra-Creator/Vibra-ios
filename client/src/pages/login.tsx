@@ -13,6 +13,28 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoginVideoBackground } from "@/components/LoginVideoBackground";
 
 export default function Login() {
+  useEffect(() => {
+    document.title = "Vibra - Accedi";
+    const setMeta = (name: string, content: string, isProperty = false) => {
+      const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let el = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(isProperty ? "property" : "name", name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    const desc = "Accedi a Vibra per continuare a swipare, chattare e gestire il tuo profilo cosmico.";
+    setMeta("description", desc);
+    setMeta("og:title", "Vibra - Accedi", true);
+    setMeta("og:description", desc, true);
+    setMeta("og:type", "website", true);
+    setMeta("twitter:card", "summary_large_image");
+    setMeta("twitter:title", "Vibra - Accedi");
+    setMeta("twitter:description", desc);
+  }, []);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
