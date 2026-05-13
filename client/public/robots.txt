@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vibra.app/sitemap.xml
+Sitemap: https://vibraalienmatch.com/sitemap.xml
