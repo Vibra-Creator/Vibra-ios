@@ -619,20 +619,20 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex-1 p-4 max-w-lg mx-auto overflow-y-auto relative">
+    <div className="flex-1 px-4 py-4 w-full max-w-lg mx-auto overflow-y-auto relative">
       <ProfileBackground />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 space-y-6"
+        className="relative z-10 space-y-6 w-full mx-auto"
       >
         <div className="flex justify-start">
           <Button variant="ghost" size="icon" className="text-white bg-black/30 backdrop-blur-sm" onClick={() => setLocation("/")} data-testid="button-back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </div>
-        <div className="relative">
-          <div className="aspect-[3/4] rounded-2xl overflow-hidden">
+        <div className="relative w-full">
+          <div className="aspect-[3/4] rounded-2xl overflow-hidden w-full">
             <img
               src={profile.imageUrl}
               alt={profile.name}
@@ -652,7 +652,7 @@ export default function ProfilePage() {
             <Edit2 className="w-4 h-4" />
           </Button>
           
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="absolute bottom-4 left-4 right-4 text-left">
             <Badge 
               variant="secondary" 
               className="bg-primary/80 text-primary-foreground backdrop-blur-sm mb-2"
@@ -682,7 +682,7 @@ export default function ProfilePage() {
 
         <ProfileVideosSection profileId={profile.id} currentMainVideoUrl={profile.profileVideoUrl} />
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 w-full text-center">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -690,7 +690,7 @@ export default function ProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * index }}
             >
-              <div className="text-center p-4">
+              <div className="text-center p-4 w-full">
                 <stat.icon className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} />
                 <div className="text-3xl font-bold text-white">{stat.value}</div>
                 <div className="text-sm text-white/60">{stat.label}</div>
@@ -699,7 +699,7 @@ export default function ProfilePage() {
           ))}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           <div>
             <h3 className="text-base font-semibold mb-2 flex items-center gap-2 text-white">
               <User className="w-4 h-4 text-primary" />
@@ -763,7 +763,7 @@ export default function ProfilePage() {
 
         <BadgeSection profileId={profile.id} profileName={profile.name} />
 
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
           <Button 
             variant="outline" 
             className="w-full justify-start gap-3 text-base h-12"
