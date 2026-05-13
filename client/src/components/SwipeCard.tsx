@@ -1223,7 +1223,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
               {isTop && (
                 <div
-                  className="absolute right-2 top-[5%] z-30 flex flex-col items-center gap-2 pointer-events-auto overflow-y-auto max-h-[90%] [&::-webkit-scrollbar]:hidden"
+                  className="absolute right-2 top-[5%] z-30 flex flex-col items-center gap-1.5 pointer-events-auto overflow-y-auto max-h-[88%] [&::-webkit-scrollbar]:hidden"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <motion.button
@@ -1233,23 +1233,23 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-stories-${profile.id}`}
                   >
-                    <div className={`relative w-12 h-12 rounded-full p-[2.5px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400" : "bg-white/20"}`}>
+                    <div className={`relative w-9 h-9 rounded-full p-[2px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400" : "bg-white/20"}`}>
                       <div className="w-full h-full rounded-full bg-black/70 overflow-hidden border border-black/40">
                         {profile.imageUrl ? (
                           <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Play className="w-5 h-5 text-cyan-400 fill-cyan-400" />
+                            <Play className="w-3 h-3 text-cyan-400 fill-cyan-400" />
                           </div>
                         )}
                       </div>
                       {cardVideos.length > 0 && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-black flex items-center justify-center border border-cyan-400/60">
-                          <Play className="w-2 h-2 text-cyan-400 fill-cyan-400" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-black flex items-center justify-center border border-cyan-400/60">
+                          <Play className="w-1.5 h-1.5 text-cyan-400 fill-cyan-400" />
                         </div>
                       )}
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Storie</span>
+                    <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Storie</span>
                   </motion.button>
 
                   <motion.button
@@ -1268,10 +1268,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-vibrapp-${profile.id}`}
                   >
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#25D366", boxShadow: "0 0 14px rgba(37,211,102,0.6)" }}>
-                      <MessageCircle className="w-6 h-6 text-white" />
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#25D366", boxShadow: "0 0 10px rgba(37,211,102,0.6)" }}>
+                      <MessageCircle className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
+                    <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
                   </motion.button>
 
                   <motion.button
@@ -1281,10 +1281,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-favorite-${profile.id}`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                      <Bookmark className={`w-6 h-6 ${isFavorited ? "text-yellow-400 fill-yellow-400" : "text-white"}`} />
+                    <div className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                      <Bookmark className={`w-4 h-4 ${isFavorited ? "text-yellow-400 fill-yellow-400" : "text-white"}`} />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
+                    <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
                   </motion.button>
 
                   <motion.button
@@ -1304,10 +1304,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-share-${profile.id}`}
                   >
-                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                      <Share2 className="w-6 h-6 text-white" />
+                    <div className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                      <Share2 className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
+                    <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
                   </motion.button>
 
                   <motion.button
@@ -1324,10 +1324,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-impression-${profile.id}`}
                   >
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #c026d3, #a855f7)", boxShadow: "0 0 14px rgba(192,38,211,0.55)", opacity: profile.ratingEnabled ? 1 : 0.45 }}>
-                      <Eye className="w-6 h-6 text-white" />
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #c026d3, #a855f7)", boxShadow: "0 0 10px rgba(192,38,211,0.55)", opacity: profile.ratingEnabled ? 1 : 0.45 }}>
+                      <Eye className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
+                    <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
                   </motion.button>
 
                   <motion.button
@@ -1341,11 +1341,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-like-sidebar-${profile.id}`}
                   >
-                    <div className={`w-12 h-12 rounded-full backdrop-blur-sm border flex items-center justify-center ${alreadyLiked ? "bg-pink-500/40 border-pink-400/50" : "bg-gradient-to-br from-pink-500/60 to-rose-600/60 border-pink-400/40"}`}
-                      style={{ boxShadow: alreadyLiked ? "none" : "0 0 16px rgba(236,72,153,0.5)" }}>
-                      <Heart className={`w-6 h-6 ${alreadyLiked ? "text-pink-300 fill-pink-300" : "text-white fill-white"}`} />
+                    <div className={`w-9 h-9 rounded-full backdrop-blur-sm border flex items-center justify-center ${alreadyLiked ? "bg-pink-500/40 border-pink-400/50" : "bg-gradient-to-br from-pink-500/60 to-rose-600/60 border-pink-400/40"}`}
+                      style={{ boxShadow: alreadyLiked ? "none" : "0 0 12px rgba(236,72,153,0.5)" }}>
+                      <Heart className={`w-4 h-4 ${alreadyLiked ? "text-pink-300 fill-pink-300" : "text-white fill-white"}`} />
                     </div>
-                    <span className="text-[11px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.vibe")}</span>
+                    <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.vibe")}</span>
                   </motion.button>
 
                   <motion.button
@@ -1358,11 +1358,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ touchAction: "none" }}
                     data-testid={`button-signals-sidebar-${profile.id}`}
                   >
-                    <div className="w-12 h-12 rounded-full backdrop-blur-sm border border-fuchsia-400/40 flex items-center justify-center bg-gradient-to-br from-fuchsia-500/60 to-purple-600/60"
-                      style={{ boxShadow: "0 0 14px rgba(217,70,239,0.45)" }}>
-                      <Radio className="w-6 h-6 text-white" />
+                    <div className="w-9 h-9 rounded-full backdrop-blur-sm border border-fuchsia-400/40 flex items-center justify-center bg-gradient-to-br from-fuchsia-500/60 to-purple-600/60"
+                      style={{ boxShadow: "0 0 10px rgba(217,70,239,0.45)" }}>
+                      <Radio className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
+                    <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
                   </motion.button>
 
                   {onOpenPostComposer && (
@@ -1373,10 +1373,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid="button-open-post-composer"
                     >
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center bg-fuchsia-500/90 backdrop-blur-sm border border-white/20" style={{ boxShadow: "0 0 14px rgba(217,70,239,0.5)" }}>
-                        <Plus className="w-8 h-8 text-white" />
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-fuchsia-500/90 backdrop-blur-sm border border-white/20" style={{ boxShadow: "0 0 12px rgba(217,70,239,0.5)" }}>
+                        <Plus className="w-5 h-5 text-white" />
                       </div>
-                      <span className="text-[9px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
+                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
                     </motion.button>
                   )}
                 </div>
