@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -639,18 +640,10 @@ export default function ProfileEdit() {
                         })}
                         {uploadedPhotos.length < 6 && (
                           <label
+                            htmlFor="photo-upload-portal-input"
                             className={`aspect-square rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/90 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors ${isUploadingPhoto ? "opacity-60 pointer-events-none" : "cursor-pointer"}`}
                             data-testid="button-add-photo"
                           >
-                            <input
-                              ref={photoInputRef}
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={isUploadingPhoto}
-                              onChange={handlePhotoUpload}
-                              data-testid="input-profile-photos"
-                            />
                             {isUploadingPhoto ? (
                               <Loader2 className="w-6 h-6 animate-spin" />
                             ) : (
@@ -1385,6 +1378,19 @@ export default function ProfileEdit() {
         </form>
       </Form>
       </div>
+      {createPortal(
+        <input
+          ref={photoInputRef}
+          id="photo-upload-portal-input"
+          type="file"
+          accept="image/*"
+          style={{ position: "fixed", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
+          disabled={isUploadingPhoto}
+          onChange={handlePhotoUpload}
+          data-testid="input-profile-photos"
+        />,
+        document.body
+      )}
     </div>
   );
 }
