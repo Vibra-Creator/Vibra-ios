@@ -267,8 +267,8 @@ function BadgeSection({ profileId, profileName }: { profileId: string; profileNa
   };
 
   return (
-    <div className="p-5 rounded-xl bg-gradient-to-br from-purple-500/15 via-primary/10 to-cyan-500/15 border border-primary/30 backdrop-blur-md space-y-4" data-testid="badge-section">
-      <div className="flex items-center gap-3">
+    <div className="p-5 rounded-xl bg-gradient-to-br from-purple-500/15 via-primary/10 to-cyan-500/15 border border-primary/30 backdrop-blur-md space-y-4 mx-auto w-full" data-testid="badge-section">
+      <div className="flex items-center gap-3 justify-center sm:justify-start">
         <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center shrink-0">
           <Star className="w-6 h-6 text-primary" />
         </div>
@@ -291,10 +291,10 @@ function BadgeSection({ profileId, profileName }: { profileId: string; profileNa
       </div>
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 w-full">
         <button
           onClick={shareProfile}
-          className="flex items-center justify-center gap-2 h-11 rounded-xl bg-primary/20 border border-primary/30 text-white text-sm font-semibold active:scale-95 transition-transform"
+          className="flex items-center justify-center gap-2 h-11 rounded-xl bg-primary/20 border border-primary/30 text-white text-sm font-semibold active:scale-95 transition-transform w-full"
           data-testid="button-share-badge-profile"
         >
           <Share2 className="w-4 h-4" />
@@ -302,7 +302,7 @@ function BadgeSection({ profileId, profileName }: { profileId: string; profileNa
         </button>
         <button
           onClick={() => copyToClipboard(embedCode, "Codice embed copiato")}
-          className="flex items-center justify-center gap-2 h-11 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-semibold active:scale-95 transition-transform"
+          className="flex items-center justify-center gap-2 h-11 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-semibold active:scale-95 transition-transform w-full"
           data-testid="button-copy-embed"
         >
           <Download className="w-4 h-4" />
