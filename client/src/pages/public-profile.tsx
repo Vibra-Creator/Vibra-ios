@@ -55,6 +55,7 @@ export default function PublicProfile() {
     setMeta("og:description", desc);
     setMeta("og:image", profile.imageUrl);
     setMeta("og:type", "profile");
+    setMeta("og:url", `${window.location.origin}/p/${profile.id}`);
     setNameMeta("description", desc);
     setNameMeta("twitter:card", "summary_large_image");
     setNameMeta("twitter:title", `${profile.name}, ${profile.age} — Vibra`);

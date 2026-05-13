@@ -18,6 +18,26 @@ export default function Landing() {
   const { t } = useLanguage();
 
   useEffect(() => {
+    document.title = "Vibra - Incontri Cosmici e Chat Aliena";
+    const setMeta = (selector: string, attr: "name" | "property", key: string, content: string) => {
+      let el = document.querySelector(`${selector}[${attr}="${key}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+    setMeta("meta", "name", "description", "Vibra è l'app di incontri cosmica in italiano per conoscere persone, chattare e scoprire profili alieni.");
+    setMeta("meta", "property", "og:title", "Vibra - Incontri Cosmici e Chat Aliena");
+    setMeta("meta", "property", "og:description", "Incontra persone, chatta e scopri profili alieni in una dating app dal design cosmico.");
+    setMeta("meta", "property", "og:image", "/vibra-logo.png");
+    setMeta("meta", "name", "twitter:title", "Vibra - Incontri Cosmici e Chat Aliena");
+    setMeta("meta", "name", "twitter:description", "Incontra persone, chatta e scopri profili alieni in una dating app dal design cosmico.");
+    setMeta("meta", "name", "twitter:image", "/vibra-logo.png");
+  }, []);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     video.muted = true;
