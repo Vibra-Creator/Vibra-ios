@@ -240,12 +240,12 @@ export async function registerRoutes(
     res.send(`User-agent: *
 Allow: /
 
-Sitemap: https://vibra.app/sitemap.xml
+Sitemap: https://vibraalienmatch.com/sitemap.xml
 `);
   });
 
   app.get("/sitemap.xml", (_req, res) => {
-    const baseUrl = "https://vibra.app";
+    const baseUrl = "https://vibraalienmatch.com";
     const now = new Date().toISOString().slice(0, 10);
     const pages = [
       { url: "/", priority: "1.0", changefreq: "daily" },
