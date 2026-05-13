@@ -1,6 +1,6 @@
 import { useState, forwardRef, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
-import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, ArrowLeft, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw, Plus } from "lucide-react";
+import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw, Plus } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -140,17 +140,15 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                 className="w-full aspect-[3/4] object-cover object-top"
                 data-testid="detail-profile-image"
               />
-              {/* Se ha un video, mostra il bottone Play per tornare al video */}
-              {profile.profileVideoUrl && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onClose(); }}
-                  className="absolute top-3 left-3 z-10 w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
-                  data-testid="button-modal-back-to-video"
-                >
-                  <Play className="w-6 h-6 text-white fill-white" />
-                </button>
-              )}
+              {/* Bottone chiudi/torna sempre visibile in alto a sinistra */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onClose(); }}
+                className="absolute top-3 left-3 z-10 w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                data-testid="button-modal-close"
+              >
+                <ChevronDown className="w-6 h-6 text-white" />
+              </button>
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
               {allPhotos.length > 1 && (
                 <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1.5 pointer-events-none">
@@ -740,7 +738,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
   // Single source of truth: profileVideoUrl ha sempre priorità; per non-bot usa cardVideos come fallback
   const primaryVideoUrl: string | null = profile.profileVideoUrl
     ? (resolveVideoSrc(profile.profileVideoUrl) ?? null)
-    : (profile.isBot === false && cardVideos.length > 0 && cardVideos[0]?.videoUrl)
+    : (profile.isBot !== true && cardVideos.length > 0 && cardVideos[0]?.videoUrl)
       ? (resolveVideoSrc(cardVideos[0].videoUrl) ?? null)
       : null;
   const hasVideo = !!primaryVideoUrl;
@@ -1092,9 +1090,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     style={{ willChange: "transform" }}
                     data-testid={`profile-video-${profile.id}`}
                   />
-                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
+                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
                     <button
                       type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
                       className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
                       data-testid="button-card-profile-toggle"
@@ -1141,8 +1140,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         style={{ willChange: "transform" }}
                         data-testid={`profile-media-video-${profile.id}`}
                       />
-                      <div className="absolute top-3 left-3 z-30 flex items-center gap-2">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
+                      <div className="absolute top-3 left-3 z-30 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
+                        <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
                           className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
                           data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
                           <User className="w-6 h-6 text-white" />
@@ -1165,8 +1164,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       <img key={activeProfileMedia.id} src={activeProfileMedia.mediaUrl} alt={profile.name}
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
                         data-testid={`profile-media-image-${profile.id}`} />
-                      <div className="absolute top-3 left-3 z-30">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
+                      <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()}>
+                        <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
                           className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
                           data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
                           <User className="w-6 h-6 text-white" />
@@ -1194,8 +1193,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     onError={() => setImageError(true)}
                     data-testid={`profile-image-${profile.id}`}
                   />
-                  <div className="absolute top-3 left-3 z-30">
-                    <button type="button" onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
+                  <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()}>
+                    <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
                       className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
                       data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
                       <User className="w-6 h-6 text-white" />
