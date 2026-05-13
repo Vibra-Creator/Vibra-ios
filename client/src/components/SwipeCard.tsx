@@ -803,12 +803,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         video.addEventListener("playing",      onPlaying);
         video.addEventListener("canplaythrough", onCanPlay);
 
-        if (video.readyState >= 2) {
-          // Già bufferizzato → play immediato
+        if (video.readyState >= 1) {
+          // Metadati disponibili → play senza spinner
           setIsVideoBuffering(false);
           doPlay();
         } else {
-          // Mostra spinner e aspetta canplay (max 3 s)
+          // Spinner solo se readyState === 0 (nessun dato caricato)
           setIsVideoBuffering(true);
           const onReady = () => { cleanup(); setIsVideoBuffering(false); doPlay(); };
           const timeout = setTimeout(() => { cleanup(); setIsVideoBuffering(false); doPlay(); }, 3000);
@@ -1232,7 +1232,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
 
               {isTop && (
-                <div className="absolute right-2 top-[5%] z-20 flex flex-col items-center gap-2 pointer-events-auto">
+                <div
+                  className="absolute right-2 top-[5%] z-30 flex flex-col items-center gap-2 pointer-events-auto overflow-y-auto max-h-[90%] [&::-webkit-scrollbar]:hidden"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   <motion.button
                     whileTap={{ scale: 0.88 }}
                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
