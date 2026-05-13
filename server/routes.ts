@@ -237,6 +237,7 @@ export async function registerRoutes(
   app.get("/robots.txt", (_req, res) => {
     res.setHeader("Content-Type", "text/plain");
     res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("X-Robots-Tag", "index, follow");
     res.send(`User-agent: *
 Allow: /
 
@@ -268,6 +269,7 @@ ${urlEntries}
 </urlset>`;
     res.setHeader("Content-Type", "application/xml");
     res.setHeader("Cache-Control", "public, max-age=3600");
+    res.setHeader("X-Robots-Tag", "index, follow");
     res.send(xml);
   });
 
