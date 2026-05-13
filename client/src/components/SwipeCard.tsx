@@ -1214,8 +1214,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 </>
               )}
               
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" style={{ height: '25%' }} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none z-20" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none z-20" style={{ height: '25%' }} />
 
               {topOverlay && (
                 <div className="absolute top-0 left-0 right-0 z-20 pt-1 px-2 pointer-events-none">
@@ -1391,7 +1391,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               
               {!alreadyLiked && (
                 <motion.div 
-                  className="absolute top-1/3 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm pointer-events-none z-10"
+                  className="absolute top-1/3 right-6 px-4 py-2 rounded-lg border-2 border-green-400 bg-green-400/20 backdrop-blur-sm pointer-events-none z-30"
                   style={{ opacity: likeOpacity }}
                 >
                   <span className="text-green-400 font-bold text-xl tracking-wider">VIBE</span>
@@ -1400,14 +1400,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               
               {!alreadyLiked && (
                 <motion.div 
-                  className="absolute top-1/3 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm pointer-events-none z-10"
+                  className="absolute top-1/3 left-6 px-4 py-2 rounded-lg border-2 border-red-400 bg-red-400/20 backdrop-blur-sm pointer-events-none z-30"
                   style={{ opacity: nopeOpacity }}
                 >
                   <span className="text-red-400 font-bold text-xl tracking-wider">NOPE</span>
                 </motion.div>
               )}
               
-              <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
+              <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-30">
                 <div className="pl-4 pr-16 pb-2 pt-8">
                   <div className="flex items-end justify-between gap-2">
                     <div className="flex-1 min-w-0">
