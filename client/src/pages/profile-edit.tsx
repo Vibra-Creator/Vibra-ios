@@ -608,6 +608,7 @@ export default function ProfileEdit() {
                       </FormLabel>
                       <input
                         ref={photoInputRef}
+                        id="photo-upload-input"
                         type="file"
                         accept="image/*"
                         className="hidden"
@@ -646,11 +647,9 @@ export default function ProfileEdit() {
                           );
                         })}
                         {uploadedPhotos.length < 6 && (
-                          <button
-                            type="button"
-                            onClick={() => photoInputRef.current?.click()}
-                            disabled={isUploadingPhoto}
-                            className="aspect-square rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/90 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors"
+                          <label
+                            htmlFor={isUploadingPhoto ? undefined : "photo-upload-input"}
+                            className={`aspect-square rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/90 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors ${isUploadingPhoto ? "opacity-60 pointer-events-none" : "cursor-pointer"}`}
                             data-testid="button-add-photo"
                           >
                             {isUploadingPhoto ? (
@@ -661,7 +660,7 @@ export default function ProfileEdit() {
                                 <span className="text-xs font-medium">{t("profileEdit.add")}</span>
                               </>
                             )}
-                          </button>
+                          </label>
                         )}
                       </div>
                     </div>
