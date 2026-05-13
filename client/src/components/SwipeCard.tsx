@@ -1126,34 +1126,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
                     </button>
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="space-y-1 min-w-0">
-                        <h2 className="text-3xl font-bold text-white drop-shadow-lg" data-testid="swipe-card-name">
-                          {profile.name}, {profile.age}
-                        </h2>
-                        <div className="flex items-center gap-1.5 text-white/80 drop-shadow">
-                          <MapPin className="w-4 h-4" />
-                          <span className="text-sm truncate">{profile.location}</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-                        className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95 shrink-0"
-                        data-testid="button-card-profile-open"
-                        style={{ touchAction: "manipulation" }}
-                      >
-                        <ChevronDown className="w-5 h-5 text-white" />
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        {profile.alienType}
-                      </Badge>
-                    </div>
-                  </div>
                 </>
               ) : activeProfileMedia ? (
                 /* ── RAMO 2: media da Cosmic Signal (immagine o video) ── */
@@ -1210,34 +1182,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           <User className="w-6 h-6 text-white" />
                         </button>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="space-y-1 min-w-0">
-                            <h2 className="text-3xl font-bold text-white drop-shadow-lg" data-testid="swipe-card-name">
-                              {profile.name}, {profile.age}
-                            </h2>
-                            <div className="flex items-center gap-1.5 text-white/80 drop-shadow">
-                              <MapPin className="w-4 h-4" />
-                              <span className="text-sm truncate">{profile.location}</span>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-                            className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95 shrink-0"
-                            data-testid="button-card-profile-open"
-                            style={{ touchAction: "manipulation" }}
-                          >
-                            <ChevronDown className="w-5 h-5 text-white" />
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            {profile.alienType}
-                          </Badge>
-                        </div>
-                      </div>
                     </>
                   )}
                 </>
@@ -1266,34 +1210,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
                       <User className="w-6 h-6 text-white" />
                     </button>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="space-y-1 min-w-0">
-                        <h2 className="text-3xl font-bold text-white drop-shadow-lg" data-testid="swipe-card-name">
-                          {profile.name}, {profile.age}
-                        </h2>
-                        <div className="flex items-center gap-1.5 text-white/80 drop-shadow">
-                          <MapPin className="w-4 h-4" />
-                          <span className="text-sm truncate">{profile.location}</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-                        className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95 shrink-0"
-                        data-testid="button-card-profile-open"
-                        style={{ touchAction: "manipulation" }}
-                      >
-                        <ChevronDown className="w-5 h-5 text-white" />
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary" className="bg-primary/80 text-primary-foreground backdrop-blur-sm">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        {profile.alienType}
-                      </Badge>
-                    </div>
                   </div>
                 </>
               )}
