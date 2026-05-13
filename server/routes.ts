@@ -234,6 +234,43 @@ export async function registerRoutes(
     next();
   });
 
+  app.get("/robots.txt", (_req, res) => {
+    res.setHeader("Content-Type", "text/plain");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(`User-agent: *
+Allow: /
+
+Sitemap: https://vibra.app/sitemap.xml
+`);
+  });
+
+  app.get("/sitemap.xml", (_req, res) => {
+    const baseUrl = "https://vibra.app";
+    const now = new Date().toISOString().slice(0, 10);
+    const pages = [
+      { url: "/", priority: "1.0", changefreq: "daily" },
+      { url: "/landing", priority: "0.9", changefreq: "weekly" },
+      { url: "/register", priority: "0.8", changefreq: "monthly" },
+      { url: "/login", priority: "0.7", changefreq: "monthly" },
+      { url: "/onboarding", priority: "0.6", changefreq: "monthly" },
+      { url: "/privacy", priority: "0.5", changefreq: "yearly" },
+      { url: "/terms", priority: "0.5", changefreq: "yearly" },
+    ];
+    const urlEntries = pages.map(p => `  <url>
+    <loc>${baseUrl}${p.url}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`).join("\n");
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urlEntries}
+</urlset>`;
+    res.setHeader("Content-Type", "application/xml");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  });
+
   app.get("/.well-known/assetlinks.json", (_req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Access-Control-Allow-Origin", "*");
