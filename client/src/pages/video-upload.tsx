@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 const MAX_VIDEO_DURATION = 120;
-const MAX_SIZE_MB = 200;
+const MAX_SIZE_MB = 250;
 
 const CURATED_GIFS = [
   { url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif", label: "❤️ Amore" },

@@ -209,7 +209,7 @@ const memoryUpload = multer({
 
 const videoUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 200 * 1024 * 1024 },
+  limits: { fileSize: 250 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v", "video/x-mp4"];
     if (!allowed.includes(file.mimetype)) {
@@ -971,7 +971,7 @@ ${urlEntries}
     videoUpload.single("video")(req, res, (err: any) => {
       if (err) {
         if (err.code === "LIMIT_FILE_SIZE") {
-          return res.status(400).json({ error: "Video troppo grande. Massimo 200 MB." });
+          return res.status(400).json({ error: "Video troppo grande. Massimo 250 MB." });
         }
         return res.status(400).json({ error: err.message || "Errore nel caricamento del video" });
       }
@@ -4485,9 +4485,9 @@ REGOLE:
       if (!ALLOWED_VIDEO.includes(contentType)) {
         return res.status(400).json({ error: "Formato video non supportato. Usa MP4, WebM o MOV." });
       }
-      const MAX_SIZE = 200 * 1024 * 1024;
+      const MAX_SIZE = 250 * 1024 * 1024;
       if (size && size > MAX_SIZE) {
-        return res.status(400).json({ error: "Video troppo grande. Massimo 200 MB." });
+        return res.status(400).json({ error: "Video troppo grande. Massimo 250 MB." });
       }
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
