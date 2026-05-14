@@ -640,7 +640,6 @@ export default function ProfileEdit() {
                         })}
                         {uploadedPhotos.length < 6 && (
                           <label
-                            htmlFor="photo-upload-portal-input"
                             onClick={() => { if (!isUploadingPhoto) photoInputRef.current?.click(); }}
                             className={`aspect-square rounded-xl border-2 border-dashed border-white/40 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/90 hover:border-primary/50 hover:text-primary hover:bg-white/10 transition-colors ${isUploadingPhoto ? "opacity-60 pointer-events-none" : "cursor-pointer"}`}
                             data-testid="button-add-photo"
