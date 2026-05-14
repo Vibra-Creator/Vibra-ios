@@ -198,6 +198,31 @@ export default function Home() {
     });
   }, [availableProfiles.map(p => p.id).slice(0, 5).join(",")]);
 
+  // Preload video layer 2: <link rel="preload" as="video"> nei prossimi 3 profili.
+  // Il browser avvia il download prima ancora che SwipeCard monti — stile TikTok.
+  useEffect(() => {
+    const nextIds: string[] = [];
+    const addedLinks: HTMLLinkElement[] = [];
+    availableProfiles.slice(1, 4).forEach(p => {
+      if (!p.profileVideoUrl) return;
+      const href = p.profileVideoUrl.startsWith("/objects/")
+        ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}`
+        : p.profileVideoUrl;
+      const existing = document.querySelector(`link[rel="preload"][href="${href}"]`);
+      if (existing) return;
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "video";
+      link.href = href;
+      document.head.appendChild(link);
+      addedLinks.push(link);
+      nextIds.push(p.id);
+    });
+    return () => {
+      addedLinks.forEach(l => l.parentNode?.removeChild(l));
+    };
+  }, [availableProfiles.map(p => p.id).slice(0, 4).join(",")]);
+
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
     if (isGuest) {
@@ -424,18 +449,22 @@ export default function Home() {
       </AnimatePresence>
 
       <div className="w-full relative z-10 flex-1 min-h-0">
-        {availableProfiles.slice(1, 5).filter(p => p.profileVideoUrl).map(p => (
-          <video
-            key={`preload-${p.id}`}
-            src={p.profileVideoUrl?.startsWith("/objects/") ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}` : (p.profileVideoUrl ?? undefined)}
-            preload="auto"
-            muted
-            playsInline
-            autoPlay
-            className="absolute w-0 h-0 opacity-0 pointer-events-none"
-            aria-hidden="true"
-          />
-        ))}
+        {availableProfiles.slice(1, 6).filter(p => p.profileVideoUrl).map(p => {
+          const resolvedSrc = p.profileVideoUrl?.startsWith("/objects/")
+            ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}`
+            : (p.profileVideoUrl ?? undefined);
+          return (
+            <video
+              key={`preload-${p.id}`}
+              src={resolvedSrc}
+              preload="auto"
+              muted
+              playsInline
+              className="absolute w-0 h-0 opacity-0 pointer-events-none"
+              aria-hidden="true"
+            />
+          );
+        })}
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}

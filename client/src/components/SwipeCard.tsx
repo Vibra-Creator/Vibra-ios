@@ -823,11 +823,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           video.removeEventListener("canplaythrough", onCanPlay);
         };
       } else {
-        // Card non in cima: pre-warm silenzioso — carica e metti in pausa
+        // Card non in cima: preload aggressivo senza play (più affidabile su mobile)
         video.muted = true;
-        video.play()
-          .then(() => { video.pause(); video.currentTime = 0; })
-          .catch(() => { if (video.readyState === 0) video.load(); });
+        video.preload = "auto";
+        if (video.readyState < 3) {
+          video.load();
+        }
       }
     }, [isTop, hasVideo, primaryVideoUrl, globalMuted]);
 
