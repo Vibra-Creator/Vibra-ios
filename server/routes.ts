@@ -4390,12 +4390,16 @@ REGOLE:
         return res.end();
       }
 
-      const CHUNK_SIZE = 4 * 1024 * 1024;
+      // Initial chunk piccolo (512KB) → primo frame riproducibile in <1s su mobile.
+      // Le successive range request del browser scaricano il resto in streaming.
+      const INITIAL_CHUNK = 512 * 1024;
+      const SUBSEQUENT_CHUNK = 2 * 1024 * 1024;
       const rangeHeader = req.headers.range;
       if (rangeHeader) {
         const parts = rangeHeader.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
+        const chunkLimit = start === 0 ? INITIAL_CHUNK : SUBSEQUENT_CHUNK;
+        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + chunkLimit - 1, totalSize - 1);
         const chunkSize = end - start + 1;
         res.writeHead(206, {
           "Content-Range": `bytes ${start}-${end}/${totalSize}`,
@@ -4437,12 +4441,15 @@ REGOLE:
         return res.end();
       }
 
-      const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB per chunk (was 1MB)
+      // Initial chunk piccolo (512KB) → primo frame riproducibile in <1s su mobile.
+      const INITIAL_CHUNK = 512 * 1024;
+      const SUBSEQUENT_CHUNK = 2 * 1024 * 1024;
       const rangeHeader = req.headers.range;
       if (rangeHeader) {
         const parts = rangeHeader.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
+        const chunkLimit = start === 0 ? INITIAL_CHUNK : SUBSEQUENT_CHUNK;
+        const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + chunkLimit - 1, totalSize - 1);
         const chunkSize = end - start + 1;
         res.writeHead(206, {
           "Content-Range": `bytes ${start}-${end}/${totalSize}`,

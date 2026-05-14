@@ -760,75 +760,58 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       setIsCardMuted(globalMuted ?? false);
     }, [globalMuted]);
 
-    // Unico effect che gestisce preload, buffering e play/pause — TikTok style
+    // Video lifecycle — semplice, immediato, mobile-friendly
     useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !hasVideo || !primaryVideoUrl) return;
 
-      // Assicura src corretto (senza ricaricare se già settato)
-      if (!video.src || !video.src.includes(encodeURIComponent(primaryVideoUrl.split("/").pop() ?? "")) && !video.src.endsWith(primaryVideoUrl)) {
-        video.src = primaryVideoUrl;
-        video.load();
-      } else if (video.readyState === 0) {
-        video.load();
-      }
+      // Il src è già impostato dalla JSX (key={primaryVideoUrl} → React rimonta su cambio).
+      // Configuriamo solo gli attributi runtime e tentiamo il play.
+      video.preload = isTop ? "auto" : "metadata";
+      const wantAudio = isTop && !(globalMuted ?? false);
 
-      video.preload = "auto";
-
-      const wantAudio = !(globalMuted ?? false);
-
-      const doPlay = async () => {
+      const tryPlay = async () => {
         try {
+          // Browser policies: serve muted=true al primo play su mobile
           video.muted = true;
-          video.volume = 1;
           await video.play();
           setIsVideoBuffering(false);
           if (wantAudio) {
             video.muted = false;
-            setTimeout(() => { if (video.muted) setIsCardMuted(true); }, 150);
+            video.volume = 1;
+            setTimeout(() => { if (video.muted) setIsCardMuted(true); }, 200);
           }
         } catch {
-          // Autoplay bloccato: riprova muted
-          try { video.muted = true; await video.play(); } catch {}
+          // Ignora — autoplay bloccato senza interazione utente
         }
       };
 
       if (isTop) {
-        const onWaiting  = () => setIsVideoBuffering(true);
-        const onPlaying  = () => setIsVideoBuffering(false);
-        const onCanPlay  = () => setIsVideoBuffering(false);
-        video.addEventListener("waiting",      onWaiting);
-        video.addEventListener("playing",      onPlaying);
-        video.addEventListener("canplaythrough", onCanPlay);
+        // PLAY IMMEDIATO — non aspettiamo canplay. Il browser bufferizza
+        // in autonomia e play() si risolve appena ha abbastanza dati.
+        const onWaiting = () => setIsVideoBuffering(true);
+        const onPlaying = () => setIsVideoBuffering(false);
+        const onLoadedData = () => setIsVideoBuffering(false);
 
-        if (video.readyState >= 2) {
-          // Dati disponibili → play immediato
-          setIsVideoBuffering(false);
-          doPlay();
-        } else {
-          // Attende canplay (max 3 s) senza mostrare spinner
-          setIsVideoBuffering(false);
-          const onReady = () => { cleanup(); setIsVideoBuffering(false); doPlay(); };
-          const timeout = setTimeout(() => { cleanup(); setIsVideoBuffering(false); doPlay(); }, 3000);
-          const cleanup = () => {
-            video.removeEventListener("canplay", onReady);
-            clearTimeout(timeout);
-          };
-          video.addEventListener("canplay", onReady);
-        }
+        video.addEventListener("waiting", onWaiting);
+        video.addEventListener("playing", onPlaying);
+        video.addEventListener("loadeddata", onLoadedData);
+
+        // Tentativo immediato (se ci sono già dati) + retry su loadedmetadata
+        tryPlay();
+        const onMeta = () => tryPlay();
+        video.addEventListener("loadedmetadata", onMeta);
 
         return () => {
-          video.removeEventListener("waiting",       onWaiting);
-          video.removeEventListener("playing",       onPlaying);
-          video.removeEventListener("canplaythrough", onCanPlay);
+          video.removeEventListener("waiting", onWaiting);
+          video.removeEventListener("playing", onPlaying);
+          video.removeEventListener("loadeddata", onLoadedData);
+          video.removeEventListener("loadedmetadata", onMeta);
+          try { video.pause(); } catch {}
         };
       } else {
-        // Card non in cima: preload aggressivo senza play (più affidabile su mobile)
+        // Card non in cima: solo metadata per warm cache, niente play
         video.muted = true;
-        video.preload = "auto";
-        if (video.readyState < 3) {
-          video.load();
-        }
       }
     }, [isTop, hasVideo, primaryVideoUrl, globalMuted]);
 
