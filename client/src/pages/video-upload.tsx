@@ -44,6 +44,12 @@ export default function VideoUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [step, setStep] = useState<"pick" | "compose">("pick");
 
+  // Pre-fetched upload slot and thumbnail (prepared in background while user edits)
+  const [pendingUploadData, setPendingUploadData] = useState<{ uploadURL: string; objectPath: string } | null>(null);
+  const [pendingThumbnail, setPendingThumbnail] = useState<string>("");
+  // Upload progress 0–100, null = not uploading
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
   const { data: myProfile } = useQuery<any>({ queryKey: ["/api/profiles/me"] });
 
   const checkDuration = (file: File): Promise<number> => new Promise((resolve, reject) => {
@@ -84,6 +90,24 @@ export default function VideoUpload() {
     video.src = url;
   });
 
+  // XHR upload with real-time progress tracking
+  const uploadWithProgress = (url: string, file: File, contentType: string): Promise<void> =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url);
+      xhr.setRequestHeader("Content-Type", contentType);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
+        else reject(new Error(`Upload fallito: ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error("Errore di rete"));
+      xhr.ontimeout = () => reject(new Error("Timeout upload"));
+      xhr.send(file);
+    });
+
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -107,31 +131,47 @@ export default function VideoUpload() {
     setVideoFile(file);
     setVideoPreviewUrl(url);
     setStep("compose");
+
+    // Reset pre-fetched data from any previous selection
+    setPendingUploadData(null);
+    setPendingThumbnail("");
+
+    // Pre-fetch upload slot AND extract thumbnail in parallel (in background)
+    // so both are ready when the user taps "Pubblica"
+    Promise.all([
+      apiRequest("POST", "/api/profiles/videos/request-upload", {
+        contentType: file.type,
+        size: file.size,
+      }).then((data: any) => setPendingUploadData(data)).catch(() => {}),
+      extractThumbnail(file).then((thumb) => setPendingThumbnail(thumb)).catch(() => {}),
+    ]);
   }, [videoPreviewUrl, toast]);
 
   const handlePublish = async () => {
     if (!videoFile || !myProfile) return;
     setIsUploading(true);
+    setUploadProgress(0);
     try {
-      const uploadRes = await apiRequest("POST", "/api/profiles/videos/request-upload", {
-        contentType: videoFile.type,
-        size: videoFile.size,
-      }) as { uploadURL: string; objectPath: string };
-      const { uploadURL, objectPath } = uploadRes;
+      // Use pre-fetched upload slot if ready, otherwise request now
+      let uploadURL: string;
+      let objectPath: string;
+      if (pendingUploadData) {
+        ({ uploadURL, objectPath } = pendingUploadData);
+      } else {
+        const uploadRes = await apiRequest("POST", "/api/profiles/videos/request-upload", {
+          contentType: videoFile.type,
+          size: videoFile.size,
+        }) as { uploadURL: string; objectPath: string };
+        ({ uploadURL, objectPath } = uploadRes);
+      }
 
-      const putRes = await fetch(uploadURL, {
-        method: "PUT",
-        body: videoFile,
-        headers: { "Content-Type": videoFile.type },
-      });
-      if (!putRes.ok) throw new Error("Upload fallito");
+      // Upload video with progress tracking
+      await uploadWithProgress(uploadURL, videoFile, videoFile.type);
 
-      let thumbnailBase64 = "";
-      try { thumbnailBase64 = await extractThumbnail(videoFile); } catch {}
-
+      // Save metadata (thumbnail already extracted in background)
       await apiRequest("POST", "/api/profiles/videos", {
         objectPath,
-        thumbnailBase64,
+        thumbnailBase64: pendingThumbnail,
         caption: caption.trim() || null,
         location: locationText.trim() || null,
         gifOverlayUrl: selectedGif || null,
@@ -154,6 +194,7 @@ export default function VideoUpload() {
       }
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -185,7 +226,7 @@ export default function VideoUpload() {
             {isUploading ? (
               <span className="flex items-center gap-1.5">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Caricamento...
+                {uploadProgress !== null ? `${uploadProgress}%` : "Caricamento..."}
               </span>
             ) : (
               <span className="flex items-center gap-1.5">
@@ -197,6 +238,16 @@ export default function VideoUpload() {
         )}
       </div>
 
+      {/* Upload progress bar */}
+      {isUploading && uploadProgress !== null && (
+        <div className="w-full h-1 bg-white/10 shrink-0">
+          <div
+            className="h-full bg-gradient-to-r from-cyan-400 to-primary transition-all duration-300 ease-out"
+            style={{ width: `${uploadProgress}%` }}
+          />
+        </div>
+      )}
+
       {step === "pick" ? (
         /* ── STEP 1: Pick video ── */
         <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8">
@@ -205,7 +256,7 @@ export default function VideoUpload() {
           </div>
           <div className="text-center">
             <h2 className="text-white text-xl font-bold mb-2">Carica il tuo video</h2>
-            <p className="text-white/50 text-sm">Max {MAX_VIDEO_DURATION} secondi · {MAX_SIZE_MB}MB</p>
+            <p className="text-white/50 text-sm">Max 2 minuti · {MAX_SIZE_MB}MB</p>
             <p className="text-white/40 text-xs mt-1">Formati: MP4, WebM, MOV</p>
           </div>
           <button
