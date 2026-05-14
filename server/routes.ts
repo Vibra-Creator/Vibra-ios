@@ -209,7 +209,7 @@ const memoryUpload = multer({
 
 const videoUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 30 * 1024 * 1024 },
+  limits: { fileSize: 200 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v", "video/x-mp4"];
     if (!allowed.includes(file.mimetype)) {
@@ -971,7 +971,7 @@ ${urlEntries}
     videoUpload.single("video")(req, res, (err: any) => {
       if (err) {
         if (err.code === "LIMIT_FILE_SIZE") {
-          return res.status(400).json({ error: "Video troppo grande. Massimo 30 MB." });
+          return res.status(400).json({ error: "Video troppo grande. Massimo 200 MB." });
         }
         return res.status(400).json({ error: err.message || "Errore nel caricamento del video" });
       }
@@ -1734,7 +1734,7 @@ ${urlEntries}
         if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
         console.log(`[admin-video] Profile: ${profile.name}`);
 
-        const MAX_VIDEOS = 4;
+        const MAX_VIDEOS = 10;
         const existingVideos = await storage.getProfileVideos(profile.id);
         if (existingVideos.length >= MAX_VIDEOS) {
           const sorted = [...existingVideos].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -4485,9 +4485,9 @@ REGOLE:
       if (!ALLOWED_VIDEO.includes(contentType)) {
         return res.status(400).json({ error: "Formato video non supportato. Usa MP4, WebM o MOV." });
       }
-      const MAX_SIZE = 50 * 1024 * 1024;
+      const MAX_SIZE = 200 * 1024 * 1024;
       if (size && size > MAX_SIZE) {
-        return res.status(400).json({ error: "Video troppo grande. Massimo 50 MB." });
+        return res.status(400).json({ error: "Video troppo grande. Massimo 200 MB." });
       }
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
@@ -4520,6 +4520,17 @@ REGOLE:
           await fetch(thumbUploadURL, { method: "PUT", body: thumbnailBuf, headers: { "Content-Type": "image/jpeg" } });
           await objectStorageService.trySetObjectEntityAclPolicy(thumbPath, { owner: userId, visibility: "public" }).catch(() => {});
         } catch {}
+      }
+
+      // Limite 10 video per utente — FIFO: elimina il più vecchio se al limite
+      const MAX_USER_VIDEOS = 10;
+      const existingVideos = await storage.getProfileVideos(userProfile.id);
+      if (existingVideos.length >= MAX_USER_VIDEOS) {
+        const oldest = [...existingVideos].sort((a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )[0];
+        try { await objectStorageService.deleteObject(oldest.videoUrl); } catch {}
+        await storage.deleteProfileVideo(oldest.id);
       }
 
       const video = await storage.addProfileVideo({

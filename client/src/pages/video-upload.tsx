@@ -8,8 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
-const MAX_VIDEO_DURATION = 12;
-const MAX_SIZE_MB = 50;
+const MAX_VIDEO_DURATION = 120;
+const MAX_SIZE_MB = 200;
 
 const CURATED_GIFS = [
   { url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif", label: "❤️ Amore" },
@@ -97,7 +97,7 @@ export default function VideoUpload() {
     try {
       const duration = await checkDuration(file);
       if (duration > MAX_VIDEO_DURATION) {
-        toast({ title: "Video troppo lungo", description: `Max ${MAX_VIDEO_DURATION} secondi`, variant: "destructive" });
+        toast({ title: "Video troppo lungo", description: `Massimo 2 minuti`, variant: "destructive" });
         return;
       }
     } catch {}

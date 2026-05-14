@@ -50,7 +50,7 @@ export function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVid
       <div className="flex items-center gap-2.5">
         <VideoIcon className="w-6 h-6 text-cyan-400" />
         <h3 className="text-lg font-bold text-cyan-300">{t("profile.videos")}</h3>
-        <span className="text-sm font-semibold text-cyan-400/70 ml-1">{videos.length} video</span>
+        <span className="text-sm font-semibold text-cyan-400/70 ml-1">{videos.length}/10 video</span>
       </div>
       <p className="text-white/70 text-sm leading-snug">{t("profile.videosDesc")}</p>
 
@@ -120,14 +120,16 @@ export function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVid
           );
         })}
 
-        <button
-          onClick={() => navigate("/video-upload")}
-          className="aspect-video rounded-xl border-2 border-dashed border-cyan-400/50 flex flex-col items-center justify-center gap-2 text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-400/10 transition-colors bg-cyan-950/30 active:scale-95"
-          data-testid="button-add-video"
-        >
-          <Plus className="w-7 h-7" />
-          <span className="text-xs font-semibold">{t("profile.addVideo")}</span>
-        </button>
+        {videos.length < 10 && (
+          <button
+            onClick={() => navigate("/video-upload")}
+            className="aspect-video rounded-xl border-2 border-dashed border-cyan-400/50 flex flex-col items-center justify-center gap-2 text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-400/10 transition-colors bg-cyan-950/30 active:scale-95"
+            data-testid="button-add-video"
+          >
+            <Plus className="w-7 h-7" />
+            <span className="text-xs font-semibold">{t("profile.addVideo")}</span>
+          </button>
+        )}
       </div>
 
       <p className="text-white/50 text-xs flex items-center gap-1.5">
