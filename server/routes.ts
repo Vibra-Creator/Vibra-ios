@@ -4423,10 +4423,10 @@ REGOLE:
         return res.end();
       }
 
-      // INITIAL_CHUNK = 2MB: coincide con il range precaricato dalla home (bytes=0-2097151).
+      // INITIAL_CHUNK = 5MB: coincide con il range precaricato dalla home (bytes=0-5242879).
       // Quando il video element fa la prima range request, il browser trova la risposta
       // già in cache (caricata dalla preload fetch) → play immediato senza buffering.
-      const INITIAL_CHUNK = 2 * 1024 * 1024;
+      const INITIAL_CHUNK = 5 * 1024 * 1024;
       const SUBSEQUENT_CHUNK = 2 * 1024 * 1024;
       const rangeHeader = req.headers.range;
       if (rangeHeader) {

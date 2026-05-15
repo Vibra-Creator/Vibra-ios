@@ -1060,6 +1060,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     className="absolute inset-0 w-full h-full object-cover object-top z-10"
                     style={{ willChange: "transform" }}
                     data-testid={`profile-video-${profile.id}`}
+                    onTimeUpdate={(e) => {
+                      if (e.currentTarget.currentTime >= 60) e.currentTarget.currentTime = 0;
+                    }}
                     onError={(e) => {
                       const video = e.currentTarget;
                       console.error(`[SwipeCard video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code} msg=${video.error?.message}`);
@@ -1114,6 +1117,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
                         style={{ willChange: "transform" }}
                         data-testid={`profile-media-video-${profile.id}`}
+                        onTimeUpdate={(e) => {
+                          if (e.currentTarget.currentTime >= 60) e.currentTarget.currentTime = 0;
+                        }}
                         onError={(e) => {
                           const video = e.currentTarget;
                           console.error(`[SwipeCard media-video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code}`);

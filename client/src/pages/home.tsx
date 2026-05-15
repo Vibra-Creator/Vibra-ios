@@ -211,7 +211,7 @@ export default function Home() {
     const controllers: AbortController[] = [];
     const seen = new Set<string>();
 
-    availableProfiles.slice(1, 9).forEach(p => {
+    availableProfiles.slice(1, 16).forEach(p => {
       if (!p.profileVideoUrl) return;
       const isOwnServer = p.profileVideoUrl.startsWith("/objects/");
       const url = isOwnServer
@@ -222,10 +222,10 @@ export default function Home() {
 
       const controller = new AbortController();
       controllers.push(controller);
-      // Scarica i primi 2MB in background — finisce nella HTTP cache.
+      // Scarica i primi 5MB in background — finisce nella HTTP cache.
       // Il video element farà la stessa range request → risposta già in cache → play immediato.
       fetch(url, {
-        headers: { Range: "bytes=0-2097151" },
+        headers: { Range: "bytes=0-5242879" },
         credentials: isOwnServer ? "include" : "omit",
         signal: controller.signal,
       }).then(r => r.blob()).catch(() => {});
@@ -234,7 +234,7 @@ export default function Home() {
     return () => {
       controllers.forEach(c => c.abort());
     };
-  }, [availableProfiles.map(p => p.id).slice(0, 9).join(",")]);
+  }, [availableProfiles.map(p => p.id).slice(0, 16).join(",")]);
 
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
