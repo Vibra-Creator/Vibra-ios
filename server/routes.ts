@@ -463,7 +463,9 @@ ${urlEntries}
       const swipedIds = await storage.getSwipedProfileIds(profileId);
       const likedIds = await storage.getLikedProfileIds(profileId);
       const favoriteIds = new Set((await storage.getFavorites(profileId)).map(f => f.favoritedProfileId));
-      const swipedSet = new Set(swipedIds); // exclude ALL swiped (liked + disliked)
+      // Escludi SOLO i dislike — i profili già piaciuti restano visibili con badge "già piaciuto"
+      const likedSet = new Set(likedIds);
+      const dislikedSet = new Set(swipedIds.filter(id => !likedSet.has(id)));
       const blockedIds = await storage.getBlockedIds(profileId);
       const blockedSet = new Set(blockedIds);
 
@@ -488,7 +490,7 @@ ${urlEntries}
       const swipable = allProfiles.filter(p => {
         if (p.id === profileId) return false;
         afterSelf++;
-        if (swipedSet.has(p.id)) return false; // exclude all swiped profiles (liked + disliked)
+        if (dislikedSet.has(p.id)) return false; // escludi solo i dislike; i like restano visibili con badge
         afterSwiped++;
         if (blockedSet.has(p.id)) return false;
         afterBlocked++;
