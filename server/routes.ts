@@ -524,7 +524,9 @@ ${urlEntries}
         if (bFav !== aFav) return bFav - aFav;
         const aHL = a.highlightedUntil && new Date(a.highlightedUntil) > now ? 1 : 0;
         const bHL = b.highlightedUntil && new Date(b.highlightedUntil) > now ? 1 : 0;
-        return bHL - aHL;
+        if (bHL !== aHL) return bHL - aHL;
+        // Mescola casualmente — utenti veri e bot appaiono mescolati
+        return Math.random() - 0.5;
       });
 
       const profilesWithDistance = swipable.map(p => {
