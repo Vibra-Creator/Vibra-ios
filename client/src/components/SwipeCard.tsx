@@ -760,46 +760,51 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       setIsCardMuted(globalMuted ?? false);
     }, [globalMuted]);
 
-    // Video lifecycle — minimal & robust: autoplay nativo + JS per top-card / audio
+    // Video lifecycle — autoplay sempre muted (politica browser mobile),
+    // poi audio gestito via JS dopo che il play è partito.
     useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !hasVideo || !primaryVideoUrl) return;
 
+      // Forza sempre muted=true: requisito obbligatorio per autoplay su mobile
+      // senza interazione utente. L'audio viene riattivato sotto via JS.
+      video.muted = true;
+
       if (isTop) {
         const onPlaying = () => {
           setIsVideoBuffering(false);
-          if (!(globalMuted ?? false)) {
+          // Riattiva audio solo se l'utente non ha messo mute
+          if (!(globalMuted ?? false) && !isCardMuted) {
             video.muted = false;
             video.volume = 1;
           }
         };
         const onWaiting = () => setIsVideoBuffering(true);
+        const onLoadedData = () => setIsVideoBuffering(false);
         video.addEventListener("playing", onPlaying);
         video.addEventListener("waiting", onWaiting);
+        video.addEventListener("loadeddata", onLoadedData);
 
-        // Se il video era in pausa (es. card appena diventata top), riprendi
+        // Avvia subito se in pausa o non ancora partito
         if (video.paused) {
-          video.play().catch(() => {});
+          video.play().catch(() => {
+            // Autoplay bloccato dal browser (raro su mobile con muted=true)
+          });
         }
 
         return () => {
           video.removeEventListener("playing", onPlaying);
           video.removeEventListener("waiting", onWaiting);
+          video.removeEventListener("loadeddata", onLoadedData);
           try { video.pause(); } catch {}
         };
       } else {
+        // Card non in cima: pausa per risparmiare banda
         if (!video.paused) {
           try { video.pause(); } catch {}
         }
       }
-    }, [isTop, hasVideo, primaryVideoUrl, globalMuted]);
-
-    // Sync mute globale
-    useEffect(() => {
-      const video = cardVideoRef.current;
-      if (!video) return;
-      video.muted = globalMuted ?? false;
-    }, [globalMuted]);
+    }, [isTop, hasVideo, primaryVideoUrl, globalMuted, isCardMuted]);
 
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {
@@ -1053,23 +1058,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     loop
                     playsInline
                     autoPlay
-                    muted={isCardMuted}
+                    muted
                     preload="auto"
                     src={primaryVideoUrl ?? undefined}
                     poster={profile.imageUrl ?? undefined}
-                    crossOrigin="anonymous"
                     className="absolute inset-0 w-full h-full object-cover object-top z-10"
                     style={{ willChange: "transform" }}
                     data-testid={`profile-video-${profile.id}`}
                     onError={(e) => {
                       const video = e.currentTarget;
-                      console.error(`[SwipeCard video error] profile=${profile.id} src=${video.src?.slice(0,120)} errorCode=${video.error?.code} errorMessage=${video.error?.message}`);
-                    }}
-                    onLoadedMetadata={(e) => {
-                      const video = e.currentTarget;
-                      if (isTop && video.paused) {
-                        video.play().catch(() => {});
-                      }
+                      console.error(`[SwipeCard video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code} msg=${video.error?.message}`);
                     }}
                   />
                   <div className="absolute top-3 left-3 z-30 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
@@ -1114,11 +1112,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         autoPlay
                         loop
                         playsInline
-                        muted={isCardMuted}
+                        muted
                         preload="auto"
                         src={activeProfileMedia.mediaUrl}
                         poster={profile.imageUrl ?? undefined}
-                        crossOrigin="anonymous"
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
                         style={{ willChange: "transform" }}
                         data-testid={`profile-media-video-${profile.id}`}

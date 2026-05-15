@@ -4376,6 +4376,13 @@ REGOLE:
       const objectPath = req.query.path as string;
       if (!objectPath) return res.status(400).end();
 
+      // CORS: permette al browser di caricare il video anche con crossOrigin attribute
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+      res.setHeader("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length");
+      if (req.method === "OPTIONS") { res.status(204).end(); return; }
+
       const file = await objectStorageService.getObjectEntityFile(objectPath);
       const [metadata] = await file.getMetadata();
       const totalSize = parseInt(String(metadata.size || "0"), 10);
