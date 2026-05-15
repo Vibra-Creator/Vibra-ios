@@ -4421,9 +4421,10 @@ REGOLE:
         return res.end();
       }
 
-      // Initial chunk piccolo (512KB) → primo frame riproducibile in <1s su mobile.
-      // Le successive range request del browser scaricano il resto in streaming.
-      const INITIAL_CHUNK = 512 * 1024;
+      // INITIAL_CHUNK = 2MB: coincide con il range precaricato dalla home (bytes=0-2097151).
+      // Quando il video element fa la prima range request, il browser trova la risposta
+      // già in cache (caricata dalla preload fetch) → play immediato senza buffering.
+      const INITIAL_CHUNK = 2 * 1024 * 1024;
       const SUBSEQUENT_CHUNK = 2 * 1024 * 1024;
       const rangeHeader = req.headers.range;
       if (rangeHeader) {

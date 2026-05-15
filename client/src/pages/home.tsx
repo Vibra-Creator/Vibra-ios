@@ -203,30 +203,38 @@ export default function Home() {
     });
   }, [availableProfiles.map(p => p.id).slice(0, 5).join(",")]);
 
-  // Preload video layer 2: <link rel="preload" as="video"> nei prossimi 3 profili.
-  // Il browser avvia il download prima ancora che SwipeCard monti — stile TikTok.
+  // Preload video: fetch() aggressivo per pre-scaldare la HTTP cache del browser.
+  // I <link rel="preload"> vengono ignorati su mobile per le range request.
+  // fetch() forza il browser a scaricare i primi 3MB di ogni video imminente
+  // → quando la SwipeCard monta, il video parte già dal buffer.
   useEffect(() => {
-    const nextIds: string[] = [];
-    const addedLinks: HTMLLinkElement[] = [];
-    availableProfiles.slice(1, 4).forEach(p => {
+    const controllers: AbortController[] = [];
+    const seen = new Set<string>();
+
+    availableProfiles.slice(1, 9).forEach(p => {
       if (!p.profileVideoUrl) return;
-      const href = p.profileVideoUrl.startsWith("/objects/")
+      const isOwnServer = p.profileVideoUrl.startsWith("/objects/");
+      const url = isOwnServer
         ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}`
         : p.profileVideoUrl;
-      const existing = document.querySelector(`link[rel="preload"][href="${href}"]`);
-      if (existing) return;
-      const link = document.createElement("link");
-      link.rel = "preload";
-      link.as = "video";
-      link.href = href;
-      document.head.appendChild(link);
-      addedLinks.push(link);
-      nextIds.push(p.id);
+      if (seen.has(url)) return;
+      seen.add(url);
+
+      const controller = new AbortController();
+      controllers.push(controller);
+      // Scarica i primi 2MB in background — finisce nella HTTP cache.
+      // Il video element farà la stessa range request → risposta già in cache → play immediato.
+      fetch(url, {
+        headers: { Range: "bytes=0-2097151" },
+        credentials: isOwnServer ? "include" : "omit",
+        signal: controller.signal,
+      }).then(r => r.blob()).catch(() => {});
     });
+
     return () => {
-      addedLinks.forEach(l => l.parentNode?.removeChild(l));
+      controllers.forEach(c => c.abort());
     };
-  }, [availableProfiles.map(p => p.id).slice(0, 4).join(",")]);
+  }, [availableProfiles.map(p => p.id).slice(0, 9).join(",")]);
 
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
@@ -454,7 +462,7 @@ export default function Home() {
       </AnimatePresence>
 
       <div className="w-full relative z-10 flex-1 min-h-0">
-        {availableProfiles.slice(1, 6).filter(p => p.profileVideoUrl).map(p => {
+        {availableProfiles.slice(1, 9).filter(p => p.profileVideoUrl).map(p => {
           const resolvedSrc = p.profileVideoUrl?.startsWith("/objects/")
             ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}`
             : (p.profileVideoUrl ?? undefined);
@@ -463,10 +471,20 @@ export default function Home() {
               key={`preload-${p.id}`}
               src={resolvedSrc}
               preload="auto"
+              autoPlay
               muted
               playsInline
-              className="absolute w-0 h-0 opacity-0 pointer-events-none"
+              loop
               aria-hidden="true"
+              style={{
+                position: "fixed",
+                left: "-9999px",
+                top: "-9999px",
+                width: "1px",
+                height: "1px",
+                opacity: 0,
+                pointerEvents: "none",
+              }}
             />
           );
         })}
