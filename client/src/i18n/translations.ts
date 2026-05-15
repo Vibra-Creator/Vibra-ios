@@ -689,7 +689,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // Profile Videos
     "profile.videos": "I Miei Video",
-    "profile.videosDesc": "Carica fino a 2 video brevi per mostrare chi sei (max 30s, 50MB)",
+    "profile.videosDesc": "Carica fino a 10 video per mostrare chi sei (max 1 minuto — tagliati automaticamente)",
     "profile.addVideo": "Aggiungi Video",
     "profile.deleteVideo": "Elimina video",
     "profile.videoUploading": "Caricamento in corso...",

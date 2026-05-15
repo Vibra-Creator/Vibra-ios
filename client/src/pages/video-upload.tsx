@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
-const MAX_VIDEO_DURATION = 120;
+const MAX_VIDEO_DURATION = 60;
 const MAX_SIZE_MB = 250;
 
 const CURATED_GIFS = [
@@ -121,7 +121,7 @@ export default function VideoUpload() {
     try {
       const duration = await checkDuration(file);
       if (duration > MAX_VIDEO_DURATION) {
-        toast({ title: "Video troppo lungo", description: `Massimo 2 minuti`, variant: "destructive" });
+        toast({ title: "Video troppo lungo", description: `Massimo 1 minuto`, variant: "destructive" });
         return;
       }
     } catch {}
@@ -256,7 +256,7 @@ export default function VideoUpload() {
           </div>
           <div className="text-center">
             <h2 className="text-white text-xl font-bold mb-2">Carica il tuo video</h2>
-            <p className="text-white/50 text-sm">Max 2 minuti · {MAX_SIZE_MB}MB</p>
+            <p className="text-white/50 text-sm">Max 1 minuto · tagliato automaticamente</p>
             <p className="text-white/40 text-xs mt-1">Formati: MP4, WebM, MOV</p>
           </div>
           <button
