@@ -1198,7 +1198,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               )}
 
               {alreadyLiked && (
-                <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm" data-testid={`liked-indicator-${profile.id}`}>
+                <div className="absolute top-16 left-3 z-20 flex items-center gap-0.5 px-1.5 py-px rounded-full bg-pink-500/70 backdrop-blur-sm" data-testid={`liked-indicator-${profile.id}`}>
                   <Heart className="w-2.5 h-2.5 text-white fill-white" />
                   <span className="text-white text-[8px] font-bold">{t("swipe.likeDone")}</span>
                 </div>
