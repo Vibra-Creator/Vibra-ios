@@ -518,16 +518,38 @@ ${urlEntries}
       console.log(`[SWIPABLE] user=${myProfile?.name} total=${allProfiles.length} afterSelf=${afterSelf} afterSwiped=${afterSwiped} afterBlocked=${afterBlocked} afterGender=${afterGender} afterAge=${afterAge} afterDist=${afterDist} final=${swipable.length} | prefs: gender=${myProfile?.preferredGender} ageMin=${myProfile?.preferredAgeMin} ageMax=${myProfile?.preferredAgeMax} maxDist=${myProfile?.maxDistanceKm}`);
 
       const now = new Date();
-      swipable.sort((a, b) => {
-        const aFav = favoriteIds.has(a.id) ? 1 : 0;
-        const bFav = favoriteIds.has(b.id) ? 1 : 0;
-        if (bFav !== aFav) return bFav - aFav;
-        const aHL = a.highlightedUntil && new Date(a.highlightedUntil) > now ? 1 : 0;
-        const bHL = b.highlightedUntil && new Date(b.highlightedUntil) > now ? 1 : 0;
-        if (bHL !== aHL) return bHL - aHL;
-        // Mescola casualmente — utenti veri e bot appaiono mescolati
-        return Math.random() - 0.5;
-      });
+      const favSet = new Set(favoriteIds);
+      const isFav = (p: any) => favSet.has(p.id);
+      const isHL = (p: any) => p.highlightedUntil && new Date(p.highlightedUntil) > now;
+
+      const favorites = swipable.filter(p => isFav(p));
+      const highlighted = swipable.filter(p => !isFav(p) && isHL(p));
+      const rest = swipable.filter(p => !isFav(p) && !isHL(p));
+
+      // Interleave bots and real users deterministically (stable order)
+      const bots = rest.filter(p => p.isBot);
+      const nonBots = rest.filter(p => !p.isBot);
+      const interleaved: any[] = [];
+      const maxLen = Math.max(bots.length, nonBots.length);
+      for (let i = 0; i < maxLen; i++) {
+        if (i < nonBots.length) interleaved.push(nonBots[i]);
+        if (i < bots.length) interleaved.push(bots[i]);
+      }
+
+      // Shuffle deterministico (sempre lo stesso per questo viewer) per mescolare reali/bot
+      // senza che il server cambi ordine ad ogni richiesta
+      const seedStr = profileId;
+      let seed = 0;
+      for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+      const seededRandom = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+      // Fisher–Yates deterministico
+      for (let i = interleaved.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [interleaved[i], interleaved[j]] = [interleaved[j], interleaved[i]];
+      }
+
+      swipable.length = 0;
+      swipable.push(...favorites, ...highlighted, ...interleaved);
 
       const profilesWithDistance = swipable.map(p => {
         let base: any = { ...p };

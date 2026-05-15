@@ -224,7 +224,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProfiles(): Promise<Profile[]> {
-    return db.select().from(profiles);
+    return db.select().from(profiles).orderBy(profiles.id);
   }
 
   async getProfilesByIds(ids: string[]): Promise<Profile[]> {
@@ -404,7 +404,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllProfiles(): Promise<Profile[]> {
-    return db.select().from(profiles);
+    return db.select().from(profiles).orderBy(profiles.id);
   }
 
   async getAllMatches(): Promise<Match[]> {

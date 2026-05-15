@@ -760,51 +760,46 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       setIsCardMuted(globalMuted ?? false);
     }, [globalMuted]);
 
-    // Video lifecycle — autoplay sempre muted (politica browser mobile),
-    // poi audio gestito via JS dopo che il play è partito.
+    // Video lifecycle — autoplay muted (richiesto da tutti i browser mobile).
+    // NON riattiviamo audio automaticamente: su mobile il browser pausa il video
+    // se viene unmuted senza gesture utente. L'utente deve toccare il bottone mute.
     useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !hasVideo || !primaryVideoUrl) return;
 
-      // Forza sempre muted=true: requisito obbligatorio per autoplay su mobile
-      // senza interazione utente. L'audio viene riattivato sotto via JS.
+      // Muted hardcoded: requisito obbligatorio per autoplay senza interazione
       video.muted = true;
 
       if (isTop) {
-        const onPlaying = () => {
-          setIsVideoBuffering(false);
-          // Riattiva audio solo se l'utente non ha messo mute
-          if (!(globalMuted ?? false) && !isCardMuted) {
-            video.muted = false;
-            video.volume = 1;
-          }
-        };
+        const onPlaying = () => setIsVideoBuffering(false);
         const onWaiting = () => setIsVideoBuffering(true);
         const onLoadedData = () => setIsVideoBuffering(false);
+        const tryPlay = () => {
+          if (video.paused) video.play().catch(() => {});
+        };
         video.addEventListener("playing", onPlaying);
         video.addEventListener("waiting", onWaiting);
         video.addEventListener("loadeddata", onLoadedData);
+        video.addEventListener("canplay", tryPlay);
+        video.addEventListener("loadedmetadata", tryPlay);
 
-        // Avvia subito se in pausa o non ancora partito
-        if (video.paused) {
-          video.play().catch(() => {
-            // Autoplay bloccato dal browser (raro su mobile con muted=true)
-          });
-        }
+        // Tentativo immediato + backup quando il browser è pronto
+        tryPlay();
 
         return () => {
           video.removeEventListener("playing", onPlaying);
           video.removeEventListener("waiting", onWaiting);
           video.removeEventListener("loadeddata", onLoadedData);
+          video.removeEventListener("canplay", tryPlay);
+          video.removeEventListener("loadedmetadata", tryPlay);
           try { video.pause(); } catch {}
         };
       } else {
-        // Card non in cima: pausa per risparmiare banda
         if (!video.paused) {
           try { video.pause(); } catch {}
         }
       }
-    }, [isTop, hasVideo, primaryVideoUrl, globalMuted, isCardMuted]);
+    }, [isTop, hasVideo, primaryVideoUrl]);
 
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {

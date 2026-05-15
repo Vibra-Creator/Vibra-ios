@@ -162,8 +162,9 @@ export default function Home() {
       if (error.message.startsWith("400") || error.message.includes("Already swiped")) {
         return;
       }
-      // Solo per errori reali (rete, server) rifacciamo sync con il server
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
+      // NON invalidare swipable: l'ordine sul server è ora deterministico,
+      // ma il refetch sposta le card montate e interrompe i video.
+      // Lo swipe è già stato registrato localmente tramite `swipedProfiles`.
       toast({
         title: t("common.error"),
         description: t("home.swipeError"),
@@ -275,7 +276,8 @@ export default function Home() {
         });
         setSwipeHistory(prev => prev.filter(id => id !== undoneId));
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
+      // NON invalidare swipable: l'ordine è deterministico sul server,
+      // ma un refetch smonta le card e i video si resettano.
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
     },
     onError: () => {
@@ -294,8 +296,7 @@ export default function Home() {
     },
     onSuccess: () => {
       setSwipedProfiles(new Set());
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
-      refetch();
+      // NON invalidare swipable: il refetch smonta le card e i video si resettano.
       toast({ title: t("home.profilesRestored"), description: t("home.profilesRestoredDesc") });
     },
     onError: () => {
