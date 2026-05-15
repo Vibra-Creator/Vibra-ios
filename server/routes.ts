@@ -11,6 +11,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { randomUUID } from "crypto";
+import { execFile } from "child_process";
+import { promisify } from "util";
+const execFileAsync = promisify(execFile);
 import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
 import OpenAI from "openai";
 import { createBackup, getBackupList, startAutoBackup } from "./backup";
@@ -1013,6 +1016,31 @@ ${urlEntries}
 
       if (!req.file) return res.status(400).json({ error: "No video uploaded" });
 
+      // ── Taglia il video a max 60s con ffmpeg e aggiunge faststart ──
+      const tmpId = randomUUID();
+      const tmpIn = `/tmp/vibra_in_${tmpId}.mp4`;
+      const tmpOut = `/tmp/vibra_out_${tmpId}.mp4`;
+      let videoBuffer: Buffer;
+      try {
+        fs.writeFileSync(tmpIn, req.file.buffer);
+        await execFileAsync("ffmpeg", [
+          "-y", "-i", tmpIn,
+          "-t", "60",
+          "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+          "-c:a", "aac",
+          "-movflags", "+faststart",
+          tmpOut,
+        ]);
+        videoBuffer = fs.readFileSync(tmpOut);
+      } catch (ffErr: any) {
+        console.error("[ffmpeg trim] error:", ffErr?.message || ffErr);
+        // fallback: usa il file originale senza taglio
+        videoBuffer = req.file.buffer;
+      } finally {
+        try { fs.unlinkSync(tmpIn); } catch {}
+        try { fs.unlinkSync(tmpOut); } catch {}
+      }
+
       if (userProfile.profileVideoUrl) {
         try { await objectStorageService.deleteObject(userProfile.profileVideoUrl); } catch {}
       }
@@ -1022,8 +1050,8 @@ ${urlEntries}
 
       const putResponse = await fetch(uploadURL, {
         method: "PUT",
-        body: req.file.buffer,
-        headers: { "Content-Type": req.file.mimetype },
+        body: videoBuffer,
+        headers: { "Content-Type": "video/mp4" },
       });
 
       if (!putResponse.ok) {
