@@ -151,15 +151,19 @@ export default function Home() {
         }
         queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
+      // NON invalidare swipable qui: la lista è ordinata casualmente sul server,
+      // quindi un refetch rimescola l'ordine → sembra che si saltino profili
+      // e i video non hanno tempo di partire (la card si smonta e rimonta).
+      // Lo stato locale `swipedProfiles` già rimuove la card dall'UI.
     },
     onError: (error: Error) => {
       console.error("[Swipe error]", error.message);
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       // Silenzia errori 400 (duplicati, validazione) — non mostrare banner rosso
       if (error.message.startsWith("400") || error.message.includes("Already swiped")) {
         return;
       }
+      // Solo per errori reali (rete, server) rifacciamo sync con il server
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       toast({
         title: t("common.error"),
         description: t("home.swipeError"),
