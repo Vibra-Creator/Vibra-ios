@@ -10,9 +10,10 @@ interface ProfileVideosSectionProps {
   profileId: string;
   currentMainVideoUrl?: string | null;
   onMainVideoChanged?: (url: string) => void;
+  hideUpload?: boolean;
 }
 
-export function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChanged }: ProfileVideosSectionProps) {
+export function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVideoChanged, hideUpload = false }: ProfileVideosSectionProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -120,7 +121,7 @@ export function ProfileVideosSection({ profileId, currentMainVideoUrl, onMainVid
           );
         })}
 
-        {videos.length < 10 && (
+        {!hideUpload && videos.length < 10 && (
           <button
             onClick={() => navigate("/video-upload")}
             className="aspect-video rounded-xl border-2 border-dashed border-cyan-400/50 flex flex-col items-center justify-center gap-2 text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:bg-cyan-400/10 transition-colors bg-cyan-950/30 active:scale-95"

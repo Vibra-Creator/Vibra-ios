@@ -680,7 +680,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <ProfileVideosSection profileId={profile.id} currentMainVideoUrl={profile.profileVideoUrl} />
+        <ProfileVideosSection profileId={profile.id} currentMainVideoUrl={profile.profileVideoUrl} hideUpload={true} />
 
         <div className="grid grid-cols-3 gap-3 w-full text-center">
           {stats.map((stat, index) => (
