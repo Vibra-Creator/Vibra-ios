@@ -760,60 +760,46 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       setIsCardMuted(globalMuted ?? false);
     }, [globalMuted]);
 
-    // Video lifecycle — semplice, immediato, mobile-friendly
+    // Video lifecycle — minimal & robust: autoplay nativo + JS per top-card / audio
     useEffect(() => {
       const video = cardVideoRef.current;
       if (!video || !hasVideo || !primaryVideoUrl) return;
 
-      // Il src è già impostato dalla JSX (key={primaryVideoUrl} → React rimonta su cambio).
-      // Configuriamo solo gli attributi runtime e tentiamo il play.
-      video.preload = isTop ? "auto" : "metadata";
-      const wantAudio = isTop && !(globalMuted ?? false);
-
-      const tryPlay = async () => {
-        try {
-          // Browser policies: serve muted=true al primo play su mobile
-          video.muted = true;
-          await video.play();
+      if (isTop) {
+        const onPlaying = () => {
           setIsVideoBuffering(false);
-          if (wantAudio) {
+          if (!(globalMuted ?? false)) {
             video.muted = false;
             video.volume = 1;
-            setTimeout(() => { if (video.muted) setIsCardMuted(true); }, 200);
           }
-        } catch {
-          // Ignora — autoplay bloccato senza interazione utente
-        }
-      };
-
-      if (isTop) {
-        // PLAY IMMEDIATO — non aspettiamo canplay. Il browser bufferizza
-        // in autonomia e play() si risolve appena ha abbastanza dati.
+        };
         const onWaiting = () => setIsVideoBuffering(true);
-        const onPlaying = () => setIsVideoBuffering(false);
-        const onLoadedData = () => setIsVideoBuffering(false);
-
-        video.addEventListener("waiting", onWaiting);
         video.addEventListener("playing", onPlaying);
-        video.addEventListener("loadeddata", onLoadedData);
+        video.addEventListener("waiting", onWaiting);
 
-        // Tentativo immediato (se ci sono già dati) + retry su loadedmetadata
-        tryPlay();
-        const onMeta = () => tryPlay();
-        video.addEventListener("loadedmetadata", onMeta);
+        // Se il video era in pausa (es. card appena diventata top), riprendi
+        if (video.paused) {
+          video.play().catch(() => {});
+        }
 
         return () => {
-          video.removeEventListener("waiting", onWaiting);
           video.removeEventListener("playing", onPlaying);
-          video.removeEventListener("loadeddata", onLoadedData);
-          video.removeEventListener("loadedmetadata", onMeta);
+          video.removeEventListener("waiting", onWaiting);
           try { video.pause(); } catch {}
         };
       } else {
-        // Card non in cima: solo metadata per warm cache, niente play
-        video.muted = true;
+        if (!video.paused) {
+          try { video.pause(); } catch {}
+        }
       }
     }, [isTop, hasVideo, primaryVideoUrl, globalMuted]);
+
+    // Sync mute globale
+    useEffect(() => {
+      const video = cardVideoRef.current;
+      if (!video) return;
+      video.muted = globalMuted ?? false;
+    }, [globalMuted]);
 
     const ratingMutation = useMutation({
       mutationFn: async (rating: number) => {
@@ -1066,13 +1052,25 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     key={primaryVideoUrl}
                     loop
                     playsInline
-                    muted
+                    autoPlay
+                    muted={isCardMuted}
                     preload="auto"
                     src={primaryVideoUrl ?? undefined}
                     poster={profile.imageUrl ?? undefined}
+                    crossOrigin="anonymous"
                     className="absolute inset-0 w-full h-full object-cover object-top z-10"
                     style={{ willChange: "transform" }}
                     data-testid={`profile-video-${profile.id}`}
+                    onError={(e) => {
+                      const video = e.currentTarget;
+                      console.error(`[SwipeCard video error] profile=${profile.id} src=${video.src?.slice(0,120)} errorCode=${video.error?.code} errorMessage=${video.error?.message}`);
+                    }}
+                    onLoadedMetadata={(e) => {
+                      const video = e.currentTarget;
+                      if (isTop && video.paused) {
+                        video.play().catch(() => {});
+                      }
+                    }}
                   />
                   <div className="absolute top-3 left-3 z-30 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
                     <button
@@ -1116,13 +1114,18 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         autoPlay
                         loop
                         playsInline
-                        muted
+                        muted={isCardMuted}
                         preload="auto"
                         src={activeProfileMedia.mediaUrl}
                         poster={profile.imageUrl ?? undefined}
+                        crossOrigin="anonymous"
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
                         style={{ willChange: "transform" }}
                         data-testid={`profile-media-video-${profile.id}`}
+                        onError={(e) => {
+                          const video = e.currentTarget;
+                          console.error(`[SwipeCard media-video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code}`);
+                        }}
                       />
                       <div className="absolute top-3 left-3 z-30 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
                         <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
