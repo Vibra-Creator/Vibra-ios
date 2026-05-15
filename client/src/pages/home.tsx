@@ -181,8 +181,12 @@ export default function Home() {
 
   swipeMutateRef.current = swipeMutation.mutate;
 
-  const allProfiles = isGuest ? (guestProfiles || []) : (profiles || []);
-  const availableProfiles = allProfiles.filter(p => 
+  const allProfilesRaw = isGuest ? (guestProfiles || []) : (profiles || []);
+  // Profili già piaciuti in fondo — li vedi dopo aver esplorato tutti i nuovi
+  const allProfiles = allProfilesRaw
+    ? [...allProfilesRaw.filter(p => !likedIdsSet.has(p.id)), ...allProfilesRaw.filter(p => likedIdsSet.has(p.id))]
+    : [];
+  const availableProfiles = allProfiles.filter(p =>
     !swipedProfiles.has(p.id)
   );
   const currentProfile = availableProfiles[0];
