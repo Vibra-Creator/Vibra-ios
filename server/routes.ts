@@ -586,6 +586,53 @@ ${urlEntries}
     }
   });
 
+  // ── Vibe Feed (TikTok-style vertical video feed) ──────────────────────────
+  app.get("/api/feed/videos", async (req: any, res) => {
+    try {
+      const page = Math.max(0, parseInt((req.query.page as string) || "0"));
+      const limit = Math.min(Math.max(1, parseInt((req.query.limit as string) || "15")), 30);
+
+      const allProfiles = await storage.getProfiles();
+      const withVideos = allProfiles.filter(p => p.profileVideoUrl);
+
+      // Deterministic day-seeded shuffle (same order for all users within a day)
+      const daySeed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      const shuffled = [...withVideos];
+      let seed = daySeed;
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        seed = (seed * 16807 + 1) % 2147483647;
+        const j = seed % (i + 1);
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const start = page * limit;
+      const slice = shuffled.slice(start, start + limit);
+      const profiles = slice.map(p => ({
+        id: p.id,
+        name: p.name,
+        age: p.age,
+        location: p.location,
+        bio: p.bio,
+        imageUrl: p.imageUrl,
+        profileVideoUrl: p.profileVideoUrl,
+        isVerified: p.isVerified,
+        isBot: p.isBot,
+        gender: p.gender,
+        interests: p.interests,
+      }));
+
+      res.json({
+        profiles,
+        hasMore: start + limit < shuffled.length,
+        total: shuffled.length,
+        page,
+      });
+    } catch (error) {
+      console.error("[feed/videos] error:", error);
+      res.status(500).json({ error: "Errore nel caricamento del feed" });
+    }
+  });
+
   app.get("/api/favorites", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.session?.userId;

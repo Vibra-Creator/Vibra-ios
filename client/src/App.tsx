@@ -37,6 +37,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import VideoUpload from "@/pages/video-upload";
 import Favorites from "@/pages/favorites";
 import PublicProfile from "@/pages/public-profile";
+import Reels from "@/pages/reels";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
@@ -137,6 +138,7 @@ function AuthenticatedRouter() {
       <Route path="/favorites" component={Favorites} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
+      <Route path="/reels" component={Reels} />
       <Route path="/p/:profileId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>
@@ -183,6 +185,7 @@ function GuestRouter() {
       <Route path="/prima-impressione" component={PrimaImpressione} />
       <Route path="/vibing" component={Vibing} />
       <Route path="/signals" component={Signals} />
+      <Route path="/reels" component={Reels} />
       <Route path="/p/:profileId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>
