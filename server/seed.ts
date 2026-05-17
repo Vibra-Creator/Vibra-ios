@@ -1530,6 +1530,17 @@ const seedProfiles = [
     relationshipType: "Relazione seria", wantsChildren: "Ho già figli", zodiacSign: "Leone",
     loveLanguage: "Tempo di qualità", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
   },
+  {
+    id: "156", name: "Marzi", age: 28,
+    bio: "Milanesissima, mi muovo per la città tra meeting e aperitivi con le amiche. Amo i tramonti sul Naviglio e le passeggiate in centro. Cerco qualcuno che sappia tenere il passo e farmi ridere.",
+    imageUrl: "/images/bots/bot156_main.png", photos: [],
+    location: "Milano", interests: ["Aperitivi", "Shopping", "Yoga", "Viaggi"], alienType: "Cristallino",
+    gender: "Donna", preferredGender: "Uomo", hairColor: "Castano", eyeColor: "Marrone",
+    bodyType: "Snella", height: 168, preferredAgeMin: 25, preferredAgeMax: 38,
+    education: "Laurea", languages: ["Italiano", "Inglese"],
+    relationshipType: "Conoscersi prima", wantsChildren: "In futuro", zodiacSign: "Bilancia",
+    loveLanguage: "Parole di affermazione", communicationStyle: "Aperto e diretto", lifestyle: "Urbano e dinamico"
+  },
 ];
 
 const seedSwipesToCreateMatch = [
