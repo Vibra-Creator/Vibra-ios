@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings, vibingSessions, reports, blockedUsers, deletedBotIds } from "@shared/schema";
-import { eq, or, sql, and } from "drizzle-orm";
+import { eq, or, sql, and, like } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 const cityCoords: Record<string, { lat: number; lng: number }> = {
@@ -1531,7 +1531,7 @@ const seedProfiles = [
     loveLanguage: "Tempo di qualità", communicationStyle: "Riflessivo e profondo", lifestyle: "Equilibrato"
   },
   {
-    id: "156", name: "Marzi", age: 28,
+    id: "156", name: "Marzia", age: 28,
     bio: "Milanesissima, mi muovo per la città tra meeting e aperitivi con le amiche. Amo i tramonti sul Naviglio e le passeggiate in centro. Cerco qualcuno che sappia tenere il passo e farmi ridere.",
     imageUrl: "/images/bots/bot156_main.png", photos: [],
     location: "Milano", interests: ["Aperitivi", "Shopping", "Yoga", "Viaggi"], alienType: "Cristallino",
@@ -2037,11 +2037,18 @@ async function seedBotVideosByCity() {
     ...genericVideos,
   ];
 
-  // Reset tutti i bot
-  await db.update(profiles).set({ profileVideoUrl: null }).where(eq(profiles.isBot, true));
+  // Reset SOLO i bot con URL archive.org (non sovrascrivere video locali o su Object Storage)
+  await db.update(profiles)
+    .set({ profileVideoUrl: null })
+    .where(
+      and(
+        eq(profiles.isBot, true),
+        like(profiles.profileVideoUrl, "%archive.org%")
+      )
+    );
 
   const botProfiles = await db
-    .select({ id: profiles.id, location: profiles.location })
+    .select({ id: profiles.id, location: profiles.location, profileVideoUrl: profiles.profileVideoUrl })
     .from(profiles)
     .where(eq(profiles.isBot, true))
     .orderBy(profiles.id);
@@ -2061,6 +2068,13 @@ async function seedBotVideosByCity() {
   let fallbackIndex = 0;
 
   for (const bot of botProfiles) {
+    // Salta i bot che hanno già un video locale o su Object Storage (protetto)
+    if (bot.profileVideoUrl && !bot.profileVideoUrl.includes("archive.org")) {
+      usedVideos.add(bot.profileVideoUrl);
+      assigned++;
+      continue;
+    }
+
     const city = bot.location || "";
     const cityList = cityVideos[city] || [];
 
@@ -2085,6 +2099,11 @@ async function seedBotVideosByCity() {
       nulled++;
     }
   }
+
+  // Override espliciti per bot con video locali caricati manualmente
+  await db.update(profiles)
+    .set({ profileVideoUrl: "/videos/bots/marzia_video.mp4" })
+    .where(eq(profiles.id, "156"));
 
   console.log(`[seed] Assigned ${assigned} web bot videos to bot profiles (${nulled} bots senza video).`);
 }
