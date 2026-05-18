@@ -111,6 +111,7 @@ export default function Home() {
       return res.json();
     },
     enabled: !!myProfile && !isGuest,
+    staleTime: 0,
   });
 
   const profiles = swipableData?.profiles;
