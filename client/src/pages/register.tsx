@@ -160,6 +160,8 @@ export default function Register() {
         } catch {}
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       toast({
         title: t("register.welcomeTitle"),
         description: t("register.welcomeDesc"),
