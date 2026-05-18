@@ -1858,6 +1858,41 @@ async function updateBotCoordinates() {
   console.log(`[seed] Coordinate bot aggiornate: ${updated} profili`);
 }
 
+async function ensureAllBotAccounts() {
+  const allBots = await db.select().from(profiles).where(eq(profiles.isBot, true));
+  let created = 0;
+  let skipped = 0;
+  for (const bot of allBots) {
+    if (bot.userId) {
+      const [existingUser] = await db.select().from(users).where(eq(users.id, bot.userId));
+      if (existingUser) {
+        skipped++;
+        continue;
+      }
+    }
+    const baseName = (bot.name || `bot${bot.id}`).toLowerCase().replace(/[^a-z]/g, '');
+    const email = `${baseName}${bot.id}@vibra.app`;
+    const [existingByEmail] = await db.select().from(users).where(eq(users.email, email));
+    if (existingByEmail) {
+      await db.update(profiles).set({ userId: existingByEmail.id }).where(eq(profiles.id, bot.id));
+      continue;
+    }
+    const userId = `bot-user-${bot.id}`;
+    const hashedPassword = await bcrypt.hash("Vibra2024!", 12);
+    await db.insert(users).values({
+      id: userId,
+      email,
+      password: hashedPassword,
+      firstName: bot.name || "Bot",
+      lastName: "",
+      isAdmin: false,
+    });
+    await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.id));
+    created++;
+  }
+  console.log(`[ensureAllBotAccounts] Created ${created} accounts, skipped ${skipped} existing. Total bots: ${allBots.length}`);
+}
+
 async function seedBotCities() {
   // 80% dei bot a Genova e Milano (40% + 40%), 20% in altre città italiane e straniere
   const altreCity = [
@@ -2654,6 +2689,7 @@ export async function seedDatabase() {
     }
 
     await createBotUserAccounts();
+    await ensureAllBotAccounts();
     await seedBotCities();
     await updateBotCoordinates();
     await seedBotVideosByCity();
