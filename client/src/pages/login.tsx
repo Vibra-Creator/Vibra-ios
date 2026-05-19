@@ -66,11 +66,8 @@ export default function Login() {
       const userData = await res.json();
       sessionStorage.removeItem("vibra-guest-mode");
       queryClient.setQueryData(["/api/auth/user"], userData.user || null);
-      queryClient.setQueryData(["/api/profiles/me"], null);
-      queryClient.setQueryData(["/api/profiles/swipable"], null);
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
+      queryClient.removeQueries({ queryKey: ["/api/profiles/me"] });
+      queryClient.removeQueries({ queryKey: ["/api/profiles/swipable"] });
 
       if (isAdminLogin && userData.user?.isAdmin) {
         toast({
