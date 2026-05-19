@@ -125,6 +125,7 @@ function AuthenticatedRouter() {
       <Route path="/profile" component={Profile} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/profile/edit" component={ProfileEdit} />
+      <Route path="/profile/edit/:profileId" component={ProfileEdit} />
       <Route path="/admin" component={Admin} />
       <Route path="/rooms" component={Rooms} />
       <Route path="/room/:roomId" component={RoomDetail} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
+import { useLocation, Link, useParams } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -157,6 +157,8 @@ export default function ProfileEdit() {
   const { toast } = useToast();
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const params = useParams<{ profileId?: string }>();
+  const adminProfileId = params?.profileId;
   const [step, setStep] = useState(0);
 
   const stepTitles = [
@@ -185,10 +187,24 @@ export default function ProfileEdit() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const hasInitialized = useRef(false);
 
-  const { data: existingProfile, isLoading } = useQuery<Profile | null>({
+  const { data: myProfile, isLoading: myProfileLoading } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
     enabled: !!user,
   });
+
+  const { data: adminTargetProfile, isLoading: adminTargetLoading } = useQuery<Profile | null>({
+    queryKey: ["/api/profiles", adminProfileId],
+    queryFn: async () => {
+      if (!adminProfileId) return null;
+      const res = await fetch(`/api/profiles/${adminProfileId}`, { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!adminProfileId,
+  });
+
+  const existingProfile = adminProfileId ? adminTargetProfile : myProfile;
+  const isLoading = adminProfileId ? adminTargetLoading : myProfileLoading;
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(createProfileFormSchema(t)),
@@ -326,13 +342,15 @@ export default function ProfileEdit() {
         preferredAgeMin: data.preferredAgeMin ? Number(data.preferredAgeMin) : null,
         preferredAgeMax: data.preferredAgeMax ? Number(data.preferredAgeMax) : null,
       };
-      return apiRequest("PUT", `/api/profiles/${existingProfile!.id}`, payload);
+      const targetId = adminProfileId || existingProfile!.id;
+      return apiRequest("PUT", `/api/profiles/${targetId}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
       toast({ title: t("profileEdit.profileUpdated"), description: t("profileEdit.profileUpdatedDesc") });
-      setLocation("/profile");
+      setLocation(adminProfileId ? "/admin" : "/profile");
     },
     onError: (error: any) => {
       let msg = t("profileEdit.updateError");
@@ -523,7 +541,7 @@ export default function ProfileEdit() {
           className="text-white hover:bg-white/20"
           onClick={() => {
             if (step > 0) prevStep();
-            else setLocation(existingProfile ? "/profile" : "/");
+            else setLocation(adminProfileId ? "/admin" : existingProfile ? "/profile" : "/");
           }}
           data-testid="button-back"
         >
@@ -531,13 +549,17 @@ export default function ProfileEdit() {
         </Button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-white" data-testid="text-step-title">
-            {existingProfile ? t("profileEdit.title") : t("profileEdit.createProfile")}
+            {adminProfileId
+              ? `Modifica bot: ${existingProfile?.name || ""}`
+              : existingProfile
+                ? t("profileEdit.title")
+                : t("profileEdit.createProfile")}
           </h1>
           <p className="text-sm text-white/80" data-testid="text-step-subtitle">
             {stepTitles[step]} — {step + 1}/{TOTAL_STEPS}
           </p>
         </div>
-        {!existingProfile && (
+        {!existingProfile && !adminProfileId && (
           <Button
             variant="ghost"
             size="sm"

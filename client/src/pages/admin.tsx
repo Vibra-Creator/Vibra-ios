@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -662,6 +662,9 @@ export default function Admin() {
                             </Button>
                             <Button variant="ghost" size="icon" className={`h-8 w-8 ${profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "text-yellow-400" : "text-muted-foreground"}`} onClick={(e) => { e.stopPropagation(); const isHighlighted = profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date(); highlightProfileMutation.mutate({ profileId: profile.id, days: isHighlighted ? 0 : 7 }); }} data-testid={`button-highlight-${profile.id}`} title={profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "Rimuovi evidenziazione" : "Evidenzia per 7 giorni"}>
                               <Crown className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => { e.stopPropagation(); setLocation(`/profile/edit/${profile.id}`); }} data-testid={`button-edit-${profile.id}`} title="Modifica profilo">
+                              <Pencil className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
                               <Trash2 className="w-4 h-4" />

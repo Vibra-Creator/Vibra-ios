@@ -933,11 +933,18 @@ ${urlEntries}
     }
   });
 
-  app.put("/api/profiles/:id", async (req, res) => {
+  app.put("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub;
       const existing = await storage.getProfile(req.params.id);
       if (!existing) {
         return res.status(404).json({ error: "Profile not found" });
+      }
+
+      const requestingUser = await storage.getUser(userId);
+      const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+      if (existing.userId !== userId && !isAdminUser) {
+        return res.status(403).json({ error: "Non autorizzato" });
       }
       
       const validatedData = updateProfileSchema.parse(req.body);
