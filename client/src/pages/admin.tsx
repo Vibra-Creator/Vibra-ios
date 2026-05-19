@@ -765,7 +765,27 @@ export default function Admin() {
                                 </div>
                                 <div className="flex gap-2 justify-end pt-1">
                                   <Button size="sm" variant="ghost" onClick={() => setEditingBotId(null)} data-testid="button-edit-cancel">Annulla</Button>
-                                  <Button size="sm" onClick={() => updateBotProfileMutation.mutate({ profileId: profile.id, data: { name: editName, age: editAge, bio: editBio, location: editLocation, gender: editGender, alienType: editAlienType, interests: editInterests.split(",").map(s => s.trim()).filter(Boolean) }) })} data-testid="button-edit-save">Salva</Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const payload = {
+                                        profileId: profile.id,
+                                        data: {
+                                          name: editName,
+                                          age: editAge,
+                                          bio: editBio,
+                                          location: editLocation,
+                                          gender: editGender,
+                                          alienType: editAlienType,
+                                          interests: editInterests.split(",").map((s: string) => s.trim()).filter(Boolean),
+                                        },
+                                      };
+                                      updateBotProfileMutation.mutate(payload);
+                                    }}
+                                    data-testid="button-edit-save"
+                                  >
+                                    Salva
+                                  </Button>
                                 </div>
                               </div>
                             )}
