@@ -691,6 +691,7 @@ export default function Admin() {
                             {profile.isBot && (
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => {
                                 e.stopPropagation();
+                                setExpandedProfile(profile.id);
                                 if (editingBotId === profile.id) {
                                   setEditingBotId(null);
                                 } else {
