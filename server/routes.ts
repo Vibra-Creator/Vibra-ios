@@ -7,6 +7,7 @@ import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { authStorage } from "./replit_integrations/auth/storage";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -1802,6 +1803,24 @@ ${urlEntries}
     } catch (error) {
       console.error("Error updating profile highlight:", error);
       res.status(500).json({ error: "Failed to update profile highlight" });
+    }
+  });
+
+  app.post("/api/admin/profiles/:id/login-as", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfile(req.params.id);
+      if (!profile || !profile.userId) {
+        return res.status(404).json({ error: "Profile or user not found" });
+      }
+      const user = await authStorage.getUser(profile.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      (req.session as any).userId = user.id;
+      res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, isAdmin: user.isAdmin } });
+    } catch (error) {
+      console.error("Login-as error:", error);
+      res.status(500).json({ error: "Failed to impersonate user" });
     }
   });
 

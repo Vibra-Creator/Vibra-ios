@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -13,6 +13,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { genderOptions, alienTypes } from "@/lib/profile-options";
 import type { User, Profile, Report, UserSuspension, BannedWord, RoomMessage, ChallengeSubmission } from "@shared/schema";
 
 interface AdminStats {
@@ -60,6 +61,15 @@ export default function Admin() {
   const [profileSearch, setProfileSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingBotId, setEditingBotId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editAge, setEditAge] = useState(25);
+  const [editBio, setEditBio] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editAlienType, setEditAlienType] = useState("");
+  const [editInterests, setEditInterests] = useState("");
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -340,6 +350,19 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
       toast({ title: "Evidenziazione aggiornata" });
+    },
+  });
+
+  const updateBotProfileMutation = useMutation({
+    mutationFn: async ({ profileId, data }: { profileId: string; data: any }) =>
+      apiRequest("PUT", `/api/profiles/${profileId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
+      toast({ title: "Profilo aggiornato!" });
+      setEditingBotId(null);
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile aggiornare il profilo", variant: "destructive" });
     },
   });
 
@@ -663,9 +686,30 @@ export default function Admin() {
                             <Button variant="ghost" size="icon" className={`h-8 w-8 ${profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "text-yellow-400" : "text-muted-foreground"}`} onClick={(e) => { e.stopPropagation(); const isHighlighted = profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date(); highlightProfileMutation.mutate({ profileId: profile.id, days: isHighlighted ? 0 : 7 }); }} data-testid={`button-highlight-${profile.id}`} title={profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "Rimuovi evidenziazione" : "Evidenzia per 7 giorni"}>
                               <Crown className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => { e.stopPropagation(); setLocation(`/profile/edit/${profile.id}`); }} data-testid={`button-edit-${profile.id}`} title="Modifica profilo">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
+                            {profile.isBot && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => {
+                                e.stopPropagation();
+                                if (editingBotId === profile.id) {
+                                  setEditingBotId(null);
+                                } else {
+                                  setEditingBotId(profile.id);
+                                  setEditName(profile.name);
+                                  setEditAge(profile.age);
+                                  setEditBio(profile.bio || "");
+                                  setEditLocation(profile.location || "");
+                                  setEditGender(profile.gender || "");
+                                  setEditAlienType(profile.alienType || "");
+                                  setEditInterests(profile.interests?.join(", ") || "");
+                                }
+                              }} data-testid={`button-edit-inline-${profile.id}`} title="Modifica rapida bot">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {!profile.isBot && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => { e.stopPropagation(); setLocation(`/profile/edit/${profile.id}`); }} data-testid={`button-edit-${profile.id}`} title="Modifica profilo">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
