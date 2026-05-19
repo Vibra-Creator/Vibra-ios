@@ -159,6 +159,9 @@ export default function Register() {
           });
         } catch {}
       }
+      queryClient.setQueryData(["/api/auth/user"], userData || null);
+      queryClient.setQueryData(["/api/profiles/me"], null);
+      queryClient.setQueryData(["/api/profiles/swipable"], null);
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
