@@ -1858,39 +1858,42 @@ async function updateBotCoordinates() {
   console.log(`[seed] Coordinate bot aggiornate: ${updated} profili`);
 }
 
-async function ensureAllBotAccounts() {
-  const allBots = await db.select().from(profiles).where(eq(profiles.isBot, true));
-  let created = 0;
-  let skipped = 0;
-  for (const bot of allBots) {
-    if (bot.userId) {
-      const [existingUser] = await db.select().from(users).where(eq(users.id, bot.userId));
-      if (existingUser) {
-        skipped++;
-        continue;
-      }
-    }
-    const baseName = (bot.name || `bot${bot.id}`).toLowerCase().replace(/[^a-z]/g, '');
-    const email = `${baseName}${bot.id}@vibra.app`;
-    const [existingByEmail] = await db.select().from(users).where(eq(users.email, email));
-    if (existingByEmail) {
-      await db.update(profiles).set({ userId: existingByEmail.id }).where(eq(profiles.id, bot.id));
-      continue;
-    }
-    const userId = `bot-user-${bot.id}`;
-    const hashedPassword = await bcrypt.hash("Vibra2024!", 12);
-    await db.insert(users).values({
-      id: userId,
-      email,
-      password: hashedPassword,
-      firstName: bot.name || "Bot",
-      lastName: "",
-      isAdmin: false,
-    });
-    await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.id));
-    created++;
+async function normalizeAllBotCredentials() {
+  try {
+    await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`);
+    console.log("[normalizeAllBotCredentials] Dropped unique email constraint on users table");
+  } catch (e) {
+    console.log("[normalizeAllBotCredentials] Constraint drop skipped or failed:", (e as any)?.message);
   }
-  console.log(`[ensureAllBotAccounts] Created ${created} accounts, skipped ${skipped} existing. Total bots: ${allBots.length}`);
+  const allBots = await db.select().from(profiles).where(eq(profiles.isBot, true));
+  const sharedEmail = "nome@vibra.app";
+  const sharedPassword = await bcrypt.hash("Vibra2026", 12);
+  let updated = 0;
+  for (const bot of allBots) {
+    if (!bot.userId) {
+      const userId = `bot-user-${bot.id}`;
+      await db.insert(users).values({
+        id: userId,
+        email: sharedEmail,
+        password: sharedPassword,
+        firstName: bot.name || "Bot",
+        lastName: "",
+        isAdmin: false,
+      });
+      await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.id));
+      updated++;
+    } else {
+      await db.update(users)
+        .set({ email: sharedEmail, password: sharedPassword })
+        .where(eq(users.id, bot.userId));
+      updated++;
+    }
+  }
+  console.log(`[normalizeAllBotCredentials] Updated ${updated} bot accounts to ${sharedEmail} / Vibra2026. Total bots: ${allBots.length}`);
+}
+
+async function ensureAllBotAccounts() {
+  await normalizeAllBotCredentials();
 }
 
 async function seedBotCities() {
