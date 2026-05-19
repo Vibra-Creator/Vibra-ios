@@ -991,23 +991,33 @@ ${urlEntries}
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      let userProfile = await storage.getProfileByUserId(userId);
-      
-      if (!userProfile) {
-        const user = await storage.getUser(userId);
-        const tempName = user?.firstName || "Nuovo Utente";
-        userProfile = await storage.createProfile({
-          userId,
-          name: tempName,
-          age: 25,
-          bio: "",
-          imageUrl: "/images/profile-1.png",
-          location: "",
-          interests: [],
-          alienType: "Andromediano",
-          isBot: false,
-          points: 0,
-        });
+      const targetProfileId = req.query.targetProfileId as string | undefined;
+      let userProfile;
+
+      if (targetProfileId) {
+        const requestingUser = await storage.getUser(userId);
+        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
+        userProfile = await storage.getProfile(targetProfileId);
+        if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      } else {
+        userProfile = await storage.getProfileByUserId(userId);
+        if (!userProfile) {
+          const user = await storage.getUser(userId);
+          const tempName = user?.firstName || "Nuovo Utente";
+          userProfile = await storage.createProfile({
+            userId,
+            name: tempName,
+            age: 25,
+            bio: "",
+            imageUrl: "/images/profile-1.png",
+            location: "",
+            interests: [],
+            alienType: "Andromediano",
+            isBot: false,
+            points: 0,
+          });
+        }
       }
 
       if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
@@ -1032,7 +1042,7 @@ ${urlEntries}
       }
 
       await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: userId,
+        owner: userProfile.userId,
         visibility: "public",
       });
 
@@ -1066,8 +1076,19 @@ ${urlEntries}
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const userProfile = await storage.getProfileByUserId(userId);
-      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      const targetProfileId = req.query.targetProfileId as string | undefined;
+      let userProfile;
+
+      if (targetProfileId) {
+        const requestingUser = await storage.getUser(userId);
+        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
+        userProfile = await storage.getProfile(targetProfileId);
+        if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      } else {
+        userProfile = await storage.getProfileByUserId(userId);
+        if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      }
 
       if (!req.file) return res.status(400).json({ error: "No video uploaded" });
 
@@ -1115,7 +1136,7 @@ ${urlEntries}
       }
 
       await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: userId,
+        owner: userProfile.userId,
         visibility: "public",
       });
 
@@ -1131,9 +1152,18 @@ ${urlEntries}
     try {
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
-      const userProfile = await storage.getProfileByUserId(userId);
-      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
-      const { videoUrl } = req.body;
+      const { videoUrl, targetProfileId } = req.body;
+      let userProfile;
+      if (targetProfileId) {
+        const requestingUser = await storage.getUser(userId);
+        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
+        userProfile = await storage.getProfile(targetProfileId);
+        if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      } else {
+        userProfile = await storage.getProfileByUserId(userId);
+        if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      }
       if (!videoUrl) return res.status(400).json({ error: "videoUrl required" });
       await storage.updateProfile(userProfile.id, { profileVideoUrl: videoUrl });
       res.json({ success: true, profileVideoUrl: videoUrl });
@@ -1148,8 +1178,18 @@ ${urlEntries}
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const userProfile = await storage.getProfileByUserId(userId);
-      if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      const { targetProfileId } = req.body || {};
+      let userProfile;
+      if (targetProfileId) {
+        const requestingUser = await storage.getUser(userId);
+        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
+        userProfile = await storage.getProfile(targetProfileId);
+        if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      } else {
+        userProfile = await storage.getProfileByUserId(userId);
+        if (!userProfile) return res.status(404).json({ error: "Profile not found" });
+      }
 
       if (userProfile.profileVideoUrl) {
         try { await objectStorageService.deleteObject(userProfile.profileVideoUrl); } catch {}
@@ -1168,10 +1208,19 @@ ${urlEntries}
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const userProfile = await storage.getProfileByUserId(userId);
-      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      const { photoUrl, targetProfileId } = req.body;
+      let userProfile;
+      if (targetProfileId) {
+        const requestingUser = await storage.getUser(userId);
+        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
+        userProfile = await storage.getProfile(targetProfileId);
+        if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      } else {
+        userProfile = await storage.getProfileByUserId(userId);
+        if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      }
 
-      const { photoUrl } = req.body;
       const currentPhotos = userProfile.photos || [];
       const updatedPhotos = currentPhotos.filter((p: string) => p !== photoUrl);
       const updateData: any = { photos: updatedPhotos };
@@ -1192,10 +1241,19 @@ ${urlEntries}
       const userId = req.user?.claims?.sub;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-      const userProfile = await storage.getProfileByUserId(userId);
-      if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      const { photoUrl, targetProfileId } = req.body;
+      let userProfile;
+      if (targetProfileId) {
+        const requestingUser = await storage.getUser(userId);
+        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
+        userProfile = await storage.getProfile(targetProfileId);
+        if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      } else {
+        userProfile = await storage.getProfileByUserId(userId);
+        if (!userProfile) return res.status(403).json({ error: "Profile not found" });
+      }
 
-      const { photoUrl } = req.body;
       if (!photoUrl) return res.status(400).json({ error: "Missing photoUrl" });
 
       const currentPhotos = userProfile.photos || [];

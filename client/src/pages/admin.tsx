@@ -64,14 +64,6 @@ export default function Admin() {
   const [userSearch, setUserSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [editingBotId, setEditingBotId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editAge, setEditAge] = useState(25);
-  const [editBio, setEditBio] = useState("");
-  const [editLocation, setEditLocation] = useState("");
-  const [editGender, setEditGender] = useState("");
-  const [editAlienType, setEditAlienType] = useState("");
-  const [editInterests, setEditInterests] = useState("");
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -355,18 +347,6 @@ export default function Admin() {
     },
   });
 
-  const updateBotProfileMutation = useMutation({
-    mutationFn: async ({ profileId, data }: { profileId: string; data: any }) =>
-      apiRequest("PUT", `/api/profiles/${profileId}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/profiles"] });
-      toast({ title: "Profilo aggiornato!" });
-      setEditingBotId(null);
-    },
-    onError: () => {
-      toast({ title: "Errore", description: "Impossibile aggiornare il profilo", variant: "destructive" });
-    },
-  });
 
   const resetTestDataMutation = useMutation({
     mutationFn: async () => apiRequest("POST", "/api/admin/reset-test-data") as Promise<{ deleted: { swipes: number; matches: number; messages: number } }>,
@@ -688,31 +668,9 @@ export default function Admin() {
                             <Button variant="ghost" size="icon" className={`h-8 w-8 ${profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "text-yellow-400" : "text-muted-foreground"}`} onClick={(e) => { e.stopPropagation(); const isHighlighted = profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date(); highlightProfileMutation.mutate({ profileId: profile.id, days: isHighlighted ? 0 : 7 }); }} data-testid={`button-highlight-${profile.id}`} title={profile.highlightedUntil && new Date(profile.highlightedUntil) > new Date() ? "Rimuovi evidenziazione" : "Evidenzia per 7 giorni"}>
                               <Crown className="w-4 h-4" />
                             </Button>
-                            {profile.isBot && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedProfile(profile.id);
-                                if (editingBotId === profile.id) {
-                                  setEditingBotId(null);
-                                } else {
-                                  setEditingBotId(profile.id);
-                                  setEditName(profile.name);
-                                  setEditAge(profile.age);
-                                  setEditBio(profile.bio || "");
-                                  setEditLocation(profile.location || "");
-                                  setEditGender(profile.gender || "");
-                                  setEditAlienType(profile.alienType || "");
-                                  setEditInterests(profile.interests?.join(", ") || "");
-                                }
-                              }} data-testid={`button-edit-inline-${profile.id}`} title="Modifica rapida bot">
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                            )}
-                            {!profile.isBot && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => { e.stopPropagation(); setLocation(`/profile/edit/${profile.id}`); }} data-testid={`button-edit-${profile.id}`} title="Modifica profilo">
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                            )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={(e) => { e.stopPropagation(); setLocation(`/profile/edit/${profile.id}`); }} data-testid={`button-edit-${profile.id}`} title={profile.isBot ? "Modifica profilo bot" : "Modifica profilo"}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); if (confirm(`Eliminare il profilo di ${profile.name}?`)) deleteProfileMutation.mutate(profile.id); }} data-testid={`button-delete-${profile.id}`}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -721,75 +679,6 @@ export default function Admin() {
 
                         {isExpanded && (
                           <div className="px-4 pb-4 border-t border-border/50">
-                            {profile.isBot && editingBotId === profile.id && (
-                              <div className="mt-3 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
-                                <h4 className="text-sm font-semibold text-primary flex items-center gap-1"><Pencil className="w-3 h-3" /> Modifica rapida Bot</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Nome</Label>
-                                    <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-8 text-sm" data-testid="input-edit-name" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Età</Label>
-                                    <Input type="number" value={editAge} onChange={(e) => setEditAge(Number(e.target.value))} className="h-8 text-sm" data-testid="input-edit-age" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Genere</Label>
-                                    <Select value={editGender} onValueChange={setEditGender}>
-                                      <SelectTrigger className="h-8 text-sm" data-testid="select-edit-gender"><SelectValue placeholder="Scegli..." /></SelectTrigger>
-                                      <SelectContent>
-                                        {genderOptions.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Tipo Alieno</Label>
-                                    <Select value={editAlienType} onValueChange={setEditAlienType}>
-                                      <SelectTrigger className="h-8 text-sm" data-testid="select-edit-alien-type"><SelectValue placeholder="Scegli..." /></SelectTrigger>
-                                      <SelectContent>
-                                        {alienTypes.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-1 md:col-span-2">
-                                    <Label className="text-xs">Città</Label>
-                                    <Input value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className="h-8 text-sm" data-testid="input-edit-location" />
-                                  </div>
-                                  <div className="space-y-1 md:col-span-2">
-                                    <Label className="text-xs">Bio</Label>
-                                    <Textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} className="text-sm min-h-[60px]" data-testid="textarea-edit-bio" />
-                                  </div>
-                                  <div className="space-y-1 md:col-span-2">
-                                    <Label className="text-xs">Interessi (separati da virgola)</Label>
-                                    <Input value={editInterests} onChange={(e) => setEditInterests(e.target.value)} className="h-8 text-sm" data-testid="input-edit-interests" />
-                                  </div>
-                                </div>
-                                <div className="flex gap-2 justify-end pt-1">
-                                  <Button size="sm" variant="ghost" onClick={() => setEditingBotId(null)} data-testid="button-edit-cancel">Annulla</Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      const payload = {
-                                        profileId: profile.id,
-                                        data: {
-                                          name: editName,
-                                          age: editAge,
-                                          bio: editBio,
-                                          location: editLocation,
-                                          gender: editGender,
-                                          alienType: editAlienType,
-                                          interests: editInterests.split(",").map((s: string) => s.trim()).filter(Boolean),
-                                        },
-                                      };
-                                      updateBotProfileMutation.mutate(payload);
-                                    }}
-                                    data-testid="button-edit-save"
-                                  >
-                                    Salva
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
                               <div>
                                 <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1"><Mail className="w-3 h-3" /> Contatti</h4>

@@ -178,6 +178,7 @@ export default function ProfileEdit() {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [profileVideoUrl, setProfileVideoUrl] = useState<string | null>(null);
   const [ratingEnabled, setRatingEnabled] = useState(false);
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(true);
@@ -185,6 +186,7 @@ export default function ProfileEdit() {
   const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
   const [profileLongitude, setProfileLongitude] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const hasInitialized = useRef(false);
 
   const { data: myProfile, isLoading: myProfileLoading } = useQuery<Profile | null>({
@@ -443,7 +445,10 @@ export default function ProfileEdit() {
     try {
       const formData = new FormData();
       formData.append("photo", file);
-      const response = await fetch("/api/profiles/upload-photo", {
+      const url = adminProfileId
+        ? `/api/profiles/upload-photo?targetProfileId=${adminProfileId}`
+        : "/api/profiles/upload-photo";
+      const response = await fetch(url, {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -455,6 +460,7 @@ export default function ProfileEdit() {
       const data = await response.json();
       setUploadedPhotos(data.photos);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
       toast({ title: t("profileEdit.photoUploaded"), description: t("profileEdit.photoUploadedDesc") });
     } catch (err: any) {
       const msg = err?.message || t("profileEdit.uploadError");
@@ -467,16 +473,19 @@ export default function ProfileEdit() {
 
   const handleRemovePhoto = async (photoUrl: string) => {
     try {
+      const body: any = { photoUrl };
+      if (adminProfileId) body.targetProfileId = adminProfileId;
       const response = await fetch("/api/profiles/photo", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoUrl }),
+        body: JSON.stringify(body),
         credentials: "include",
       });
       if (!response.ok) throw new Error("Delete failed");
       const data = await response.json();
       setUploadedPhotos(data.photos);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
     } catch {
       toast({ title: t("common.error"), description: t("profileEdit.photoRemoveError"), variant: "destructive" });
     }
@@ -484,18 +493,80 @@ export default function ProfileEdit() {
 
   const handleSetProfilePhoto = async (photoUrl: string) => {
     try {
+      const body: any = { photoUrl };
+      if (adminProfileId) body.targetProfileId = adminProfileId;
       const response = await fetch("/api/profiles/set-profile-photo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoUrl }),
+        body: JSON.stringify(body),
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed");
       form.setValue("imageUrl", photoUrl);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
       toast({ title: t("profileEdit.profilePhotoUpdated"), description: t("profileEdit.profilePhotoUpdatedDesc") });
     } catch {
       toast({ title: t("common.error"), description: t("profileEdit.profilePhotoError"), variant: "destructive" });
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (videoInputRef.current) videoInputRef.current.value = "";
+
+    const maxSize = 250 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ title: t("common.error"), description: "Video troppo grande. Massimo 250 MB.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+      const url = adminProfileId
+        ? `/api/profiles/upload-video?targetProfileId=${adminProfileId}`
+        : "/api/profiles/upload-video";
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Upload failed");
+      }
+      const data = await response.json();
+      setProfileVideoUrl(data.profileVideoUrl);
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
+      toast({ title: "Video caricato", description: "Il video profilo è stato aggiornato." });
+    } catch (err: any) {
+      toast({ title: t("common.error"), description: err?.message || "Errore nel caricamento del video.", variant: "destructive" });
+    } finally {
+      setIsUploadingVideo(false);
+    }
+  };
+
+  const handleDeleteVideo = async () => {
+    try {
+      const body: any = {};
+      if (adminProfileId) body.targetProfileId = adminProfileId;
+      const response = await fetch("/api/profiles/delete-video", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Delete failed");
+      setProfileVideoUrl(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
+      if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
+      toast({ title: "Video eliminato", description: "Il video profilo è stato rimosso." });
+    } catch {
+      toast({ title: t("common.error"), description: "Errore nell'eliminazione del video.", variant: "destructive" });
     }
   };
 
@@ -698,6 +769,16 @@ export default function ProfileEdit() {
                           <div className="absolute bottom-2 left-2 bg-primary/80 rounded-full px-2 py-0.5">
                             <span className="text-[10px] text-white font-semibold">★ PRINCIPALE</span>
                           </div>
+                          {adminProfileId && (
+                            <button
+                              type="button"
+                              onClick={handleDeleteVideo}
+                              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 flex items-center justify-center hover:bg-red-600/80 transition-colors"
+                              data-testid="button-delete-profile-video"
+                            >
+                              <X className="w-3.5 h-3.5 text-white" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="w-full rounded-xl border-2 border-dashed border-white/20 bg-white/5 flex flex-col items-center justify-center gap-1 text-white/50 py-6">
@@ -705,16 +786,46 @@ export default function ProfileEdit() {
                           <span className="text-sm">Nessun video principale</span>
                         </div>
                       )}
-                      <Link href="/profile">
-                        <button
-                          type="button"
-                          className="mt-2 w-full rounded-xl bg-white/10 hover:bg-white/15 transition-colors text-white/80 text-sm py-2.5 flex items-center justify-center gap-2"
-                          data-testid="button-manage-videos"
-                        >
-                          <Video className="w-4 h-4" />
-                          Gestisci video nel profilo
-                        </button>
-                      </Link>
+                      {adminProfileId ? (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => videoInputRef.current?.click()}
+                            disabled={isUploadingVideo}
+                            className="flex-1 rounded-xl bg-white/10 hover:bg-white/15 transition-colors text-white/80 text-sm py-2.5 flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
+                            data-testid="button-upload-profile-video"
+                          >
+                            {isUploadingVideo ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Video className="w-4 h-4" />
+                            )}
+                            {isUploadingVideo ? "Caricamento..." : (profileVideoUrl ? "Sostituisci video" : "Carica video")}
+                          </button>
+                          {profileVideoUrl && (
+                            <button
+                              type="button"
+                              onClick={handleDeleteVideo}
+                              className="rounded-xl bg-red-500/20 hover:bg-red-500/30 transition-colors text-red-400 text-sm py-2.5 px-3 flex items-center justify-center gap-2"
+                              data-testid="button-delete-video-btn"
+                            >
+                              <X className="w-4 h-4" />
+                              Elimina
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <Link href="/profile">
+                          <button
+                            type="button"
+                            className="mt-2 w-full rounded-xl bg-white/10 hover:bg-white/15 transition-colors text-white/80 text-sm py-2.5 flex items-center justify-center gap-2"
+                            data-testid="button-manage-videos"
+                          >
+                            <Video className="w-4 h-4" />
+                            Gestisci video nel profilo
+                          </button>
+                        </Link>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1401,16 +1512,28 @@ export default function ProfileEdit() {
       </Form>
       </div>
       {createPortal(
-        <input
-          ref={photoInputRef}
-          id="photo-upload-portal-input"
-          type="file"
-          accept="image/*"
-          style={{ position: "fixed", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
-          disabled={isUploadingPhoto}
-          onChange={handlePhotoUpload}
-          data-testid="input-profile-photos"
-        />,
+        <>
+          <input
+            ref={photoInputRef}
+            id="photo-upload-portal-input"
+            type="file"
+            accept="image/*"
+            style={{ position: "fixed", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
+            disabled={isUploadingPhoto}
+            onChange={handlePhotoUpload}
+            data-testid="input-profile-photos"
+          />
+          <input
+            ref={videoInputRef}
+            id="video-upload-portal-input"
+            type="file"
+            accept="video/*"
+            style={{ position: "fixed", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
+            disabled={isUploadingVideo}
+            onChange={handleVideoUpload}
+            data-testid="input-profile-video"
+          />
+        </>,
         document.body
       )}
     </div>
