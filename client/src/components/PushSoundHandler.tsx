@@ -14,7 +14,7 @@ export default function PushSoundHandler() {
     const handleSwMessage = (event: MessageEvent) => {
       if (event.data?.type === "VIBRA_PUSH_RECEIVED") {
         const pushType = event.data?.payload?.type;
-        if (pushType === "vibrapp") {
+        if (pushType === "vibrapp" || pushType === "vibrapp-reply") {
           playVibrappSound();
         } else {
           playNotificationSound();

@@ -785,6 +785,7 @@ export default function Vibrapp() {
           mediaUrl: objectPath,
           mediaType,
           replyToId: replyTo?.id,
+          replyToSenderId: replyTo?.senderId,
           replyToName: replyTo?.senderName,
           replyToContent: replyTo?.content?.substring(0, 100),
         });
@@ -800,6 +801,7 @@ export default function Vibrapp() {
       socketRef.current.emit("vibrapp:message", {
         content: inputText.trim(),
         replyToId: replyTo?.id,
+        replyToSenderId: replyTo?.senderId,
         replyToName: replyTo?.senderName,
         replyToContent: replyTo?.content?.substring(0, 100),
       });

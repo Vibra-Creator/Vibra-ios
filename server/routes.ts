@@ -3875,6 +3875,7 @@ REGOLE:
       mediaUrl?: string;
       mediaType?: string;
       replyToId?: string;
+      replyToSenderId?: string;
       replyToName?: string;
       replyToContent?: string;
     }) => {
@@ -3895,6 +3896,11 @@ REGOLE:
               replyToSenderId = repliedMsg.senderId;
             }
           } catch {}
+          // Fallback: use sender ID provided by the client if DB lookup missed
+          // (can happen when the original message was already cleaned up by the 24h job)
+          if (!replyToSenderId && typeof data.replyToSenderId === "string" && data.replyToSenderId) {
+            replyToSenderId = data.replyToSenderId;
+          }
         }
 
         const [msg] = await db.insert(vibrappMessages).values({
@@ -3913,18 +3919,20 @@ REGOLE:
         const pushBody = mediaUrl
           ? `${userProfile.name}: ${mediaType === "video" ? "📹 Video" : mediaType === "audio" ? "🎤 Vocale" : "🖼️ Immagine"}`
           : `${userProfile.name}: ${filteredContent.substring(0, 100)}`;
-        const vibrappPushPayload = {
-          title: "🛸 Vibrapp",
-          body: pushBody,
-          icon: "/icons/icon-192.png",
-          url: `/vibrapp`,
-          type: "vibrapp",
-        };
 
         if (data.replyToId && replyToSenderId) {
           io.to(`user:${profileId}`).to(`user:${replyToSenderId}`).emit("vibrapp:new-message", msg);
           if (replyToSenderId !== profileId) {
-            sendPushToProfile(replyToSenderId, vibrappPushPayload);
+            // Use "vibrapp-reply" type so the service worker assigns a distinct
+            // notification tag from broadcast messages — prevents OS-level
+            // sound suppression due to same-tag merging.
+            sendPushToProfile(replyToSenderId, {
+              title: `🛸 ${userProfile.name} ti ha risposto`,
+              body: pushBody.replace(`${userProfile.name}: `, ""),
+              icon: "/icons/icon-192.png",
+              url: `/vibrapp`,
+              type: "vibrapp-reply",
+            });
           }
         } else {
           io.emit("vibrapp:new-message", msg);

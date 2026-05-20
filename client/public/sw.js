@@ -1,4 +1,4 @@
-const CACHE_VERSION = 33;
+const CACHE_VERSION = 34;
 const CACHE_NAME = 'vibra-v' + CACHE_VERSION;
 
 const PRECACHE_URLS = [
@@ -38,9 +38,25 @@ self.addEventListener('push', (event) => {
   try {
     const data = event.data.json();
     const isVibrapp = data.type === 'vibrapp';
+    const isVibrappReply = data.type === 'vibrapp-reply';
     const isVibrappDm = data.type === 'vibrapp-dm';
-    const isVibrappLike = isVibrapp || isVibrappDm;
+    const isVibrappLike = isVibrapp || isVibrappReply || isVibrappDm;
     const title = data.title || 'Vibra';
+
+    // Each reply gets its own tag (never merged with broadcast messages).
+    // Broadcast vibrapp messages share 'vibrapp-msg' so they replace each other.
+    // DMs share 'vibrapp-dm-msg'. Replies use 'vibrapp-reply' (one slot, renotify).
+    let notifTag;
+    if (isVibrappDm) {
+      notifTag = 'vibrapp-dm-msg';
+    } else if (isVibrappReply) {
+      notifTag = 'vibrapp-reply';
+    } else if (isVibrapp) {
+      notifTag = 'vibrapp-msg';
+    } else {
+      notifTag = 'vibra-' + Date.now();
+    }
+
     const options = {
       body: data.body || '',
       icon: data.icon || '/favicon.png',
@@ -49,7 +65,7 @@ self.addEventListener('push', (event) => {
         ? [100, 50, 100, 50, 300, 100, 100, 50, 100]
         : [200, 100, 200, 100, 200],
       data: { url: data.url || '/', type: data.type },
-      tag: isVibrappDm ? 'vibrapp-dm-msg' : isVibrapp ? 'vibrapp-msg' : 'vibra-' + Date.now(),
+      tag: notifTag,
       renotify: true,
       requireInteraction: isVibrappLike,
       silent: false,
