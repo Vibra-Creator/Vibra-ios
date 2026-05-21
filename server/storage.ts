@@ -38,7 +38,7 @@ import {
   type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray, lt, ne } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, lt, ne, gt } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -56,6 +56,7 @@ export interface IStorage {
   getSwipe(swiperId: string, swipedId: string): Promise<Swipe | undefined>;
   getSwipedProfileIds(swiperId: string): Promise<string[]>;
   getLikedProfileIds(swiperId: string): Promise<string[]>;
+  getRecentDislikedProfileIds(swiperId: string, days?: number): Promise<string[]>;
   resetDislikedSwipes(swiperId: string): Promise<number>;
   resetAllSwipes(swiperId: string): Promise<number>;
   checkMutualLike(userId1: string, userId2: string): Promise<boolean>;
@@ -241,6 +242,18 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select({ swipedId: swipes.swipedId }).from(swipes).where(
       and(eq(swipes.swiperId, swiperId), eq(swipes.liked, true))
     );
+    return result.map(r => r.swipedId);
+  }
+
+  async getRecentDislikedProfileIds(swiperId: string, days: number = 7): Promise<string[]> {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const result = await db.select({ swipedId: swipes.swipedId })
+      .from(swipes)
+      .where(and(
+        eq(swipes.swiperId, swiperId),
+        eq(swipes.liked, false),
+        gt(swipes.createdAt, cutoff)
+      ));
     return result.map(r => r.swipedId);
   }
 

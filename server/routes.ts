@@ -464,12 +464,14 @@ ${urlEntries}
       }
       const myProfile = await storage.getProfile(profileId);
       const allProfiles = await storage.getProfiles();
-      const swipedIds = await storage.getSwipedProfileIds(profileId);
-      const likedIds = await storage.getLikedProfileIds(profileId);
-      const favoriteIds = new Set((await storage.getFavorites(profileId)).map(f => f.favoritedProfileId));
-      // Escludi SOLO i dislike — i profili già piaciuti restano visibili con badge "già piaciuto"
-      const likedSet = new Set(likedIds);
-      const dislikedSet = new Set(swipedIds.filter(id => !likedSet.has(id)));
+      // Carica in parallelo per efficienza
+      const [likedIds, favoriteIds] = await Promise.all([
+        storage.getLikedProfileIds(profileId),
+        storage.getFavorites(profileId).then(favs => favs.map(f => f.favoritedProfileId)),
+      ]);
+      // I profili scartati (dislike) NON vengono mai esclusi dal pool:
+      // l'utente vede sempre tutti i profili disponibili.
+      // I profili già piaciuti restano visibili con badge "già piaciuto".
       const blockedIds = await storage.getBlockedIds(profileId);
       const blockedSet = new Set(blockedIds);
 
@@ -490,12 +492,11 @@ ${urlEntries}
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       };
 
-      let afterSelf = 0, afterSwiped = 0, afterBlocked = 0, afterGender = 0, afterAge = 0, afterDist = 0;
+      let afterSelf = 0, afterBlocked = 0, afterGender = 0, afterAge = 0, afterDist = 0;
       const swipable = allProfiles.filter(p => {
         if (p.id === profileId) return false;
         afterSelf++;
-        if (dislikedSet.has(p.id)) return false; // escludi solo i dislike; i like restano visibili con badge
-        afterSwiped++;
+        // I profili bloccati sono l'unico caso di esclusione permanente
         if (blockedSet.has(p.id)) return false;
         afterBlocked++;
 
@@ -521,7 +522,7 @@ ${urlEntries}
         return true;
       });
 
-      console.log(`[SWIPABLE] user=${myProfile?.name} total=${allProfiles.length} afterSelf=${afterSelf} afterSwiped=${afterSwiped} afterBlocked=${afterBlocked} afterGender=${afterGender} afterAge=${afterAge} afterDist=${afterDist} final=${swipable.length} | prefs: gender=${myProfile?.preferredGender} ageMin=${myProfile?.preferredAgeMin} ageMax=${myProfile?.preferredAgeMax} maxDist=${myProfile?.maxDistanceKm}`);
+      console.log(`[SWIPABLE] user=${myProfile?.name} total=${allProfiles.length} afterSelf=${afterSelf} afterBlocked=${afterBlocked} afterGender=${afterGender} afterAge=${afterAge} afterDist=${afterDist} final=${swipable.length} | prefs: gender=${myProfile?.preferredGender} ageMin=${myProfile?.preferredAgeMin} ageMax=${myProfile?.preferredAgeMax} maxDist=${myProfile?.maxDistanceKm}`);
 
       const now = new Date();
       const favSet = new Set(favoriteIds);
