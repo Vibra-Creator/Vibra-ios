@@ -194,19 +194,24 @@ export default function Home() {
 
   const nextProfile = availableProfiles[1];
 
+  // Keep the Image objects in a ref so the browser never GC's them before the
+  // HTTP cache is populated — without this the browser may evict them mid-load
+  // and the next card still shows a blank/spinner when it mounts.
+  const imagePreloadCacheRef = useRef<HTMLImageElement[]>([]);
+
   useEffect(() => {
-    const upcoming = availableProfiles.slice(1, 5);
-    upcoming.forEach(p => {
-      if (p.imageUrl) {
+    const imgs: HTMLImageElement[] = [];
+    // Preload current card + next 11: matches the same depth as video preloading
+    availableProfiles.slice(0, 12).forEach(p => {
+      [p.imageUrl, ...(p.photos || [])].filter(Boolean).forEach((url) => {
         const img = new window.Image();
-        img.src = p.imageUrl;
-      }
-      (p.photos || []).forEach((url: string) => {
-        const img = new window.Image();
-        img.src = url;
+        img.src = url as string;
+        imgs.push(img);
       });
     });
-  }, [availableProfiles.map(p => p.id).slice(0, 5).join(",")]);
+    imagePreloadCacheRef.current = imgs;
+    return () => { imagePreloadCacheRef.current = []; };
+  }, [availableProfiles.map(p => p.id).slice(0, 12).join(",")]);
 
   // Preload video: fetch() aggressivo per pre-scaldare la HTTP cache del browser.
   // I <link rel="preload"> vengono ignorati su mobile per le range request.

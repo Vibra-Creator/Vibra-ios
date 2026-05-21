@@ -1027,14 +1027,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
           dragMomentum={false}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          initial={{ scale: isTop ? 1 : 0.95, y: isTop ? 0 : 20 }}
+          initial={{ scale: isTop ? 1 : 0.97, y: isTop ? 0 : 8 }}
           animate={{ 
-            scale: isTop ? 1 : 0.95, 
-            y: isTop ? exitY || 0 : 20,
+            scale: isTop ? 1 : 0.97, 
+            y: isTop ? exitY || 0 : 8,
             x: exitX,
           }}
-          exit={{ x: exitX, y: exitY, opacity: 0, transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] } }}
-          transition={{ type: "spring", stiffness: 500, damping: 40 }}
+          exit={{ x: exitX, y: exitY, opacity: 0, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } }}
+          transition={isTop
+            ? { type: "spring", stiffness: 900, damping: 55 }
+            : { type: "spring", stiffness: 500, damping: 40 }}
           data-testid={`swipe-card-${profile.id}`}
         >
           <div className="relative overflow-hidden bg-black h-full"
