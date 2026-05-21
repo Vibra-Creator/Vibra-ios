@@ -96,6 +96,16 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+// Redirect dal sottodominio Replit al dominio ufficiale
+app.use((req, res, next) => {
+  const host = req.hostname || "";
+  if (host.endsWith(".replit.app")) {
+    const target = `https://vibraalienmatch.com${req.originalUrl}`;
+    return res.redirect(301, target);
+  }
+  next();
+});
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
