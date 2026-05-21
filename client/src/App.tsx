@@ -40,6 +40,7 @@ import PublicProfile from "@/pages/public-profile";
 import Reels from "@/pages/reels";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
+import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { ViewportSelector } from "@/components/ViewportSelector";
@@ -295,7 +296,7 @@ function AppContent() {
 
   const showHeader = isAuthenticated && !isPublicPage && location !== "/profile/edit" && location !== "/video-upload";
 
-  return (
+  const content = (
     <>
       {!hideVideoBackground && <VideoBackground fallbackGradient={true} />}
       <div className="h-full flex flex-col overflow-hidden">
@@ -308,6 +309,19 @@ function AppContent() {
       </div>
     </>
   );
+
+  // Wrap authenticated users with the global Vibrapp socket provider so DM
+  // notifications (banner + sound) arrive on every page, not just /vibrapp.
+  // Always render the provider when authenticated (empty profileId = no socket yet)
+  if (isAuthenticated) {
+    return (
+      <VibrappSocketProvider profileId={myProfile?.id ?? ""}>
+        {content}
+      </VibrappSocketProvider>
+    );
+  }
+
+  return content;
 }
 
 function App() {

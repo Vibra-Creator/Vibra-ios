@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { io, Socket } from "socket.io-client";
+import { useVibrappSocket } from "@/contexts/VibrappSocketContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink, Mic, Square, MicOff } from "lucide-react";
 import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
@@ -73,7 +73,6 @@ export default function Vibrapp() {
   const [inputText, setInputText] = useState("");
   const [replyTo, setReplyTo] = useState<VibrappMsg | null>(null);
   const [notificationMatchId, setNotificationMatchId] = useState<string | null>(null);
-  const [onlineCount, setOnlineCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{id: string; name: string; age: number; imageUrl: string}>>([]);
   const [typingUsers, setTypingUsers] = useState<{ profileId: string; name: string }[]>([]);
@@ -109,10 +108,8 @@ export default function Vibrapp() {
   const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const introAudioChunksRef = useRef<Blob[]>([]);
   const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [socketConnected, setSocketConnected] = useState(false);
   const [newMsgBanner, setNewMsgBanner] = useState<{ name: string; text: string } | null>(null);
   const newMsgBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -126,12 +123,22 @@ export default function Vibrapp() {
   const [dmMessages, setDmMessages] = useState<DmMessage[]>([]);
   const [dmInput, setDmInput] = useState("");
   const [dmLoading, setDmLoading] = useState(false);
-  const [dmUnreadCount, setDmUnreadCount] = useState(0);
-  const [dmBanner, setDmBanner] = useState<{ name: string; text: string; fromId: string } | null>(null);
-  const dmBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dmMessagesEndRef = useRef<HTMLDivElement>(null);
   const dmInputRef = useRef<HTMLInputElement>(null);
   const dmTargetRef = useRef<DmTarget | null>(null);
+
+  // ─── Shared global socket (stays alive across all pages) ─────────────────
+  const {
+    socketRef,
+    socketConnected,
+    onlineCount,
+    dmUnreadCount,
+    setDmUnreadCount,
+    dmBanner,
+    clearDmBanner,
+    showDmBanner,
+    registerDmHandler,
+  } = useVibrappSocket();
 
   const { data: profile } = useQuery({
     queryKey: ["/api/profiles/me"],
@@ -378,10 +385,9 @@ export default function Vibrapp() {
     return () => clearTimeout(timer);
   }, [searchQuery, profile?.id]);
 
+  // ── Load initial messages when user profile is ready ────────────────────
   useEffect(() => {
     if (!profile?.id) return;
-
-    // Mark all vibrapp messages as read in DB, then zero the badge immediately
     fetch("/api/vibrapp/mark-all-read", { method: "POST", credentials: "include" })
       .finally(() => {
         queryClient.setQueryData(["/api/vibrapp/unread-count"], { count: 0 });
@@ -390,7 +396,6 @@ export default function Vibrapp() {
           if ("clearAppBadge" in navigator) (navigator as any).clearAppBadge();
         } catch {}
       });
-
     fetch("/api/vibrapp/messages?limit=50", { credentials: "include" })
       .then(r => r.json())
       .then((msgs: VibrappMsg[]) => {
@@ -399,31 +404,21 @@ export default function Vibrapp() {
         setTimeout(() => scrollToBottom(), 100);
       })
       .catch(console.error);
+  }, [profile?.id]);
 
-    const socket = io(window.location.origin, { path: "/vibrapp-socket" });
-    socketRef.current = socket;
+  // ── Attach socket listeners on the shared global socket ──────────────────
+  // Depends on socketConnected so listeners are (re)attached after reconnects
+  useEffect(() => {
+    if (!profile?.id || !socketConnected) return;
+    const socket = socketRef.current;
+    if (!socket) return;
 
-    socket.on("connect", () => {
-      setSocketConnected(true);
-    });
-
-    socket.on("disconnect", () => {
-      setSocketConnected(false);
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("[vibrapp] socket connect error:", err.message);
-      setSocketConnected(false);
-    });
-
-    socket.on("vibrapp:new-message", (msg: VibrappMsg) => {
+    const handleNewMessage = (msg: VibrappMsg) => {
       setMessages(prev => {
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
-      if (isAtBottomRef.current) {
-        setTimeout(() => scrollToBottom(), 50);
-      }
+      if (isAtBottomRef.current) setTimeout(() => scrollToBottom(), 50);
       if (msg.senderId !== profile.id) {
         socket.emit("vibrapp:read", { messageId: msg.id });
         playNotificationSound();
@@ -434,68 +429,58 @@ export default function Vibrapp() {
           newMsgBannerTimerRef.current = setTimeout(() => setNewMsgBanner(null), 5000);
         }
       }
-    });
+    };
 
-    socket.on("vibrapp:online-count", (count: number) => {
-      setOnlineCount(count);
-    });
-
-    socket.on("vibrapp:typing-update", (users: { profileId: string; name: string }[]) => {
+    const handleTypingUpdate = (users: { profileId: string; name: string }[]) => {
       setTypingUsers(users.filter(u => u.profileId !== profile.id));
-    });
+    };
 
-    socket.on("vibrapp:message-read", (data: { messageId: string; profileId: string }) => {
+    const handleMessageRead = (data: { messageId: string; profileId: string }) => {
       setMessages(prev => prev.map(m => {
         if (m.id === data.messageId) {
           const readBy = m.readBy || [];
-          if (!readBy.includes(data.profileId)) {
-            return { ...m, readBy: [...readBy, data.profileId] };
-          }
+          if (!readBy.includes(data.profileId)) return { ...m, readBy: [...readBy, data.profileId] };
         }
         return m;
       }));
-    });
+    };
 
-    socket.on("vibrapp:reaction-update", (data: { messageId: string; reactions: Record<string, string[]> }) => {
-      setMessages(prev => prev.map(m => {
-        if (m.id === data.messageId) {
-          return { ...m, reactions: JSON.stringify(data.reactions) };
-        }
-        return m;
-      }));
-    });
+    const handleReactionUpdate = (data: { messageId: string; reactions: Record<string, string[]> }) => {
+      setMessages(prev => prev.map(m =>
+        m.id === data.messageId ? { ...m, reactions: JSON.stringify(data.reactions) } : m
+      ));
+    };
 
-    socket.on("vibrapp:message-deleted", (data: { messageId: string }) => {
+    const handleMessageDeleted = (data: { messageId: string }) => {
       setMessages(prev => prev.filter(m => m.id !== data.messageId));
-    });
+    };
 
-    // vibrapp:dm-sent — server sends ONLY to the message sender; no banner/sound
-    socket.on("vibrapp:dm-sent", (msg: any) => {
-      const currentDmTarget = dmTargetRef.current;
-      if (!currentDmTarget) return;
-      const isForOpenThread =
-        msg.fromProfileId === profile.id && msg.toProfileId === currentDmTarget.id;
-      if (isForOpenThread) {
+    // dm-sent: server sends ONLY to the sender — update the open DM panel
+    const handleDmSent = (msg: any) => {
+      const target = dmTargetRef.current;
+      if (!target) return;
+      if (msg.fromProfileId === profile.id && msg.toProfileId === target.id) {
         setDmMessages(prev => {
           if (prev.some(m => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
         setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
       }
-    });
+    };
 
-    // vibrapp:dm-message — server sends ONLY to the recipient; always show banner/sound
-    socket.on("vibrapp:dm-message", (msg: any) => {
-      // Absolute guard: never process our own sent messages (handles self-DM edge cases)
-      if (msg.fromProfileId === profile.id) return;
+    socket.on("vibrapp:new-message", handleNewMessage);
+    socket.on("vibrapp:typing-update", handleTypingUpdate);
+    socket.on("vibrapp:message-read", handleMessageRead);
+    socket.on("vibrapp:reaction-update", handleReactionUpdate);
+    socket.on("vibrapp:message-deleted", handleMessageDeleted);
+    socket.on("vibrapp:dm-sent", handleDmSent);
 
-      const currentDmTarget = dmTargetRef.current;
-      const isForOpenThread =
-        currentDmTarget &&
-        msg.fromProfileId === currentDmTarget.id &&
-        msg.toProfileId === profile.id;
-
-      if (isForOpenThread) {
+    // Register DM handler with global context so we intercept dm-message events
+    // while the user is on this page (instead of the generic global banner)
+    registerDmHandler((msg) => {
+      const target = dmTargetRef.current;
+      const isOpenThread = target && msg.fromProfileId === target.id && msg.toProfileId === profile.id;
+      if (isOpenThread) {
         setDmMessages(prev => {
           if (prev.some(m => m.id === msg.id)) return prev;
           return [...prev, msg];
@@ -503,24 +488,26 @@ export default function Vibrapp() {
         setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
         fetch(`/api/vibrapp-dm/read/${msg.fromProfileId}`, { method: "POST", credentials: "include" }).catch(() => {});
       } else {
-        playNotificationSound();
-        setDmUnreadCount(c => c + 1);
-        queryClient.invalidateQueries({ queryKey: ["/api/vibrapp-dm/unread-count"] });
-        const preview = msg.content ? msg.content.substring(0, 60) : "📩 Messaggio";
-        const senderName = msg.senderName || "Qualcuno";
-        setDmBanner({ name: senderName, text: preview, fromId: msg.fromProfileId });
-        if (dmBannerTimerRef.current) clearTimeout(dmBannerTimerRef.current);
-        dmBannerTimerRef.current = setTimeout(() => setDmBanner(null), 5000);
+        // DM from someone else while a different thread is open — show global banner
+        showDmBanner(
+          msg.senderName || "Qualcuno",
+          msg.content ? msg.content.substring(0, 60) : "📩 Messaggio",
+          msg.fromProfileId
+        );
       }
     });
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      socket.off("vibrapp:new-message", handleNewMessage);
+      socket.off("vibrapp:typing-update", handleTypingUpdate);
+      socket.off("vibrapp:message-read", handleMessageRead);
+      socket.off("vibrapp:reaction-update", handleReactionUpdate);
+      socket.off("vibrapp:message-deleted", handleMessageDeleted);
+      socket.off("vibrapp:dm-sent", handleDmSent);
+      registerDmHandler(null);
       if (newMsgBannerTimerRef.current) clearTimeout(newMsgBannerTimerRef.current);
-      if (dmBannerTimerRef.current) clearTimeout(dmBannerTimerRef.current);
     };
-  }, [profile?.id]);
+  }, [profile?.id, socketConnected, registerDmHandler, showDmBanner]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1820,8 +1807,7 @@ export default function Vibrapp() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             onClick={() => {
-              setDmBanner(null);
-              if (dmBannerTimerRef.current) clearTimeout(dmBannerTimerRef.current);
+              clearDmBanner();
               setDmTarget({ id: dmBanner.fromId, name: dmBanner.name, age: 0, imageUrl: "" });
             }}
             className="fixed top-16 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2 bg-[#1a5c4a]/95 backdrop-blur-sm text-white text-xs rounded-full px-4 py-2.5 shadow-xl border border-emerald-500/40 max-w-[85vw]"
