@@ -38,6 +38,7 @@ import VideoUpload from "@/pages/video-upload";
 import Favorites from "@/pages/favorites";
 import PublicProfile from "@/pages/public-profile";
 import Reels from "@/pages/reels";
+import Blog from "@/pages/blog";
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -205,6 +206,7 @@ function UnauthenticatedRouter() {
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/blog" component={Blog} />
       <Route path="/p/:profileId" component={PublicProfile} />
       <Route path="/" component={Landing} />
       <Route component={Landing} />

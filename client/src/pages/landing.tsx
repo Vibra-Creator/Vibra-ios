@@ -174,6 +174,7 @@ export default function Landing() {
             <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
               <a href="#how-it-works" className="hover:text-white transition-colors">{t("landing.howItWorks")}</a>
               <a href="#features" className="hover:text-white transition-colors">{t("landing.features")}</a>
+              <Link href="/blog" className="hover:text-white transition-colors font-semibold text-primary/90">Blog</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">{t("landing.privacy")}</Link>
             </nav>
             <Link href="/login">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle, Film } from "lucide-react";
+import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle, Film, Rss } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -313,6 +313,15 @@ export function Header() {
           <img src={vibraLogo} alt="Vibra" className="w-9 h-9 object-contain rounded-full shrink-0" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
         </Link>
         <CosmicBanner />
+        <Link href="/blog" data-testid="link-blog-header">
+          <motion.div
+            whileTap={{ scale: 0.88 }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-primary/40 bg-primary/15 shrink-0"
+          >
+            <Rss className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-semibold text-primary/90 hidden sm:block">Blog</span>
+          </motion.div>
+        </Link>
         {location === "/" && <LikesReceivedButton />}
       </div>
     </header>
