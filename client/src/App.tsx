@@ -142,6 +142,7 @@ function AuthenticatedRouter() {
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
       <Route path="/reels" component={Reels} />
+      <Route path="/blog" component={Blog} />
       <Route path="/p/:profileId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>
@@ -189,6 +190,7 @@ function GuestRouter() {
       <Route path="/vibing" component={Vibing} />
       <Route path="/signals" component={Signals} />
       <Route path="/reels" component={Reels} />
+      <Route path="/blog" component={Blog} />
       <Route path="/p/:profileId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>

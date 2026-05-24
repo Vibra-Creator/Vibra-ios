@@ -13,6 +13,7 @@ export function StoryViewer({ profile, videos, onClose }: StoryViewerProps) {
   const [progress, setProgress] = useState(0);
   const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const touchStartX = useRef<number | null>(null);
   const video = videos[index];
 
   useEffect(() => {
@@ -66,6 +67,16 @@ export function StoryViewer({ profile, videos, onClose }: StoryViewerProps) {
       className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
       data-testid="story-viewer"
       onClick={(e) => e.stopPropagation()}
+      onTouchStart={(e) => { touchStartX.current = e.changedTouches[0].clientX; }}
+      onTouchEnd={(e) => {
+        if (touchStartX.current == null) return;
+        const dx = e.changedTouches[0].clientX - touchStartX.current;
+        const threshold = 50;
+        if (dx < -threshold && index < videos.length - 1) setIndex(i => i + 1);
+        else if (dx > threshold && index > 0) setIndex(i => i - 1);
+        else if (dx > threshold && index === 0) onClose();
+        touchStartX.current = null;
+      }}
     >
       <div className="relative w-full h-full max-w-sm mx-auto flex flex-col">
         <div className="absolute top-0 left-0 right-0 z-20 flex gap-1 p-3 pt-4">

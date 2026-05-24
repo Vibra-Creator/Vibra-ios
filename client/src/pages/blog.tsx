@@ -35,7 +35,7 @@ export default function Blog() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0118]">
+    <div className="flex-1 overflow-y-auto bg-[#0a0118]">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
