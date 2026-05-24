@@ -171,12 +171,20 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <LanguageSelector />
+            {/* Nav desktop */}
             <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
               <a href="#how-it-works" className="hover:text-white transition-colors">{t("landing.howItWorks")}</a>
               <a href="#features" className="hover:text-white transition-colors">{t("landing.features")}</a>
               <Link href="/blog" className="hover:text-white transition-colors font-semibold text-primary/90">Blog</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">{t("landing.privacy")}</Link>
             </nav>
+            {/* Blog icon visibile su mobile */}
+            <Link href="/blog" className="md:hidden">
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-primary/40 bg-primary/15">
+                <Rss className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-primary/90">Blog</span>
+              </div>
+            </Link>
             <Link href="/login">
               <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-login-header">
                 {t("landing.login")}

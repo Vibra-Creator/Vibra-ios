@@ -409,6 +409,7 @@ export function BottomNav() {
     { path: "/challenges", icon: Trophy, label: t("nav.challenges"), badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
     { path: "/vibing", icon: Zap, label: t("nav.vibing"), badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
     { path: "/reels", icon: Film, label: "Video", badge: 0, color: "text-violet-400", activeBg: "bg-violet-600" },
+    { path: "/blog", icon: Rss, label: "Blog", badge: 0, color: "text-primary", activeBg: "bg-primary" },
     { path: "/vibrapp", icon: MessageCircle, label: t("nav.vibrapp"), badge: vibrappBadge, color: "text-green-400", activeBg: "bg-green-600" },
     { path: "/dove-sei", icon: MapPin, label: t("nav.location"), badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
     { path: "/private-rooms", icon: Lock, label: t("nav.private"), badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
