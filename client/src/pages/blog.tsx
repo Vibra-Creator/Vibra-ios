@@ -35,7 +35,46 @@ export default function Blog() {
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#0a0118]">
+    <div className="flex-1 overflow-y-auto bg-[#0a0118] dark">
+      {/* Soro blog dark-mode override */}
+      <style>{`
+        #soro-blog,
+        #soro-blog *,
+        #soro-blog > div,
+        #soro-blog iframe,
+        #soro-blog article,
+        #soro-blog section,
+        #soro-blog main,
+        #soro-blog header,
+        #soro-blog footer,
+        #soro-blog nav,
+        #soro-blog aside {
+          background-color: transparent !important;
+          background: transparent !important;
+          color: #e2e8f0 !important;
+        }
+        #soro-blog h1, #soro-blog h2, #soro-blog h3,
+        #soro-blog h4, #soro-blog h5, #soro-blog h6,
+        #soro-blog p, #soro-blog span, #soro-blog a,
+        #soro-blog li, #soro-blog strong, #soro-blog em,
+        #soro-blog label, #soro-blog small, #soro-blog time,
+        #soro-blog figcaption, #soro-blog blockquote,
+        #soro-blog td, #soro-blog th, #soro-blog div {
+          color: #e2e8f0 !important;
+        }
+        #soro-blog a { color: #c084fc !important; text-decoration: underline !important; }
+        #soro-blog a:hover { color: #e879f9 !important; }
+        #soro-blog img, #soro-blog figure, #soro-blog video {
+          border-radius: 12px !important;
+          background: transparent !important;
+        }
+        #soro-blog button, #soro-blog input, #soro-blog textarea,
+        #soro-blog select {
+          background: rgba(255,255,255,0.08) !important;
+          color: #e2e8f0 !important;
+          border-color: rgba(255,255,255,0.15) !important;
+        }
+      `}</style>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">

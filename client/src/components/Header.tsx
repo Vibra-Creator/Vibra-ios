@@ -417,9 +417,6 @@ export function BottomNav() {
     ...(isAdmin ? [{ path: "/admin", icon: Shield, label: t("nav.admin"), badge: 0, color: "text-red-400", activeBg: "bg-red-500" }] : []),
   ];
 
-  const topRow = navItems.slice(0, 5);
-  const bottomRow = navItems.slice(5);
-
   const renderItem = (item: typeof navItems[0]) => {
     const isActive = location === item.path;
     return (
@@ -454,14 +451,9 @@ export function BottomNav() {
 
   return (
     <nav className="sticky bottom-0 z-40 w-full bg-black/50 backdrop-blur-xl border-t border-white/10" data-testid="bottom-nav">
-      <div className="flex items-center justify-around px-3 pt-2 pb-1">
-        {topRow.map(renderItem)}
+      <div className="flex flex-wrap items-center justify-around px-2 pt-1.5 pb-1">
+        {navItems.map(renderItem)}
       </div>
-      {bottomRow.length > 0 && (
-        <div className="flex items-center justify-around px-3 pb-2 pt-0.5">
-          {bottomRow.map(renderItem)}
-        </div>
-      )}
     </nav>
   );
 }
