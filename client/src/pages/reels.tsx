@@ -73,7 +73,14 @@ const VideoItem = memo(function VideoItem({
     const video = videoRef.current;
     if (!video) return;
     const onWaiting = () => setIsBuffering(true);
-    const onCanPlay = () => setIsBuffering(false);
+    const onCanPlay = () => {
+      setIsBuffering(false);
+      // Se il video è quello attivo ma non sta girando, fallo partire
+      if (video.paused && isActive) {
+        video.muted = muted;
+        video.play().catch(() => {});
+      }
+    };
     const onPlay = () => setVideoPaused(false);
     const onPause = () => setVideoPaused(true);
     video.addEventListener("waiting", onWaiting);
@@ -87,6 +94,20 @@ const VideoItem = memo(function VideoItem({
       video.removeEventListener("pause", onPause);
     };
   }, []);
+
+  // Force play/pause when isActive changes
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !resolveVideoUrl) return;
+    if (isActive) {
+      video.muted = muted;
+      video.currentTime = 0;
+      const p = video.play();
+      if (p) p.catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isActive, muted]);
 
   // Only provide src for nearby videos to save RAM
   const resolvedSrc = isNear ? resolveVideoUrl(profile.profileVideoUrl) : undefined;
@@ -118,6 +139,7 @@ const VideoItem = memo(function VideoItem({
         loop
         muted
         playsInline
+        autoPlay={isActive}
         preload={preloadStrategy}
         onClick={handleTapVideo}
         className="absolute inset-0 w-full h-full object-cover cursor-pointer"
@@ -128,14 +150,14 @@ const VideoItem = memo(function VideoItem({
         }}
       />
 
-      {/* Pause indicator */}
+      {/* Pause indicator / tap-to-play */}
       {videoPaused && isActive && !isBuffering && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 gap-2">
           <motion.div
             initial={{ opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.3 }}
-            className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center"
+            className="w-16 h-16 rounded-full bg-black/60 flex items-center justify-center border border-white/20"
           >
             <div
               className="w-0 h-0 ml-1"
@@ -146,6 +168,9 @@ const VideoItem = memo(function VideoItem({
               }}
             />
           </motion.div>
+          <span className="text-white/80 text-xs font-medium bg-black/40 px-3 py-1 rounded-full">
+            Tocca per riprodurre
+          </span>
         </div>
       )}
 
