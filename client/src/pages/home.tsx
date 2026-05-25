@@ -471,6 +471,29 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* Motto cosmico in cima */}
+      <div className="relative z-10 flex items-center justify-center px-4 pt-2 pb-1">
+        <p
+          className="text-center text-sm italic font-medium tracking-wide"
+          style={{
+            background: "linear-gradient(90deg, #c084fc, #67e8f9, #f472b6, #c084fc)",
+            backgroundSize: "200% auto",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            textShadow: "none",
+            animation: "motto-shimmer 4s linear infinite",
+          }}
+        >
+          &ldquo;Qui puoi dire ciò che altrove nascondi.&rdquo;
+        </p>
+        <style>{`
+          @keyframes motto-shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+          }
+        `}</style>
+      </div>
+
       <div className="w-full relative z-10 flex-1 min-h-0">
         {availableProfiles.slice(1, 9).filter(p => p.profileVideoUrl).map(p => {
           const resolvedSrc = p.profileVideoUrl?.startsWith("/objects/")
