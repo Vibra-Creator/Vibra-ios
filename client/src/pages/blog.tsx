@@ -113,12 +113,7 @@ export default function Blog() {
       </header>
 
       {/* Hero */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-4xl mx-auto px-4 pt-12 pb-8 text-center"
-      >
+      <div className="max-w-4xl mx-auto px-4 pt-12 pb-8 text-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 mb-5">
           <Rss className="w-3.5 h-3.5 text-primary" />
           <span className="text-sm font-medium text-primary/90">Aggiornamenti & Storie</span>
@@ -129,21 +124,17 @@ export default function Blog() {
         <p className="text-white/55 text-lg max-w-xl mx-auto">
           Notizie dalla community, consigli, storie vere e aggiornamenti sull'app.
         </p>
-      </motion.div>
+      </div>
 
       {/* Soro Blog Embed */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-        className="max-w-4xl mx-auto px-4 pb-20"
-      >
+      <div className="max-w-4xl mx-auto px-4 pb-20">
         <div
           id="soro-blog"
+          ref={embedRef}
           className="min-h-[400px]"
           data-testid="soro-blog-embed"
         />
-      </motion.div>
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-6 text-center text-sm text-white/40">
