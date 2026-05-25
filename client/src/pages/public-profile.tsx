@@ -176,7 +176,7 @@ export default function PublicProfile() {
               <div className="grid grid-cols-3 gap-2">
                 {allPhotos.slice(1, 4).map((photo, idx) => (
                   <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-white/10">
-                    <img src={photo} alt="" className="w-full h-full object-cover object-top" />
+                    <img src={photo} alt="" className="w-full h-full object-cover object-top" loading="lazy" />
                   </div>
                 ))}
               </div>

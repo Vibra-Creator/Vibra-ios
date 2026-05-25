@@ -290,7 +290,7 @@ export default function Matches() {
                         data-testid={`signal-card-${sig.id}`}
                       >
                         <button onClick={() => setSelectedLiker(sig.fromProfile as any)} className="shrink-0">
-                          <img src={sig.fromProfile.imageUrl} alt={sig.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-fuchsia-500/50" />
+                          <img src={sig.fromProfile.imageUrl} alt={sig.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-fuchsia-500/50" loading="lazy" />
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
@@ -299,7 +299,7 @@ export default function Matches() {
                           </div>
                           {sig.content && <p className="text-white/75 text-xs leading-relaxed line-clamp-2">"{sig.content}"</p>}
                           {sig.mediaUrl && sig.mediaType === "image" && (
-                            <img src={sig.mediaUrl} alt="signal" className="mt-1.5 w-full rounded-lg object-cover max-h-32" />
+                            <img src={sig.mediaUrl} alt="signal" className="mt-1.5 w-full rounded-lg object-cover max-h-32" loading="lazy" />
                           )}
                           {sig.mediaUrl && sig.mediaType === "audio" && (
                             <audio src={sig.mediaUrl} controls className="mt-1.5 w-full h-8" />

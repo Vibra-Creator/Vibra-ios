@@ -522,7 +522,7 @@ export default function Challenges() {
                   {bannerCfg && (
                     <div className={`relative h-28 bg-gradient-to-r ${bannerCfg.gradient} flex items-center justify-center`}>
                       {challenge.imageExample ? (
-                        <img src={challenge.imageExample} alt={challenge.title} className="w-full h-full object-cover" />
+                        <img src={challenge.imageExample} alt={challenge.title} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <bannerCfg.icon className="w-14 h-14 text-gray-500/30" />
                       )}

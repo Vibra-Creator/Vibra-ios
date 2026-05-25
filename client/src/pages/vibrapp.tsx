@@ -1016,7 +1016,7 @@ export default function Vibrapp() {
                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 text-left border-b border-white/5 last:border-b-0"
                   data-testid={`search-result-${user.id}`}
                 >
-                  <img src={user.imageUrl} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                  <img src={user.imageUrl} alt={user.name} className="w-8 h-8 rounded-full object-cover" loading="lazy" />
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-sm font-medium truncate">{user.name}, {user.age}</p>
                   </div>
@@ -1083,7 +1083,7 @@ export default function Vibrapp() {
                 data-testid={`intro-bubble-${msg.id}`}
               >
                 <div className="relative">
-                  <img src={msg.fromProfile.imageUrl} alt={msg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500" />
+                  <img src={msg.fromProfile.imageUrl} alt={msg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500" loading="lazy" />
                   <span className="absolute -bottom-1 -right-1 text-[14px]">🛸</span>
                 </div>
                 <span className="text-white/70 text-[10px] truncate max-w-[52px]">{msg.fromProfile.name}</span>
@@ -1110,7 +1110,7 @@ export default function Vibrapp() {
                 data-testid={`sent-intro-bubble-${msg.id}`}
               >
                 <div className="relative">
-                  <img src={msg.toProfile.imageUrl} alt={msg.toProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500/60" />
+                  <img src={msg.toProfile.imageUrl} alt={msg.toProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500/60" loading="lazy" />
                   {msg.replied ? (
                     <span className="absolute -bottom-1 -right-1 text-[14px]">💬</span>
                   ) : (
@@ -1681,7 +1681,7 @@ export default function Vibrapp() {
               data-testid="coldmsg-reply-panel"
             >
               <div className="flex items-center gap-3 mb-3">
-                <img src={selectedColdMsg.fromProfile.imageUrl} alt={selectedColdMsg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500" />
+                <img src={selectedColdMsg.fromProfile.imageUrl} alt={selectedColdMsg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500" loading="lazy" />
                 <div>
                   <p className="text-white font-bold">{selectedColdMsg.fromProfile.name}, {selectedColdMsg.fromProfile.age}</p>
                   <p className="text-white/50 text-xs">Ti ha inviato una presentazione</p>

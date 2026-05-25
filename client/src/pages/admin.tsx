@@ -733,7 +733,7 @@ export default function Admin() {
                                 <h4 className="text-sm font-semibold text-foreground mb-2">Galleria Foto ({profile.photos.length})</h4>
                                 <div className="flex gap-2 overflow-x-auto pb-2">
                                   {profile.photos.map((photo, i) => (
-                                    <img key={i} src={photo} alt={`Foto ${i + 1}`} className="w-16 h-16 rounded-lg object-cover border border-border flex-shrink-0" />
+                                    <img key={i} src={photo} alt={`Foto ${i + 1}`} className="w-16 h-16 rounded-lg object-cover border border-border flex-shrink-0" loading="lazy" />
                                   ))}
                                 </div>
                               </div>
@@ -1208,7 +1208,7 @@ export default function Admin() {
                     {submissions.map((sub) => (
                       <div key={sub.id} className="rounded-lg bg-card border border-border overflow-hidden" data-testid={`submission-row-${sub.id}`}>
                         <div className="aspect-video relative">
-                          <img src={sub.imageUrl} alt="Submission" className="w-full h-full object-cover" />
+                          <img src={sub.imageUrl} alt="Submission" className="w-full h-full object-cover" loading="lazy" />
                           <Badge className="absolute top-2 right-2" variant={sub.status === "pending" ? "destructive" : sub.status === "approved" ? "default" : "secondary"}>
                             {sub.status === "pending" ? "In attesa AI ok" : sub.status === "approved" ? "Approvata" : "Rifiutata"}
                           </Badge>

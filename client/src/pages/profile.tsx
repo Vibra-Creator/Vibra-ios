@@ -674,7 +674,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-3 gap-2" data-testid="gallery-photos">
             {profile.photos.map((photo, idx) => (
               <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-white/10">
-                <img src={photo} alt={`${t("profileEdit.photo")} ${idx + 1}`} className="w-full h-full object-cover object-top" data-testid={`img-gallery-photo-${idx}`} />
+                <img src={photo} alt={`${t("profileEdit.photo")} ${idx + 1}`} className="w-full h-full object-cover object-top" loading="lazy" data-testid={`img-gallery-photo-${idx}`} />
               </div>
             ))}
           </div>
@@ -746,7 +746,7 @@ export default function ProfilePage() {
                 >
                   <div className="relative">
                     <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 group-active:border-primary transition-all">
-                      <img src={r.fromProfile.imageUrl} alt={r.fromProfile.name} className="w-full h-full object-cover object-top" />
+                      <img src={r.fromProfile.imageUrl} alt={r.fromProfile.name} className="w-full h-full object-cover object-top" loading="lazy" />
                     </div>
                     <span className="absolute -bottom-1 -right-1 text-lg leading-none">{REACTION_EMOJI[r.reaction] ?? r.reaction}</span>
                   </div>

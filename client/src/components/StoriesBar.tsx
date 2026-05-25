@@ -97,7 +97,7 @@ export function StoryViewer({ profile, videos, onClose }: StoryViewerProps) {
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-cyan-400/70 shrink-0">
               {profile.imageUrl ? (
-                <img src={profile.imageUrl} alt={profile.name} className="w-full h-full object-cover" />
+                <img src={profile.imageUrl} alt={profile.name} className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full bg-cyan-900 flex items-center justify-center text-sm text-cyan-300 font-bold">
                   {profile.name?.[0]?.toUpperCase()}

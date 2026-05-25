@@ -49,7 +49,7 @@ function SignalMediaPlayer({ mediaUrl, mediaType }: { mediaUrl: string; mediaTyp
   if (mediaType === "image") {
     return (
       <div className="mt-2 rounded-xl overflow-hidden max-h-72">
-        <img src={src} alt="visione cosmica" className="w-full object-cover" />
+        <img src={src} alt="visione cosmica" className="w-full object-cover" loading="lazy" />
       </div>
     );
   }
@@ -116,7 +116,7 @@ function CommentsModal({ signal, myProfileId, onClose }: { signal: Signal; myPro
           )}
           {comments.map(c => (
             <div key={c.id} className="flex items-start gap-2" data-testid={`comment-item-${c.id}`}>
-              <img src={c.profile.imageUrl} alt={c.profile.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+              <img src={c.profile.imageUrl} alt={c.profile.name} className="w-8 h-8 rounded-full object-cover shrink-0" loading="lazy" />
               <div className="flex-1 bg-white/5 rounded-xl px-3 py-2">
                 <span className="text-xs text-purple-300 font-semibold mr-2">{c.profile.name}</span>
                 <span className="text-white/80 text-sm">{c.content}</span>
@@ -485,7 +485,7 @@ function ProfileSheet({ profileId, onClose }: { profileId: string; onClose: () =
         ) : profile ? (
           <div className="pb-8">
             <div className="relative">
-              <img src={profile.imageUrl} alt={profile.name} className="w-full h-56 object-cover" />
+              <img src={profile.imageUrl} alt={profile.name} className="w-full h-56 object-cover" loading="lazy" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0d0120] via-transparent to-transparent" />
               <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
                 <X className="w-4 h-4 text-white" />

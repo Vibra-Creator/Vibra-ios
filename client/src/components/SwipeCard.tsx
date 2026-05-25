@@ -289,7 +289,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                         onClick={() => setViewingPhotoIndex(idx + 1)}
                         data-testid={`detail-photo-${idx}`}
                       >
-                        <img src={photo} alt={`${t("swipe.photos")} ${idx + 1}`} className="w-full h-full object-cover object-top" />
+                        <img src={photo} alt={`${t("swipe.photos")} ${idx + 1}`} className="w-full h-full object-cover object-top" loading="lazy" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
@@ -1587,7 +1587,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <div className="flex items-center justify-between mb-3 shrink-0">
                       <div className="flex items-center gap-2">
                         <div className="relative">
-                          <img src={profile.imageUrl} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-teal-600/60" />
+                          <img src={profile.imageUrl} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-teal-600/60" loading="lazy" />
                           {(vibBotOnline || vibReply) && (
                             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white" />
                           )}
@@ -1680,7 +1680,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 ) : (
                   <>
                     <div className="flex items-center gap-3 mb-4">
-                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-teal-600/60" />
+                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-teal-600/60" loading="lazy" />
                       <div>
                         <p className="text-teal-900 font-bold">{profile.name}, {profile.age}</p>
                         <p className="text-teal-700 text-xs flex items-center gap-1.5">

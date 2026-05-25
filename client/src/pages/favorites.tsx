@@ -37,7 +37,7 @@ export default function Favorites() {
           <div className="grid gap-3">
             {data.map((item) => (
               <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-white/10 p-3 border border-white/10">
-                <img src={item.profile.imageUrl} alt={item.profile.name} className="w-14 h-14 rounded-full object-cover" />
+                <img src={item.profile.imageUrl} alt={item.profile.name} className="w-14 h-14 rounded-full object-cover" loading="lazy" />
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-semibold truncate">{item.profile.name}</div>
                   <div className="text-white/60 text-sm">{item.profile.age} • {item.profile.location}</div>

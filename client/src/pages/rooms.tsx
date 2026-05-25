@@ -85,7 +85,7 @@ export default function Rooms() {
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto relative z-10">
       <div className="fixed inset-0 z-0">
-        <img src="/videos/vibra-stanze.gif" alt="" className="w-full h-full object-cover" />
+        <img src="/videos/vibra-stanze.gif" alt="" className="w-full h-full object-cover" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
       <motion.div
