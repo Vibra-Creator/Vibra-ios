@@ -1209,9 +1209,103 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
               {isTop && (
                 <>
-                  {/* ── COLONNA SINISTRA — 3 bottoni principali ── */}
+                  {/* ── COLONNA SINISTRA — Preferiti · Impression · Signal · Condividi · Post ── */}
                   <div
-                    className="absolute left-2 top-[12%] z-30 flex flex-col items-center gap-1.5 pointer-events-auto"
+                    className="absolute left-2 top-14 z-30 flex flex-col items-center gap-1.5 pointer-events-auto"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    {/* Preferiti */}
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavoriteMutation.mutate(); }}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ touchAction: "none" }}
+                      data-testid={`button-favorite-${profile.id}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-black/40 border border-white/20 flex items-center justify-center">
+                        <Bookmark className={`w-4 h-4 ${isFavorited ? "text-yellow-400 fill-yellow-400" : "text-white"}`} />
+                      </div>
+                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
+                    </motion.button>
+
+                    {/* Prima Impressione */}
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={(e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        if (profile.ratingEnabled) {
+                          setShowRating(true); setSelectedRating(null); setRatingSubmitted(false);
+                        } else {
+                          toast({ title: "Non disponibile", description: `${profile.name} non ha attivato le impressioni` });
+                        }
+                      }}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ touchAction: "none" }}
+                      data-testid={`button-impression-${profile.id}`}
+                    >
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #c026d3, #a855f7)", opacity: profile.ratingEnabled ? 1 : 0.4 }}>
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
+                    </motion.button>
+
+                    {/* Signal */}
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowSignalCompose(true); }}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ touchAction: "none" }}
+                      data-testid={`button-signals-sidebar-${profile.id}`}
+                    >
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-fuchsia-500/80 to-purple-600/80 border border-fuchsia-400/30">
+                        <Radio className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
+                    </motion.button>
+
+                    {/* Condividi */}
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={async (e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        const shareUrl = `${window.location.origin}`;
+                        if (navigator.share) {
+                          try { await navigator.share({ title: `${profile.name}, ${profile.age}`, text: `Guarda questo profilo su Vibra!`, url: shareUrl }); }
+                          catch {}
+                        } else {
+                          await navigator.clipboard.writeText(shareUrl);
+                          toast({ title: "Link copiato!" });
+                        }
+                      }}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ touchAction: "none" }}
+                      data-testid={`button-share-${profile.id}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-black/40 border border-white/20 flex items-center justify-center">
+                        <Share2 className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
+                    </motion.button>
+
+                    {onOpenPostComposer && (
+                      <motion.button
+                        whileTap={{ scale: 0.88 }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenPostComposer(); }}
+                        className="flex flex-col items-center gap-0.5"
+                        style={{ touchAction: "none" }}
+                        data-testid="button-open-post-composer"
+                      >
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-fuchsia-500/90 border border-white/20">
+                          <Plus className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
+                      </motion.button>
+                    )}
+                  </div>
+
+                  {/* ── COLONNA DESTRA — Storie · Vibrapp · Vibe ── */}
+                  <div
+                    className="absolute right-2 top-[12%] z-30 flex flex-col items-center gap-1.5 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {/* Storie */}
