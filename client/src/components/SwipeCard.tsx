@@ -1211,7 +1211,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 <>
                   {/* ── COLONNA SINISTRA — Preferiti · Impression · Signal · Condividi · Post ── */}
                   <div
-                    className="absolute left-2 top-14 z-30 flex flex-col items-center gap-1.5 pointer-events-auto"
+                    className="absolute left-2 top-[14%] z-30 flex flex-col items-center gap-2 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {/* Preferiti */}
@@ -1305,7 +1305,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
                   {/* ── COLONNA DESTRA — Storie · Vibrapp · Vibe ── */}
                   <div
-                    className="absolute right-2 top-[12%] z-30 flex flex-col items-center gap-1.5 pointer-events-auto"
+                    className="absolute right-2 top-[14%] z-30 flex flex-col items-center gap-2 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {/* Storie */}
