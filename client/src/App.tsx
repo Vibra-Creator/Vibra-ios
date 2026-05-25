@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, Component, type ReactNode } from "react";
+import { useState, useCallback, useEffect, Component, lazy, Suspense, type ReactNode } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -8,37 +8,38 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoBackground } from "@/components/VideoBackground";
 import { Header, BottomNav } from "@/components/Header";
 import { SplashScreen } from "@/components/SplashScreen";
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/home";
-import Matches from "@/pages/matches";
-import Profile from "@/pages/profile";
-import ProfileEdit from "@/pages/profile-edit";
-import Privacy from "@/pages/privacy";
-import Terms from "@/pages/terms";
-import Support from "@/pages/support";
-import ChildSafety from "@/pages/child-safety";
-import Landing from "@/pages/landing";
-import Login from "@/pages/login";
-import Register from "@/pages/register";
-import Chat from "@/pages/chat";
-import Admin from "@/pages/admin";
-import Rooms from "@/pages/rooms";
-import Challenges from "@/pages/challenges";
-import PrivateRooms from "@/pages/private-rooms";
-import PrivateRoomDetail from "@/pages/private-room-detail";
-import RoomDetail from "@/pages/room-detail";
-import PrimaImpressione from "@/pages/prima-impressione";
-import Vibing from "@/pages/vibing";
-import VibrappChat from "@/pages/vibrapp";
-import Signals from "@/pages/signals";
-import LocationMap from "@/pages/location-map";
-import Onboarding from "@/pages/onboarding";
-import ForgotPassword from "@/pages/forgot-password";
-import VideoUpload from "@/pages/video-upload";
-import Favorites from "@/pages/favorites";
-import PublicProfile from "@/pages/public-profile";
-import Reels from "@/pages/reels";
-import Blog from "@/pages/blog";
+
+const NotFound = lazy(() => import("@/pages/not-found"));
+const Home = lazy(() => import("@/pages/home"));
+const Matches = lazy(() => import("@/pages/matches"));
+const Profile = lazy(() => import("@/pages/profile"));
+const ProfileEdit = lazy(() => import("@/pages/profile-edit"));
+const Privacy = lazy(() => import("@/pages/privacy"));
+const Terms = lazy(() => import("@/pages/terms"));
+const Support = lazy(() => import("@/pages/support"));
+const ChildSafety = lazy(() => import("@/pages/child-safety"));
+const Landing = lazy(() => import("@/pages/landing"));
+const Login = lazy(() => import("@/pages/login"));
+const Register = lazy(() => import("@/pages/register"));
+const Chat = lazy(() => import("@/pages/chat"));
+const Admin = lazy(() => import("@/pages/admin"));
+const Rooms = lazy(() => import("@/pages/rooms"));
+const Challenges = lazy(() => import("@/pages/challenges"));
+const PrivateRooms = lazy(() => import("@/pages/private-rooms"));
+const PrivateRoomDetail = lazy(() => import("@/pages/private-room-detail"));
+const RoomDetail = lazy(() => import("@/pages/room-detail"));
+const PrimaImpressione = lazy(() => import("@/pages/prima-impressione"));
+const Vibing = lazy(() => import("@/pages/vibing"));
+const VibrappChat = lazy(() => import("@/pages/vibrapp"));
+const Signals = lazy(() => import("@/pages/signals"));
+const LocationMap = lazy(() => import("@/pages/location-map"));
+const Onboarding = lazy(() => import("@/pages/onboarding"));
+const ForgotPassword = lazy(() => import("@/pages/forgot-password"));
+const VideoUpload = lazy(() => import("@/pages/video-upload"));
+const Favorites = lazy(() => import("@/pages/favorites"));
+const PublicProfile = lazy(() => import("@/pages/public-profile"));
+const Reels = lazy(() => import("@/pages/reels"));
+const Blog = lazy(() => import("@/pages/blog"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -274,9 +275,15 @@ function AppContent() {
     );
   }
 
+  const pageFallback = (
+    <div className="flex-1 flex items-center justify-center" style={{ background: "transparent" }}>
+      <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
+
   if (isGuest && !isAuthenticated) {
     if (isGuestPublicPage) {
-      return <UnauthenticatedRouter />;
+      return <Suspense fallback={pageFallback}><UnauthenticatedRouter /></Suspense>;
     }
 
     return (
@@ -286,7 +293,7 @@ function AppContent() {
           <GuestBanner />
           <Header />
           <main className="flex-1 flex flex-col overflow-hidden">
-            <GuestRouter />
+            <Suspense fallback={pageFallback}><GuestRouter /></Suspense>
           </main>
           <BottomNav />
         </div>
@@ -295,7 +302,7 @@ function AppContent() {
   }
 
   if (!isAuthenticated && !isPublicPage) {
-    return <UnauthenticatedRouter />;
+    return <Suspense fallback={pageFallback}><UnauthenticatedRouter /></Suspense>;
   }
 
   const showHeader = isAuthenticated && !isPublicPage && location !== "/profile/edit" && location !== "/video-upload";
@@ -307,7 +314,9 @@ function AppContent() {
         {showHeader && <Header />}
         {isAuthenticated && !isPublicPage && <NotificationBanner />}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
+          <Suspense fallback={pageFallback}>
+            {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
+          </Suspense>
         </main>
         {showHeader && <BottomNav />}
       </div>

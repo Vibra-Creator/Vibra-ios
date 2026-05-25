@@ -1,11 +1,13 @@
-import { useEffect } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, Rss } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Blog() {
+  const [loaded, setLoaded] = useState(false);
+  const embedRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     document.title = "Blog — Vibra";
 
@@ -22,13 +24,29 @@ export default function Blog() {
     setMeta("meta", "property", "og:title", "Blog — Vibra");
 
     if (document.getElementById("soro-script")) return;
-    const script = document.createElement("script");
-    script.id = "soro-script";
-    script.src = "https://app.trysoro.com/api/embed/c57a92ce-e12a-4780-9def-e1f4f0e44465";
-    script.defer = true;
-    document.body.appendChild(script);
+
+    // Carica Soro solo quando il container è visibile (lazy loading)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !document.getElementById("soro-script")) {
+            const script = document.createElement("script");
+            script.id = "soro-script";
+            script.src = "https://app.trysoro.com/api/embed/c57a92ce-e12a-4780-9def-e1f4f0e44465";
+            script.defer = true;
+            script.onload = () => setLoaded(true);
+            document.body.appendChild(script);
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: "200px" }
+    );
+
+    if (embedRef.current) observer.observe(embedRef.current);
 
     return () => {
+      observer.disconnect();
       const existing = document.getElementById("soro-script");
       if (existing) existing.remove();
     };
