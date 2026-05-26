@@ -250,6 +250,17 @@ function AppContent() {
   const [location, setLocation] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { isGuest } = useGuest();
+
+  // GA4 page tracking on every route change
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", "page_view", {
+        page_path: location,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }
+  }, [location]);
   const isPublicPage = publicPages.includes(location);
   const guestPublicPages = ["/login", "/register", "/privacy", "/terms"];
   const isGuestPublicPage = guestPublicPages.includes(location);
