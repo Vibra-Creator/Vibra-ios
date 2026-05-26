@@ -294,8 +294,7 @@ export default function Home() {
         });
         setSwipeHistory(prev => prev.filter(id => id !== undoneId));
       }
-      // NON invalidare swipable: l'ordine è deterministico sul server,
-      // ma un refetch smonta le card e i video si resettano.
+      queryClient.invalidateQueries({ queryKey: ["/api/swipable"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
     },
     onError: () => {
