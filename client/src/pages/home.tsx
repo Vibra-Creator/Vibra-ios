@@ -543,16 +543,8 @@ export default function Home() {
             globalMuted={globalMuted}
             onMutedChange={setGlobalMuted}
             onOpenPostComposer={() => setShowVideoDrawer(true)}
-            actionButtons={
-              <ActionButtons
-                onSwipeLeft={handleSwipeLeft}
-                onSwipeRight={handleSwipeRight}
-                onUndo={handleUndo}
-                undoDisabled={swipeHistory.length === 0 || undoMutation.isPending}
-                disabled={!currentProfile || swipeMutation.isPending}
-                likeDisabled={currentProfile ? likedIdsSet.has(currentProfile.id) : false}
-              />
-            }
+            onUndo={handleUndo}
+            undoDisabled={swipeHistory.length === 0 || undoMutation.isPending}
           />
         )}
       </div>

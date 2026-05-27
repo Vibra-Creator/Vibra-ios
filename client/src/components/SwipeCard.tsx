@@ -536,6 +536,8 @@ interface SwipeCardProps {
   globalMuted?: boolean;
   onMutedChange?: (muted: boolean) => void;
   onOpenPostComposer?: () => void;
+  onUndo?: () => void;
+  undoDisabled?: boolean;
 }
 
 function resolveVideoSrc(url: string | null | undefined): string | undefined {
@@ -547,7 +549,7 @@ function resolveVideoSrc(url: string | null | undefined): string | undefined {
 }
 
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
-  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange, onOpenPostComposer }, ref) {
+  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange, onOpenPostComposer, onUndo, undoDisabled }, ref) {
     const [exitX, setExitX] = useState(0);
     const [exitY, setExitY] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
@@ -1209,12 +1211,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
               {isTop && (
                 <>
-                  {/* ── COLONNA SINISTRA — Preferiti · Impression · Signal · Condividi · Post ── */}
+                  {/* ── COLONNA SINISTRA — 5 bottoni pastello ── */}
                   <div
-                    className="absolute left-2 top-[14%] z-30 flex flex-col items-center gap-2 pointer-events-auto"
+                    className="absolute left-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    {/* Preferiti */}
+                    {/* Preferiti — lilla pastello */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavoriteMutation.mutate(); }}
@@ -1222,13 +1224,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-favorite-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-black/40 border border-white/20 flex items-center justify-center">
-                        <Bookmark className={`w-4 h-4 ${isFavorited ? "text-yellow-400 fill-yellow-400" : "text-white"}`} />
+                      <div className="w-9 h-9 rounded-full bg-violet-400/15 border border-violet-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(167,139,250,0.25)]">
+                        <Bookmark className={`w-4 h-4 ${isFavorited ? "text-violet-300 fill-violet-300" : "text-violet-200"}`} />
                       </div>
-                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
                     </motion.button>
 
-                    {/* Prima Impressione */}
+                    {/* Prima Impressione — rosa pastello */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1243,13 +1245,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-impression-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #c026d3, #a855f7)", opacity: profile.ratingEnabled ? 1 : 0.4 }}>
-                        <Eye className="w-4 h-4 text-white" />
+                      <div className="w-9 h-9 rounded-full bg-pink-400/15 border border-pink-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(244,114,182,0.25)]" style={{ opacity: profile.ratingEnabled ? 1 : 0.4 }}>
+                        <Eye className="w-4 h-4 text-pink-200" />
                       </div>
-                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
                     </motion.button>
 
-                    {/* Signal */}
+                    {/* Signal — ciano pastello */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowSignalCompose(true); }}
@@ -1257,13 +1259,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-signals-sidebar-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-fuchsia-500/80 to-purple-600/80 border border-fuchsia-400/30">
-                        <Radio className="w-4 h-4 text-white" />
+                      <div className="w-9 h-9 rounded-full bg-cyan-400/15 border border-cyan-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(103,232,249,0.25)]">
+                        <Radio className="w-4 h-4 text-cyan-200" />
                       </div>
-                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
                     </motion.button>
 
-                    {/* Condividi */}
+                    {/* Condividi — menta pastello */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={async (e) => {
@@ -1281,10 +1283,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-share-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-black/40 border border-white/20 flex items-center justify-center">
-                        <Share2 className="w-4 h-4 text-white" />
+                      <div className="w-9 h-9 rounded-full bg-emerald-400/15 border border-emerald-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(110,231,183,0.25)]">
+                        <Share2 className="w-4 h-4 text-emerald-200" />
                       </div>
-                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
                     </motion.button>
 
                     {onOpenPostComposer && (
@@ -1295,20 +1297,37 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         style={{ touchAction: "none" }}
                         data-testid="button-open-post-composer"
                       >
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center bg-fuchsia-500/90 border border-white/20">
-                          <Plus className="w-4 h-4 text-white" />
+                        <div className="w-9 h-9 rounded-full bg-amber-400/15 border border-amber-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.25)]">
+                          <Plus className="w-4 h-4 text-amber-200" />
                         </div>
-                        <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
+                        <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
                       </motion.button>
                     )}
                   </div>
 
-                  {/* ── COLONNA DESTRA — Storie · Vibrapp · Vibe ── */}
+                  {/* ── COLONNA DESTRA — Undo · Storie · Vibrapp · Vibe ── */}
                   <div
-                    className="absolute right-2 top-[14%] z-30 flex flex-col items-center gap-2 pointer-events-auto"
+                    className="absolute right-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    {/* Storie */}
+                    {/* Undo — ambra pastello */}
+                    {onUndo && (
+                      <motion.button
+                        whileTap={{ scale: 0.88 }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUndo(); }}
+                        disabled={undoDisabled}
+                        className="flex flex-col items-center gap-0.5"
+                        style={{ touchAction: "none" }}
+                        data-testid="button-undo-sidebar"
+                      >
+                        <div className={`w-9 h-9 rounded-full bg-amber-400/15 border border-amber-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.25)] ${undoDisabled ? "opacity-30" : ""}`}>
+                          <RotateCcw className="w-4 h-4 text-amber-200" />
+                        </div>
+                        <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Indietro</span>
+                      </motion.button>
+                    )}
+
+                    {/* Storie — viola pastello */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
@@ -1316,26 +1335,21 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-stories-${profile.id}`}
                     >
-                      <div className={`relative w-9 h-9 rounded-full p-[2px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-cyan-400 via-violet-500 to-emerald-400" : "bg-white/20"}`}>
-                        <div className="w-full h-full rounded-full bg-black/70 overflow-hidden border border-black/40">
+                      <div className={`w-9 h-9 rounded-full p-[2px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-violet-400/50 via-fuchsia-400/50 to-teal-400/50" : "bg-white/15"}`}>
+                        <div className="w-full h-full rounded-full bg-black/60 overflow-hidden border border-white/10">
                           {profile.imageUrl ? (
                             <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Play className="w-3 h-3 text-cyan-400 fill-cyan-400" />
+                              <Play className="w-3 h-3 text-violet-300" />
                             </div>
                           )}
                         </div>
-                        {cardVideos.length > 0 && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-black flex items-center justify-center border border-cyan-400/60">
-                            <Play className="w-1.5 h-1.5 text-cyan-400 fill-cyan-400" />
-                          </div>
-                        )}
                       </div>
-                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Storie</span>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Storie</span>
                     </motion.button>
 
-                    {/* Vibrapp */}
+                    {/* Vibrapp — verde pastello */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1351,13 +1365,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-vibrapp-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#25D366", boxShadow: "0 0 10px rgba(37,211,102,0.6)" }}>
-                        <MessageCircle className="w-4 h-4 text-white" />
+                      <div className="w-9 h-9 rounded-full bg-teal-400/15 border border-teal-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(45,212,191,0.25)]">
+                        <MessageCircle className="w-4 h-4 text-teal-200" />
                       </div>
-                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
                     </motion.button>
 
-                    {/* Vibe (Like) */}
+                    {/* Vibe (Like) — rosa pastello */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1369,11 +1383,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-like-sidebar-${profile.id}`}
                     >
-                      <div className={`w-9 h-9 rounded-full backdrop-blur-sm border flex items-center justify-center ${alreadyLiked ? "bg-pink-500/40 border-pink-400/50" : "bg-gradient-to-br from-pink-500/60 to-rose-600/60 border-pink-400/40"}`}
-                        style={{ boxShadow: alreadyLiked ? "none" : "0 0 12px rgba(236,72,153,0.5)" }}>
-                        <Heart className={`w-4 h-4 ${alreadyLiked ? "text-pink-300 fill-pink-300" : "text-white fill-white"}`} />
+                      <div className={`w-9 h-9 rounded-full border flex items-center justify-center ${alreadyLiked ? "bg-rose-400/25 border-rose-300/40 shadow-[0_0_8px_rgba(251,113,133,0.25)]" : "bg-rose-400/15 border-rose-300/40 shadow-[0_0_8px_rgba(251,113,133,0.25)]"}`}>
+                        <Heart className={`w-4 h-4 ${alreadyLiked ? "text-rose-300 fill-rose-300" : "text-rose-200"}`} />
                       </div>
-                      <span className="text-[8px] font-bold text-white drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.vibe")}</span>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.vibe")}</span>
                     </motion.button>
                   </div>
                 </>
@@ -1398,7 +1411,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               )}
               
               <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-30">
-                <div className="pl-4 pr-16 pb-2 pt-8">
+                <div className="pl-4 pr-16 pb-1 pt-2">
                   <div className="flex items-end justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -1460,12 +1473,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   </div>
                 )}
-                {isTop && <ReactionBar profileId={profile.id} />}
-                {actionButtons && (
-                  <div className="pointer-events-auto pb-safe px-4">
-                    {actionButtons}
-                  </div>
-                )}
+                {isTop && <div className="pb-1"><ReactionBar profileId={profile.id} /></div>}
               </div>
             </div>
           </div>
