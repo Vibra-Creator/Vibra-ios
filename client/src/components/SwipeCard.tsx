@@ -1072,36 +1072,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       console.error(`[SwipeCard video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code} msg=${video.error?.message}`);
                     }}
                   />
-                  <div className="absolute top-3 left-3 z-30 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-profile-toggle"
-                      style={{ touchAction: "manipulation" }}
-                    >
-                      <User className="w-6 h-6 text-white" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newMuted = !isCardMuted;
-                        setIsCardMuted(newMuted);
-                        onMutedChange?.(newMuted);
-                        if (cardVideoRef.current) {
-                          cardVideoRef.current.muted = newMuted;
-                          if (!newMuted) cardVideoRef.current.volume = 1;
-                        }
-                      }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-mute-toggle"
-                      style={{ touchAction: "manipulation" }}
-                    >
-                      {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
-                    </button>
-                  </div>
+                  <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
                 </>
               ) : activeProfileMedia ? (
                 /* ── RAMO 2: media da Cosmic Signal (immagine o video) ── */
@@ -1129,37 +1100,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           console.error(`[SwipeCard media-video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code}`);
                         }}
                       />
-                      <div className="absolute top-3 left-3 z-30 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
-                        <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-                          className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                          data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
-                          <User className="w-6 h-6 text-white" />
-                        </button>
-                        <button type="button" onClick={(e) => {
-                          e.stopPropagation();
-                          const newMuted = !isCardMuted;
-                          setIsCardMuted(newMuted);
-                          onMutedChange?.(newMuted);
-                          if (cardVideoRef.current) { cardVideoRef.current.muted = newMuted; if (!newMuted) cardVideoRef.current.volume = 1; }
-                        }}
-                          className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                          data-testid="button-card-mute-toggle" style={{ touchAction: "manipulation" }}>
-                          {isCardMuted ? <VolumeX className="w-6 h-6 text-white" /> : <Volume2 className="w-6 h-6 text-white" />}
-                        </button>
-                      </div>
+                      <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
                     </>
                   ) : (
                     <>
                       <img key={activeProfileMedia.id} src={activeProfileMedia.mediaUrl} alt={profile.name}
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
                         data-testid={`profile-media-image-${profile.id}`} />
-                      <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()}>
-                        <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-                          className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                          data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
-                          <User className="w-6 h-6 text-white" />
-                        </button>
-                      </div>
+                      <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
                     </>
                   )}
                 </>
@@ -1182,13 +1130,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     onError={() => setImageError(true)}
                     data-testid={`profile-image-${profile.id}`}
                   />
-                  <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()}>
-                    <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setShowDetail(true); }}
-                      className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors active:scale-95"
-                      data-testid="button-card-profile-toggle" style={{ touchAction: "manipulation" }}>
-                      <User className="w-6 h-6 text-white" />
-                    </button>
-                  </div>
+                  <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
                 </>
               )}
               
@@ -1216,6 +1158,29 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     className="absolute left-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
+                    {/* Volume — nella colonna sinistra */}
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={(e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        const newMuted = !isCardMuted;
+                        setIsCardMuted(newMuted);
+                        onMutedChange?.(newMuted);
+                        if (cardVideoRef.current) {
+                          cardVideoRef.current.muted = newMuted;
+                          if (!newMuted) cardVideoRef.current.volume = 1;
+                        }
+                      }}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ touchAction: "none" }}
+                      data-testid="button-card-mute-sidebar"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-indigo-400/25 border border-indigo-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(129,140,248,0.35)]">
+                        {isCardMuted ? <VolumeX className="w-4 h-4 text-indigo-200" /> : <Volume2 className="w-4 h-4 text-indigo-200" />}
+                      </div>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Audio</span>
+                    </motion.button>
+
                     {/* Preferiti — razzo alieno */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
@@ -1224,7 +1189,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-favorite-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-violet-400/15 border border-violet-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(167,139,250,0.25)]">
+                      <div className="w-9 h-9 rounded-full bg-violet-400/25 border border-violet-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(167,139,250,0.35)]">
                         <img src="/icons/rocket-favorites.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
@@ -1245,7 +1210,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-impression-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-pink-400/15 border border-pink-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(244,114,182,0.25)]" style={{ opacity: profile.ratingEnabled ? 1 : 0.4 }}>
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(244,114,182,0.35)] ${profile.ratingEnabled ? "bg-pink-400/25 border border-pink-300/60" : "bg-pink-400/15 border border-pink-300/30"}`}>
                         <img src="/icons/triangle-eye.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
@@ -1259,7 +1224,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-signals-sidebar-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-cyan-400/15 border border-cyan-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(103,232,249,0.25)]">
+                      <div className="w-9 h-9 rounded-full bg-cyan-400/25 border border-cyan-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(103,232,249,0.35)]">
                         <img src="/icons/ufo-stories.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
@@ -1283,7 +1248,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-share-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-emerald-400/15 border border-emerald-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(110,231,183,0.25)]">
+                      <div className="w-9 h-9 rounded-full bg-emerald-400/25 border border-emerald-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(110,231,183,0.35)]">
                         <img src="/icons/chain-share.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
@@ -1297,7 +1262,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         style={{ touchAction: "none" }}
                         data-testid="button-open-post-composer"
                       >
-                        <div className="w-9 h-9 rounded-full bg-amber-400/15 border border-amber-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.25)]">
+                        <div className="w-9 h-9 rounded-full bg-amber-400/25 border border-amber-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.35)]">
                           <img src="/icons/ufo-plus.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                         </div>
                         <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
@@ -1305,11 +1270,25 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     )}
                   </div>
 
-                  {/* ── COLONNA DESTRA — Undo · Storie · Vibrapp · Vibe ── */}
+                  {/* ── COLONNA DESTRA — Profilo · Undo · Storie · Vibrapp · Vibe ── */}
                   <div
                     className="absolute right-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
+                    {/* Profilo — icona User */}
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowDetail(true); }}
+                      className="flex flex-col items-center gap-0.5"
+                      style={{ touchAction: "none" }}
+                      data-testid={`button-profile-sidebar-${profile.id}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-blue-400/25 border border-blue-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(96,165,250,0.35)]">
+                        <User className="w-4 h-4 text-blue-200" />
+                      </div>
+                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Profilo</span>
+                    </motion.button>
+
                     {/* Undo — icona cosmica */}
                     {onUndo && (
                       <motion.button
@@ -1320,7 +1299,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         style={{ touchAction: "none" }}
                         data-testid="button-undo-sidebar"
                       >
-                        <div className={`w-9 h-9 rounded-full bg-amber-400/15 border border-amber-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.25)] ${undoDisabled ? "opacity-30" : ""}`}>
+                        <div className={`w-9 h-9 rounded-full bg-amber-400/25 border border-amber-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.35)] ${undoDisabled ? "opacity-30" : ""}`}>
                           <img src="/icons/undo-cosmic.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                         </div>
                         <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Indietro</span>
@@ -1335,7 +1314,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-stories-${profile.id}`}
                     >
-                      <div className={`w-9 h-9 rounded-full p-[2px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-violet-400/50 via-fuchsia-400/50 to-teal-400/50" : "bg-white/15"}`}>
+                      <div className={`w-9 h-9 rounded-full p-[2px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-violet-400/50 via-fuchsia-400/50 to-teal-400/50" : "bg-white/25"}`}>
                         <div className="w-full h-full rounded-full bg-black/60 overflow-hidden border border-white/10">
                           {profile.imageUrl ? (
                             <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
@@ -1365,7 +1344,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-vibrapp-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-teal-400/15 border border-teal-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(45,212,191,0.25)]">
+                      <div className="w-9 h-9 rounded-full bg-teal-400/25 border border-teal-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(45,212,191,0.35)]">
                         <img src="/icons/chat-alien.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
@@ -1383,7 +1362,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       style={{ touchAction: "none" }}
                       data-testid={`button-like-sidebar-${profile.id}`}
                     >
-                      <div className={`w-9 h-9 rounded-full border flex items-center justify-center ${alreadyLiked ? "bg-rose-400/25 border-rose-300/40 shadow-[0_0_8px_rgba(251,113,133,0.25)]" : "bg-rose-400/15 border-rose-300/40 shadow-[0_0_8px_rgba(251,113,133,0.25)]"}`}>
+                      <div className={`w-9 h-9 rounded-full border flex items-center justify-center ${alreadyLiked ? "bg-rose-400/25 border-rose-300/60 shadow-[0_0_8px_rgba(251,113,133,0.35)]" : "bg-rose-400/25 border-rose-300/60 shadow-[0_0_8px_rgba(251,113,133,0.35)]"}`}>
                         <img src="/icons/heart-cosmic.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.vibe")}</span>
