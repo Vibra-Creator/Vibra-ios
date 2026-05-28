@@ -35,6 +35,13 @@ export function serveStatic(app: Express) {
     next();
   }, express.static(path.join(distPath, "icons")));
 
+  // Cache images for 1 year (immutable, long-lived static assets)
+  app.use("/images", (_req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    next();
+  }, express.static(path.join(distPath, "images")));
+
   app.use(express.static(distPath, { dotfiles: "allow" }));
 
   app.use("/{*path}", (_req, res) => {

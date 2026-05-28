@@ -203,10 +203,18 @@ export default function Home() {
     const imgs: HTMLImageElement[] = [];
     // Preload current card + next 11: matches the same depth as video preloading
     availableProfiles.slice(0, 12).forEach(p => {
-      [p.imageUrl, ...(p.photos || [])].filter(Boolean).forEach((url) => {
+      const urls = [p.imageUrl, ...(p.photos || [])].filter(Boolean) as string[];
+      urls.forEach((url) => {
+        // Also preload .webp variant if available (next-gen image format)
+        const webpUrl = url.replace(/\.(png|jpg|jpeg)$/i, '.webp');
         const img = new window.Image();
-        img.src = url as string;
+        img.src = url;
         imgs.push(img);
+        if (webpUrl !== url) {
+          const webpImg = new window.Image();
+          webpImg.src = webpUrl;
+          imgs.push(webpImg);
+        }
       });
     });
     imagePreloadCacheRef.current = imgs;

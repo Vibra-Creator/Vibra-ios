@@ -2,6 +2,8 @@ import { db } from "./db";
 import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings, vibingSessions, reports, blockedUsers, deletedBotIds } from "@shared/schema";
 import { eq, or, sql, and, like } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 
 const cityCoords: Record<string, { lat: number; lng: number }> = {
   Roma: { lat: 41.90, lng: 12.50 }, Milano: { lat: 45.46, lng: 9.19 }, Napoli: { lat: 40.85, lng: 14.27 },
@@ -2735,6 +2737,41 @@ export async function seedDatabase() {
     }
     if (fixedCount > 0) {
       console.log(`Auto-fixed ${fixedCount} profile(s) with uploaded photos but default avatar.`);
+    }
+
+    // Fix bot image paths to point to .webp (if files exist)
+    try {
+      const bots = await db.select().from(profiles).where(eq(profiles.isBot, true));
+      let webpFixed = 0;
+      for (const bot of bots) {
+        if (bot.imageUrl && (bot.imageUrl.endsWith('.png') || bot.imageUrl.endsWith('.jpg'))) {
+          const webpUrl = bot.imageUrl.replace(/\.(png|jpg)$/, '.webp');
+          const webpPath = path.join(__dirname, '..', 'client', 'public', webpUrl.replace(/^\//, ''));
+          if (fs.existsSync(webpPath)) {
+            await db.update(profiles).set({ imageUrl: webpUrl }).where(eq(profiles.id, bot.id));
+            webpFixed++;
+          }
+        }
+        if (bot.photos && bot.photos.length > 0) {
+          const newPhotos = bot.photos.map((p: string) => {
+            if (p.endsWith('.png') || p.endsWith('.jpg')) {
+              const webpP = p.replace(/\.(png|jpg)$/, '.webp');
+              const webpPath = path.join(__dirname, '..', 'client', 'public', webpP.replace(/^\//, ''));
+              return fs.existsSync(webpPath) ? webpP : p;
+            }
+            return p;
+          });
+          const changed = JSON.stringify(newPhotos) !== JSON.stringify(bot.photos);
+          if (changed) {
+            await db.update(profiles).set({ photos: newPhotos }).where(eq(profiles.id, bot.id));
+          }
+        }
+      }
+      if (webpFixed > 0) {
+        console.log(`Fixed ${webpFixed} bot imageUrl(s) to .webp`);
+      }
+    } catch (e) {
+      console.log("Bot webp fix skipped:", e);
     }
 
   } catch (error) {

@@ -5057,18 +5057,29 @@ REGOLE:
       const user = await storage.getProfileByUserId(userId);
       if (!user?.isAdmin) return res.status(403).json({ error: "Admin only" });
 
-      // Fix all bot images from .jpg to .png
+      // Fix all bot images from .png to .webp (and .jpg to .webp)
       await db
         .update(profiles)
         .set({
-          imageUrl: sql`REPLACE(image_url, '.jpg', '.png')`
+          imageUrl: sql`REPLACE(REPLACE(image_url, '.jpg', '.webp'), '.png', '.webp')`
         })
         .where(
           and(
             eq(profiles.isBot, true),
-            sql`image_url LIKE '/images/bots/bot%.jpg'`
+            sql`(image_url LIKE '/images/bots/bot%.png' OR image_url LIKE '/images/bots/bot%.jpg')`
           )
         );
+
+      // Also fix photos arrays: replace .png/.jpg with .webp
+      const allBots = await db.select().from(profiles).where(eq(profiles.isBot, true));
+      for (const bot of allBots) {
+        if (bot.photos && bot.photos.length > 0) {
+          const newPhotos = bot.photos.map((p: string) =>
+            p.replace(/\.png$/, '.webp').replace(/\.jpg$/, '.webp')
+          );
+          await db.update(profiles).set({ photos: newPhotos }).where(eq(profiles.id, bot.id));
+        }
+      }
 
       const fixed = await db
         .select({ count: sql<number>`COUNT(*)`.as("count") })
@@ -5076,11 +5087,11 @@ REGOLE:
         .where(
           and(
             eq(profiles.isBot, true),
-            sql`image_url LIKE '/images/bots/bot%.png'`
+            sql`image_url LIKE '/images/bots/bot%.webp'`
           )
         );
 
-      res.json({ success: true, botsPng: fixed[0]?.count || 0 });
+      res.json({ success: true, botsWebp: fixed[0]?.count || 0 });
     } catch (err) {
       console.error("Fix bot images error:", err);
       res.status(500).json({ error: "Failed to fix bot images" });
