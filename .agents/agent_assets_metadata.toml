@@ -12,6 +12,54 @@ uri = "file://client/public/icons/icon-512.png"
 type = "image"
 title = "Vibra icon 512x512"
 
+[[generated]]
+id = "MRNwepCtQCnIBPukRNjZu"
+uri = "file://client/public/icons/ufo-stories.png"
+type = "image"
+title = "ufo alien icon"
+
+[[generated]]
+id = "k59nawzA4nN6Ezm364Leq"
+uri = "file://client/public/icons/rocket-favorites.png"
+type = "image"
+title = "rocket alien icon"
+
+[[generated]]
+id = "9CNCaYHL1seSnXijyeGM5"
+uri = "file://client/public/icons/triangle-eye.png"
+type = "image"
+title = "eye triangle icon"
+
+[[generated]]
+id = "yAUvI4uM10qdW37XRV8WU"
+uri = "file://client/public/icons/chain-share.png"
+type = "image"
+title = "chain cosmic icon"
+
+[[generated]]
+id = "rUzqtcCSZRIJzAXzzjwH2"
+uri = "file://client/public/icons/ufo-plus.png"
+type = "image"
+title = "ufo plus icon"
+
+[[generated]]
+id = "BcIeltBLUFMKThtcObOue"
+uri = "file://client/public/icons/chat-alien.png"
+type = "image"
+title = "chat alien icon"
+
+[[generated]]
+id = "JEeMm2DZLVDGHHPDyavaI"
+uri = "file://client/public/icons/heart-cosmic.png"
+type = "image"
+title = "heart cosmic icon"
+
+[[generated]]
+id = "VPMTyyh3scwSX5WfschUk"
+uri = "file://client/public/icons/undo-cosmic.png"
+type = "image"
+title = "undo cosmic icon"
+
 [[outputs]]
 id = "1NNPbQfN3vKgn-l0kiIBi"
 uri = "file://src/assets/images/placeholder.png"

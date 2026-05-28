@@ -1211,12 +1211,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
               {isTop && (
                 <>
-                  {/* ── COLONNA SINISTRA — 5 bottoni pastello ── */}
+                  {/* ── COLONNA SINISTRA — 5 icone alieno ── */}
                   <div
                     className="absolute left-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    {/* Preferiti — lilla pastello */}
+                    {/* Preferiti — razzo alieno */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavoriteMutation.mutate(); }}
@@ -1225,12 +1225,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid={`button-favorite-${profile.id}`}
                     >
                       <div className="w-9 h-9 rounded-full bg-violet-400/15 border border-violet-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(167,139,250,0.25)]">
-                        <Bookmark className={`w-4 h-4 ${isFavorited ? "text-violet-300 fill-violet-300" : "text-violet-200"}`} />
+                        <img src="/icons/rocket-favorites.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
                     </motion.button>
 
-                    {/* Prima Impressione — rosa pastello */}
+                    {/* Prima Impressione — triangolo occhio */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1246,12 +1246,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid={`button-impression-${profile.id}`}
                     >
                       <div className="w-9 h-9 rounded-full bg-pink-400/15 border border-pink-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(244,114,182,0.25)]" style={{ opacity: profile.ratingEnabled ? 1 : 0.4 }}>
-                        <Eye className="w-4 h-4 text-pink-200" />
+                        <img src="/icons/triangle-eye.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
                     </motion.button>
 
-                    {/* Signal — ciano pastello */}
+                    {/* Signal — UFO */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowSignalCompose(true); }}
@@ -1260,12 +1260,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid={`button-signals-sidebar-${profile.id}`}
                     >
                       <div className="w-9 h-9 rounded-full bg-cyan-400/15 border border-cyan-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(103,232,249,0.25)]">
-                        <Radio className="w-4 h-4 text-cyan-200" />
+                        <img src="/icons/ufo-stories.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
                     </motion.button>
 
-                    {/* Condividi — menta pastello */}
+                    {/* Condividi — catena cosmica */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={async (e) => {
@@ -1284,7 +1284,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid={`button-share-${profile.id}`}
                     >
                       <div className="w-9 h-9 rounded-full bg-emerald-400/15 border border-emerald-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(110,231,183,0.25)]">
-                        <Share2 className="w-4 h-4 text-emerald-200" />
+                        <img src="/icons/chain-share.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
                     </motion.button>
@@ -1298,7 +1298,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         data-testid="button-open-post-composer"
                       >
                         <div className="w-9 h-9 rounded-full bg-amber-400/15 border border-amber-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.25)]">
-                          <Plus className="w-4 h-4 text-amber-200" />
+                          <img src="/icons/ufo-plus.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                         </div>
                         <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
                       </motion.button>
@@ -1310,7 +1310,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     className="absolute right-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    {/* Undo — ambra pastello */}
+                    {/* Undo — icona cosmica */}
                     {onUndo && (
                       <motion.button
                         whileTap={{ scale: 0.88 }}
@@ -1321,13 +1321,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         data-testid="button-undo-sidebar"
                       >
                         <div className={`w-9 h-9 rounded-full bg-amber-400/15 border border-amber-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.25)] ${undoDisabled ? "opacity-30" : ""}`}>
-                          <RotateCcw className="w-4 h-4 text-amber-200" />
+                          <img src="/icons/undo-cosmic.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                         </div>
                         <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Indietro</span>
                       </motion.button>
                     )}
 
-                    {/* Storie — viola pastello */}
+                    {/* Storie — UFO profilo */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
@@ -1341,7 +1341,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                             <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Play className="w-3 h-3 text-violet-300" />
+                              <img src="/icons/ufo-stories.png" alt="" className="w-5 h-5 object-contain" decoding="async" />
                             </div>
                           )}
                         </div>
@@ -1349,7 +1349,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Storie</span>
                     </motion.button>
 
-                    {/* Vibrapp — verde pastello */}
+                    {/* Vibrapp — chat aliena */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1366,12 +1366,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid={`button-vibrapp-${profile.id}`}
                     >
                       <div className="w-9 h-9 rounded-full bg-teal-400/15 border border-teal-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(45,212,191,0.25)]">
-                        <MessageCircle className="w-4 h-4 text-teal-200" />
+                        <img src="/icons/chat-alien.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
                     </motion.button>
 
-                    {/* Vibe (Like) — rosa pastello */}
+                    {/* Vibe (Like) — cuore cosmico */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1384,7 +1384,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       data-testid={`button-like-sidebar-${profile.id}`}
                     >
                       <div className={`w-9 h-9 rounded-full border flex items-center justify-center ${alreadyLiked ? "bg-rose-400/25 border-rose-300/40 shadow-[0_0_8px_rgba(251,113,133,0.25)]" : "bg-rose-400/15 border-rose-300/40 shadow-[0_0_8px_rgba(251,113,133,0.25)]"}`}>
-                        <Heart className={`w-4 h-4 ${alreadyLiked ? "text-rose-300 fill-rose-300" : "text-rose-200"}`} />
+                        <img src="/icons/heart-cosmic.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
                       </div>
                       <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.vibe")}</span>
                     </motion.button>
