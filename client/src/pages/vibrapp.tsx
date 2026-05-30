@@ -123,6 +123,7 @@ export default function Vibrapp() {
   const [dmMessages, setDmMessages] = useState<DmMessage[]>([]);
   const [dmInput, setDmInput] = useState("");
   const [dmLoading, setDmLoading] = useState(false);
+  const [dmBotTyping, setDmBotTyping] = useState<{ name: string; image: string | null } | null>(null);
   const dmMessagesEndRef = useRef<HTMLDivElement>(null);
   const dmInputRef = useRef<HTMLInputElement>(null);
   const dmTargetRef = useRef<DmTarget | null>(null);
@@ -468,12 +469,29 @@ export default function Vibrapp() {
       }
     };
 
+    const handleDmBotTyping = (data: { fromProfileId: string; name: string; image: string | null }) => {
+      const target = dmTargetRef.current;
+      if (target && data.fromProfileId === target.id) {
+        setDmBotTyping({ name: data.name, image: data.image });
+        setTimeout(() => dmMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      }
+    };
+
+    const handleDmBotTypingStop = (data: { fromProfileId: string }) => {
+      const target = dmTargetRef.current;
+      if (target && data.fromProfileId === target.id) {
+        setDmBotTyping(null);
+      }
+    };
+
     socket.on("vibrapp:new-message", handleNewMessage);
     socket.on("vibrapp:typing-update", handleTypingUpdate);
     socket.on("vibrapp:message-read", handleMessageRead);
     socket.on("vibrapp:reaction-update", handleReactionUpdate);
     socket.on("vibrapp:message-deleted", handleMessageDeleted);
     socket.on("vibrapp:dm-sent", handleDmSent);
+    socket.on("vibrapp:dm-bot-typing", handleDmBotTyping);
+    socket.on("vibrapp:dm-bot-typing-stop", handleDmBotTypingStop);
 
     // Register DM handler with global context so we intercept dm-message events
     // while the user is on this page (instead of the generic global banner)
@@ -481,6 +499,7 @@ export default function Vibrapp() {
       const target = dmTargetRef.current;
       const isOpenThread = target && msg.fromProfileId === target.id && msg.toProfileId === profile.id;
       if (isOpenThread) {
+        setDmBotTyping(null);
         setDmMessages(prev => {
           if (prev.some(m => m.id === msg.id)) return prev;
           return [...prev, msg];
@@ -504,6 +523,8 @@ export default function Vibrapp() {
       socket.off("vibrapp:reaction-update", handleReactionUpdate);
       socket.off("vibrapp:message-deleted", handleMessageDeleted);
       socket.off("vibrapp:dm-sent", handleDmSent);
+      socket.off("vibrapp:dm-bot-typing", handleDmBotTyping);
+      socket.off("vibrapp:dm-bot-typing-stop", handleDmBotTypingStop);
       registerDmHandler(null);
       if (newMsgBannerTimerRef.current) clearTimeout(newMsgBannerTimerRef.current);
     };
@@ -1885,6 +1906,23 @@ export default function Vibrapp() {
                   </div>
                 );
               })}
+
+              {/* Bot typing indicator */}
+              {dmBotTyping && (
+                <div className="flex justify-start mb-1" data-testid="dm-bot-typing">
+                  <div className="flex items-end gap-2">
+                    {dmBotTyping.image && (
+                      <img src={dmBotTyping.image} alt={dmBotTyping.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                    )}
+                    <div className="bg-slate-200 rounded-xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-2 h-2 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div ref={dmMessagesEndRef} />
             </div>
 

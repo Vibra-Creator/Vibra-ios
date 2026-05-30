@@ -149,6 +149,30 @@ VIETATO:
 }
 
 // Genera il primo messaggio del bot dopo un match (mai ripetuto, personalizzato)
+// ─── Helper: calcola il delay realistico per la risposta del bot ─────────────
+function getBotDelay(botProfile: any): { readDelayMs: number; isOnline: boolean } {
+  const lastActive = botProfile.lastActiveAt ? new Date(botProfile.lastActiveAt) : null;
+  const minutesSince = lastActive
+    ? (Date.now() - lastActive.getTime()) / 60_000
+    : 9999;
+
+  if (minutesSince < 30) {
+    // Bot attivamente online: legge in 5-25s
+    return { isOnline: true, readDelayMs: 5_000 + Math.random() * 20_000 };
+  } else if (minutesSince < 120) {
+    // Bot "away": legge in 3-20 min
+    return { isOnline: false, readDelayMs: 3 * 60_000 + Math.random() * 17 * 60_000 };
+  } else {
+    // Bot offline: legge in 30 min - 5 ore
+    return { isOnline: false, readDelayMs: 30 * 60_000 + Math.random() * 4.5 * 60 * 60_000 };
+  }
+}
+
+function getBotTypingMs(replyText: string): number {
+  // Velocità di scrittura realistica: min 6s, max 28s
+  return Math.max(6_000, Math.min(28_000, replyText.length * 180));
+}
+
 async function generateBotOpener(botProfile: any, userProfile: any): Promise<string> {
   try {
     const isMaleOpener = botProfile.gender === "Uomo";
@@ -2382,27 +2406,31 @@ ${urlEntries}
 
       const otherProfile = await storage.getProfile(otherProfileId);
       if (otherProfile && otherProfile.isBot) {
-        const delay = 2000 + Math.random() * 4000;
-        setTimeout(async () => {
+        // Delay realistico basato su lastActiveAt del bot
+        const { readDelayMs } = getBotDelay(otherProfile);
+        (async () => {
           try {
+            await new Promise(r => setTimeout(r, readDelayMs));
             const allMessages = await storage.getMessagesForMatch(matchId);
             const botReply = await generateBotReply(otherProfile, userProfile, allMessages);
+            const typingMs = getBotTypingMs(botReply);
+            await new Promise(r => setTimeout(r, typingMs));
             await storage.createMessage({
               matchId,
               senderId: otherProfile.id,
               content: botReply,
             });
-            // Notify the real user that the bot replied
             sendPushToProfile(userProfile.id, {
               title: otherProfile.name,
               body: botReply.substring(0, 100),
               icon: "/icons/icon-192.png",
               url: `/chat/${matchId}`,
             });
+            console.log(`[BOT] Match reply: ${otherProfile.name} (delay=${Math.round((readDelayMs)/1000)}s read + ${Math.round(typingMs/1000)}s typing)`);
           } catch (err) {
             console.error("Bot auto-reply error:", err);
           }
-        }, delay);
+        })();
       }
     } catch (error) {
       console.error("Error creating message:", error);
@@ -4073,6 +4101,52 @@ REGOLE:
             type: "vibrapp-dm",
           });
         }
+
+        // ── Bot auto-reply per DM diretti ────────────────────────────────
+        const dmTarget = await storage.getProfile(data.toProfileId);
+        if (dmTarget && dmTarget.isBot) {
+          (async () => {
+            try {
+              const { readDelayMs } = getBotDelay(dmTarget);
+              // Aspetta il read delay PRIMA di mostrare i puntini
+              await new Promise(r => setTimeout(r, readDelayMs));
+
+              // Ora il bot "ha letto" → mostra typing indicator al mittente
+              io.to(`user:${profileId}`).emit("vibrapp:dm-bot-typing", {
+                fromProfileId: dmTarget.id,
+                name: dmTarget.name,
+                image: dmTarget.imageUrl,
+              });
+
+              // Genera la risposta e aspetta il tempo di scrittura
+              const thread = await storage.getVibrappDmThread(profileId, dmTarget.id);
+              const chatHistory = thread.map((m: any) => ({ senderId: m.fromProfileId, content: m.content }));
+              const botReplyText = await generateBotReply(dmTarget, userProfile, chatHistory);
+              const typingMs = getBotTypingMs(botReplyText);
+              await new Promise(r => setTimeout(r, typingMs));
+
+              // Salva la risposta nel DB e invia al mittente
+              const replyDm = await storage.sendVibrappDm(dmTarget.id, profileId, botReplyText);
+              const replyMsg = {
+                id: replyDm.id,
+                fromProfileId: dmTarget.id,
+                toProfileId: profileId,
+                content: botReplyText,
+                readAt: null,
+                createdAt: replyDm.createdAt,
+                senderName: dmTarget.name,
+                senderImage: dmTarget.imageUrl,
+              };
+              io.to(`user:${profileId}`).emit("vibrapp:dm-message", replyMsg);
+              // Ferma il typing indicator
+              io.to(`user:${profileId}`).emit("vibrapp:dm-bot-typing-stop", { fromProfileId: dmTarget.id });
+              console.log(`[BOT] DM reply: ${dmTarget.name} → ${userProfile.name} (read=${Math.round(readDelayMs/1000)}s typing=${Math.round(typingMs/1000)}s)`);
+            } catch (botErr) {
+              console.error("[vibrapp] bot dm reply error:", botErr);
+              io.to(`user:${profileId}`).emit("vibrapp:dm-bot-typing-stop", { fromProfileId: data.toProfileId });
+            }
+          })();
+        }
       } catch (err) {
         console.error("[vibrapp] dm-send error:", err);
       }
@@ -4192,23 +4266,20 @@ REGOLE:
           // Se il destinatario è un bot: risposta proporzionale alla lunghezza del testo
           if (targetProfile.isBot && result.coldMessage) {
             const coldMsgId = result.coldMessage.id;
-            // Genera subito la risposta per calcolare il delay realistico dalla lunghezza
+            // Delay realistico basato su lastActiveAt del bot
             (async () => {
               try {
                 const chatHistory = [{ senderId: myProfile.id, content: (content || "").trim() }];
                 const botReplyText = await generateBotReply(targetProfile, myProfile, chatHistory);
 
-                // Delay proporzionale: ~3.5 chars/sec (velocità di scrittura realistica)
-                // min 8s, max 40s di "digitazione" + tempo di lettura/online
-                const typingMs = Math.max(8_000, Math.min(40_000, botReplyText.length * 285));
-                // 50% bot online (legge subito, 3-8s), 50% offline (si connette in 30-55s)
-                const botOnline = Math.random() < 0.5;
-                const readDelay = botOnline
-                  ? 3_000 + Math.random() * 5_000
-                  : 30_000 + Math.random() * 25_000;
-                const totalDelay = readDelay + typingMs;
+                const { readDelayMs } = getBotDelay(targetProfile);
+                const typingMs = getBotTypingMs(botReplyText);
+                const totalDelay = readDelayMs + typingMs;
 
-                setTimeout(async () => {
+                // Prima aspetta il read delay, poi il typing delay
+                await new Promise(r => setTimeout(r, readDelayMs));
+                await new Promise(r => setTimeout(r, typingMs));
+                {
                     try {
                       const replyResult = await storage.replyColdMessage(coldMsgId, botReplyText);
                       sendPushToProfile(myProfile.id, {
@@ -4218,7 +4289,7 @@ REGOLE:
                         url: `/vibrapp?coldMessageId=${coldMsgId}`,
                         type: "vibrapp",
                       });
-                      console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name} (delay=${Math.round(totalDelay/1000)}s)`);
+                      console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name} (read=${Math.round(readDelayMs/1000)}s typing=${Math.round(typingMs/1000)}s)`);
 
                       // 2. Bot mette like all'utente (se non lo ha già fatto)
                       const existingBotLike = await storage.getSwipe(targetProfile.id, myProfile.id);
@@ -4254,7 +4325,7 @@ REGOLE:
                     } catch (innerErr) {
                       console.error("[BOT] Cold message save-reply error:", innerErr);
                     }
-                  }, totalDelay);
+                }
               } catch (botErr) {
                 console.error("[BOT] Cold message auto-reply error:", botErr);
               }

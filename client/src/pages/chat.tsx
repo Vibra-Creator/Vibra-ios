@@ -42,6 +42,8 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
+  const [botIsTyping, setBotIsTyping] = useState(false);
+  const botTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -103,6 +105,26 @@ export default function Chat() {
     }
   }, [unseenGifts, giftAnimation, otherProfile]);
 
+  // Mostra typing indicator quando l'altro utente è un bot e riceve un messaggio
+  const showBotTypingIndicator = () => {
+    if (!otherProfile?.isBot) return;
+    if (botTypingTimerRef.current) clearTimeout(botTypingTimerRef.current);
+    // I puntini appaiono dopo 5-12s (simula il tempo di "lettura" del bot)
+    const readDelay = 5_000 + Math.random() * 7_000;
+    botTypingTimerRef.current = setTimeout(() => {
+      setBotIsTyping(true);
+    }, readDelay);
+  };
+
+  // Nasconde typing indicator quando arriva risposta del bot
+  useEffect(() => {
+    const hasNewBotMsg = messages.some(m => m.senderId === otherProfile?.id);
+    if (hasNewBotMsg && botIsTyping) {
+      setBotIsTyping(false);
+      if (botTypingTimerRef.current) clearTimeout(botTypingTimerRef.current);
+    }
+  }, [messages, otherProfile?.id, botIsTyping]);
+
   const sendMessage = useMutation({
     mutationFn: async ({ content, tempId }: { content: string; tempId: string }) => {
       return apiRequest("POST", "/api/messages", {
@@ -122,9 +144,12 @@ export default function Chat() {
       };
       setOptimisticMessages(prev => [...prev, optimisticMessage]);
       setMessageText("");
+      showBotTypingIndicator();
     },
     onError: (_err, { tempId }) => {
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
+      setBotIsTyping(false);
+      if (botTypingTimerRef.current) clearTimeout(botTypingTimerRef.current);
     },
     onSuccess: (data, { tempId }) => {
       const serverMsg = data as Message;
@@ -449,6 +474,24 @@ export default function Chat() {
               <span className="text-xs text-white/70">
                 {giftsFromThisUser.length} {giftsFromThisUser.length === 1 ? t("chat.giftReceived") : t("chat.giftsReceived")}
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* Bot typing indicator */}
+        {botIsTyping && otherProfile && (
+          <div className="flex gap-3 mb-3">
+            <Avatar className="w-10 h-10 flex-shrink-0 ring-2 ring-white/20">
+              <AvatarImage src={otherProfile.imageUrl || undefined} alt={otherProfile.name} />
+              <AvatarFallback className="bg-primary/30 text-white text-sm">{otherProfile.name?.[0]}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col items-start">
+              <p className="text-sm mb-1 font-semibold text-cyan-300">{otherProfile.name}</p>
+              <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/15 backdrop-blur-sm flex items-center gap-1" data-testid="bot-typing-indicator">
+                <span className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
             </div>
           </div>
         )}
