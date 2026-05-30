@@ -2571,15 +2571,26 @@ export async function seedDatabase() {
 
     await db.execute(sql`UPDATE profiles SET points = 0 WHERE points != 0`);
 
-    // Fix bot images: convert .jpg to .png in database (they were generated as .png)
-    console.log("Fixing bot image extensions from .jpg to .png...");
+    // Fix bot images: convert .jpg / .png → .webp (all files are now in WebP format on disk)
+    console.log("Fixing bot image extensions to .webp...");
     try {
       await db.execute(sql`
         UPDATE profiles 
-        SET image_url = REPLACE(image_url, '.jpg', '.png')
-        WHERE is_bot = true AND image_url LIKE '/images/bots/bot%.jpg'
+        SET image_url = REPLACE(REPLACE(image_url, '.jpg', '.webp'), '.png', '.webp')
+        WHERE is_bot = true AND (image_url LIKE '/images/bots/bot%.jpg' OR image_url LIKE '/images/bots/bot%.png')
       `);
-      console.log("Bot image extensions fixed!");
+      // Fix photos arrays too
+      const botsWithPhotos = await db.select({ id: profiles.id, photos: profiles.photos })
+        .from(profiles).where(eq(profiles.isBot, true));
+      for (const bot of botsWithPhotos) {
+        if (bot.photos && bot.photos.length > 0) {
+          const fixed = bot.photos.map((p: string) => p.replace(/\.(jpg|png)$/, '.webp'));
+          if (fixed.join(',') !== bot.photos.join(',')) {
+            await db.update(profiles).set({ photos: fixed }).where(eq(profiles.id, bot.id));
+          }
+        }
+      }
+      console.log("Bot image extensions fixed to .webp!");
     } catch (e) {
       console.error("Error fixing bot images:", e);
     }
