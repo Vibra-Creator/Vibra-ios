@@ -50,6 +50,7 @@ export default function Home() {
   const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
   const [swipeHistory, setSwipeHistory] = useState<string[]>([]);
+  const [forcedFirstProfileId, setForcedFirstProfileId] = useState<string | null>(null);
   const [globalMuted, setGlobalMuted] = useState(false);
   const [showVideoDrawer, setShowVideoDrawer] = useState(false);
   const { user, logout: logoutFn } = useAuth();
@@ -187,9 +188,14 @@ export default function Home() {
   const allProfiles = allProfilesRaw
     ? [...allProfilesRaw.filter(p => !likedIdsSet.has(p.id)), ...allProfilesRaw.filter(p => likedIdsSet.has(p.id))]
     : [];
-  const availableProfiles = allProfiles.filter(p =>
-    !swipedProfiles.has(p.id)
-  );
+  const baseAvailableProfiles = allProfiles.filter(p => !swipedProfiles.has(p.id));
+  // Dopo un undo, il profilo annullato viene messo in prima posizione
+  const availableProfiles = forcedFirstProfileId
+    ? [
+        ...baseAvailableProfiles.filter(p => p.id === forcedFirstProfileId),
+        ...baseAvailableProfiles.filter(p => p.id !== forcedFirstProfileId),
+      ]
+    : baseAvailableProfiles;
   const currentProfile = availableProfiles[0];
 
   const nextProfile = availableProfiles[1];
@@ -262,6 +268,9 @@ export default function Home() {
     }
     if (!myProfile?.id) return;
 
+    // Ogni nuovo swipe cancella il "forza primo" dell'undo precedente
+    setForcedFirstProfileId(null);
+
     // Rimuovi sempre la card dall'UI subito — evita card bloccata a metà schermo
     if (likedIdsSet.has(currentProfile.id)) {
       setSwipedProfiles(prev => {
@@ -295,16 +304,19 @@ export default function Home() {
     onSuccess: (data: any) => {
       const undoneId = data?.undoneProfileId;
       if (undoneId) {
+        // 1. Rimuovi dal set degli swipati (se era in questa sessione)
         setSwipedProfiles(prev => {
           const newSet = new Set(prev);
           newSet.delete(undoneId);
           return newSet;
         });
         setSwipeHistory(prev => prev.filter(id => id !== undoneId));
+        // 2. Forza il profilo annullato in prima posizione (funziona anche per sessioni precedenti)
+        setForcedFirstProfileId(undoneId);
       }
-      // Usa la stessa chiave della query swipable (con profileId) per far sì che il refetch avvenga
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
+      toast({ title: "↩️ Sei tornato indietro!", description: "Rivedrai il profilo precedente" });
     },
     onError: (err: any) => {
       const msg = err?.message || "";
