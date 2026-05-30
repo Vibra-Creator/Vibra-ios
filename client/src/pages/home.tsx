@@ -305,15 +305,19 @@ export default function Home() {
       queryClient.invalidateQueries({ queryKey: ["/api/swipable"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
     },
-    onError: () => {
-      toast({ title: t("common.error"), description: "Impossibile annullare lo swipe", variant: "destructive" });
+    onError: (err: any) => {
+      const msg = err?.message || "";
+      if (msg.includes("404") || msg.includes("Nessuno")) {
+        toast({ title: "Nessuno swipe da annullare", description: "Swipa un profilo prima di tornare indietro", variant: "destructive" });
+      } else {
+        toast({ title: t("common.error"), description: "Impossibile annullare lo swipe", variant: "destructive" });
+      }
     },
   });
 
   const handleUndo = useCallback(() => {
-    if (swipeHistory.length === 0) return;
     undoMutation.mutate();
-  }, [swipeHistory, undoMutation]);
+  }, [undoMutation]);
 
   const resetDislikesMutation = useMutation({
     mutationFn: async () => {
@@ -552,7 +556,7 @@ export default function Home() {
             onMutedChange={setGlobalMuted}
             onOpenPostComposer={() => setShowVideoDrawer(true)}
             onUndo={handleUndo}
-            undoDisabled={swipeHistory.length === 0 || undoMutation.isPending}
+            undoDisabled={undoMutation.isPending}
           />
         )}
       </div>
