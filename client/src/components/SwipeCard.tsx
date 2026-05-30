@@ -1153,12 +1153,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
               {isTop && (
                 <>
-                  {/* ── COLONNA SINISTRA — 5 icone alieno ── */}
+                  {/* ── COLONNA SINISTRA — icone alieno grandi, senza cerchio ── */}
                   <div
-                    className="absolute left-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
+                    className="absolute left-2 top-[12%] z-30 flex flex-col items-center gap-4 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    {/* Volume — nella colonna sinistra */}
+                    {/* Audio — volume */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1171,31 +1171,29 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           if (!newMuted) cardVideoRef.current.volume = 1;
                         }
                       }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid="button-card-mute-sidebar"
                     >
-                      <div className="w-9 h-9 rounded-full bg-indigo-400/25 border border-indigo-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(129,140,248,0.35)]">
-                        {isCardMuted ? <VolumeX className="w-4 h-4 text-indigo-200" /> : <Volume2 className="w-4 h-4 text-indigo-200" />}
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Audio</span>
+                      {isCardMuted
+                        ? <VolumeX className="w-10 h-10 text-indigo-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
+                        : <Volume2 className="w-10 h-10 text-indigo-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />}
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Audio</span>
                     </motion.button>
 
-                    {/* Preferiti — razzo alieno */}
+                    {/* Preferiti — razzo */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavoriteMutation.mutate(); }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-favorite-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-violet-400/25 border border-violet-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(167,139,250,0.35)]">
-                        <img src="/icons/rocket-favorites.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Preferiti</span>
+                      <img src="/icons/rocket-favorites.png" alt="Preferiti" className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" decoding="async" />
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Preferiti</span>
                     </motion.button>
 
-                    {/* Prima Impressione — triangolo occhio */}
+                    {/* Impression — triangolo occhio */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => {
@@ -1206,31 +1204,27 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           toast({ title: "Non disponibile", description: `${profile.name} non ha attivato le impressioni` });
                         }
                       }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-impression-${profile.id}`}
                     >
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(244,114,182,0.35)] ${profile.ratingEnabled ? "bg-pink-400/25 border border-pink-300/60" : "bg-pink-400/15 border border-pink-300/30"}`}>
-                        <img src="/icons/triangle-eye.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Impression</span>
+                      <img src="/icons/triangle-eye.png" alt="Impression" className={`w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${profile.ratingEnabled ? "" : "opacity-50"}`} decoding="async" />
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Impression</span>
                     </motion.button>
 
                     {/* Signal — UFO */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowSignalCompose(true); }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-signals-sidebar-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-cyan-400/25 border border-cyan-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(103,232,249,0.35)]">
-                        <img src="/icons/ufo-stories.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Signal</span>
+                      <img src="/icons/ufo-stories.png" alt="Signal" className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" decoding="async" />
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Signal</span>
                     </motion.button>
 
-                    {/* Condividi — catena cosmica */}
+                    {/* Condividi — catena */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={async (e) => {
@@ -1244,49 +1238,43 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           toast({ title: "Link copiato!" });
                         }
                       }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-share-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-emerald-400/25 border border-emerald-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(110,231,183,0.35)]">
-                        <img src="/icons/chain-share.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("swipe.share")}</span>
+                      <img src="/icons/chain-share.png" alt="Condividi" className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" decoding="async" />
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">{t("swipe.share")}</span>
                     </motion.button>
 
                     {onOpenPostComposer && (
                       <motion.button
                         whileTap={{ scale: 0.88 }}
                         onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenPostComposer(); }}
-                        className="flex flex-col items-center gap-0.5"
+                        className="flex flex-col items-center gap-1"
                         style={{ touchAction: "none" }}
                         data-testid="button-open-post-composer"
                       >
-                        <div className="w-9 h-9 rounded-full bg-amber-400/25 border border-amber-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.35)]">
-                          <img src="/icons/ufo-plus.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                        </div>
-                        <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Post</span>
+                        <img src="/icons/ufo-plus.png" alt="Post" className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" decoding="async" />
+                        <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Post</span>
                       </motion.button>
                     )}
                   </div>
 
                   {/* ── COLONNA DESTRA — Profilo · Undo · Storie · Vibrapp · Vibe ── */}
                   <div
-                    className="absolute right-2 top-[14%] z-30 flex flex-col items-center gap-2.5 pointer-events-auto"
+                    className="absolute right-2 top-[12%] z-30 flex flex-col items-center gap-4 pointer-events-auto"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {/* Profilo — icona User */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowDetail(true); }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-profile-sidebar-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-blue-400/25 border border-blue-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(96,165,250,0.35)]">
-                        <User className="w-4 h-4 text-blue-200" />
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Profilo</span>
+                      <User className="w-10 h-10 text-blue-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Profilo</span>
                     </motion.button>
 
                     {/* Undo — icona cosmica */}
@@ -1295,37 +1283,33 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         whileTap={{ scale: 0.88 }}
                         onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUndo(); }}
                         disabled={undoDisabled}
-                        className="flex flex-col items-center gap-0.5"
+                        className="flex flex-col items-center gap-1"
                         style={{ touchAction: "none" }}
                         data-testid="button-undo-sidebar"
                       >
-                        <div className={`w-9 h-9 rounded-full bg-amber-400/25 border border-amber-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(251,191,36,0.35)] ${undoDisabled ? "opacity-30" : ""}`}>
-                          <img src="/icons/undo-cosmic.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                        </div>
-                        <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Indietro</span>
+                        <img src="/icons/undo-cosmic.png" alt="Indietro" className={`w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${undoDisabled ? "opacity-30" : ""}`} decoding="async" />
+                        <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Indietro</span>
                       </motion.button>
                     )}
 
-                    {/* Storie — UFO profilo */}
+                    {/* Storie — mini avatar + UFO */}
                     <motion.button
                       whileTap={{ scale: 0.88 }}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-stories-${profile.id}`}
                     >
-                      <div className={`w-9 h-9 rounded-full p-[2px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-violet-400/50 via-fuchsia-400/50 to-teal-400/50" : "bg-white/25"}`}>
-                        <div className="w-full h-full rounded-full bg-black/60 overflow-hidden border border-white/10">
+                      <div className={`w-10 h-10 rounded-full p-[2px] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-teal-400" : "bg-white/40"}`}>
+                        <div className="w-full h-full rounded-full bg-black/60 overflow-hidden">
                           {profile.imageUrl ? (
                             <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <img src="/icons/ufo-stories.png" alt="" className="w-5 h-5 object-contain" decoding="async" />
-                            </div>
+                            <img src="/icons/ufo-stories.png" alt="" className="w-full h-full object-contain p-0.5" decoding="async" />
                           )}
                         </div>
                       </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Storie</span>
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Storie</span>
                     </motion.button>
 
                     {/* Vibrapp — chat aliena */}
@@ -1340,14 +1324,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         }
                         setShowVibCompose(true);
                       }}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-vibrapp-${profile.id}`}
                     >
-                      <div className="w-9 h-9 rounded-full bg-teal-400/25 border border-teal-300/60 flex items-center justify-center shadow-[0_0_8px_rgba(45,212,191,0.35)]">
-                        <img src="/icons/chat-alien.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>Vibrapp</span>
+                      <img src="/icons/chat-alien.png" alt="Vibrapp" className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" decoding="async" />
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Vibrapp</span>
                     </motion.button>
 
                     {/* Vibe (Like) — cuore cosmico */}
@@ -1358,14 +1340,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         if (!alreadyLiked) onSwipe("right");
                       }}
                       disabled={alreadyLiked}
-                      className="flex flex-col items-center gap-0.5"
+                      className="flex flex-col items-center gap-1"
                       style={{ touchAction: "none" }}
                       data-testid={`button-like-sidebar-${profile.id}`}
                     >
-                      <div className={`w-9 h-9 rounded-full border flex items-center justify-center ${alreadyLiked ? "bg-rose-400/25 border-rose-300/60 shadow-[0_0_8px_rgba(251,113,133,0.35)]" : "bg-rose-400/25 border-rose-300/60 shadow-[0_0_8px_rgba(251,113,133,0.35)]"}`}>
-                        <img src="/icons/heart-cosmic.png" alt="" className="w-6 h-6 object-contain" decoding="async" />
-                      </div>
-                      <span className="text-[8px] font-bold text-white/90 drop-shadow-lg" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{t("home.vibe")}</span>
+                      <img src="/icons/heart-cosmic.png" alt="Vibe" className={`w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${alreadyLiked ? "opacity-50" : ""}`} decoding="async" />
+                      <span className="text-[11px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">{t("home.vibe")}</span>
                     </motion.button>
                   </div>
                 </>
