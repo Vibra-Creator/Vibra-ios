@@ -2741,12 +2741,13 @@ export async function seedDatabase() {
 
     // Fix bot image paths to point to .webp (if files exist)
     try {
+      const publicDir = path.join(process.cwd(), 'client', 'public');
       const bots = await db.select().from(profiles).where(eq(profiles.isBot, true));
       let webpFixed = 0;
       for (const bot of bots) {
         if (bot.imageUrl && (bot.imageUrl.endsWith('.png') || bot.imageUrl.endsWith('.jpg'))) {
           const webpUrl = bot.imageUrl.replace(/\.(png|jpg)$/, '.webp');
-          const webpPath = path.join(__dirname, '..', 'client', 'public', webpUrl.replace(/^\//, ''));
+          const webpPath = path.join(publicDir, webpUrl.replace(/^\//, ''));
           if (fs.existsSync(webpPath)) {
             await db.update(profiles).set({ imageUrl: webpUrl }).where(eq(profiles.id, bot.id));
             webpFixed++;
@@ -2756,7 +2757,7 @@ export async function seedDatabase() {
           const newPhotos = bot.photos.map((p: string) => {
             if (p.endsWith('.png') || p.endsWith('.jpg')) {
               const webpP = p.replace(/\.(png|jpg)$/, '.webp');
-              const webpPath = path.join(__dirname, '..', 'client', 'public', webpP.replace(/^\//, ''));
+              const webpPath = path.join(publicDir, webpP.replace(/^\//, ''));
               return fs.existsSync(webpPath) ? webpP : p;
             }
             return p;
@@ -2768,7 +2769,7 @@ export async function seedDatabase() {
         }
       }
       if (webpFixed > 0) {
-        console.log(`Fixed ${webpFixed} bot imageUrl(s) to .webp`);
+        console.log(`[webp] Aggiornati ${webpFixed} bot imageUrl → .webp`);
       }
     } catch (e) {
       console.log("Bot webp fix skipped:", e);
