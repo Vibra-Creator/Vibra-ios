@@ -302,7 +302,8 @@ export default function Home() {
         });
         setSwipeHistory(prev => prev.filter(id => id !== undoneId));
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/swipable"] });
+      // Usa la stessa chiave della query swipable (con profileId) per far sì che il refetch avvenga
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
     },
     onError: (err: any) => {
