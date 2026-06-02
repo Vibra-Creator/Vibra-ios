@@ -133,6 +133,8 @@ export default function Home() {
 
   const pendingSwipeRef = useRef<{ profileId: string; liked: boolean } | null>(null);
   const swipeMutateRef = useRef<((p: { profileId: string; liked: boolean }) => void) | null>(null);
+  // Ref che tiene sempre l'ID dell'ultimo profilo swipato (indipendente dalle API, senza stale closure)
+  const lastSwipedIdRef = useRef<string | null>(null);
 
   const swipeMutation = useMutation({
     mutationFn: async ({ profileId, liked }: { profileId: string; liked: boolean }) => {
@@ -287,6 +289,8 @@ export default function Home() {
       newSet.add(currentProfile.id);
       return newSet;
     });
+    // Salva sempre l'ultimo swipato nel ref — usato dall'undo per mostrare il profilo corretto
+    lastSwipedIdRef.current = currentProfile.id;
 
     const payload = { profileId: currentProfile.id, liked: direction === "right" };
 
@@ -301,18 +305,22 @@ export default function Home() {
 
   const undoMutation = useMutation({
     mutationFn: () => apiRequest("DELETE", "/api/swipes/last"),
-    onSuccess: (data: any) => {
-      const undoneId = data?.undoneProfileId;
-      if (undoneId) {
-        // 1. Rimuovi dal set degli swipati (se era in questa sessione)
+    onSuccess: () => {
+      // Usa il ref locale (aggiornato al momento dello swipe) — non la risposta del server
+      // che può restituire un ID sbagliato se c'è una race condition con la swipe API
+      const targetId = lastSwipedIdRef.current;
+      if (targetId) {
+        // 1. Rimuovi dal set degli swipati (sessione corrente)
         setSwipedProfiles(prev => {
           const newSet = new Set(prev);
-          newSet.delete(undoneId);
+          newSet.delete(targetId);
           return newSet;
         });
-        setSwipeHistory(prev => prev.filter(id => id !== undoneId));
-        // 2. Forza il profilo annullato in prima posizione (funziona anche per sessioni precedenti)
-        setForcedFirstProfileId(undoneId);
+        setSwipeHistory(prev => prev.filter(id => id !== targetId));
+        // 2. Forza il profilo in prima posizione
+        setForcedFirstProfileId(targetId);
+        // 3. Reset ref — prossimo undo richiede un altro swipe
+        lastSwipedIdRef.current = null;
       }
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
