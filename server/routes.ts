@@ -567,15 +567,9 @@ ${urlEntries}
         if (i < bots.length) interleaved.push(bots[i]);
       }
 
-      // Shuffle deterministico (sempre lo stesso per questo viewer) per mescolare reali/bot
-      // senza che il server cambi ordine ad ogni richiesta
-      const seedStr = profileId;
-      let seed = 0;
-      for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
-      const seededRandom = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-      // Fisher–Yates deterministico
+      // Shuffle casuale ad ogni apertura — ordine diverso ogni volta
       for (let i = interleaved.length - 1; i > 0; i--) {
-        const j = Math.floor(seededRandom() * (i + 1));
+        const j = Math.floor(Math.random() * (i + 1));
         [interleaved[i], interleaved[j]] = [interleaved[j], interleaved[i]];
       }
 
