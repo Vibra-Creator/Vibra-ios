@@ -299,11 +299,14 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                 </div>
               )}
 
-              {profileVideos.length > 0 && (
-                <div data-testid="profile-detail-videos">
-                  <h3 className="text-sm font-semibold text-white/60 mb-2">{t("profile.profileVideos")}</h3>
-                  <div className="space-y-3">
-                    {profileVideos.map((video, idx) => (
+              {/* Profilo Video / Foto — visibile per tutti */}
+              <div data-testid="profile-detail-videos">
+                <h3 className="text-sm font-semibold text-white/60 mb-2">
+                  {profileVideos.length > 0 ? t("profile.profileVideos") : "Profilo"}
+                </h3>
+                <div className="space-y-3">
+                  {profileVideos.length > 0 ? (
+                    profileVideos.map((video, idx) => (
                       <div key={video.id} className="relative rounded-xl overflow-hidden border border-white/10 bg-black">
                         <video
                           src={`/api/video-stream/${video.id}`}
@@ -349,10 +352,22 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  ) : profile.imageUrl ? (
+                    <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black">
+                      <img
+                        src={profile.imageUrl}
+                        alt={profile.name}
+                        className="w-full max-h-64 object-contain"
+                        data-testid="profile-detail-image"
+                      />
+                      <div className="absolute bottom-2 left-2 bg-black/70 rounded-full px-2 py-0.5 pointer-events-none">
+                        <span className="text-[10px] text-white/80">📷 Foto profilo</span>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              )}
+              </div>
 
               {profile.languages && profile.languages.length > 0 && (
                 <div>
