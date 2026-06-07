@@ -1189,7 +1189,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     {/* Preferiti */}
                     <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavoriteMutation.mutate(); }}
                       className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-favorite-${profile.id}`}>
-                      <Bookmark className="w-9 h-9 text-purple-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
+                      <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">👾</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Preferiti</span>
                     </motion.button>
 
@@ -1199,14 +1199,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         if (profile.ratingEnabled) { setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }
                         else { toast({ title: "Non disponibile", description: `${profile.name} non ha attivato le impressioni` }); }
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-impression-${profile.id}`}>
-                      <Eye className={`w-9 h-9 text-fuchsia-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${profile.ratingEnabled ? "" : "opacity-40"}`} />
+                      <span className={`text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${profile.ratingEnabled ? "" : "opacity-40"}`}>👁️</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Impression</span>
                     </motion.button>
 
                     {/* Signal */}
                     <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowSignalCompose(true); }}
                       className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-signals-sidebar-${profile.id}`}>
-                      <Radio className="w-9 h-9 text-green-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
+                      <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">🛸</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Signal</span>
                     </motion.button>
 
@@ -1217,14 +1217,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         if (navigator.share) { try { await navigator.share({ title: `${profile.name}, ${profile.age}`, text: `Guarda questo profilo su Vibra!`, url: shareUrl }); } catch {} }
                         else { await navigator.clipboard.writeText(shareUrl); toast({ title: "Link copiato!" }); }
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-share-${profile.id}`}>
-                      <Share2 className="w-9 h-9 text-teal-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
+                      <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">🌌</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">{t("swipe.share")}</span>
                     </motion.button>
 
                     {onOpenPostComposer && (
                       <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenPostComposer(); }}
                         className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid="button-open-post-composer">
-                        <Plus className="w-9 h-9 text-amber-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
+                        <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">➕</span>
                         <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Post</span>
                       </motion.button>
                     )}
@@ -1248,7 +1248,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                           e.stopPropagation(); e.preventDefault();
                           if (!undoDisabled) onUndo();
                         }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid="button-undo-sidebar">
-                        <RotateCcw className={`w-9 h-9 text-amber-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${undoDisabled ? "opacity-30" : ""}`} />
+                        <span className={`text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${undoDisabled ? "opacity-30" : ""}`}>⏮️</span>
                         <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Indietro</span>
                       </motion.button>
                     )}
@@ -1260,7 +1260,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         <div className="w-full h-full rounded-full bg-black/60 overflow-hidden">
                           {profile.imageUrl
                             ? <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
-                            : <Radio className="w-full h-full object-contain p-0.5 text-white/60" />}
+                            : <span className="w-full h-full flex items-center justify-center text-[20px] text-white/60">📡</span>}
                         </div>
                       </div>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Storie</span>
@@ -1273,7 +1273,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         if (laa && (Date.now() - new Date(laa).getTime()) / 60000 < 60) { setVibBotOnline(true); setVibShowTyping(false); }
                         setShowVibCompose(true);
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-vibrapp-${profile.id}`}>
-                      <MessageCircle className="w-9 h-9 text-emerald-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
+                      <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">👽</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Vibrapp</span>
                     </motion.button>
 
@@ -1282,7 +1282,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         e.stopPropagation(); e.preventDefault();
                         if (!alreadyLiked) onSwipe("right");
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-like-sidebar-${profile.id}`}>
-                      <Heart className={`w-9 h-9 text-pink-500 fill-pink-500 drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${alreadyLiked ? "opacity-50" : ""}`} />
+                      <span className={`text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${alreadyLiked ? "opacity-50" : ""}`}>💕</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Vibe</span>
                     </motion.button>
                   </div>
