@@ -115,7 +115,7 @@ export default function Landing() {
               <a href="https://play.google.com/store/apps/details?id=com.vibra.app" target="_blank" rel="noreferrer" data-testid="link-google-play">
                 <Button className="w-full h-12 bg-white text-black hover:bg-white/90">
                   <Play className="w-4 h-4 mr-2 fill-current" />
-                  Scarica su Google Play
+                  {t("landing.googleplay")}
                 </Button>
               </a>
               <a href="https://apps.apple.com/it/app/vibra/id6759167028" target="_blank" rel="noreferrer" data-testid="link-app-store">
@@ -123,7 +123,7 @@ export default function Landing() {
                   <svg className="w-4 h-4 mr-2 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                   </svg>
-                  Scarica su App Store
+                  {t("landing.appstore")}
                 </Button>
               </a>
               <Link href="/register">
@@ -184,7 +184,7 @@ export default function Landing() {
             <nav className="hidden md:flex items-center gap-6 text-sm text-white/70">
               <a href="#how-it-works" className="hover:text-white transition-colors">{t("landing.howItWorks")}</a>
               <a href="#features" className="hover:text-white transition-colors">{t("landing.features")}</a>
-              <a href="#testimonianze" className="hover:text-white transition-colors">Recensioni</a>
+              <a href="#testimonianze" className="hover:text-white transition-colors">{t("landing.nav.reviews")}</a>
               <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
               <Link href="/blog" className="hover:text-white transition-colors font-semibold text-primary/90">Blog</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">{t("landing.privacy")}</Link>
@@ -457,19 +457,19 @@ export default function Landing() {
             className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-3">
-              Cosa dicono di noi 💬
+              {t("landing.testimonials.title")}
             </h2>
             <p className="text-lg text-white/60">
-              Voci reali dalla nostra galassia
+              {t("landing.testimonials.subtitle")}
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {[
-              { name: "Giulia T.", age: 28, city: "Milano", stars: 5, text: "Pensavo fosse l'ennesima app di incontri banale. Invece mi ha colpita subito il tema cosmico e la possibilità di caricare un video invece di stare a scrivere cose scontate. Ho trovato una connessione vera qui." },
-              { name: "Marco R.", age: 32, city: "Roma", stars: 5, text: "L'interfaccia è bellissima, sembra di stare in una nave spaziale. I bot sono ben fatti e non si capisce quasi che sono AI. Ma soprattutto ho fatto match con persone interessanti, cosa non scontata su altre app." },
-              { name: "Sara L.", age: 25, city: "Torino", stars: 5, text: "Mi ha convinta la sezione video — finalmente puoi mostrarti davvero, non solo le solite foto ritoccate. Ho avuto più conversazioni autentiche in una settimana qui che in mesi su Tinder." },
-              { name: "Alessandro B.", age: 35, city: "Genova", stars: 5, text: "Il tema alieno mi sembrava strano all'inizio, ma è diventato il mio preferito proprio per quello. Ti fa sentire parte di qualcosa di diverso. E la chat è velocissima, niente lag." },
+              { name: t("landing.testimonials.r1.name"), age: 28, city: t("landing.testimonials.r1.city"), stars: 5, text: t("landing.testimonials.r1.text") },
+              { name: t("landing.testimonials.r2.name"), age: 32, city: t("landing.testimonials.r2.city"), stars: 5, text: t("landing.testimonials.r2.text") },
+              { name: t("landing.testimonials.r3.name"), age: 25, city: t("landing.testimonials.r3.city"), stars: 5, text: t("landing.testimonials.r3.text") },
+              { name: t("landing.testimonials.r4.name"), age: 35, city: t("landing.testimonials.r4.city"), stars: 5, text: t("landing.testimonials.r4.text") },
             ].map((review, i) => (
               <motion.div
                 key={i}
@@ -561,39 +561,21 @@ export default function Landing() {
             className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-3">
-              Domande frequenti 🛸
+              {t("landing.faq.title")}
             </h2>
             <p className="text-lg text-white/60">
-              Tutto quello che vuoi sapere su Vibra
+              {t("landing.faq.subtitle")}
             </p>
           </motion.div>
 
           <div className="space-y-3">
             {[
-              {
-                q: "Vibra è gratuita?",
-                a: "Sì, Vibra è completamente gratuita per registrarsi, scorrere profili, fare match e chattare. Alcune funzionalità premium potrebbero essere introdotte in futuro, ma il cuore dell'app resterà sempre free."
-              },
-              {
-                q: "I miei dati personali sono al sicuro?",
-                a: "Assolutamente sì. Non vendiamo mai i tuoi dati a terze parti. Le informazioni del profilo sono visibili solo agli altri utenti dell'app. Puoi eliminare il tuo account e tutti i dati in qualsiasi momento dalla sezione Profilo."
-              },
-              {
-                q: "Cos'è un profilo 'alieno' su Vibra?",
-                a: "Il tema alieno/cosmico è puramente estetico — nessuno è davvero un extraterrestre! 👽 Serve a differenziarci dalle app di incontri tradizionali e a creare un'atmosfera più giocosa e meno ansiogena. Sei tu, con la tua storia, presentata in chiave cosmica."
-              },
-              {
-                q: "Cosa sono i bot e come funzionano?",
-                a: "Per rendere l'esperienza coinvolgente fin dal primo giorno, Vibra include profili gestiti da intelligenza artificiale (bot). Questi profili rispondono in modo naturale e sono chiaramente dichiarati nei Termini di Servizio. Con la crescita della community, i profili reali saranno sempre più presenti."
-              },
-              {
-                q: "Posso usare Vibra senza registrarmi?",
-                a: "Puoi esplorare l'app in modalità ospite per vedere come funziona, ma per fare match, chattare e caricare il tuo video è necessario creare un account gratuito."
-              },
-              {
-                q: "Come faccio a segnalare un comportamento inappropriato?",
-                a: "Ogni profilo ha un tasto 'Segnala' accessibile dal menu del profilo. Il team di moderazione esamina ogni segnalazione entro 24 ore. Puoi anche bloccare un utente direttamente dalla chat."
-              },
+              { q: t("landing.faq.q1"), a: t("landing.faq.a1") },
+              { q: t("landing.faq.q2"), a: t("landing.faq.a2") },
+              { q: t("landing.faq.q3"), a: t("landing.faq.a3") },
+              { q: t("landing.faq.q4"), a: t("landing.faq.a4") },
+              { q: t("landing.faq.q5"), a: t("landing.faq.a5") },
+              { q: t("landing.faq.q6"), a: t("landing.faq.a6") },
             ].map((faq, i) => (
               <motion.div
                 key={i}
