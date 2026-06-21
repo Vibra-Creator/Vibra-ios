@@ -614,6 +614,59 @@ export default function Landing() {
           </div>
         </section>
 
+        {/* ── SCREENSHOTS ── */}
+        <section id="screenshots" className="py-20 px-4 overflow-hidden">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-3">
+              {t("landing.screenshots.title")}
+            </h2>
+            <p className="text-lg text-white/60">
+              {t("landing.screenshots.subtitle")}
+            </p>
+          </motion.div>
+
+          <div className="flex gap-5 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-hide max-w-6xl mx-auto px-2" style={{ scrollbarWidth: "none" }}>
+            {[
+              { src: "/screenshots/screen-scopri.jpeg",    label: t("landing.screenshots.s1") },
+              { src: "/screenshots/screen-community.jpeg", label: t("landing.screenshots.s2") },
+              { src: "/screenshots/screen-sfide.jpeg",     label: t("landing.screenshots.s3") },
+              { src: "/screenshots/screen-vibrapp.jpeg",   label: t("landing.screenshots.s4") },
+              { src: "/screenshots/screen-dove-sei.jpeg",  label: t("landing.screenshots.s5") },
+              { src: "/screenshots/screen-vibing.jpeg",    label: t("landing.screenshots.s6") },
+              { src: "/screenshots/screen-private.jpeg",   label: t("landing.screenshots.s7") },
+            ].map((s, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="shrink-0 snap-center flex flex-col items-center gap-3"
+              >
+                {/* Phone frame */}
+                <div className="relative w-[185px] h-[380px] rounded-[36px] border-[3px] border-white/20 bg-black shadow-2xl shadow-black/60 overflow-hidden ring-1 ring-white/10">
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-b-xl z-10" />
+                  <img
+                    src={s.src}
+                    alt={s.label}
+                    className="w-full h-full object-cover object-top"
+                    loading="lazy"
+                  />
+                  {/* Bottom bar */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 rounded-full bg-white/30 mb-1.5" />
+                </div>
+                <span className="text-sm font-semibold text-white/70">{s.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
         {/* ── CTA ── */}
         <section className="max-w-4xl mx-auto px-4 py-20 text-center">
           <motion.div

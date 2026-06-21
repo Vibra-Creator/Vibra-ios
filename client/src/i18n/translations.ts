@@ -104,6 +104,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     "landing.faq.a5": "Puoi esplorare l'app in modalità ospite per vedere come funziona, ma per fare match, chattare e caricare il tuo video è necessario creare un account gratuito.",
     "landing.faq.q6": "Come faccio a segnalare un comportamento inappropriato?",
     "landing.faq.a6": "Ogni profilo ha un tasto 'Segnala' accessibile dal menu del profilo. Il team di moderazione esamina ogni segnalazione entro 24 ore. Puoi anche bloccare un utente direttamente dalla chat.",
+    "landing.screenshots.title": "L'app in azione 📱",
+    "landing.screenshots.subtitle": "Scorri per scoprire tutte le funzionalità",
+    "landing.screenshots.s1": "Scopri profili",
+    "landing.screenshots.s2": "Community",
+    "landing.screenshots.s3": "Sfide Giornaliere",
+    "landing.screenshots.s4": "Vibrapp Chat",
+    "landing.screenshots.s5": "Dove Sei",
+    "landing.screenshots.s6": "Sto Vibing Ora",
+    "landing.screenshots.s7": "Stanze Private",
 
     // Login extra
     "login.adminTitle": "Accesso Amministratore",
@@ -1054,6 +1063,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     "landing.faq.a5": "You can explore the app in guest mode to see how it works, but to match, chat, and upload your video you need to create a free account.",
     "landing.faq.q6": "How do I report inappropriate behaviour?",
     "landing.faq.a6": "Every profile has a 'Report' button accessible from the profile menu. The moderation team reviews every report within 24 hours. You can also block a user directly from the chat.",
+    "landing.screenshots.title": "The app in action 📱",
+    "landing.screenshots.subtitle": "Swipe to discover all features",
+    "landing.screenshots.s1": "Discover profiles",
+    "landing.screenshots.s2": "Community",
+    "landing.screenshots.s3": "Daily Challenges",
+    "landing.screenshots.s4": "Vibrapp Chat",
+    "landing.screenshots.s5": "Where You Are",
+    "landing.screenshots.s6": "Vibing Now",
+    "landing.screenshots.s7": "Private Rooms",
 
     // Login extra
     "login.adminTitle": "Administrator Access",
@@ -2003,6 +2021,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     "landing.faq.a5": "Puedes explorar la app en modo invitado para ver cómo funciona, pero para hacer match, chatear y subir tu video es necesario crear una cuenta gratuita.",
     "landing.faq.q6": "¿Cómo puedo reportar un comportamiento inapropiado?",
     "landing.faq.a6": "Cada perfil tiene un botón 'Reportar' accesible desde el menú del perfil. El equipo de moderación revisa cada reporte en 24 horas. También puedes bloquear a un usuario directamente desde el chat.",
+    "landing.screenshots.title": "La app en acción 📱",
+    "landing.screenshots.subtitle": "Desliza para descubrir todas las funciones",
+    "landing.screenshots.s1": "Descubre perfiles",
+    "landing.screenshots.s2": "Comunidad",
+    "landing.screenshots.s3": "Retos Diarios",
+    "landing.screenshots.s4": "Vibrapp Chat",
+    "landing.screenshots.s5": "Dónde Estás",
+    "landing.screenshots.s6": "Vibing Ahora",
+    "landing.screenshots.s7": "Salas Privadas",
 
     // Login extra
     "login.adminTitle": "Acceso Administrador",
