@@ -580,7 +580,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     });
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
-    const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? false);
+    const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? true);
     const [isVideoBuffering, setIsVideoBuffering] = useState(false);
     const [showSignalCompose, setShowSignalCompose] = useState(false);
     const [signalText, setSignalText] = useState("");
