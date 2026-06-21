@@ -792,27 +792,29 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       video.muted = true;
 
       if (isTop) {
-        const onPlaying = () => setIsVideoBuffering(false);
+        // Tenta l'unmute non appena il video è in riproduzione.
+        // L'evento "playing" scatta sia con autoPlay che con play() esplicito,
+        // quindi non dipende da chi ha avviato il video.
+        // Su Chrome/Android funziona senza gesture utente.
+        // Su iOS Safari l'unmute è bloccato dal browser: l'icona rimane
+        // "muto" e 1 tap basta per attivare l'audio.
+        const tryUnmute = () => {
+          if (!video.muted) return;
+          try {
+            video.muted = false;
+            video.volume = 1;
+            setIsCardMuted(false);
+          } catch {}
+        };
+
+        const onPlaying = () => {
+          setIsVideoBuffering(false);
+          tryUnmute();
+        };
         const onWaiting = () => setIsVideoBuffering(true);
         const onLoadedData = () => setIsVideoBuffering(false);
         const tryPlay = () => {
-          if (video.paused) {
-            video.play()
-              .then(() => {
-                // Tentiamo di smutare subito dopo il play riuscito.
-                // Se il browser lo consente (Chrome/Android/desktop) l'audio parte
-                // immediatamente e l'icona si aggiorna su "sound on".
-                try {
-                  video.muted = false;
-                  video.volume = 1;
-                  setIsCardMuted(false);
-                } catch {
-                  // iOS blocca l'unmute senza gesture diretta: l'icona
-                  // rimane "muto" e l'utente usa il tasto per attivare l'audio.
-                }
-              })
-              .catch(() => {});
-          }
+          if (video.paused) video.play().catch(() => {});
         };
         video.addEventListener("playing", onPlaying);
         video.addEventListener("waiting", onWaiting);
