@@ -784,7 +784,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       const video = cardVideoRef.current;
       if (!video || !hasVideo || !primaryVideoUrl) return;
 
-      // Muted hardcoded: requisito obbligatorio per autoplay senza interazione
+      // I browser mobili richiedono muted per autoplay — partiamo muti e
+      // tentiamo subito di smutare appena play() riesce.
+      // Su Chrome/Android funziona senza interazione utente.
+      // Su iOS Safari è bloccato finché l'utente non tocca: il pulsante
+      // volume mostra correttamente "muto" e un tap basta per attivare l'audio.
       video.muted = true;
 
       if (isTop) {
@@ -792,7 +796,23 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         const onWaiting = () => setIsVideoBuffering(true);
         const onLoadedData = () => setIsVideoBuffering(false);
         const tryPlay = () => {
-          if (video.paused) video.play().catch(() => {});
+          if (video.paused) {
+            video.play()
+              .then(() => {
+                // Tentiamo di smutare subito dopo il play riuscito.
+                // Se il browser lo consente (Chrome/Android/desktop) l'audio parte
+                // immediatamente e l'icona si aggiorna su "sound on".
+                try {
+                  video.muted = false;
+                  video.volume = 1;
+                  setIsCardMuted(false);
+                } catch {
+                  // iOS blocca l'unmute senza gesture diretta: l'icona
+                  // rimane "muto" e l'utente usa il tasto per attivare l'audio.
+                }
+              })
+              .catch(() => {});
+          }
         };
         video.addEventListener("playing", onPlaying);
         video.addEventListener("waiting", onWaiting);
