@@ -815,6 +815,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         if (!video.paused) {
           try { video.pause(); } catch {}
         }
+        // iOS ignora preload="auto" — forziamo il buffering della prossima card
+        // con video.load() in modo che sia pronta quando diventa top.
+        try { video.load(); } catch {}
       }
     }, [isTop, hasVideo, primaryVideoUrl]);
 
@@ -1149,6 +1152,13 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 </>
               )}
               
+              {/* ── BUFFERING SPINNER: visibile solo mentre il video carica ── */}
+              {isVideoBuffering && isTop && (
+                <div className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none" data-testid={`buffering-indicator-${profile.id}`}>
+                  <div className="w-12 h-12 rounded-full border-[3px] border-white/20 border-t-white/90 animate-spin" />
+                </div>
+              )}
+
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none z-20" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none z-20" style={{ height: '25%' }} />
 
