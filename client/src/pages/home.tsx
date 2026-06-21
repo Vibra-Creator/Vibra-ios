@@ -504,9 +504,9 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Motto cosmico in cima */}
-      <div className="relative z-10 flex items-center justify-center px-4 pt-2 pb-1">
+      <div className="relative z-10 flex items-center justify-center px-4 pt-3 pb-2">
         <p
-          className="text-center text-sm italic font-medium tracking-wide"
+          className="text-center text-xl md:text-2xl font-semibold tracking-wide"
           style={{
             background: "linear-gradient(90deg, #c084fc, #67e8f9, #f472b6, #c084fc)",
             backgroundSize: "200% auto",
