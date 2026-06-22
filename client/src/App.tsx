@@ -40,6 +40,8 @@ const Favorites = lazy(() => import("@/pages/favorites"));
 const PublicProfile = lazy(() => import("@/pages/public-profile"));
 const Reels = lazy(() => import("@/pages/reels"));
 const Blog = lazy(() => import("@/pages/blog"));
+const VibraStory = lazy(() => import("@/pages/vibrastory"));
+const VibraVault = lazy(() => import("@/pages/vibravault"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -140,6 +142,9 @@ function AuthenticatedRouter() {
       <Route path="/vibrapp" component={VibrappChat} />
       <Route path="/signals" component={Signals} />
       <Route path="/favorites" component={Favorites} />
+      <Route path="/stories" component={VibraStory} />
+      <Route path="/story/:id" component={VibraStory} />
+      <Route path="/vault" component={VibraVault} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
       <Route path="/reels" component={Reels} />

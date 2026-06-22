@@ -208,6 +208,23 @@ export interface IStorage {
   setGhostMode(profileId: string, hours: number): Promise<Date>;
   deactivateGhostMode(profileId: string): Promise<void>;
   getGhostStatus(profileId: string): Promise<{ active: boolean; expiresAt: Date | null }>;
+
+  // VibraStory
+  getStories(roomId?: string): Promise<Story[]>;
+  getStory(id: string): Promise<Story | undefined>;
+  createStory(data: { roomId?: string; theme: string; description?: string }): Promise<Story>;
+  getStoryBriciole(storyId: string, myProfileId?: string): Promise<Array<StoryBriciola & { profileName: string; profileImageUrl: string; myVote?: string }>>;
+  addBriciola(data: { storyId: string; profileId: string; content: string; mediaUrl?: string }): Promise<StoryBriciola>;
+  voteBriciola(briolaId: string, profileId: string, voteType: string): Promise<void>;
+  removeVoteBriciola(briolaId: string, profileId: string): Promise<void>;
+  selectBriciola(briolaId: string): Promise<void>;
+  completeStory(storyId: string): Promise<void>;
+
+  // VibraVault
+  getMyVaultConfessions(profileId: string): Promise<VaultConfession[]>;
+  createVaultConfession(data: { profileId: string; content: string; mediaUrl?: string; ttlDays: number }): Promise<VaultConfession>;
+  deleteVaultConfession(id: string, profileId: string): Promise<void>;
+  cleanExpiredVaultConfessions(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1591,6 +1608,138 @@ export class DatabaseStorage implements IStorage {
     const expiresAt = profile.ghostModeExpiresAt;
     const active = !!expiresAt && new Date(expiresAt) > new Date();
     return { active, expiresAt: active ? expiresAt : null };
+  }
+
+  // ── VibraStory ────────────────────────────────────────────────────────────
+
+  async getStories(roomId?: string): Promise<Story[]> {
+    const rows = await db.execute(sql`
+      SELECT * FROM stories
+      WHERE status = 'active'
+      ${roomId ? sql`AND room_id = ${roomId}` : sql``}
+      ORDER BY created_at DESC
+      LIMIT 50
+    `);
+    return (rows.rows as any[]).map(r => ({
+      id: r.id, roomId: r.room_id, theme: r.theme, description: r.description,
+      status: r.status, createdAt: r.created_at, completedAt: r.completed_at,
+    }));
+  }
+
+  async getStory(id: string): Promise<Story | undefined> {
+    const rows = await db.execute(sql`SELECT * FROM stories WHERE id = ${id}`);
+    const r = rows.rows[0] as any;
+    if (!r) return undefined;
+    return { id: r.id, roomId: r.room_id, theme: r.theme, description: r.description, status: r.status, createdAt: r.created_at, completedAt: r.completed_at };
+  }
+
+  async createStory(data: { roomId?: string; theme: string; description?: string }): Promise<Story> {
+    const id = randomUUID();
+    await db.execute(sql`
+      INSERT INTO stories (id, room_id, theme, description, status, created_at)
+      VALUES (${id}, ${data.roomId ?? null}, ${data.theme}, ${data.description ?? null}, 'active', NOW())
+    `);
+    return (await this.getStory(id))!;
+  }
+
+  async getStoryBriciole(storyId: string, myProfileId?: string): Promise<Array<StoryBriciola & { profileName: string; profileImageUrl: string; myVote?: string }>> {
+    const rows = await db.execute(sql`
+      SELECT sb.*, p.name as profile_name, p.image_url as profile_image_url,
+        sv.vote_type as my_vote
+      FROM story_briciole sb
+      JOIN profiles p ON p.id = sb.profile_id
+      LEFT JOIN story_votes sv ON sv.briola_id = sb.id AND sv.profile_id = ${myProfileId ?? ''}
+      WHERE sb.story_id = ${storyId}
+      ORDER BY sb.votes DESC, sb.created_at ASC
+    `);
+    return (rows.rows as any[]).map(r => ({
+      id: r.id, storyId: r.story_id, profileId: r.profile_id, content: r.content,
+      mediaUrl: r.media_url, chapter: r.chapter, votes: r.votes, isSelected: r.is_selected,
+      createdAt: r.created_at, profileName: r.profile_name, profileImageUrl: r.profile_image_url,
+      myVote: r.my_vote ?? undefined,
+    }));
+  }
+
+  async addBriciola(data: { storyId: string; profileId: string; content: string; mediaUrl?: string }): Promise<StoryBriciola> {
+    const id = randomUUID();
+    await db.execute(sql`
+      INSERT INTO story_briciole (id, story_id, profile_id, content, media_url, chapter, votes, is_selected, created_at)
+      VALUES (${id}, ${data.storyId}, ${data.profileId}, ${data.content}, ${data.mediaUrl ?? null}, 0, 0, FALSE, NOW())
+    `);
+    const rows = await db.execute(sql`SELECT * FROM story_briciole WHERE id = ${id}`);
+    const r = rows.rows[0] as any;
+    return { id: r.id, storyId: r.story_id, profileId: r.profile_id, content: r.content, mediaUrl: r.media_url, chapter: r.chapter, votes: r.votes, isSelected: r.is_selected, createdAt: r.created_at };
+  }
+
+  async voteBriciola(briolaId: string, profileId: string, voteType: string): Promise<void> {
+    const voteId = randomUUID();
+    await db.execute(sql`
+      INSERT INTO story_votes (id, briola_id, profile_id, vote_type, created_at)
+      VALUES (${voteId}, ${briolaId}, ${profileId}, ${voteType}, NOW())
+      ON CONFLICT (briola_id, profile_id) DO UPDATE SET vote_type = ${voteType}
+    `);
+    await db.execute(sql`
+      UPDATE story_briciole SET votes = (
+        SELECT COUNT(*) FROM story_votes WHERE briola_id = ${briolaId} AND vote_type = 'up'
+      ) - (
+        SELECT COUNT(*) FROM story_votes WHERE briola_id = ${briolaId} AND vote_type = 'down'
+      ) WHERE id = ${briolaId}
+    `);
+  }
+
+  async removeVoteBriciola(briolaId: string, profileId: string): Promise<void> {
+    await db.execute(sql`DELETE FROM story_votes WHERE briola_id = ${briolaId} AND profile_id = ${profileId}`);
+    await db.execute(sql`
+      UPDATE story_briciole SET votes = (
+        SELECT COUNT(*) FROM story_votes WHERE briola_id = ${briolaId} AND vote_type = 'up'
+      ) - (
+        SELECT COUNT(*) FROM story_votes WHERE briola_id = ${briolaId} AND vote_type = 'down'
+      ) WHERE id = ${briolaId}
+    `);
+  }
+
+  async selectBriciola(briolaId: string): Promise<void> {
+    await db.execute(sql`UPDATE story_briciole SET is_selected = TRUE WHERE id = ${briolaId}`);
+  }
+
+  async completeStory(storyId: string): Promise<void> {
+    await db.execute(sql`UPDATE stories SET status = 'completed', completed_at = NOW() WHERE id = ${storyId}`);
+  }
+
+  // ── VibraVault ────────────────────────────────────────────────────────────
+
+  async getMyVaultConfessions(profileId: string): Promise<VaultConfession[]> {
+    const rows = await db.execute(sql`
+      SELECT * FROM vault_confessions WHERE profile_id = ${profileId}
+      ORDER BY created_at DESC
+    `);
+    return (rows.rows as any[]).map(r => ({
+      id: r.id, profileId: r.profile_id, content: r.content, mediaUrl: r.media_url,
+      expiresAt: r.expires_at, sentimentLegacy: r.sentiment_legacy, deletedAt: r.deleted_at, createdAt: r.created_at,
+    }));
+  }
+
+  async createVaultConfession(data: { profileId: string; content: string; mediaUrl?: string; ttlDays: number }): Promise<VaultConfession> {
+    const id = randomUUID();
+    const expiresAt = new Date(Date.now() + data.ttlDays * 24 * 60 * 60 * 1000);
+    await db.execute(sql`
+      INSERT INTO vault_confessions (id, profile_id, content, media_url, expires_at, created_at)
+      VALUES (${id}, ${data.profileId}, ${data.content}, ${data.mediaUrl ?? null}, ${expiresAt}, NOW())
+    `);
+    const rows = await db.execute(sql`SELECT * FROM vault_confessions WHERE id = ${id}`);
+    const r = rows.rows[0] as any;
+    return { id: r.id, profileId: r.profile_id, content: r.content, mediaUrl: r.media_url, expiresAt: r.expires_at, sentimentLegacy: r.sentiment_legacy, deletedAt: r.deleted_at, createdAt: r.created_at };
+  }
+
+  async deleteVaultConfession(id: string, profileId: string): Promise<void> {
+    await db.execute(sql`UPDATE vault_confessions SET deleted_at = NOW() WHERE id = ${id} AND profile_id = ${profileId}`);
+  }
+
+  async cleanExpiredVaultConfessions(): Promise<void> {
+    await db.execute(sql`
+      UPDATE vault_confessions SET deleted_at = NOW()
+      WHERE expires_at < NOW() AND deleted_at IS NULL
+    `);
   }
 }
 

@@ -836,6 +836,15 @@ export default function ProfilePage() {
         <BadgeSection profileId={profile.id} profileName={profile.name} />
 
         <div className="space-y-2 w-full">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 text-base h-12 border-violet-500/30 text-violet-300 hover:bg-violet-500/10"
+            onClick={() => setLocation("/vault")}
+            data-testid="button-vibravault"
+          >
+            <Lock className="w-5 h-5" />
+            VibraVault — Confessioni Segrete
+          </Button>
           <Button 
             variant="outline" 
             className="w-full justify-start gap-3 text-base h-12"

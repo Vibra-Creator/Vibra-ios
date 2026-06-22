@@ -491,6 +491,57 @@ export const vibrappDms = pgTable("vibrapp_dms", {
 
 export type VibrappDm = typeof vibrappDms.$inferSelect;
 
+// ─── VibraStory ───────────────────────────────────────────────────────────────
+export const stories = pgTable("stories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roomId: varchar("room_id"),
+  theme: text("theme").notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 16 }).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export type Story = typeof stories.$inferSelect;
+
+export const storyBriciole = pgTable("story_briciole", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  storyId: varchar("story_id").notNull(),
+  profileId: varchar("profile_id").notNull(),
+  content: text("content").notNull(),
+  mediaUrl: text("media_url"),
+  chapter: integer("chapter").default(0).notNull(),
+  votes: integer("votes").default(0).notNull(),
+  isSelected: boolean("is_selected").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type StoryBriciola = typeof storyBriciole.$inferSelect;
+
+export const storyVotes = pgTable("story_votes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  briolaId: varchar("briola_id").notNull(),
+  profileId: varchar("profile_id").notNull(),
+  voteType: varchar("vote_type", { length: 8 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type StoryVote = typeof storyVotes.$inferSelect;
+
+// ─── VibraVault ───────────────────────────────────────────────────────────────
+export const vaultConfessions = pgTable("vault_confessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  content: text("content").notNull(),
+  mediaUrl: text("media_url"),
+  expiresAt: timestamp("expires_at").notNull(),
+  sentimentLegacy: text("sentiment_legacy"),
+  deletedAt: timestamp("deleted_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type VaultConfession = typeof vaultConfessions.$inferSelect;
+
 // ─── VibraDNA ─────────────────────────────────────────────────────────────────
 export const userDna = pgTable("user_dna", {
   profileId: varchar("profile_id").primaryKey(),

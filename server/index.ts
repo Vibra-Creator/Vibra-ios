@@ -168,9 +168,69 @@ app.use((req, res, next) => {
     `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS dna_events_profile_idx ON dna_events(profile_id, created_at)`);
     console.log("[migration] VibraDNA + VibraGhost tables ready");
+
+    // ── VibraStory ────────────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS stories (
+        id VARCHAR PRIMARY KEY,
+        room_id VARCHAR,
+        theme TEXT NOT NULL,
+        description TEXT,
+        status VARCHAR(16) NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        completed_at TIMESTAMP
+      )
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS story_briciole (
+        id VARCHAR PRIMARY KEY,
+        story_id VARCHAR NOT NULL,
+        profile_id VARCHAR NOT NULL,
+        content TEXT NOT NULL,
+        media_url TEXT,
+        chapter INTEGER NOT NULL DEFAULT 0,
+        votes INTEGER NOT NULL DEFAULT 0,
+        is_selected BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS story_votes (
+        id VARCHAR PRIMARY KEY,
+        briola_id VARCHAR NOT NULL,
+        profile_id VARCHAR NOT NULL,
+        vote_type VARCHAR(8) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(briola_id, profile_id)
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS story_briciole_story_idx ON story_briciole(story_id)`);
+
+    // ── VibraVault ────────────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS vault_confessions (
+        id VARCHAR PRIMARY KEY,
+        profile_id VARCHAR NOT NULL,
+        content TEXT NOT NULL,
+        media_url TEXT,
+        expires_at TIMESTAMP NOT NULL,
+        sentiment_legacy TEXT,
+        deleted_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS vault_confessions_profile_idx ON vault_confessions(profile_id)`);
+    console.log("[migration] VibraStory + VibraVault tables ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }
+
+  // ── VibraVault cleanup job (every hour) ────────────────────────────────────
+  setInterval(async () => {
+    try {
+      await storage.cleanExpiredVaultConfessions();
+    } catch {}
+  }, 60 * 60 * 1000);
 
   await registerRoutes(httpServer, app);
 

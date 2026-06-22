@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Users, Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
+import { Users, Sparkles, ArrowRight, ArrowLeft, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -106,6 +106,32 @@ export default function Rooms() {
           </div>
         </div>
       </motion.div>
+
+      {/* VibraStory banner */}
+      {!isGuest && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-5 rounded-2xl overflow-hidden cursor-pointer bg-gradient-to-r from-violet-600/25 to-pink-600/20 border border-violet-500/30 backdrop-blur-md hover:from-violet-600/35 hover:to-pink-600/30 transition-all"
+          onClick={() => setLocation("/stories")}
+          data-testid="banner-vibrastory"
+        >
+          <div className="flex items-center gap-4 p-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-white font-bold">VibraStory</span>
+                <span className="text-xs bg-violet-500/30 text-violet-300 px-2 py-0.5 rounded-full">Nuovo</span>
+              </div>
+              <p className="text-white/60 text-sm truncate">Scrivi la storia collettiva della community</p>
+            </div>
+            <ArrowRight className="w-5 h-5 text-violet-400 flex-shrink-0" />
+          </div>
+        </motion.div>
+      )}
 
       {activeLoading ? (
         <RoomSkeleton />

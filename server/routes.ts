@@ -5323,6 +5323,191 @@ REGOLE:
     }
   });
 
+  // ── VibraStory ──────────────────────────────────────────────────────────────
+
+  app.get("/api/stories", isAuthenticated, async (req: any, res) => {
+    try {
+      const roomId = req.query.roomId as string | undefined;
+      const items = await storage.getStories(roomId);
+      res.json(items);
+    } catch { res.status(500).json({ error: "Errore nel caricamento delle storie" }); }
+  });
+
+  app.post("/api/stories", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.isAdmin || (user?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(user.email.toLowerCase()));
+      if (!isAdmin) return res.status(403).json({ error: "Solo admin" });
+      const { theme, description, roomId } = req.body;
+      if (!theme?.trim()) return res.status(400).json({ error: "Il tema è obbligatorio" });
+      const story = await storage.createStory({ theme: theme.trim(), description: description?.trim(), roomId });
+      res.json(story);
+    } catch { res.status(500).json({ error: "Errore nella creazione della storia" }); }
+  });
+
+  app.get("/api/stories/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      const story = await storage.getStory(req.params.id);
+      if (!story) return res.status(404).json({ error: "Storia non trovata" });
+      const profile = userId ? await storage.getProfileByUserId(userId) : null;
+      const briciole = await storage.getStoryBriciole(story.id, profile?.id);
+      res.json({ story, briciole });
+    } catch { res.status(500).json({ error: "Errore nel caricamento" }); }
+  });
+
+  app.post("/api/stories/:id/briciole", isAuthenticated, (req: any, res: any, next: any) => {
+    memoryUpload.single("media")(req, res, (err: any) => {
+      if (err) return res.status(400).json({ error: err.message || "Errore upload" });
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const story = await storage.getStory(req.params.id);
+      if (!story || story.status !== 'active') return res.status(404).json({ error: "Storia non attiva" });
+      const content = req.body.content?.trim();
+      if (!content) return res.status(400).json({ error: "Il testo è obbligatorio" });
+
+      let mediaUrl: string | undefined;
+      if (req.file) {
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+        const putRes = await fetch(uploadURL, { method: "PUT", body: req.file.buffer, headers: { "Content-Type": req.file.mimetype } });
+        if (putRes.ok) {
+          await objectStorageService.trySetObjectEntityAclPolicy(objectPath, { visibility: "public", owner: null as any });
+          mediaUrl = objectPath;
+        }
+      }
+
+      const briciola = await storage.addBriciola({ storyId: story.id, profileId: profile.id, content, mediaUrl });
+      res.json(briciola);
+    } catch { res.status(500).json({ error: "Errore nell'aggiunta della briciola" }); }
+  });
+
+  app.post("/api/stories/briciole/:briolaId/vote", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const { voteType } = req.body;
+      if (!["up", "down"].includes(voteType)) return res.status(400).json({ error: "Tipo voto non valido" });
+      await storage.voteBriciola(req.params.briolaId, profile.id, voteType);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore nel voto" }); }
+  });
+
+  app.delete("/api/stories/briciole/:briolaId/vote", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      await storage.removeVoteBriciola(req.params.briolaId, profile.id);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore nella rimozione voto" }); }
+  });
+
+  app.post("/api/stories/:id/select/:briolaId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.isAdmin || (user?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(user.email.toLowerCase()));
+      if (!isAdmin) return res.status(403).json({ error: "Solo admin" });
+      await storage.selectBriciola(req.params.briolaId);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore nella selezione" }); }
+  });
+
+  app.post("/api/stories/:id/complete", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.isAdmin || (user?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(user.email.toLowerCase()));
+      if (!isAdmin) return res.status(403).json({ error: "Solo admin" });
+      await storage.completeStory(req.params.id);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore nel completamento" }); }
+  });
+
+  // ── VibraVault ─────────────────────────────────────────────────────────────
+
+  app.get("/api/vault", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const confessions = await storage.getMyVaultConfessions(profile.id);
+      res.json(confessions);
+    } catch { res.status(500).json({ error: "Errore nel caricamento del vault" }); }
+  });
+
+  app.post("/api/vault", isAuthenticated, (req: any, res: any, next: any) => {
+    memoryUpload.single("media")(req, res, (err: any) => {
+      if (err) return res.status(400).json({ error: err.message || "Errore upload" });
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const content = req.body.content?.trim();
+      if (!content) return res.status(400).json({ error: "La confessione non può essere vuota" });
+      const ttlDays = Math.min(Math.max(parseInt(req.body.ttlDays ?? "3") || 3, 1), 7);
+
+      let mediaUrl: string | undefined;
+      if (req.file) {
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+        const putRes = await fetch(uploadURL, { method: "PUT", body: req.file.buffer, headers: { "Content-Type": req.file.mimetype } });
+        if (putRes.ok) {
+          await objectStorageService.trySetObjectEntityAclPolicy(objectPath, { visibility: "public", owner: null as any });
+          mediaUrl = objectPath;
+        }
+      }
+
+      const confession = await storage.createVaultConfession({ profileId: profile.id, content, mediaUrl, ttlDays });
+
+      // Generate AI sentiment async (non-blocking)
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: `Analizza questa confessione anonima e restituisci SOLO un JSON con: {"emotion": "parola emozione in italiano", "emoji": "emoji calzante", "essence": "frase poetica breve max 10 parole in italiano"}. Confessione: "${content.substring(0, 300)}"` }],
+        max_tokens: 60,
+      }).then(async (r) => {
+        try {
+          const raw = r.choices[0]?.message?.content?.trim() ?? "{}";
+          const clean = raw.replace(/```json|```/g, "").trim();
+          const parsed = JSON.parse(clean);
+          await db.execute(sql`UPDATE vault_confessions SET sentiment_legacy = ${JSON.stringify(parsed)} WHERE id = ${confession.id}`);
+        } catch {}
+      }).catch(() => {});
+
+      res.json(confession);
+    } catch { res.status(500).json({ error: "Errore nella creazione della confessione" }); }
+  });
+
+  app.delete("/api/vault/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      await storage.deleteVaultConfession(req.params.id, profile.id);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore nella cancellazione" }); }
+  });
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return httpServer;
