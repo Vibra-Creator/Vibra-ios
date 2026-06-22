@@ -260,6 +260,11 @@ export interface IStorage {
   logActivity(profileId: string): Promise<void>;
   getActivityPattern(profileId: string): Promise<Array<{ hour: number; dayOfWeek: number; count: number }>>;
   getActivityLabel(profileId: string): Promise<string>;
+
+  // Pianeti
+  trackRoomOrbit(profileId: string, roomId: string): Promise<void>;
+  getTopOrbits(profileId: string, limit?: number): Promise<Array<{ roomId: string; roomName: string; visitCount: number; orbitStability: number }>>;
+  getSocialGravity(profileId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2008,6 +2013,47 @@ export class DatabaseStorage implements IStorage {
     if (topHour >= 15 && topHour < 19) return "attivo/a nel pomeriggio";
     if (topHour >= 19 && topHour < 23) return "attivo/a di sera";
     return "attivo/a di notte";
+  }
+
+  // ── Pianeti ───────────────────────────────────────────────────────────────
+
+  async trackRoomOrbit(profileId: string, roomId: string): Promise<void> {
+    // Upsert orbit entry, then recalculate stability based on visit count
+    await db.execute(sql`
+      INSERT INTO user_room_orbits (profile_id, room_id, visit_count, orbit_stability, first_visit, last_visit)
+      VALUES (${profileId}, ${roomId}, 1, 0.1, NOW(), NOW())
+      ON CONFLICT (profile_id, room_id)
+      DO UPDATE SET
+        visit_count = user_room_orbits.visit_count + 1,
+        orbit_stability = LEAST(1.0, user_room_orbits.orbit_stability + 0.05),
+        last_visit = NOW()
+    `);
+  }
+
+  async getTopOrbits(profileId: string, limit = 5): Promise<Array<{ roomId: string; roomName: string; visitCount: number; orbitStability: number }>> {
+    const rows = await db.execute(sql`
+      SELECT o.room_id, r.name AS room_name, o.visit_count, o.orbit_stability
+      FROM user_room_orbits o
+      LEFT JOIN rooms r ON r.id = o.room_id
+      WHERE o.profile_id = ${profileId}
+      ORDER BY o.orbit_stability DESC, o.visit_count DESC
+      LIMIT ${limit}
+    `);
+    return (rows.rows as any[]).map(r => ({
+      roomId: r.room_id,
+      roomName: r.room_name ?? "Stanza sconosciuta",
+      visitCount: r.visit_count,
+      orbitStability: r.orbit_stability,
+    }));
+  }
+
+  async getSocialGravity(profileId: string): Promise<number> {
+    const rows = await db.execute(sql`
+      SELECT COALESCE(SUM(orbit_stability), 0) AS gravity
+      FROM user_room_orbits WHERE profile_id = ${profileId}
+    `);
+    const raw = (rows.rows[0] as any)?.gravity ?? 0;
+    return Math.min(parseFloat(raw), 10); // cap at 10
   }
 }
 

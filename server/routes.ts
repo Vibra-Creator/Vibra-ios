@@ -2534,6 +2534,7 @@ ${urlEntries}
       // VibraDNA: traccia partecipazione a stanze (fire-and-forget)
       storage.trackDnaEvent(userProfile.id, 'room_join', 1).catch(() => {});
       storage.trackQuestProgress(userProfile.id, 'room_visit').catch(() => {});
+      storage.trackRoomOrbit(userProfile.id, req.params.id).catch(() => {});
       res.json({ success: true });
     } catch (error) {
       console.error("Error joining room:", error);
@@ -5718,6 +5719,28 @@ REGOLE:
       await storage.deactivateEclipse(profile.id);
       res.json({ active: false, until: null });
     } catch { res.status(500).json({ error: "Errore eclipse deactivate" }); }
+  });
+
+  // ── Pianeti ───────────────────────────────────────────────────────────────
+
+  app.get("/api/planets/my-orbits", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const orbits = await storage.getTopOrbits(profile.id, 5);
+      const gravity = await storage.getSocialGravity(profile.id);
+      res.json({ orbits, gravity });
+    } catch { res.status(500).json({ error: "Errore orbite" }); }
+  });
+
+  app.get("/api/planets/gravity/:profileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const gravity = await storage.getSocialGravity(req.params.profileId);
+      const orbits = await storage.getTopOrbits(req.params.profileId, 3);
+      res.json({ gravity, orbits });
+    } catch { res.status(500).json({ error: "Errore gravity" }); }
   });
 
   // ── VibraTime ─────────────────────────────────────────────────────────────

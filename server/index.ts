@@ -278,6 +278,22 @@ app.use((req, res, next) => {
     `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS user_activity_log_profile_idx ON user_activity_log(profile_id)`);
     console.log("[migration] Blocco 6 (VibraTime) tables ready");
+
+    // ── Blocco 7 — Pianeti ────────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_room_orbits (
+        id SERIAL PRIMARY KEY,
+        profile_id VARCHAR NOT NULL,
+        room_id VARCHAR NOT NULL,
+        visit_count INTEGER NOT NULL DEFAULT 1,
+        orbit_stability FLOAT NOT NULL DEFAULT 0.1,
+        first_visit TIMESTAMP DEFAULT NOW(),
+        last_visit TIMESTAMP DEFAULT NOW(),
+        UNIQUE(profile_id, room_id)
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS user_room_orbits_profile_idx ON user_room_orbits(profile_id)`);
+    console.log("[migration] Blocco 7 (Pianeti) tables ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }

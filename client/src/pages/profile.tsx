@@ -244,6 +244,55 @@ function ReferralSection() {
   );
 }
 
+function PianeteCard({ profileId }: { profileId: string }) {
+  const { data, isLoading } = useQuery<{
+    orbits: Array<{ roomId: string; roomName: string; visitCount: number; orbitStability: number }>;
+    gravity: number;
+  }>({ queryKey: ["/api/planets/my-orbits"], staleTime: 60_000 });
+
+  if (isLoading) return null;
+  const orbits = data?.orbits ?? [];
+  const gravity = data?.gravity ?? 0;
+  if (!orbits.length) return null;
+
+  const gravityStars = Math.min(5, Math.round(gravity));
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="w-full rounded-2xl bg-gradient-to-br from-blue-900/20 to-indigo-900/15 border border-blue-500/15 p-4 mb-3">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🪐</span>
+          <span className="text-white/70 font-semibold text-sm">Le tue Orbite</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {[...Array(5)].map((_, i) => (
+            <span key={i} className={`text-xs ${i < gravityStars ? "text-yellow-400" : "text-white/20"}`}>⭐</span>
+          ))}
+          <span className="text-white/40 text-xs ml-1">gravità</span>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {orbits.map((o, i) => (
+          <div key={o.roomId} className="flex items-center gap-2">
+            <span className="text-white/40 text-xs w-4">{i + 1}.</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-center mb-0.5">
+                <span className="text-white/70 text-xs truncate">{o.roomName}</span>
+                <span className="text-white/40 text-xs shrink-0 ml-2">{o.visitCount}x</span>
+              </div>
+              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+                  style={{ width: `${Math.min(100, o.orbitStability * 100)}%` }} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 function BadgeSection({ profileId, profileName }: { profileId: string; profileName: string }) {
   const { toast } = useToast();
   const profileUrl = `${window.location.origin}/p/${profileId}`;
@@ -934,6 +983,8 @@ export default function ProfilePage() {
         <ReferralSection />
 
         <BadgeSection profileId={profile.id} profileName={profile.name} />
+
+        <PianeteCard profileId={profile.id} />
 
         <div className="space-y-2 w-full">
           <Button

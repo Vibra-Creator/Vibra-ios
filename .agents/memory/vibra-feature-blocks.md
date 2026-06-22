@@ -46,6 +46,16 @@ description: Stato di avanzamento dei blocchi funzionalità avanzate di Vibra (V
 - Label "attivo/a di sera" etc. mostrata in chat header (solo utenti reali)
 - Route: GET /api/time/my-pattern, GET /api/time/label/:profileId
 
+### Blocco 7 — Pianeti (room orbit system) + Momento Cosmico ✅
+- Tabella DB: `user_room_orbits` (profileId, roomId, visitCount, orbitStability 0.0–1.0, firstVisit, lastVisit)
+- trackRoomOrbit: upsert con orbit_stability += 0.05 per visita (max 1.0), fire-and-forget nel room-join hook
+- getTopOrbits(profileId, limit=5): JOINa rooms per nome; ordina per orbitStability desc
+- getSocialGravity(profileId): SUM(orbit_stability) cappato a 10
+- Route: GET /api/planets/my-orbits → { orbits, gravity }; GET /api/planets/gravity/:profileId
+- PianeteCard in profile.tsx: mostra top 5 stanze orbitate con barre progresso + stelle gravità (si nasconde se nessuna orbita)
+- Momento Cosmico banner in chat.tsx: banner ambra quando myActivityData.label === activityData.label (stesso picco orario condiviso)
+- Migrazione aggiunta in server/index.ts dopo Blocco 6
+
 ## Pattern tecnici consolidati
 - Upload media: `memoryUpload.single("field")` middleware → `objectStorageService.getObjectEntityUploadURL()` → PUT diretto → `trySetObjectEntityAclPolicy({ visibility: "public" })`
 - Migrazioni: `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` in server/index.ts al startup

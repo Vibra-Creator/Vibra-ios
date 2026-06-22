@@ -603,6 +603,18 @@ export const consentRequests = pgTable("consent_requests", {
 
 export type ConsentRequest = typeof consentRequests.$inferSelect;
 
+// ─── Pianeti — Room Orbit System ─────────────────────────────────────────────
+export const userRoomOrbits = pgTable("user_room_orbits", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  profileId: varchar("profile_id").notNull(),
+  roomId: varchar("room_id").notNull(),
+  visitCount: integer("visit_count").notNull().default(1),
+  orbitStability: doublePrecision("orbit_stability").notNull().default(0.1),
+  firstVisit: timestamp("first_visit").defaultNow(),
+  lastVisit: timestamp("last_visit").defaultNow(),
+});
+export type UserRoomOrbit = typeof userRoomOrbits.$inferSelect;
+
 // ─── VibraTime — Activity Log ─────────────────────────────────────────────────
 export const userActivityLog = pgTable("user_activity_log", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

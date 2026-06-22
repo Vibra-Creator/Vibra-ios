@@ -89,6 +89,16 @@ export default function Chat() {
     staleTime: 10 * 60 * 1000,
   });
 
+  const { data: myActivityData } = useQuery<{ label: string }>({
+    queryKey: ["/api/time/label", myProfile?.id],
+    enabled: !!myProfile?.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const isMomentoCosmico = !!activityData?.label && !!myActivityData?.label &&
+    activityData.label === myActivityData.label &&
+    activityData.label !== "attivo/a";
+
   const isRatingMatch = !!ratingData?.rating?.matchCreated;
   const otherHasReplied = messages.some(m => m.senderId === otherProfile?.id);
   const myMessageCount = messages.filter(m => m.senderId === myProfile?.id).length;
@@ -394,6 +404,17 @@ export default function Chat() {
           )}
         </div>
       </header>
+
+      {isMomentoCosmico && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="relative z-20 mx-4 mt-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/15 border border-amber-500/30 px-3 py-2 flex items-center gap-2">
+          <span className="text-base">⭐</span>
+          <div>
+            <p className="text-amber-300 text-xs font-semibold">Momento Cosmico!</p>
+            <p className="text-white/50 text-xs">Entrambi siete {activityData?.label?.replace("attivo/a ", "")} — ottimo momento per chattare.</p>
+          </div>
+        </motion.div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-20">
         {messagesLoading ? (
