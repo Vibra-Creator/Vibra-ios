@@ -21,14 +21,34 @@ description: Stato di avanzamento dei blocchi funzionalità avanzate di Vibra (V
 - Entry points: banner VibraStory in /rooms; pulsante VibraVault in /profile
 - Route frontend: /stories (lista), /story/:id (dettaglio), /vault (confessioni)
 
-## Blocchi rimanenti
-- Blocco 3: VibraQuest (missioni giornaliere gamificate) + VibraLegacy (profilo "after you")
-- Blocco 4: VibraMystery (profili anonimi a tempo) + VibraConsent (protocollo consenso esplicito)
-- Blocco 5: Costellazioni (gruppi di affinità) + Eclissi (timeout volontario)
+### Blocco 3 — VibraQuest + VibraLegacy ✅
+- VibraQuest: 5 missioni giornaliere (swipe_10, message_5, room_visit, signal_post, gift_send)
+- Quest tracking fire-and-forget in tutte le route rilevanti
+- Frontend: /quests page (vibraquests.tsx) con progress bar + claim ricompensa
+- VibraLegacy: messaggio "nell'universo" con reveal timer
+- Frontend: /legacy page (vibralegacy.tsx), bottone in profile.tsx
 
-**Why:** VibraVibe (voice ML) NON è fattibile nello stack Node.js attuale — omessa.
+### Blocco 4 — VibraMystery + VibraConsent ✅
+- VibraMystery: profilo anonimo temporaneo (mystery_mode_expires_at su profiles)
+- Toggle in profile.tsx (Fingerprint icon, pink)
+- VibraConsent: inbox richieste consenso (video_call, voice_message, photo_share, location_share)
+- ConsentInbox component inline in profile.tsx con badge count + expandable drawer
+
+### Blocco 5 — Costellazioni + Eclissi ✅
+- Costellazioni: 6 gruppi di affinità basati su DNA dominante (Esploratori/Narratori/Pionieri/Custodi/Guerrieri/Equilibrati)
+- Frontend: /constellations page (costellazioni.tsx), bottone in profile.tsx
+- Eclissi: pausa profilo temporanea (eclipse_until su profiles)
+- Toggle in profile.tsx (Moon icon, slate)
+
+### Blocco 6 — VibraLegacy UI + VibraConsent UI + VibraTime ✅
+- VibraTime: tabella `user_activity_log` (profileId, hour, dayOfWeek, count)
+- Activity logging fire-and-forget su ogni /api/profiles/me
+- Label "attivo/a di sera" etc. mostrata in chat header (solo utenti reali)
+- Route: GET /api/time/my-pattern, GET /api/time/label/:profileId
 
 ## Pattern tecnici consolidati
 - Upload media: `memoryUpload.single("field")` middleware → `objectStorageService.getObjectEntityUploadURL()` → PUT diretto → `trySetObjectEntityAclPolicy({ visibility: "public" })`
 - Migrazioni: `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` in server/index.ts al startup
 - AI async: fire-and-forget con `.then().catch()` per non bloccare la response
+- VibraVibe (voice ML) NON è fattibile nello stack Node.js attuale — omessa
+- Profile.tsx buttons order: VibraVault → VibraQuest → Costellazioni → VibraLegacy → ConsentInbox → VibraMystery toggle → Eclissi toggle → Ghost toggle → Edit → Guide → Push → Settings

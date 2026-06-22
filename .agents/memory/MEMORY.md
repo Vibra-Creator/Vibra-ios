@@ -1,2 +1,3 @@
 - [Vibra Feature Blocks](vibra-feature-blocks.md) — blocchi funzionalità completati e quelli rimanenti da implementare
 - [Quest Tracking Hooks](quest-tracking.md) — fire-and-forget trackQuestProgress hooks added in swipe/message/room/signals/gift routes
+- [Blocco 6 Completato](blocco6.md) — VibraLegacy page, VibraConsent inbox, VibraTime schema+storage+routes+chat UI

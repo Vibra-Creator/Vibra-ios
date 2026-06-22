@@ -264,6 +264,20 @@ app.use((req, res, next) => {
     await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS eclipse_until TIMESTAMP`);
     await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS constellation VARCHAR(64)`);
     console.log("[migration] Blocco 3-5 tables ready");
+
+    // ── Blocco 6 — VibraTime ────────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_activity_log (
+        id SERIAL PRIMARY KEY,
+        profile_id VARCHAR NOT NULL,
+        hour INTEGER NOT NULL,
+        day_of_week INTEGER NOT NULL,
+        count INTEGER NOT NULL DEFAULT 1,
+        UNIQUE(profile_id, hour, day_of_week)
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS user_activity_log_profile_idx ON user_activity_log(profile_id)`);
+    console.log("[migration] Blocco 6 (VibraTime) tables ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }

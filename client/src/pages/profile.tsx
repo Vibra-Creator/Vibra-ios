@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint, BookMarked, ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -461,6 +461,76 @@ function ChangePasswordDialog() {
   );
 }
 
+function ConsentInbox() {
+  const { toast } = useToast();
+  const { data: consents = [], refetch } = useQuery<Array<{
+    id: string; fromProfileId: string; contentType: string; message: string | null; createdAt: string;
+  }>>({ queryKey: ["/api/consent"], staleTime: 60_000 });
+
+  const respondMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'accepted' | 'declined' }) =>
+      apiRequest("POST", `/api/consent/${id}/respond`, { status }),
+    onSuccess: () => { refetch(); queryClient.invalidateQueries({ queryKey: ["/api/consent"] }); },
+  });
+
+  const CONTENT_LABELS: Record<string, string> = {
+    video_call: "📹 Video chiamata", voice_message: "🎤 Messaggio vocale",
+    photo_share: "📷 Foto", location_share: "📍 Posizione",
+  };
+
+  const [open, setOpen] = useState(false);
+
+  if (!consents.length) return (
+    <Button variant="outline" className="w-full justify-start gap-3 text-base h-12 text-white/40 border-white/10 cursor-default" disabled>
+      <ShieldCheck className="w-5 h-5" />
+      VibraConsent — Nessuna richiesta
+    </Button>
+  );
+
+  return (
+    <>
+      <Button variant="outline"
+        className="w-full justify-start gap-3 text-base h-12 border-green-500/30 text-green-300 hover:bg-green-500/10 relative"
+        onClick={() => setOpen(true)} data-testid="button-consent-inbox">
+        <ShieldCheck className="w-5 h-5" />
+        VibraConsent — Richieste consenso
+        <Badge className="ml-auto bg-green-500 text-black text-xs h-5 min-w-[20px] rounded-full">
+          {consents.length}
+        </Badge>
+      </Button>
+      {open && (
+        <div className="rounded-2xl bg-black/60 border border-green-500/20 p-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-white/70 font-semibold text-sm">Richieste in attesa</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-white/40" onClick={() => setOpen(false)}><X className="w-4 h-4" /></Button>
+          </div>
+          {consents.map(c => (
+            <div key={c.id} className="rounded-xl bg-white/5 p-3 flex items-start gap-3" data-testid={`consent-item-${c.id}`}>
+              <div className="flex-1 min-w-0">
+                <p className="text-white/80 text-sm font-medium">{CONTENT_LABELS[c.contentType] ?? c.contentType}</p>
+                {c.message && <p className="text-white/50 text-xs mt-0.5 truncate">{c.message}</p>}
+                <p className="text-white/30 text-xs mt-1">{new Date(c.createdAt).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <Button size="icon" className="h-8 w-8 bg-green-500/20 hover:bg-green-500/40 text-green-400 border-0"
+                  onClick={() => respondMutation.mutate({ id: c.id, status: 'accepted' })}
+                  disabled={respondMutation.isPending} data-testid={`button-accept-consent-${c.id}`}>
+                  <CheckCircle2 className="w-4 h-4" />
+                </Button>
+                <Button size="icon" className="h-8 w-8 bg-red-500/20 hover:bg-red-500/40 text-red-400 border-0"
+                  onClick={() => { respondMutation.mutate({ id: c.id, status: 'declined' }); toast({ title: "Richiesta rifiutata" }); }}
+                  disabled={respondMutation.isPending} data-testid={`button-decline-consent-${c.id}`}>
+                  <XCircle className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function ProfilePage() {
   const [, setLocation] = useLocation();
   const { user, logout, isLoggingOut } = useAuth();
@@ -897,6 +967,20 @@ export default function ProfilePage() {
             <Star className="w-5 h-5" />
             Costellazioni — Il tuo gruppo cosmico
           </Button>
+
+          {/* VibraLegacy */}
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 text-base h-12 border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
+            onClick={() => setLocation("/legacy")}
+            data-testid="button-vibralegacy"
+          >
+            <BookMarked className="w-5 h-5" />
+            VibraLegacy — Messaggio nell'universo
+          </Button>
+
+          {/* VibraConsent badge */}
+          <ConsentInbox />
 
           {/* VibraMystery Toggle */}
           {mysteryStatus !== undefined && (

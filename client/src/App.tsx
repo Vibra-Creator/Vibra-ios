@@ -44,6 +44,7 @@ const VibraStory = lazy(() => import("@/pages/vibrastory"));
 const VibraVault = lazy(() => import("@/pages/vibravault"));
 const VibraQuests = lazy(() => import("@/pages/vibraquests"));
 const Costellazioni = lazy(() => import("@/pages/costellazioni"));
+const VibraLegacyPage = lazy(() => import("@/pages/vibralegacy"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -149,6 +150,7 @@ function AuthenticatedRouter() {
       <Route path="/vault" component={VibraVault} />
       <Route path="/quests" component={VibraQuests} />
       <Route path="/constellations" component={Costellazioni} />
+      <Route path="/legacy" component={VibraLegacyPage} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
       <Route path="/reels" component={Reels} />

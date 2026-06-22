@@ -255,6 +255,11 @@ export interface IStorage {
   activateEclipse(profileId: string, days: number): Promise<Date>;
   deactivateEclipse(profileId: string): Promise<void>;
   getEclipseStatus(profileId: string): Promise<{ active: boolean; until: Date | null }>;
+
+  // VibraTime
+  logActivity(profileId: string): Promise<void>;
+  getActivityPattern(profileId: string): Promise<Array<{ hour: number; dayOfWeek: number; count: number }>>;
+  getActivityLabel(profileId: string): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1967,7 +1972,42 @@ export class DatabaseStorage implements IStorage {
     const r = rows.rows[0] as any;
     const until = r?.eclipse_until;
     const active = !!until && new Date(until) > new Date();
+    // NOTE: keep this method complete — do not truncate
     return { active, until: active ? until : null };
+  }
+
+  // ── VibraTime ─────────────────────────────────────────────────────────────
+
+  async logActivity(profileId: string): Promise<void> {
+    const now = new Date();
+    const hour = now.getHours();
+    const dayOfWeek = now.getDay();
+    await db.execute(sql`
+      INSERT INTO user_activity_log (profile_id, hour, day_of_week, count)
+      VALUES (${profileId}, ${hour}, ${dayOfWeek}, 1)
+      ON CONFLICT (profile_id, hour, day_of_week)
+      DO UPDATE SET count = user_activity_log.count + 1
+    `);
+  }
+
+  async getActivityPattern(profileId: string): Promise<Array<{ hour: number; dayOfWeek: number; count: number }>> {
+    const rows = await db.execute(sql`
+      SELECT hour, day_of_week, count FROM user_activity_log
+      WHERE profile_id = ${profileId}
+      ORDER BY count DESC LIMIT 20
+    `);
+    return (rows.rows as any[]).map(r => ({ hour: r.hour, dayOfWeek: r.day_of_week, count: r.count }));
+  }
+
+  async getActivityLabel(profileId: string): Promise<string> {
+    const pattern = await this.getActivityPattern(profileId);
+    if (!pattern.length) return "attivo/a";
+    const topHour = pattern[0].hour;
+    if (topHour >= 6 && topHour < 12) return "attivo/a al mattino";
+    if (topHour >= 12 && topHour < 15) return "attivo/a a pranzo";
+    if (topHour >= 15 && topHour < 19) return "attivo/a nel pomeriggio";
+    if (topHour >= 19 && topHour < 23) return "attivo/a di sera";
+    return "attivo/a di notte";
   }
 }
 

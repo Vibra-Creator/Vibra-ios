@@ -602,4 +602,14 @@ export const consentRequests = pgTable("consent_requests", {
 });
 
 export type ConsentRequest = typeof consentRequests.$inferSelect;
+
+// ─── VibraTime — Activity Log ─────────────────────────────────────────────────
+export const userActivityLog = pgTable("user_activity_log", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  profileId: varchar("profile_id").notNull(),
+  hour: integer("hour").notNull(),
+  dayOfWeek: integer("day_of_week").notNull(),
+  count: integer("count").notNull().default(1),
+});
+export type UserActivityLog = typeof userActivityLog.$inferSelect;
 // ─────────────────────────────────────────────────────────────────────────────

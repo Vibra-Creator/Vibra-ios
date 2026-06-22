@@ -440,6 +440,7 @@ ${urlEntries}
           db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, profile.id)).execute().catch(() => {});
         }
         console.log(`[/api/profiles/me] userId=${userId} profileId=${profile.id} points=${profile.points}`);
+        storage.logActivity(profile.id).catch(() => {});
       } else {
         console.log(`[/api/profiles/me] userId=${userId} NO PROFILE FOUND`);
       }
@@ -5717,6 +5718,27 @@ REGOLE:
       await storage.deactivateEclipse(profile.id);
       res.json({ active: false, until: null });
     } catch { res.status(500).json({ error: "Errore eclipse deactivate" }); }
+  });
+
+  // ── VibraTime ─────────────────────────────────────────────────────────────
+
+  app.get("/api/time/my-pattern", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const pattern = await storage.getActivityPattern(profile.id);
+      const label = await storage.getActivityLabel(profile.id);
+      res.json({ pattern, label });
+    } catch { res.status(500).json({ error: "Errore pattern" }); }
+  });
+
+  app.get("/api/time/label/:profileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const label = await storage.getActivityLabel(req.params.profileId);
+      res.json({ label });
+    } catch { res.status(500).json({ error: "Errore label" }); }
   });
 
   // ─────────────────────────────────────────────────────────────────────────────

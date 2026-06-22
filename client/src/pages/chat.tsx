@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Check, CheckCheck, Gift, Star, Heart, Sparkles, Ban, MoreVertical, Flag, UserX } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, Gift, Star, Heart, Sparkles, Ban, MoreVertical, Flag, UserX, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -82,6 +82,12 @@ export default function Chat() {
 
   const currentMatch = matches?.find(m => m.id === matchId);
   const otherProfile = currentMatch?.profile;
+
+  const { data: activityData } = useQuery<{ label: string }>({
+    queryKey: ["/api/time/label", otherProfile?.id],
+    enabled: !!otherProfile?.id && !otherProfile?.isBot,
+    staleTime: 10 * 60 * 1000,
+  });
 
   const isRatingMatch = !!ratingData?.rating?.matchCreated;
   const otherHasReplied = messages.some(m => m.senderId === otherProfile?.id);
@@ -313,7 +319,15 @@ export default function Chat() {
             </Avatar>
             <div>
               <h2 className="font-semibold text-white">{otherProfile.name}</h2>
-              <p className="text-xs text-white/60">{otherProfile.alienType}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-white/60">{otherProfile.alienType}</p>
+                {activityData?.label && !otherProfile.isBot && (
+                  <span className="flex items-center gap-0.5 text-xs text-cyan-400/70">
+                    <Clock className="w-3 h-3" />
+                    {activityData.label}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
