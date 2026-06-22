@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -606,6 +606,36 @@ export default function ProfilePage() {
     },
   });
 
+  const { data: mysteryStatus, refetch: refetchMystery } = useQuery<{ active: boolean; expiresAt: string | null }>({
+    queryKey: ["/api/mystery/status"],
+    enabled: !!profile && !isGuest,
+    staleTime: 30 * 1000,
+  });
+
+  const mysteryActivateMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/mystery/activate", { hours: 24 }),
+    onSuccess: () => { refetchMystery(); toast({ title: "🎭 Modalità Mistero attiva", description: "Gli altri vedono solo un alias per 24 ore." }); },
+  });
+  const mysteryDeactivateMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/mystery/deactivate"),
+    onSuccess: () => { refetchMystery(); toast({ title: "🎭 Modalità Mistero disattivata" }); },
+  });
+
+  const { data: eclipseStatus, refetch: refetchEclipse } = useQuery<{ active: boolean; until: string | null }>({
+    queryKey: ["/api/eclipse/status"],
+    enabled: !!profile && !isGuest,
+    staleTime: 30 * 1000,
+  });
+
+  const eclipseActivateMutation = useMutation({
+    mutationFn: (days: number) => apiRequest("POST", "/api/eclipse/activate", { days }),
+    onSuccess: () => { refetchEclipse(); toast({ title: "🌑 Eclissi attivata", description: "Il tuo profilo è in pausa." }); },
+  });
+  const eclipseDeactivateMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/eclipse/deactivate"),
+    onSuccess: () => { refetchEclipse(); toast({ title: "🌕 Eclissi terminata", description: "Sei tornato nella galassia!" }); },
+  });
+
   const [selectedReactionProfileId, setSelectedReactionProfileId] = useState<string | null>(null);
 
   type ReceivedReaction = { id: string; reaction: string; createdAt: string; fromProfile: { id: string; name: string; imageUrl: string; age: number } };
@@ -845,6 +875,77 @@ export default function ProfilePage() {
             <Lock className="w-5 h-5" />
             VibraVault — Confessioni Segrete
           </Button>
+
+          {/* VibraQuest */}
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 text-base h-12 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+            onClick={() => setLocation("/quests")}
+            data-testid="button-vibraquests"
+          >
+            <Zap className="w-5 h-5" />
+            VibraQuest — Missioni Giornaliere
+          </Button>
+
+          {/* Costellazioni */}
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 text-base h-12 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+            onClick={() => setLocation("/constellations")}
+            data-testid="button-costellazioni"
+          >
+            <Star className="w-5 h-5" />
+            Costellazioni — Il tuo gruppo cosmico
+          </Button>
+
+          {/* VibraMystery Toggle */}
+          {mysteryStatus !== undefined && (
+            <Button
+              variant="outline"
+              className={`w-full justify-start gap-3 text-base h-12 transition-colors ${mysteryStatus.active ? "text-pink-300 border-pink-400/40 bg-pink-900/20" : "text-white/70"}`}
+              onClick={() => {
+                if (mysteryStatus.active) mysteryDeactivateMutation.mutate();
+                else mysteryActivateMutation.mutate();
+              }}
+              disabled={mysteryActivateMutation.isPending || mysteryDeactivateMutation.isPending}
+              data-testid="button-mystery-mode"
+            >
+              <Fingerprint className="w-5 h-5" />
+              <span className="flex-1 text-left">
+                {mysteryStatus.active ? "🎭 Mistero attivo" : "🎭 VibraMystery"}
+              </span>
+              {mysteryStatus.active && mysteryStatus.expiresAt && (
+                <span className="text-xs text-pink-300/70 ml-auto">
+                  fino alle {new Date(mysteryStatus.expiresAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+            </Button>
+          )}
+
+          {/* Eclissi Toggle */}
+          {eclipseStatus !== undefined && (
+            <Button
+              variant="outline"
+              className={`w-full justify-start gap-3 text-base h-12 transition-colors ${eclipseStatus.active ? "text-slate-300 border-slate-400/40 bg-slate-900/30" : "text-white/70"}`}
+              onClick={() => {
+                if (eclipseStatus.active) eclipseDeactivateMutation.mutate();
+                else eclipseActivateMutation.mutate(3);
+              }}
+              disabled={eclipseActivateMutation.isPending || eclipseDeactivateMutation.isPending}
+              data-testid="button-eclipse-mode"
+            >
+              <Moon className="w-5 h-5" />
+              <span className="flex-1 text-left">
+                {eclipseStatus.active ? "🌑 Eclissi attiva (pausa)" : "🌑 VibraEclissi"}
+              </span>
+              {eclipseStatus.active && eclipseStatus.until && (
+                <span className="text-xs text-slate-300/70 ml-auto">
+                  fino al {new Date(eclipseStatus.until).toLocaleDateString("it-IT", { day: "numeric", month: "short" })}
+                </span>
+              )}
+            </Button>
+          )}
+
           <Button 
             variant="outline" 
             className="w-full justify-start gap-3 text-base h-12"

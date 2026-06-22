@@ -42,6 +42,8 @@ const Reels = lazy(() => import("@/pages/reels"));
 const Blog = lazy(() => import("@/pages/blog"));
 const VibraStory = lazy(() => import("@/pages/vibrastory"));
 const VibraVault = lazy(() => import("@/pages/vibravault"));
+const VibraQuests = lazy(() => import("@/pages/vibraquests"));
+const Costellazioni = lazy(() => import("@/pages/costellazioni"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -145,6 +147,8 @@ function AuthenticatedRouter() {
       <Route path="/stories" component={VibraStory} />
       <Route path="/story/:id" component={VibraStory} />
       <Route path="/vault" component={VibraVault} />
+      <Route path="/quests" component={VibraQuests} />
+      <Route path="/constellations" component={Costellazioni} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
       <Route path="/reels" component={Reels} />

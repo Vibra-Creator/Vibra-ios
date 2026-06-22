@@ -560,4 +560,46 @@ export const dnaEvents = pgTable("dna_events", {
 });
 
 export type DnaEvent = typeof dnaEvents.$inferSelect;
+
+// ─── VibraQuest ───────────────────────────────────────────────────────────────
+export const userQuests = pgTable("user_quests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  questType: varchar("quest_type", { length: 32 }).notNull(),
+  progress: integer("progress").notNull().default(0),
+  target: integer("target").notNull().default(1),
+  completed: boolean("completed").notNull().default(false),
+  claimed: boolean("claimed").notNull().default(false),
+  pointsReward: integer("points_reward").notNull().default(10),
+  date: varchar("date", { length: 10 }).notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export type UserQuest = typeof userQuests.$inferSelect;
+
+// ─── VibraLegacy ─────────────────────────────────────────────────────────────
+export const vibraLegacies = pgTable("vibra_legacies", {
+  profileId: varchar("profile_id").primaryKey(),
+  message: text("message").notNull(),
+  mediaUrl: text("media_url"),
+  revealAfterDays: integer("reveal_after_days").notNull().default(30),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type VibraLegacy = typeof vibraLegacies.$inferSelect;
+
+// ─── VibraConsent ─────────────────────────────────────────────────────────────
+export const consentRequests = pgTable("consent_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromProfileId: varchar("from_profile_id").notNull(),
+  toProfileId: varchar("to_profile_id").notNull(),
+  contentType: varchar("content_type", { length: 32 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("pending"),
+  message: text("message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
+});
+
+export type ConsentRequest = typeof consentRequests.$inferSelect;
 // ─────────────────────────────────────────────────────────────────────────────

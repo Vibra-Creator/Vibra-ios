@@ -221,6 +221,49 @@ app.use((req, res, next) => {
     `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS vault_confessions_profile_idx ON vault_confessions(profile_id)`);
     console.log("[migration] VibraStory + VibraVault tables ready");
+
+    // ── Blocco 3-5 ────────────────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_quests (
+        id VARCHAR PRIMARY KEY,
+        profile_id VARCHAR NOT NULL,
+        quest_type VARCHAR(32) NOT NULL,
+        progress INTEGER NOT NULL DEFAULT 0,
+        target INTEGER NOT NULL DEFAULT 1,
+        completed BOOLEAN NOT NULL DEFAULT FALSE,
+        claimed BOOLEAN NOT NULL DEFAULT FALSE,
+        points_reward INTEGER NOT NULL DEFAULT 10,
+        date VARCHAR(10) NOT NULL,
+        completed_at TIMESTAMP,
+        UNIQUE(profile_id, quest_type, date)
+      )
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS vibra_legacies (
+        profile_id VARCHAR PRIMARY KEY,
+        message TEXT NOT NULL,
+        media_url TEXT,
+        reveal_after_days INTEGER NOT NULL DEFAULT 30,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS consent_requests (
+        id VARCHAR PRIMARY KEY,
+        from_profile_id VARCHAR NOT NULL,
+        to_profile_id VARCHAR NOT NULL,
+        content_type VARCHAR(32) NOT NULL,
+        status VARCHAR(16) NOT NULL DEFAULT 'pending',
+        message TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        responded_at TIMESTAMP
+      )
+    `);
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS mystery_mode_expires_at TIMESTAMP`);
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS eclipse_until TIMESTAMP`);
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS constellation VARCHAR(64)`);
+    console.log("[migration] Blocco 3-5 tables ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }

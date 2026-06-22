@@ -1307,6 +1307,7 @@ ${urlEntries}
       const swipe = await storage.createSwipe(validatedData);
       // VibraDNA: traccia evento swipe (fire-and-forget)
       storage.trackDnaEvent(validatedData.swiperId, 'swipe', validatedData.liked ? 1 : 0).catch(() => {});
+      if (validatedData.liked) storage.trackQuestProgress(validatedData.swiperId, 'swipe_10').catch(() => {});
       
       let match = false;
       let matchData = null;
@@ -2394,6 +2395,7 @@ ${urlEntries}
       });
       // VibraDNA: traccia lunghezza messaggio e tempo di risposta (fire-and-forget)
       storage.trackDnaEvent(userProfile.id, 'message', filteredContent.length).catch(() => {});
+      storage.trackQuestProgress(userProfile.id, 'message_5').catch(() => {});
       res.status(201).json(message);
 
       const otherProfileId = match.profile1Id === userProfile.id ? match.profile2Id : match.profile1Id;
@@ -2530,6 +2532,7 @@ ${urlEntries}
       await storage.joinRoom(req.params.id, userProfile.id);
       // VibraDNA: traccia partecipazione a stanze (fire-and-forget)
       storage.trackDnaEvent(userProfile.id, 'room_join', 1).catch(() => {});
+      storage.trackQuestProgress(userProfile.id, 'room_visit').catch(() => {});
       res.json({ success: true });
     } catch (error) {
       console.error("Error joining room:", error);
@@ -3109,6 +3112,7 @@ REGOLE:
         receiverId,
         message,
       });
+      storage.trackQuestProgress(userProfile.id, 'gift_send').catch(() => {});
 
       res.status(201).json(sentGift);
     } catch (error) {
@@ -4976,6 +4980,9 @@ REGOLE:
         textColor: textColor || null,
         backgroundColor: backgroundColor || null,
       });
+      // VibraQuest tracking
+      const _sigUserId = req.user?.claims?.sub || req.session?.userId;
+      if (_sigUserId) { const _sigP = await storage.getProfileByUserId(_sigUserId).catch(() => null); if (_sigP) storage.trackQuestProgress(_sigP.id, 'signal_post').catch(() => {}); }
       res.json(signal);
     } catch (err) {
       console.error("[signals] create error:", err);
@@ -5506,6 +5513,210 @@ REGOLE:
       await storage.deleteVaultConfession(req.params.id, profile.id);
       res.json({ ok: true });
     } catch { res.status(500).json({ error: "Errore nella cancellazione" }); }
+  });
+
+  // ── VibraQuest ──────────────────────────────────────────────────────────────
+
+  app.get("/api/quests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const quests = await storage.getDailyQuests(profile.id);
+      res.json(quests);
+    } catch { res.status(500).json({ error: "Errore quests" }); }
+  });
+
+  app.post("/api/quests/:id/claim", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const result = await storage.claimQuestReward(req.params.id, profile.id);
+      res.json(result);
+    } catch (e: any) { res.status(400).json({ error: e.message || "Errore claim" }); }
+  });
+
+  // ── VibraLegacy ─────────────────────────────────────────────────────────────
+
+  app.get("/api/legacy", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const legacy = await storage.getLegacy(profile.id);
+      res.json(legacy ?? null);
+    } catch { res.status(500).json({ error: "Errore legacy" }); }
+  });
+
+  app.post("/api/legacy", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const { message, revealAfterDays } = req.body;
+      if (!message?.trim()) return res.status(400).json({ error: "Il messaggio è obbligatorio" });
+      const legacy = await storage.saveLegacy(profile.id, {
+        message: message.trim(),
+        revealAfterDays: parseInt(revealAfterDays ?? "30") || 30,
+      });
+      res.json(legacy);
+    } catch { res.status(500).json({ error: "Errore salvataggio legacy" }); }
+  });
+
+  app.delete("/api/legacy", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      await storage.deleteLegacy(profile.id);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore eliminazione legacy" }); }
+  });
+
+  // ── VibraMystery ─────────────────────────────────────────────────────────────
+
+  app.get("/api/mystery/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      res.json(await storage.getMysteryStatus(profile.id));
+    } catch { res.status(500).json({ error: "Errore mystery status" }); }
+  });
+
+  app.post("/api/mystery/activate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const hours = parseInt(req.body.hours ?? "24") || 24;
+      const expiresAt = await storage.setMysteryMode(profile.id, Math.min(hours, 72));
+      res.json({ active: true, expiresAt });
+    } catch { res.status(500).json({ error: "Errore mystery activate" }); }
+  });
+
+  app.post("/api/mystery/deactivate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      await storage.deactivateMysteryMode(profile.id);
+      res.json({ active: false, expiresAt: null });
+    } catch { res.status(500).json({ error: "Errore mystery deactivate" }); }
+  });
+
+  // ── VibraConsent ─────────────────────────────────────────────────────────────
+
+  app.get("/api/consent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      res.json(await storage.getPendingConsents(profile.id));
+    } catch { res.status(500).json({ error: "Errore consent" }); }
+  });
+
+  app.post("/api/consent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const { toProfileId, contentType, message } = req.body;
+      if (!toProfileId || !contentType) return res.status(400).json({ error: "Dati mancanti" });
+      const req_ = await storage.sendConsentRequest(profile.id, toProfileId, contentType, message);
+      res.json(req_);
+    } catch { res.status(500).json({ error: "Errore invio consenso" }); }
+  });
+
+  app.post("/api/consent/:id/respond", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const { status } = req.body;
+      if (!["accepted", "declined"].includes(status)) return res.status(400).json({ error: "Status non valido" });
+      await storage.respondConsentRequest(req.params.id, profile.id, status);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore risposta consenso" }); }
+  });
+
+  // ── Costellazioni ─────────────────────────────────────────────────────────────
+
+  app.get("/api/constellation", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      let constellation = await storage.getMyConstellation(profile.id);
+      if (!constellation) {
+        const name = await storage.assignConstellation(profile.id);
+        constellation = await storage.getMyConstellation(profile.id);
+      }
+      if (!constellation) return res.status(404).json({ error: "Costellazione non assegnata" });
+      const members = await storage.getConstellationMembers(constellation.name);
+      res.json({ constellation, members });
+    } catch { res.status(500).json({ error: "Errore costellazione" }); }
+  });
+
+  app.post("/api/constellation/reassign", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const name = await storage.assignConstellation(profile.id);
+      const constellation = await storage.getMyConstellation(profile.id);
+      const members = await storage.getConstellationMembers(name);
+      res.json({ constellation, members });
+    } catch { res.status(500).json({ error: "Errore riassegnazione" }); }
+  });
+
+  // ── Eclissi ──────────────────────────────────────────────────────────────────
+
+  app.get("/api/eclipse/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      res.json(await storage.getEclipseStatus(profile.id));
+    } catch { res.status(500).json({ error: "Errore eclipse status" }); }
+  });
+
+  app.post("/api/eclipse/activate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const days = Math.min(parseInt(req.body.days ?? "1") || 1, 7);
+      const until = await storage.activateEclipse(profile.id, days);
+      res.json({ active: true, until });
+    } catch { res.status(500).json({ error: "Errore eclipse activate" }); }
+  });
+
+  app.post("/api/eclipse/deactivate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      await storage.deactivateEclipse(profile.id);
+      res.json({ active: false, until: null });
+    } catch { res.status(500).json({ error: "Errore eclipse deactivate" }); }
   });
 
   // ─────────────────────────────────────────────────────────────────────────────

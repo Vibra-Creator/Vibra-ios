@@ -225,6 +225,36 @@ export interface IStorage {
   createVaultConfession(data: { profileId: string; content: string; mediaUrl?: string; ttlDays: number }): Promise<VaultConfession>;
   deleteVaultConfession(id: string, profileId: string): Promise<void>;
   cleanExpiredVaultConfessions(): Promise<void>;
+
+  // VibraQuest
+  getDailyQuests(profileId: string): Promise<UserQuest[]>;
+  trackQuestProgress(profileId: string, questType: string, increment?: number): Promise<void>;
+  claimQuestReward(questId: string, profileId: string): Promise<{ points: number }>;
+
+  // VibraLegacy
+  getLegacy(profileId: string): Promise<VibraLegacy | undefined>;
+  saveLegacy(profileId: string, data: { message: string; mediaUrl?: string; revealAfterDays: number }): Promise<VibraLegacy>;
+  deleteLegacy(profileId: string): Promise<void>;
+
+  // VibraMystery
+  setMysteryMode(profileId: string, hours: number): Promise<Date>;
+  deactivateMysteryMode(profileId: string): Promise<void>;
+  getMysteryStatus(profileId: string): Promise<{ active: boolean; expiresAt: Date | null }>;
+
+  // VibraConsent
+  getPendingConsents(profileId: string): Promise<ConsentRequest[]>;
+  sendConsentRequest(from: string, to: string, contentType: string, message?: string): Promise<ConsentRequest>;
+  respondConsentRequest(id: string, profileId: string, status: 'accepted' | 'declined'): Promise<void>;
+
+  // Costellazioni
+  getMyConstellation(profileId: string): Promise<{ name: string; color: string; description: string; memberCount: number } | null>;
+  assignConstellation(profileId: string): Promise<string>;
+  getConstellationMembers(name: string, limit?: number): Promise<Array<{ id: string; name: string; imageUrl: string | null; age: number | null }>>;
+
+  // Eclissi
+  activateEclipse(profileId: string, days: number): Promise<Date>;
+  deactivateEclipse(profileId: string): Promise<void>;
+  getEclipseStatus(profileId: string): Promise<{ active: boolean; until: Date | null }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1740,6 +1770,204 @@ export class DatabaseStorage implements IStorage {
       UPDATE vault_confessions SET deleted_at = NOW()
       WHERE expires_at < NOW() AND deleted_at IS NULL
     `);
+  }
+
+  // ── VibraQuest ────────────────────────────────────────────────────────────
+
+  private readonly QUEST_DEFINITIONS = [
+    { type: 'swipe_10',     title: 'Gravitazione Cosmica',  desc: 'Esplora 10 profili',          target: 10, points: 10 },
+    { type: 'message_5',   title: 'Connessioni Stellari',   desc: 'Invia 5 messaggi',            target: 5,  points: 15 },
+    { type: 'room_visit',  title: 'Esplora il Cosmo',       desc: 'Visita una stanza',           target: 1,  points: 10 },
+    { type: 'signal_post', title: 'Segnale Cosmico',        desc: 'Pubblica un Cosmic Signal',   target: 1,  points: 15 },
+    { type: 'gift_send',   title: 'Regalo Alieno',          desc: 'Invia un regalo virtuale',    target: 1,  points: 15 },
+  ] as const;
+
+  async getDailyQuests(profileId: string): Promise<UserQuest[]> {
+    const today = new Date().toISOString().slice(0, 10);
+    // ensure all quests exist for today
+    for (const q of this.QUEST_DEFINITIONS) {
+      await db.execute(sql`
+        INSERT INTO user_quests (id, profile_id, quest_type, progress, target, completed, claimed, points_reward, date)
+        VALUES (${randomUUID()}, ${profileId}, ${q.type}, 0, ${q.target}, FALSE, FALSE, ${q.points}, ${today})
+        ON CONFLICT (profile_id, quest_type, date) DO NOTHING
+      `);
+    }
+    const rows = await db.execute(sql`
+      SELECT * FROM user_quests WHERE profile_id = ${profileId} AND date = ${today} ORDER BY points_reward DESC
+    `);
+    return (rows.rows as any[]).map(r => ({
+      id: r.id, profileId: r.profile_id, questType: r.quest_type,
+      progress: r.progress, target: r.target, completed: r.completed, claimed: r.claimed,
+      pointsReward: r.points_reward, date: r.date, completedAt: r.completed_at,
+    }));
+  }
+
+  async trackQuestProgress(profileId: string, questType: string, increment = 1): Promise<void> {
+    const today = new Date().toISOString().slice(0, 10);
+    await db.execute(sql`
+      UPDATE user_quests
+      SET progress = LEAST(progress + ${increment}, target),
+          completed = CASE WHEN progress + ${increment} >= target THEN TRUE ELSE completed END,
+          completed_at = CASE WHEN progress + ${increment} >= target AND completed = FALSE THEN NOW() ELSE completed_at END
+      WHERE profile_id = ${profileId} AND quest_type = ${questType} AND date = ${today} AND completed = FALSE
+    `);
+  }
+
+  async claimQuestReward(questId: string, profileId: string): Promise<{ points: number }> {
+    const rows = await db.execute(sql`
+      SELECT * FROM user_quests WHERE id = ${questId} AND profile_id = ${profileId}
+    `);
+    const q = rows.rows[0] as any;
+    if (!q || !q.completed || q.claimed) throw new Error("Quest non disponibile per il claim");
+    await db.execute(sql`UPDATE user_quests SET claimed = TRUE WHERE id = ${questId}`);
+    await db.execute(sql`UPDATE profiles SET points = COALESCE(points, 0) + ${q.points_reward} WHERE id = ${profileId}`);
+    return { points: q.points_reward };
+  }
+
+  // ── VibraLegacy ──────────────────────────────────────────────────────────
+
+  async getLegacy(profileId: string): Promise<VibraLegacy | undefined> {
+    const rows = await db.execute(sql`SELECT * FROM vibra_legacies WHERE profile_id = ${profileId}`);
+    const r = rows.rows[0] as any;
+    if (!r) return undefined;
+    return { profileId: r.profile_id, message: r.message, mediaUrl: r.media_url, revealAfterDays: r.reveal_after_days, createdAt: r.created_at, updatedAt: r.updated_at };
+  }
+
+  async saveLegacy(profileId: string, data: { message: string; mediaUrl?: string; revealAfterDays: number }): Promise<VibraLegacy> {
+    await db.execute(sql`
+      INSERT INTO vibra_legacies (profile_id, message, media_url, reveal_after_days, created_at, updated_at)
+      VALUES (${profileId}, ${data.message}, ${data.mediaUrl ?? null}, ${data.revealAfterDays}, NOW(), NOW())
+      ON CONFLICT (profile_id) DO UPDATE SET
+        message = ${data.message}, media_url = ${data.mediaUrl ?? null},
+        reveal_after_days = ${data.revealAfterDays}, updated_at = NOW()
+    `);
+    return (await this.getLegacy(profileId))!;
+  }
+
+  async deleteLegacy(profileId: string): Promise<void> {
+    await db.execute(sql`DELETE FROM vibra_legacies WHERE profile_id = ${profileId}`);
+  }
+
+  // ── VibraMystery ──────────────────────────────────────────────────────────
+
+  async setMysteryMode(profileId: string, hours: number): Promise<Date> {
+    const expiresAt = new Date(Date.now() + hours * 3_600_000);
+    await db.execute(sql`UPDATE profiles SET mystery_mode_expires_at = ${expiresAt} WHERE id = ${profileId}`);
+    return expiresAt;
+  }
+
+  async deactivateMysteryMode(profileId: string): Promise<void> {
+    await db.execute(sql`UPDATE profiles SET mystery_mode_expires_at = NULL WHERE id = ${profileId}`);
+  }
+
+  async getMysteryStatus(profileId: string): Promise<{ active: boolean; expiresAt: Date | null }> {
+    const rows = await db.execute(sql`SELECT mystery_mode_expires_at FROM profiles WHERE id = ${profileId}`);
+    const r = rows.rows[0] as any;
+    if (!r) return { active: false, expiresAt: null };
+    const expiresAt = r.mystery_mode_expires_at;
+    const active = !!expiresAt && new Date(expiresAt) > new Date();
+    return { active, expiresAt: active ? expiresAt : null };
+  }
+
+  // ── VibraConsent ─────────────────────────────────────────────────────────
+
+  async getPendingConsents(profileId: string): Promise<ConsentRequest[]> {
+    const rows = await db.execute(sql`
+      SELECT * FROM consent_requests WHERE to_profile_id = ${profileId} AND status = 'pending'
+      ORDER BY created_at DESC LIMIT 50
+    `);
+    return (rows.rows as any[]).map(r => ({
+      id: r.id, fromProfileId: r.from_profile_id, toProfileId: r.to_profile_id,
+      contentType: r.content_type, status: r.status, message: r.message,
+      createdAt: r.created_at, respondedAt: r.responded_at,
+    }));
+  }
+
+  async sendConsentRequest(from: string, to: string, contentType: string, message?: string): Promise<ConsentRequest> {
+    const id = randomUUID();
+    await db.execute(sql`
+      INSERT INTO consent_requests (id, from_profile_id, to_profile_id, content_type, status, message, created_at)
+      VALUES (${id}, ${from}, ${to}, ${contentType}, 'pending', ${message ?? null}, NOW())
+    `);
+    const rows = await db.execute(sql`SELECT * FROM consent_requests WHERE id = ${id}`);
+    const r = rows.rows[0] as any;
+    return { id: r.id, fromProfileId: r.from_profile_id, toProfileId: r.to_profile_id, contentType: r.content_type, status: r.status, message: r.message, createdAt: r.created_at, respondedAt: r.responded_at };
+  }
+
+  async respondConsentRequest(id: string, profileId: string, status: 'accepted' | 'declined'): Promise<void> {
+    await db.execute(sql`
+      UPDATE consent_requests SET status = ${status}, responded_at = NOW()
+      WHERE id = ${id} AND to_profile_id = ${profileId}
+    `);
+  }
+
+  // ── Costellazioni ─────────────────────────────────────────────────────────
+
+  private readonly CONSTELLATIONS = [
+    { name: 'Esploratori',  color: '#ef4444', description: 'Curiosi insaziabili pronti a scoprire nuove connessioni',   trait: 'engagement_depth'       },
+    { name: 'Narratori',    color: '#8b5cf6', description: 'Maestri delle parole che creano legami profondi',          trait: 'expressiveness'         },
+    { name: 'Pionieri',     color: '#3b82f6', description: 'Leader naturali che fanno la prima mossa',                 trait: 'social_initiative'      },
+    { name: 'Custodi',      color: '#22c55e', description: 'Cuori della community che tengono unito il gruppo',        trait: 'community_engagement'   },
+    { name: 'Guerrieri',    color: '#f59e0b', description: 'Spiriti competitivi che vivono ogni sfida al massimo',     trait: 'gamification_drive'     },
+    { name: 'Equilibrati',  color: '#06b6d4', description: 'Animi cosmici con un tocco di tutto',                      trait: 'balanced'               },
+  ];
+
+  async getMyConstellation(profileId: string): Promise<{ name: string; color: string; description: string; memberCount: number } | null> {
+    const rows = await db.execute(sql`SELECT constellation FROM profiles WHERE id = ${profileId}`);
+    const name = (rows.rows[0] as any)?.constellation;
+    if (!name) return null;
+    const def = this.CONSTELLATIONS.find(c => c.name === name);
+    if (!def) return null;
+    const countRows = await db.execute(sql`SELECT COUNT(*) as cnt FROM profiles WHERE constellation = ${name} AND is_bot = FALSE`);
+    const count = parseInt((countRows.rows[0] as any)?.cnt ?? '0');
+    return { name: def.name, color: def.color, description: def.description, memberCount: count };
+  }
+
+  async assignConstellation(profileId: string): Promise<string> {
+    const dna = await this.getDna(profileId);
+    const traits = ['engagement_depth', 'expressiveness', 'social_initiative', 'community_engagement', 'gamification_drive'];
+    const vals = traits.map(t => dna[t] ?? 0);
+    const max = Math.max(...vals);
+    const allSimilar = vals.every(v => Math.abs(v - max) < 0.15);
+    let name: string;
+    if (allSimilar) {
+      name = 'Equilibrati';
+    } else {
+      const idx = vals.indexOf(max);
+      const defs = ['Esploratori', 'Narratori', 'Pionieri', 'Custodi', 'Guerrieri'];
+      name = defs[idx];
+    }
+    await db.execute(sql`UPDATE profiles SET constellation = ${name} WHERE id = ${profileId}`);
+    return name;
+  }
+
+  async getConstellationMembers(name: string, limit = 20): Promise<Array<{ id: string; name: string; imageUrl: string | null; age: number | null }>> {
+    const rows = await db.execute(sql`
+      SELECT id, name, image_url, age FROM profiles
+      WHERE constellation = ${name} AND is_bot = FALSE AND ghost_mode_expires_at IS NULL
+      ORDER BY last_active_at DESC NULLS LAST LIMIT ${limit}
+    `);
+    return (rows.rows as any[]).map(r => ({ id: r.id, name: r.name, imageUrl: r.image_url, age: r.age }));
+  }
+
+  // ── Eclissi ──────────────────────────────────────────────────────────────
+
+  async activateEclipse(profileId: string, days: number): Promise<Date> {
+    const until = new Date(Date.now() + days * 86_400_000);
+    await db.execute(sql`UPDATE profiles SET eclipse_until = ${until} WHERE id = ${profileId}`);
+    return until;
+  }
+
+  async deactivateEclipse(profileId: string): Promise<void> {
+    await db.execute(sql`UPDATE profiles SET eclipse_until = NULL WHERE id = ${profileId}`);
+  }
+
+  async getEclipseStatus(profileId: string): Promise<{ active: boolean; until: Date | null }> {
+    const rows = await db.execute(sql`SELECT eclipse_until FROM profiles WHERE id = ${profileId}`);
+    const r = rows.rows[0] as any;
+    const until = r?.eclipse_until;
+    const active = !!until && new Date(until) > new Date();
+    return { active, until: active ? until : null };
   }
 }
 
