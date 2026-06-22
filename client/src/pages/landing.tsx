@@ -537,17 +537,17 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.07 }}
               >
-                <Card className={`bg-white/5 backdrop-blur-md border-white/10 h-full hover:bg-white/10 transition-all hover:border-white/20 ${index < 3 ? 'border-primary/20 bg-primary/5' : ''}`}>
+                <Card className={`bg-white/10 backdrop-blur-md border-white/15 h-full hover:bg-white/15 transition-all hover:border-white/30 ${index < 3 ? 'border-primary/25 bg-primary/10' : ''}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center`}>
-                        <feature.icon className="w-6 h-6 text-white" />
+                      <div className={`w-14 h-14 shrink-0 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg`}>
+                        <feature.icon className="w-7 h-7 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-white mb-1.5">
+                        <h3 className="text-xl font-bold text-white mb-2">
                           {feature.title}
                         </h3>
-                        <p className="text-white/50 text-sm leading-relaxed">
+                        <p className="text-white/70 text-base leading-relaxed">
                           {feature.description}
                         </p>
                       </div>
