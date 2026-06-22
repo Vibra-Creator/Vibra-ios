@@ -35,6 +35,8 @@ import {
   signalComments,
   deletedBotIds,
   vibrappDms,
+  userDna,
+  dnaEvents,
   type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
@@ -195,6 +197,17 @@ export interface IStorage {
 
   // Cold Messages
   deleteColdMessage(messageId: string, toProfileId: string): Promise<void>;
+
+  // VibraDNA
+  trackDnaEvent(profileId: string, eventType: string, value: number): Promise<void>;
+  computeAndStoreDna(profileId: string): Promise<Record<string, number>>;
+  getDna(profileId: string): Promise<Record<string, number>>;
+  getDnaCompatibility(profileId1: string, profileId2: string): Promise<{ score: number; label: string; details: Record<string, { mine: number; theirs: number; diff: number }> }>;
+
+  // VibraGhost
+  setGhostMode(profileId: string, hours: number): Promise<Date>;
+  deactivateGhostMode(profileId: string): Promise<void>;
+  getGhostStatus(profileId: string): Promise<{ active: boolean; expiresAt: Date | null }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1470,6 +1483,114 @@ export class DatabaseStorage implements IStorage {
       } as VibrappDm,
       unreadCount: unreadMap.get(r.other_id as string) ?? 0,
     }));
+  }
+
+  // ─── VibraDNA ───────────────────────────────────────────────────────────────
+  async trackDnaEvent(profileId: string, eventType: string, value: number): Promise<void> {
+    await db.insert(dnaEvents).values({ id: randomUUID(), profileId, eventType, value });
+    // Aggiorna DNA asincrono (fire-and-forget) ogni N eventi
+    this.computeAndStoreDna(profileId).catch(() => {});
+  }
+
+  async computeAndStoreDna(profileId: string): Promise<Record<string, number>> {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const events = await db.select().from(dnaEvents)
+      .where(and(eq(dnaEvents.profileId, profileId), gt(dnaEvents.createdAt, thirtyDaysAgo)));
+
+    const byType: Record<string, number[]> = {};
+    for (const ev of events) {
+      if (!byType[ev.eventType]) byType[ev.eventType] = [];
+      byType[ev.eventType].push(ev.value);
+    }
+
+    const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    const clamp = (v: number) => Math.min(1, Math.max(0, v));
+
+    const swipes = byType['swipe'] ?? [];
+    const likesRatio = swipes.length ? swipes.filter(v => v > 0).length / swipes.length : 0.5;
+
+    const msgs = byType['message'] ?? [];
+    const avgMsgLen = avg(msgs);
+    const expressiveness = clamp(avgMsgLen / 150);
+
+    const responseMs = byType['response_time'] ?? [];
+    const avgResp = avg(responseMs);
+    const socialInitiative = avgResp > 0 ? clamp(1 - avgResp / 3600000) : 0.5;
+
+    const roomJoins = byType['room_join'] ?? [];
+    const communityEngagement = clamp(roomJoins.length / 10);
+
+    const challenges = byType['challenge_complete'] ?? [];
+    const gamificationDrive = clamp(challenges.length / 5);
+
+    const vector: Record<string, number> = {
+      engagement_depth: clamp(likesRatio),
+      expressiveness: clamp(expressiveness),
+      social_initiative: clamp(socialInitiative),
+      community_engagement: clamp(communityEngagement),
+      gamification_drive: clamp(gamificationDrive),
+    };
+
+    await db.insert(userDna).values({ profileId, behaviorVector: JSON.stringify(vector) })
+      .onConflictDoUpdate({ target: userDna.profileId, set: { behaviorVector: JSON.stringify(vector), lastUpdated: new Date() } });
+
+    return vector;
+  }
+
+  async getDna(profileId: string): Promise<Record<string, number>> {
+    const [row] = await db.select().from(userDna).where(eq(userDna.profileId, profileId));
+    if (!row) return await this.computeAndStoreDna(profileId);
+    try { return JSON.parse(row.behaviorVector); } catch { return {}; }
+  }
+
+  async getDnaCompatibility(profileId1: string, profileId2: string) {
+    const [dna1, dna2] = await Promise.all([this.getDna(profileId1), this.getDna(profileId2)]);
+    const traits = ['engagement_depth', 'expressiveness', 'social_initiative', 'community_engagement', 'gamification_drive'];
+
+    let score = 0;
+    const details: Record<string, { mine: number; theirs: number; diff: number }> = {};
+
+    for (const trait of traits) {
+      const mine = dna1[trait] ?? 0.5;
+      const theirs = dna2[trait] ?? 0.5;
+      const diff = Math.abs(mine - theirs);
+      details[trait] = { mine, theirs, diff };
+      // Complementarità: differenza moderata = buon match
+      if (diff >= 0.2 && diff <= 0.6) score += 1.0;
+      else if (diff < 0.2) score += 0.5;
+      // diff > 0.6 → 0 punti
+    }
+
+    const normalizedScore = score / traits.length;
+    const percent = Math.round(normalizedScore * 100);
+
+    let label = '';
+    if (percent >= 80) label = '🌌 Risonanza cosmica';
+    else if (percent >= 60) label = '✨ Alta compatibilità';
+    else if (percent >= 40) label = '🛸 Buona vibrazione';
+    else label = '🌙 Frequenze diverse';
+
+    return { score: percent, label, details };
+  }
+
+  // ─── VibraGhost ─────────────────────────────────────────────────────────────
+  async setGhostMode(profileId: string, hours: number): Promise<Date> {
+    const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
+    await db.update(profiles).set({ ghostModeExpiresAt: expiresAt }).where(eq(profiles.id, profileId));
+    return expiresAt;
+  }
+
+  async deactivateGhostMode(profileId: string): Promise<void> {
+    await db.update(profiles).set({ ghostModeExpiresAt: null }).where(eq(profiles.id, profileId));
+  }
+
+  async getGhostStatus(profileId: string): Promise<{ active: boolean; expiresAt: Date | null }> {
+    const [profile] = await db.select({ ghostModeExpiresAt: profiles.ghostModeExpiresAt })
+      .from(profiles).where(eq(profiles.id, profileId));
+    if (!profile) return { active: false, expiresAt: null };
+    const expiresAt = profile.ghostModeExpiresAt;
+    const active = !!expiresAt && new Date(expiresAt) > new Date();
+    return { active, expiresAt: active ? expiresAt : null };
   }
 }
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -575,6 +575,37 @@ export default function ProfilePage() {
     enabled: !!profile,
   });
 
+  const { data: dnaData } = useQuery<{ profileId: string; vector: Record<string, number> }>({
+    queryKey: ["/api/dna/my-dna"],
+    enabled: !!profile && !isGuest,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: ghostStatus, refetch: refetchGhost } = useQuery<{ active: boolean; expiresAt: string | null }>({
+    queryKey: ["/api/ghost/status"],
+    enabled: !!profile && !isGuest,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+
+  const ghostActivateMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/ghost/activate", { hours: 24 }),
+    onSuccess: () => {
+      refetchGhost();
+      queryClient.invalidateQueries({ queryKey: ["/api/ghost/status"] });
+      toast({ title: "👻 Modalità Fantasma attiva", description: "Sei invisibile per 24 ore. Puoi ancora scrivere e swipare." });
+    },
+  });
+
+  const ghostDeactivateMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/ghost/deactivate"),
+    onSuccess: () => {
+      refetchGhost();
+      queryClient.invalidateQueries({ queryKey: ["/api/ghost/status"] });
+      toast({ title: "👁️ Modalità Fantasma disattivata", description: "Il tuo profilo è nuovamente visibile." });
+    },
+  });
+
   const [selectedReactionProfileId, setSelectedReactionProfileId] = useState<string | null>(null);
 
   type ReceivedReaction = { id: string; reaction: string; createdAt: string; fromProfile: { id: string; name: string; imageUrl: string; age: number } };
@@ -759,6 +790,47 @@ export default function ProfilePage() {
 
         <PrimaImpressioneToggle profile={profile} />
 
+        {/* ── VibraDNA Card ───────────────────────────────────────────── */}
+        {dnaData && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 space-y-3"
+          >
+            <h3 className="font-semibold flex items-center gap-2 text-white text-base">
+              <Dna className="w-4 h-4 text-purple-400" />
+              VibraDNA
+              <span className="ml-auto text-xs text-white/40 font-normal">Il tuo profilo comportamentale</span>
+            </h3>
+            {[
+              { key: "engagement_depth", label: "🎯 Curiosità", color: "bg-purple-500" },
+              { key: "expressiveness", label: "💬 Espressività", color: "bg-cyan-500" },
+              { key: "social_initiative", label: "🚀 Iniziativa", color: "bg-pink-500" },
+              { key: "community_engagement", label: "🌐 Community", color: "bg-green-500" },
+              { key: "gamification_drive", label: "🎮 Spirito Gamer", color: "bg-yellow-500" },
+            ].map(({ key, label, color }) => {
+              const val = dnaData.vector[key] ?? 0.5;
+              return (
+                <div key={key} className="space-y-1">
+                  <div className="flex justify-between text-xs text-white/60">
+                    <span>{label}</span>
+                    <span>{Math.round(val * 100)}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${color} transition-all duration-700`}
+                      style={{ width: `${Math.round(val * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            <p className="text-xs text-white/40 pt-1">
+              Aggiornato automaticamente in base ai tuoi comportamenti nell'app.
+            </p>
+          </motion.div>
+        )}
+
         <ReferralSection />
 
         <BadgeSection profileId={profile.id} profileName={profile.name} />
@@ -823,6 +895,29 @@ export default function ProfilePage() {
             >
               {pushSubscribed ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
               {pushSubscribed ? t("push.disable") : t("push.enable")}
+            </Button>
+          )}
+          {/* ── VibraGhost Toggle ──────────────────────────────────── */}
+          {ghostStatus !== undefined && (
+            <Button
+              variant="outline"
+              className={`w-full justify-start gap-3 text-base h-12 transition-colors ${ghostStatus.active ? "text-purple-300 border-purple-400/40 bg-purple-900/20" : "text-white/70"}`}
+              onClick={() => {
+                if (ghostStatus.active) ghostDeactivateMutation.mutate();
+                else ghostActivateMutation.mutate();
+              }}
+              disabled={ghostActivateMutation.isPending || ghostDeactivateMutation.isPending}
+              data-testid="button-ghost-mode"
+            >
+              <Ghost className="w-5 h-5" />
+              <span className="flex-1 text-left">
+                {ghostStatus.active ? "👻 Fantasma attivo" : "👻 Modalità Fantasma"}
+              </span>
+              {ghostStatus.active && ghostStatus.expiresAt && (
+                <span className="text-xs text-purple-300/70 ml-auto">
+                  fino alle {new Date(ghostStatus.expiresAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
             </Button>
           )}
           <Button 

@@ -516,6 +516,7 @@ ${urlEntries}
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       };
 
+      const now2 = new Date();
       let afterSelf = 0, afterBlocked = 0, afterGender = 0, afterAge = 0, afterDist = 0;
       const swipable = allProfiles.filter(p => {
         if (p.id === profileId) return false;
@@ -523,6 +524,8 @@ ${urlEntries}
         // I profili bloccati sono l'unico caso di esclusione permanente
         if (blockedSet.has(p.id)) return false;
         afterBlocked++;
+        // VibraGhost: escludi profili in modalità fantasma attiva
+        if (p.ghostModeExpiresAt && new Date(p.ghostModeExpiresAt) > now2) return false;
 
         if (myProfile) {
           if (!isGenderFlexible(myProfile.preferredGender) && p.gender && p.gender !== "" && p.gender !== "Preferisco non rispondere") {
@@ -1302,6 +1305,8 @@ ${urlEntries}
       }
       
       const swipe = await storage.createSwipe(validatedData);
+      // VibraDNA: traccia evento swipe (fire-and-forget)
+      storage.trackDnaEvent(validatedData.swiperId, 'swipe', validatedData.liked ? 1 : 0).catch(() => {});
       
       let match = false;
       let matchData = null;
@@ -2387,6 +2392,8 @@ ${urlEntries}
         senderId: userProfile.id,
         content: filteredContent,
       });
+      // VibraDNA: traccia lunghezza messaggio e tempo di risposta (fire-and-forget)
+      storage.trackDnaEvent(userProfile.id, 'message', filteredContent.length).catch(() => {});
       res.status(201).json(message);
 
       const otherProfileId = match.profile1Id === userProfile.id ? match.profile2Id : match.profile1Id;
@@ -2521,6 +2528,8 @@ ${urlEntries}
       if (!userProfile) return res.status(403).json({ error: "Profile not found" });
 
       await storage.joinRoom(req.params.id, userProfile.id);
+      // VibraDNA: traccia partecipazione a stanze (fire-and-forget)
+      storage.trackDnaEvent(userProfile.id, 'room_join', 1).catch(() => {});
       res.json({ success: true });
     } catch (error) {
       console.error("Error joining room:", error);
@@ -2670,6 +2679,8 @@ REGOLE:
         profileId: userProfile.id,
         imageUrl: objectPath,
       });
+      // VibraDNA: traccia completamento sfida (fire-and-forget)
+      storage.trackDnaEvent(userProfile.id, 'challenge_complete', 1).catch(() => {});
 
       console.log(`Challenge submission created: challengeId=${req.params.id} profileId=${userProfile.id} imageUrl=${objectPath} submissionId=${submission.id}`);
       res.status(201).json({ ...submission, status: "pending", message: "Foto caricata! In attesa di approvazione dall'admin." });
@@ -5239,6 +5250,76 @@ REGOLE:
     } catch (err) {
       console.error("Public profile error:", err);
       res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  // ─── VibraDNA API ─────────────────────────────────────────────────────────────
+  app.get("/api/dna/my-dna", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const vector = await storage.getDna(profile.id);
+      res.json({ profileId: profile.id, vector });
+    } catch (err) {
+      console.error("[DNA] my-dna error:", err);
+      res.status(500).json({ error: "Failed to get DNA" });
+    }
+  });
+
+  app.get("/api/dna/compatibility/:profileId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profile not found" });
+      const compat = await storage.getDnaCompatibility(myProfile.id, req.params.profileId);
+      res.json(compat);
+    } catch (err) {
+      console.error("[DNA] compatibility error:", err);
+      res.status(500).json({ error: "Failed to compute compatibility" });
+    }
+  });
+
+  // ─── VibraGhost API ───────────────────────────────────────────────────────────
+  app.get("/api/ghost/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const status = await storage.getGhostStatus(profile.id);
+      res.json(status);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to get ghost status" });
+    }
+  });
+
+  app.post("/api/ghost/activate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      const hours = Number(req.body.hours) || 24;
+      const expiresAt = await storage.setGhostMode(profile.id, hours);
+      res.json({ active: true, expiresAt });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to activate ghost mode" });
+    }
+  });
+
+  app.post("/api/ghost/deactivate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      await storage.deactivateGhostMode(profile.id);
+      res.json({ active: false, expiresAt: null });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to deactivate ghost mode" });
     }
   });
 

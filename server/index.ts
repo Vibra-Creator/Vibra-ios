@@ -147,6 +147,31 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // ── Migrazioni DB startup ────────────────────────────────────────────────
+  try {
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ghost_mode_expires_at TIMESTAMP`);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_dna (
+        profile_id VARCHAR PRIMARY KEY,
+        behavior_vector TEXT NOT NULL DEFAULT '{}',
+        last_updated TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS dna_events (
+        id VARCHAR PRIMARY KEY,
+        profile_id VARCHAR NOT NULL,
+        event_type VARCHAR(32) NOT NULL,
+        value DOUBLE PRECISION NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS dna_events_profile_idx ON dna_events(profile_id, created_at)`);
+    console.log("[migration] VibraDNA + VibraGhost tables ready");
+  } catch (err) {
+    console.error("[migration] startup migration error:", err);
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

@@ -54,6 +54,7 @@ export const profiles = pgTable("profiles", {
   highlightedUntil: timestamp("highlighted_until"),
   highlightReason: text("highlight_reason"),
   profileVideoUrl: text("profile_video_url"),
+  ghostModeExpiresAt: timestamp("ghost_mode_expires_at"),
 });
 
 export const swipes = pgTable("swipes", {
@@ -489,3 +490,23 @@ export const vibrappDms = pgTable("vibrapp_dms", {
 });
 
 export type VibrappDm = typeof vibrappDms.$inferSelect;
+
+// ─── VibraDNA ─────────────────────────────────────────────────────────────────
+export const userDna = pgTable("user_dna", {
+  profileId: varchar("profile_id").primaryKey(),
+  behaviorVector: text("behavior_vector").default("{}").notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
+export type UserDna = typeof userDna.$inferSelect;
+
+export const dnaEvents = pgTable("dna_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  eventType: varchar("event_type", { length: 32 }).notNull(),
+  value: doublePrecision("value").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type DnaEvent = typeof dnaEvents.$inferSelect;
+// ─────────────────────────────────────────────────────────────────────────────
