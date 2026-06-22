@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart, Video, Zap, Rss, ChevronDown, Quote } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,15 +83,22 @@ export default function Landing() {
   ];
 
   const features = [
-    { icon: Video,        title: t("landing.feature9.title"), description: t("landing.feature9.desc"), color: "from-rose-500 to-pink-600" },
-    { icon: Star,         title: t("landing.feature7.title"), description: t("landing.feature7.desc"), color: "from-amber-500 to-yellow-500" },
-    { icon: Zap,          title: t("landing.feature8.title"), description: t("landing.feature8.desc"), color: "from-cyan-500 to-blue-500" },
-    { icon: Sparkles,     title: t("landing.feature1.title"), description: t("landing.feature1.desc"), color: "from-purple-500 to-pink-500" },
-    { icon: MessageCircle,title: t("landing.feature2.title"), description: t("landing.feature2.desc"), color: "from-indigo-500 to-purple-500" },
-    { icon: ShieldCheck,  title: t("landing.feature3.title"), description: t("landing.feature3.desc"), color: "from-green-500 to-emerald-500" },
-    { icon: Users,        title: t("landing.feature4.title"), description: t("landing.feature4.desc"), color: "from-orange-500 to-amber-500" },
-    { icon: Trophy,       title: t("landing.feature5.title"), description: t("landing.feature5.desc"), color: "from-yellow-500 to-orange-500" },
-    { icon: Radio,        title: t("landing.feature6.title"), description: t("landing.feature6.desc"), color: "from-pink-500 to-rose-500" },
+    { icon: Video,        title: t("landing.feature9.title"),  description: t("landing.feature9.desc"),  color: "from-rose-500 to-pink-600" },
+    { icon: Star,         title: t("landing.feature7.title"),  description: t("landing.feature7.desc"),  color: "from-amber-500 to-yellow-500" },
+    { icon: Zap,          title: t("landing.feature8.title"),  description: t("landing.feature8.desc"),  color: "from-cyan-500 to-blue-500" },
+    { icon: Sparkles,     title: t("landing.feature1.title"),  description: t("landing.feature1.desc"),  color: "from-purple-500 to-pink-500" },
+    { icon: MessageCircle,title: t("landing.feature2.title"),  description: t("landing.feature2.desc"),  color: "from-indigo-500 to-purple-500" },
+    { icon: ShieldCheck,  title: t("landing.feature3.title"),  description: t("landing.feature3.desc"),  color: "from-green-500 to-emerald-500" },
+    { icon: Users,        title: t("landing.feature4.title"),  description: t("landing.feature4.desc"),  color: "from-orange-500 to-amber-500" },
+    { icon: Trophy,       title: t("landing.feature5.title"),  description: t("landing.feature5.desc"),  color: "from-yellow-500 to-orange-500" },
+    { icon: Radio,        title: t("landing.feature6.title"),  description: t("landing.feature6.desc"),  color: "from-pink-500 to-rose-500" },
+    { icon: Dna,          title: t("landing.feature10.title"), description: t("landing.feature10.desc"), color: "from-violet-500 to-purple-600" },
+    { icon: Swords,       title: t("landing.feature11.title"), description: t("landing.feature11.desc"), color: "from-amber-600 to-orange-500" },
+    { icon: BookOpen,     title: t("landing.feature12.title"), description: t("landing.feature12.desc"), color: "from-teal-500 to-cyan-600" },
+    { icon: Globe,        title: t("landing.feature13.title"), description: t("landing.feature13.desc"), color: "from-blue-500 to-indigo-600" },
+    { icon: Telescope,    title: t("landing.feature14.title"), description: t("landing.feature14.desc"), color: "from-indigo-500 to-blue-700" },
+    { icon: EyeOff,       title: t("landing.feature15.title"), description: t("landing.feature15.desc"), color: "from-slate-500 to-gray-700" },
+    { icon: Clock,        title: t("landing.feature16.title"), description: t("landing.feature16.desc"), color: "from-yellow-500 to-amber-600" },
   ];
 
   return (
