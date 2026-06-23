@@ -51,7 +51,7 @@ export default function Home() {
   const [swipedProfiles, setSwipedProfiles] = useState<Set<string>>(new Set());
   const [swipeHistory, setSwipeHistory] = useState<string[]>([]);
   const [forcedFirstProfileId, setForcedFirstProfileId] = useState<string | null>(null);
-  const [globalMuted, setGlobalMuted] = useState(true);
+  const [globalMuted, setGlobalMuted] = useState(false);
   const [showVideoDrawer, setShowVideoDrawer] = useState(false);
   const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
