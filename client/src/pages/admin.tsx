@@ -62,7 +62,10 @@ export default function Admin() {
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [profileSearch, setProfileSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [hideBotsFilter, setHideBotsFilter] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isBot = (u: User) => u.id?.startsWith("bot-user-") || u.email === "nome@vibra.app";
 
 
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<AdminStats>({
@@ -824,7 +827,22 @@ export default function Admin() {
           <TabsContent value="users">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Utenti Registrati ({users?.length || 0})</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="text-lg">
+                    Utenti Registrati&nbsp;
+                    <span className="text-primary font-bold">{(users || []).filter(u => !isBot(u)).length}</span>
+                    <span className="text-muted-foreground font-normal text-sm"> reali</span>
+                    <span className="text-muted-foreground font-normal text-sm"> / {users?.length || 0} totali</span>
+                  </CardTitle>
+                  <button
+                    onClick={() => setHideBotsFilter(v => !v)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${hideBotsFilter ? "bg-primary/20 border-primary/40 text-primary" : "bg-muted border-border text-muted-foreground"}`}
+                    data-testid="button-toggle-bots"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                    {hideBotsFilter ? "Solo reali" : "Tutti (incl. bot)"}
+                  </button>
+                </div>
                 <div className="relative mt-2">
                   <input
                     type="text"
@@ -844,22 +862,23 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {(userSearch
-                    ? (users || []).filter(u => {
-                        const q = userSearch.toLowerCase();
-                        const up = profiles?.find(p => p.userId === u.id);
-                        return (
-                          u.email?.toLowerCase().includes(q) ||
-                          u.firstName?.toLowerCase().includes(q) ||
-                          u.lastName?.toLowerCase().includes(q) ||
-                          up?.name?.toLowerCase().includes(q) ||
-                          up?.location?.toLowerCase().includes(q) ||
-                          up?.phoneNumber?.toLowerCase().includes(q) ||
-                          u.id?.toLowerCase().includes(q)
-                        );
-                      })
-                    : users || []
-                  ).map((u) => {
+                  {(users || [])
+                    .filter(u => !hideBotsFilter || !isBot(u))
+                    .filter(u => {
+                      if (!userSearch) return true;
+                      const q = userSearch.toLowerCase();
+                      const up = profiles?.find(p => p.userId === u.id);
+                      return (
+                        u.email?.toLowerCase().includes(q) ||
+                        u.firstName?.toLowerCase().includes(q) ||
+                        u.lastName?.toLowerCase().includes(q) ||
+                        up?.name?.toLowerCase().includes(q) ||
+                        up?.location?.toLowerCase().includes(q) ||
+                        up?.phoneNumber?.toLowerCase().includes(q) ||
+                        u.id?.toLowerCase().includes(q)
+                      );
+                    })
+                  .map((u) => {
                     const userProfile = profiles?.find(p => p.userId === u.id);
                     const isExpanded = expandedUser === u.id;
                     return (
@@ -874,6 +893,9 @@ export default function Admin() {
                               <h3 className="font-medium text-foreground truncate">{userProfile?.name || (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : "Utente")}</h3>
                               {u.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
                               {userProfile?.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                              {u.createdAt && (Date.now() - new Date(u.createdAt).getTime()) < 48 * 60 * 60 * 1000 && (
+                                <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0 animate-pulse">🆕 Nuovo</Badge>
+                              )}
                             </div>
                             <div className="flex flex-col gap-0.5 mt-0.5">
                               <p className="text-sm text-cyan-400 truncate" data-testid={`user-email-${u.id}`}>
