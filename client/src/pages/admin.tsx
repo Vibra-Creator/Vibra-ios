@@ -24,6 +24,7 @@ interface AdminStats {
   totalMatches: number;
   totalMessages: number;
   realSubscriberCount: number;
+  realUsersCount: number;
   recentUsers: User[];
 }
 
@@ -489,7 +490,7 @@ export default function Admin() {
   const realSubscriberCount = stats?.realSubscriberCount || 0;
 
   const statCards = [
-    { label: "Iscritti Reali", value: realSubscriberCount, icon: Users, color: "from-blue-500 to-cyan-500" },
+    { label: "Utenti Reali", value: stats?.realUsersCount || 0, icon: Users, color: "from-blue-500 to-cyan-500" },
     { label: "Profili", value: stats?.totalProfiles || 0, icon: UserCheck, color: "from-purple-500 to-pink-500" },
     { label: "Match", value: stats?.totalMatches || 0, icon: Heart, color: "from-pink-500 to-red-500" },
     { label: "Messaggi", value: stats?.totalMessages || 0, icon: MessageCircle, color: "from-green-500 to-emerald-500" },

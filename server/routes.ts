@@ -1811,6 +1811,11 @@ ${urlEntries}
       const realSubscribers = users.filter(u => 
         realProfileUserIds.has(String(u.id)) && u.email && !u.email.endsWith("@vibra.com") && !u.isAdmin
       );
+
+      // Same bot-detection as client isBot(): covers all bot accounts
+      const realUsersCount = users.filter(u =>
+        !String(u.id).startsWith("bot-user-") && u.email !== "nome@vibra.app"
+      ).length;
       
       const sanitizedUsers = users.map(({ password, ...u }) => u);
       res.json({
@@ -1819,6 +1824,7 @@ ${urlEntries}
         totalMatches: realMatches.length,
         totalMessages: realMessages.length,
         realSubscriberCount: realSubscribers.length,
+        realUsersCount,
         recentUsers: sanitizedUsers.slice(0, 10),
         recentMatches: realMatches.slice(0, 10),
       });
