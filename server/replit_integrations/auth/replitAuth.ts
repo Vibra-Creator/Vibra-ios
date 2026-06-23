@@ -64,6 +64,10 @@ export async function setupAuth(app: Express) {
       const firstName = name.trim();
       const lastName = reqLastName ? reqLastName.trim() : "";
 
+      // Generate a secure verification token
+      const crypto = await import("crypto");
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+
       let user;
       if (existingUser) {
         const updated = await authStorage.updateUserPassword(existingUser.id, hashedPassword);
@@ -71,12 +75,16 @@ export async function setupAuth(app: Express) {
           return res.status(500).json({ message: "Errore durante l'aggiornamento dell'account" });
         }
         user = updated;
+        // Reset verification for re-registered account
+        await authStorage.setEmailVerificationToken(user.id, verificationToken);
       } else {
         user = await authStorage.upsertUser({
           email,
           password: hashedPassword,
           firstName,
           lastName,
+          emailVerified: false,
+          emailVerificationToken: verificationToken,
         });
       }
 
@@ -120,15 +128,16 @@ export async function setupAuth(app: Express) {
       }
 
       try {
-        const { sendWelcomeEmail } = await import("../../gmail");
-        sendWelcomeEmail(email, firstName).catch((err: any) =>
-          console.error("[welcome-email] async send error:", err.message)
+        const { sendVerificationEmail } = await import("../../gmail");
+        const appUrl = `${req.protocol}://${req.get("host")}`;
+        sendVerificationEmail(email, firstName, verificationToken, appUrl).catch((err: any) =>
+          console.error("[verify-email] async send error:", err.message)
         );
       } catch (emailErr) {
-        console.error("Welcome email error (non-fatal):", emailErr);
+        console.error("Verification email error (non-fatal):", emailErr);
       }
 
-      res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
+      res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, emailVerified: false });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Errore durante la registrazione" });
@@ -242,6 +251,8 @@ export async function setupAuth(app: Express) {
       }
 
       (req.session as any).userId = user.id;
+      // Google email is already verified by Google
+      await authStorage.markEmailVerified(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
     } catch (error: any) {
       console.error("Google auth error:", error);
@@ -315,10 +326,58 @@ export async function setupAuth(app: Express) {
       }
 
       (req.session as any).userId = user.id;
+      // Apple email is already verified by Apple
+      await authStorage.markEmailVerified(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
     } catch (error: any) {
       console.error("Apple auth error:", error);
       res.status(401).json({ message: "Autenticazione Apple fallita" });
+    }
+  });
+
+  // ── Email Verification ──────────────────────────────────────────────────
+  app.get("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.query;
+      if (!token || typeof token !== "string") {
+        return res.status(400).json({ message: "Token non valido" });
+      }
+      const user = await authStorage.verifyEmailByToken(token);
+      if (!user) {
+        return res.status(400).json({ message: "Token non valido o già utilizzato" });
+      }
+      // Set session so user is immediately logged in after verification
+      (req.session as any).userId = user.id;
+      res.json({ message: "Email verificata con successo!", user: { id: user.id, email: user.email, firstName: user.firstName } });
+    } catch (error) {
+      console.error("Verify email error:", error);
+      res.status(500).json({ message: "Errore durante la verifica" });
+    }
+  });
+
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ message: "Non autenticato" });
+
+      const user = await authStorage.getUser(userId);
+      if (!user || !user.email) return res.status(400).json({ message: "Utente non trovato" });
+      if (user.emailVerified) return res.json({ message: "Email già verificata" });
+
+      const crypto = await import("crypto");
+      const newToken = crypto.randomBytes(32).toString("hex");
+      await authStorage.setEmailVerificationToken(userId, newToken);
+
+      const { sendVerificationEmail } = await import("../../gmail");
+      const appUrl = `${req.protocol}://${req.get("host")}`;
+      sendVerificationEmail(user.email, user.firstName || "Utente", newToken, appUrl).catch((err: any) =>
+        console.error("[verify-email] resend error:", err.message)
+      );
+
+      res.json({ message: "Email di verifica inviata!" });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Errore durante l'invio" });
     }
   });
 

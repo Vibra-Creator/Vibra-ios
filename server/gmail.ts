@@ -248,6 +248,88 @@ export async function sendCustomEmail(toEmail: string, subject: string, htmlBody
   return false;
 }
 
+export async function sendVerificationEmail(toEmail: string, userName: string, token: string, appUrl: string): Promise<boolean> {
+  if (!toEmail || toEmail.endsWith('@vibra.app')) return false;
+
+  const subject = "Conferma la tua email — Vibra";
+  const verifyUrl = `${appUrl}/verify-email?token=${token}`;
+  const safeName = escapeHtml(userName);
+
+  const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0b0d1a;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0b0d1a;padding:20px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border-radius:16px;overflow:hidden;max-width:600px;">
+        <tr><td style="padding:40px 30px 20px;text-align:center;">
+          <h1 style="color:#a78bfa;font-size:32px;margin:0 0 5px;">VIBRA</h1>
+          <p style="color:#6ee7b7;font-size:14px;margin:0;letter-spacing:2px;">CONFERMA EMAIL</p>
+        </td></tr>
+        <tr><td style="padding:10px 30px 30px;">
+          <h2 style="color:#ffffff;font-size:22px;margin:0 0 15px;">Ciao ${safeName},</h2>
+          <p style="color:#d1d5db;font-size:16px;line-height:1.6;margin:0 0 20px;">
+            Benvenuto nella galassia Vibra! Per attivare il tuo account, clicca il pulsante qui sotto per confermare la tua email.
+          </p>
+          <p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 25px;">
+            Il link scade tra <strong style="color:#c4b5fd;">24 ore</strong>. Se non ti sei registrato su Vibra, ignora questa email.
+          </p>
+        </td></tr>
+        <tr><td style="padding:0 30px 30px;text-align:center;">
+          <a href="${verifyUrl}"
+             style="display:inline-block;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#ffffff;text-decoration:none;padding:16px 44px;border-radius:30px;font-size:16px;font-weight:bold;letter-spacing:0.5px;">
+            ✅ Conferma Email
+          </a>
+        </td></tr>
+        <tr><td style="padding:0 30px 20px;">
+          <p style="color:#6b7280;font-size:12px;margin:0;">
+            Oppure copia e incolla questo link nel browser:<br>
+            <a href="${verifyUrl}" style="color:#8b5cf6;word-break:break-all;">${verifyUrl}</a>
+          </p>
+        </td></tr>
+        <tr><td style="padding:0 30px 30px;text-align:center;">
+          <p style="color:#a78bfa;font-size:13px;font-weight:bold;margin:0 0 4px;">Team Vibra</p>
+          <p style="color:#9ca3af;font-size:12px;margin:0;">
+            <a href="mailto:privacyvibra@gmail.com" style="color:#8b5cf6;text-decoration:none;">privacyvibra@gmail.com</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const raw = [
+    `From: Vibra <privacyvibra@gmail.com>`,
+    `To: ${toEmail}`,
+    `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=UTF-8`,
+    ``,
+    htmlBody,
+  ].join('\r\n');
+
+  const rawEncoded = Buffer.from(raw).toString('base64url');
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const gmail = await getUncachableGmailClient();
+      await gmail.users.messages.send({ userId: 'me', requestBody: { raw: rawEncoded } });
+      console.log(`[verify-email] Sent to ${toEmail}`);
+      return true;
+    } catch (error: any) {
+      if (attempt === 0 && (error.code === 401 || error.message?.includes('invalid_grant'))) {
+        connectionSettings = null;
+        continue;
+      }
+      console.error(`[verify-email] Failed:`, error.message);
+      return false;
+    }
+  }
+  return false;
+}
+
 export async function sendBulkCustomEmails(
   userList: { email: string; name: string }[],
   subject: string,

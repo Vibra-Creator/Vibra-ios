@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoBackground } from "@/components/VideoBackground";
 import { Header, BottomNav } from "@/components/Header";
 import { SplashScreen } from "@/components/SplashScreen";
+import { EmailVerificationGate } from "@/components/EmailVerificationGate";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Home = lazy(() => import("@/pages/home"));
@@ -45,6 +46,7 @@ const VibraVault = lazy(() => import("@/pages/vibravault"));
 const VibraQuests = lazy(() => import("@/pages/vibraquests"));
 const Costellazioni = lazy(() => import("@/pages/costellazioni"));
 const VibraLegacyPage = lazy(() => import("@/pages/vibralegacy"));
+const VerifyEmail = lazy(() => import("@/pages/verify-email"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -124,6 +126,7 @@ function AuthenticatedRouter() {
       <Route path="/terms" component={Terms} />
       <Route path="/child-safety" component={ChildSafety} />
       <Route path="/support" component={Support} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/login" component={RedirectHome} />
       <Route path="/register" component={RedirectHome} />
       <Route path="/forgot-password" component={RedirectHome} />
@@ -216,6 +219,7 @@ function UnauthenticatedRouter() {
       <Route path="/terms" component={Terms} />
       <Route path="/child-safety" component={ChildSafety} />
       <Route path="/support" component={Support} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
@@ -294,6 +298,27 @@ function AppContent() {
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#0a0118", zIndex: 9998 }}>
         <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
       </div>
+    );
+  }
+
+  // Email verification gate — authenticated but not verified (non-admin, non-bot)
+  if (
+    isAuthenticated &&
+    user &&
+    !user.isAdmin &&
+    user.emailVerified === false &&
+    location !== "/verify-email"
+  ) {
+    return (
+      <EmailVerificationGate
+        email={user.email || ""}
+        onLogout={() => {
+          fetch("/api/logout", { method: "POST", credentials: "include" }).then(() => {
+            queryClient.setQueryData(["/api/auth/user"], null);
+            window.location.href = "/";
+          });
+        }}
+      />
     );
   }
 

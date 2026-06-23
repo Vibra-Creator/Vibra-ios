@@ -7,6 +7,10 @@ export interface IAuthStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserPassword(id: string, hashedPassword: string): Promise<User>;
+  setEmailVerificationToken(id: string, token: string): Promise<void>;
+  verifyEmailByToken(token: string): Promise<User | undefined>;
+  getUserByVerificationToken(token: string): Promise<User | undefined>;
+  markEmailVerified(id: string): Promise<void>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -42,6 +46,32 @@ class AuthStorage implements IAuthStorage {
       })
       .returning();
     return user;
+  }
+
+  async setEmailVerificationToken(id: string, token: string): Promise<void> {
+    await db.update(users)
+      .set({ emailVerificationToken: token, emailVerified: false, updatedAt: new Date() })
+      .where(eq(users.id, id));
+  }
+
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.emailVerificationToken, token));
+    return user;
+  }
+
+  async verifyEmailByToken(token: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ emailVerified: true, emailVerificationToken: null, updatedAt: new Date() })
+      .where(eq(users.emailVerificationToken, token))
+      .returning();
+    return user;
+  }
+
+  async markEmailVerified(id: string): Promise<void> {
+    await db.update(users)
+      .set({ emailVerified: true, emailVerificationToken: null, updatedAt: new Date() })
+      .where(eq(users.id, id));
   }
 }
 

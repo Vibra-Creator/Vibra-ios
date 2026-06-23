@@ -294,6 +294,13 @@ app.use((req, res, next) => {
     `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS user_room_orbits_profile_idx ON user_room_orbits(profile_id)`);
     console.log("[migration] Blocco 7 (Pianeti) tables ready");
+
+    // ── Email verification columns ─────────────────────────────────────────
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean DEFAULT false`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token varchar`);
+    // Mark all existing users (no pending token) as already verified
+    await db.execute(sql`UPDATE users SET email_verified = true WHERE email_verified = false AND email_verification_token IS NULL`);
+    console.log("[migration] Email verification columns ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }
