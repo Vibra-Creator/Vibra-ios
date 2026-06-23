@@ -262,6 +262,28 @@ export default function Home() {
     };
   }, [availableProfiles.map(p => p.id).slice(0, 16).join(",")]);
 
+  // Preload immagini: fetch() per popolare HTTP cache — come i video, ma per foto.
+  // Le immagini senza fetch() possono impiegare troppo ad apparire dopo lo swipe.
+  useEffect(() => {
+    const controllers: AbortController[] = [];
+    const seen = new Set<string>();
+
+    availableProfiles.slice(0, 6).forEach(p => {
+      const urls = [p.imageUrl, ...(p.photos || [])].filter(Boolean) as string[];
+      urls.forEach((url) => {
+        if (seen.has(url)) return;
+        seen.add(url);
+        const controller = new AbortController();
+        controllers.push(controller);
+        fetch(url, { credentials: "include", signal: controller.signal })
+          .then(r => r.blob())
+          .catch(() => {});
+      });
+    });
+
+    return () => { controllers.forEach(c => c.abort()); };
+  }, [availableProfiles.map(p => p.id + (p.imageUrl || "")).slice(0, 6).join(",")]);
+
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
     if (isGuest) {

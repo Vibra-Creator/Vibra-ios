@@ -1165,6 +1165,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   <img
                     src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
                     alt={profile.name}
+                    loading="eager"
+                    fetchPriority="high"
                     className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
