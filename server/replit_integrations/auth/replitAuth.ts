@@ -2,10 +2,15 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { authStorage } from "./storage";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
+import { db } from "../../db";
+import { profiles } from "../../../shared/schema";
+import { eq, sql } from "drizzle-orm";
+import { sendVerificationEmail } from "../../gmail";
 
 let _sessionMiddleware: ReturnType<typeof session> | null = null;
 
@@ -65,8 +70,7 @@ export async function setupAuth(app: Express) {
       const lastName = reqLastName ? reqLastName.trim() : "";
 
       // Generate a secure verification token
-      const crypto = await import("crypto");
-      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const verificationToken = randomBytes(32).toString("hex");
 
       let user;
       if (existingUser) {
@@ -91,9 +95,6 @@ export async function setupAuth(app: Express) {
       (req.session as any).userId = user.id;
 
       try {
-        const { db } = await import("../../db");
-        const { profiles } = await import("../../../shared/schema");
-        const { eq, sql } = await import("drizzle-orm");
         const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, String(user.id))).limit(1);
         if (!existingProfile.length) {
           const alienTypes = ["Nebulare", "Cristallino", "Biotico", "Dimensionale", "Solare", "Viaggiatore Stellare", "Quantico", "Etereo"];
@@ -128,7 +129,6 @@ export async function setupAuth(app: Express) {
       }
 
       try {
-        const { sendVerificationEmail } = await import("../../gmail");
         const appUrl = `${req.protocol}://${req.get("host")}`;
         sendVerificationEmail(email, firstName, verificationToken, appUrl).catch((err: any) =>
           console.error("[verify-email] async send error:", err.message)
@@ -364,11 +364,9 @@ export async function setupAuth(app: Express) {
       if (!user || !user.email) return res.status(400).json({ message: "Utente non trovato" });
       if (user.emailVerified) return res.json({ message: "Email già verificata" });
 
-      const crypto = await import("crypto");
-      const newToken = crypto.randomBytes(32).toString("hex");
+      const newToken = randomBytes(32).toString("hex");
       await authStorage.setEmailVerificationToken(userId, newToken);
 
-      const { sendVerificationEmail } = await import("../../gmail");
       const appUrl = `${req.protocol}://${req.get("host")}`;
       sendVerificationEmail(user.email, user.firstName || "Utente", newToken, appUrl).catch((err: any) =>
         console.error("[verify-email] resend error:", err.message)
