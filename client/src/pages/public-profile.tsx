@@ -114,6 +114,8 @@ export default function PublicProfile() {
               <video
                 src={profile.profileVideoUrl.startsWith("/objects/")
                   ? `/api/video-stream-object?path=${encodeURIComponent(profile.profileVideoUrl)}`
+                  : profile.profileVideoUrl.startsWith("https://") || profile.profileVideoUrl.startsWith("http://")
+                  ? `/api/video-proxy?url=${encodeURIComponent(profile.profileVideoUrl)}`
                   : profile.profileVideoUrl}
                 autoPlay loop playsInline muted
                 poster={profile.imageUrl}

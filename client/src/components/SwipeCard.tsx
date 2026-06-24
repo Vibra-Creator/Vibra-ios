@@ -560,6 +560,9 @@ function resolveVideoSrc(url: string | null | undefined): string | undefined {
   if (url.startsWith("/objects/")) {
     return `/api/video-stream-object?path=${encodeURIComponent(url)}`;
   }
+  if (url.startsWith("https://") || url.startsWith("http://")) {
+    return `/api/video-proxy?url=${encodeURIComponent(url)}`;
+  }
   return url;
 }
 

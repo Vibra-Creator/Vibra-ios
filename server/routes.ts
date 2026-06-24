@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
+import https from "https";
 import { storage } from "./storage";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions } from "@shared/schema";
 import { db } from "./db";
@@ -4653,6 +4654,42 @@ REGOLE:
   });
 
   // ─── Video Stream by objectPath (Range-request aware) ────────────────────
+  // ─── Video Proxy (archive.org e URL esterni → streaming server-side) ────────
+  app.get("/api/video-proxy", async (req, res) => {
+    const rawUrl = req.query.url as string;
+    if (!rawUrl || !rawUrl.startsWith("https://")) {
+      return res.status(400).end();
+    }
+    try {
+      const upstreamReq = https.get(rawUrl, {
+        headers: {
+          ...(req.headers.range ? { Range: req.headers.range as string } : {}),
+          "User-Agent": "Mozilla/5.0 (compatible; VibraProxy/1.0)",
+        },
+      }, (upstreamRes) => {
+        const status = upstreamRes.statusCode || 200;
+        const headers: Record<string, string> = {
+          "Content-Type": (upstreamRes.headers["content-type"] as string) || "video/mp4",
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "Access-Control-Allow-Origin": "*",
+        };
+        if (upstreamRes.headers["content-range"]) headers["Content-Range"] = upstreamRes.headers["content-range"] as string;
+        if (upstreamRes.headers["content-length"]) headers["Content-Length"] = upstreamRes.headers["content-length"] as string;
+        res.writeHead(status, headers);
+        upstreamRes.pipe(res);
+        req.on("close", () => upstreamReq.destroy());
+      });
+      upstreamReq.on("error", (err) => {
+        console.error("[video-proxy] upstream error:", err.message);
+        if (!res.headersSent) res.status(502).end();
+      });
+    } catch (err) {
+      console.error("[video-proxy] error:", err);
+      if (!res.headersSent) res.status(502).end();
+    }
+  });
+
   app.get("/api/video-stream-object", async (req, res) => {
     try {
       const objectPath = req.query.path as string;

@@ -240,8 +240,11 @@ export default function Home() {
     availableProfiles.slice(1, 16).forEach(p => {
       if (!p.profileVideoUrl) return;
       const isOwnServer = p.profileVideoUrl.startsWith("/objects/");
+      const isExternal = p.profileVideoUrl.startsWith("https://") || p.profileVideoUrl.startsWith("http://");
       const url = isOwnServer
         ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}`
+        : isExternal
+        ? `/api/video-proxy?url=${encodeURIComponent(p.profileVideoUrl)}`
         : p.profileVideoUrl;
       if (seen.has(url)) return;
       seen.add(url);
@@ -252,7 +255,7 @@ export default function Home() {
       // Il video element farà la stessa range request → risposta già in cache → play immediato.
       fetch(url, {
         headers: { Range: "bytes=0-5242879" },
-        credentials: isOwnServer ? "include" : "omit",
+        credentials: "include",
         signal: controller.signal,
       }).then(r => r.blob()).catch(() => {});
     });
@@ -550,9 +553,12 @@ export default function Home() {
 
       <div className="w-full relative z-10 flex-1 min-h-0">
         {availableProfiles.slice(1, 9).filter(p => p.profileVideoUrl).map(p => {
-          const resolvedSrc = p.profileVideoUrl?.startsWith("/objects/")
-            ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}`
-            : (p.profileVideoUrl ?? undefined);
+          const _url = p.profileVideoUrl ?? "";
+          const resolvedSrc = _url.startsWith("/objects/")
+            ? `/api/video-stream-object?path=${encodeURIComponent(_url)}`
+            : (_url.startsWith("https://") || _url.startsWith("http://"))
+            ? `/api/video-proxy?url=${encodeURIComponent(_url)}`
+            : _url || undefined;
           return (
             <video
               key={`preload-${p.id}`}
