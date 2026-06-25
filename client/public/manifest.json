@@ -7,6 +7,7 @@
   "start_url": "https://vibraalienmatch.com",
   "scope": "https://vibraalienmatch.com/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#0a0118",
   "theme_color": "#8b5cf6",
@@ -15,6 +16,18 @@
   "id": "com.vibraalienmatch.twa",
   "categories": ["social", "lifestyle"],
   "iarc_rating_id": "e84b9519-12ce-4c59-ae9a-f643a9e97df8",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/icons/icon-72.png",
@@ -90,6 +103,55 @@
     }
   ],
   "screenshots": [
+    {
+      "src": "/screenshots/screen-scopri.jpeg",
+      "sizes": "1170x2391",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Scopri nuovi profili cosmici"
+    },
+    {
+      "src": "/screenshots/screen-community.jpeg",
+      "sizes": "1170x2368",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Stanze di interesse condiviso"
+    },
+    {
+      "src": "/screenshots/screen-private.jpeg",
+      "sizes": "1170x2376",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Stanze private esclusive"
+    },
+    {
+      "src": "/screenshots/screen-vibrapp.jpeg",
+      "sizes": "1170x2411",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Chat globale Vibrapp"
+    },
+    {
+      "src": "/screenshots/screen-sfide.jpeg",
+      "sizes": "1170x2376",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Sfide giornaliere cosmiche"
+    },
+    {
+      "src": "/screenshots/screen-dove-sei.jpeg",
+      "sizes": "1170x2391",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Utenti attivi nelle vicinanze"
+    },
+    {
+      "src": "/screenshots/screen-vibing.jpeg",
+      "sizes": "1170x2391",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Modalità Sto Vibing Ora"
+    },
     {
       "src": "/images/feature-graphic-playstore-1024x500.png",
       "sizes": "1024x500",
