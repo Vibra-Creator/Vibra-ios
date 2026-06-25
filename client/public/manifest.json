@@ -7,7 +7,7 @@
   "start_url": "https://vibraalienmatch.com",
   "scope": "https://vibraalienmatch.com/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui", "tabbed", "windows-controls-overlay"],
+  "display_override": ["window-controls-overlay", "tabbed", "standalone", "minimal-ui"],
   "note_taking": {
     "new_note_url": "/"
   },
