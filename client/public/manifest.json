@@ -180,5 +180,50 @@
         }
       ]
     }
-  ]
+  ],
+  "scope_extensions": [
+    { "origin": "https://vibraalienmatch.com" }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "image/png": [".png"],
+        "image/jpeg": [".jpg", ".jpeg"],
+        "video/mp4": [".mp4"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+vibra",
+      "url": "/?vibra=%s"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Vibra",
+      "short_name": "Vibra",
+      "description": "Trova la tua connessione cosmica",
+      "tag": "vibra-widget",
+      "ms_ac_template": "widget/ac-template.json",
+      "data": "widget/data.json",
+      "screenshots": [
+        {
+          "src": "/screenshots/screen-scopri.jpeg",
+          "sizes": "1170x2391",
+          "label": "Vibra widget preview"
+        }
+      ],
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
