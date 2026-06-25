@@ -106,6 +106,24 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'vibra-refresh') {
+    event.waitUntil(
+      fetch('/api/profiles?limit=5', { credentials: 'include' }).catch(() => {})
+    );
+  }
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'vibra-pending-actions') {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'SW_SYNC_READY' }));
+      })
+    );
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
