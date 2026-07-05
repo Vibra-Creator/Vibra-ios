@@ -53,6 +53,7 @@ import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { ViewportSelector } from "@/components/ViewportSelector";
+import { VibraAI } from "@/components/VibraAI";
 import { AlertTriangle, RefreshCw, Bell, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useToast } from "@/hooks/use-toast";
@@ -367,6 +368,7 @@ function AppContent() {
         </main>
         {showHeader && <BottomNav />}
       </div>
+      {isAuthenticated && !isPublicPage && <VibraAI />}
     </>
   );
 

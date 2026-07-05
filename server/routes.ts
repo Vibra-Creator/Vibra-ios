@@ -5807,6 +5807,77 @@ REGOLE:
     } catch { res.status(500).json({ error: "Errore label" }); }
   });
 
+  // ─── Vibra AI Search ──────────────────────────────────────────────────────────
+  app.post("/api/ai-search", isAuthenticated, async (req: any, res) => {
+    try {
+      const { query } = req.body;
+      if (!query || typeof query !== "string") return res.status(400).json({ error: "Query mancante" });
+
+      const systemPrompt = `Sei l'assistente AI di Vibra, una super-app italiana. 
+Analizza la richiesta dell'utente e rispondi con un JSON che indica dove indirizzarlo.
+
+Le sezioni interne di Vibra sono:
+- / → scoprire profili, swipe, dating, incontrare gente, conoscere persone
+- /matches → match, chat, messaggi, conversazioni
+- /rooms → stanze, community, gruppi, interessi comuni
+- /challenges → sfide, challenge, foto, concorsi
+- /private-rooms → stanze private, club esclusivi
+- /signals → segnali cosmici, post, feed, condividere pensieri, confessioni pubbliche
+- /vibing → Sto Vibing Ora, persone vicine, chi è online
+- /vibrapp → Vibrapp, chat globale, messaggi a tutti
+- /prima-impressione → Prima Impressione, valutazione profilo, feedback
+- /profile → profilo personale, modifica profilo
+- /reels → video, reels, storie video
+- /blog → blog, notizie, articoli
+- /dove-sei → mappa, posizione, chi è vicino
+- /quests → missioni, quest, punti, ricompense
+- /vault → vault, segreti
+- /constellations → costellazioni, compatibilità
+
+Per richieste esterne usa external_url:
+- taxi, uber, mytaxi → https://www.uber.com/it/it/ride/
+- autobus, bus, trasporti, atm, gtts, transport → https://www.google.com/maps/dir/?api=1&travelmode=transit
+- treno, trenitalia, italo → https://www.trenitalia.com
+- ristorante, mangiare, cibo, pizzeria, locale, bar → https://www.thefork.it
+- hotel, dormire, alloggio, b&b → https://www.booking.com
+- voli, aereo, volare → https://www.skyscanner.it
+- compra, vendi, marketplace, usato, second hand, annunci → https://www.subito.it
+- lavoro, offerte lavoro, cerco lavoro → https://www.linkedin.com/jobs
+- affitto, casa, appartamento, stanza → https://www.immobiliare.it
+- farmacia, medico, dottore, salute → https://www.miodottore.it
+- meteo, tempo, pioggia → https://www.ilmeteo.it
+- notizie, news → https://www.ansa.it
+- musica, spotify, canzoni → https://open.spotify.com
+- film, cinema, serie → https://www.justwatch.com/it
+
+Rispondi SOLO con questo JSON (nessun altro testo):
+{
+  "action": "navigate" | "external" | "none",
+  "route": "/percorso-interno" | null,
+  "external_url": "https://..." | null,
+  "message": "Messaggio breve e amichevole in italiano (max 20 parole)",
+  "emoji": "un emoji pertinente"
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: query }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 200,
+        temperature: 0.3,
+      });
+
+      const result = JSON.parse(completion.choices[0].message.content || "{}");
+      res.json(result);
+    } catch (e) {
+      console.error("[ai-search] error:", e);
+      res.status(500).json({ error: "Errore AI" });
+    }
+  });
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return httpServer;
