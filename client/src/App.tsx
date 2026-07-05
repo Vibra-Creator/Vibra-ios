@@ -11,6 +11,7 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { EmailVerificationGate } from "@/components/EmailVerificationGate";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
+const HubPage = lazy(() => import("@/pages/hub"));
 const Home = lazy(() => import("@/pages/home"));
 const Matches = lazy(() => import("@/pages/matches"));
 const Profile = lazy(() => import("@/pages/profile"));
@@ -131,7 +132,8 @@ function AuthenticatedRouter() {
       <Route path="/login" component={RedirectHome} />
       <Route path="/register" component={RedirectHome} />
       <Route path="/forgot-password" component={RedirectHome} />
-      <Route path="/" component={Home} />
+      <Route path="/" component={HubPage} />
+      <Route path="/dating" component={Home} />
       <Route path="/matches" component={Matches} />
       <Route path="/chat/:matchId" component={Chat} />
       <Route path="/profile" component={Profile} />
@@ -193,7 +195,8 @@ function GuestRouter() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/" component={Home} />
+      <Route path="/" component={HubPage} />
+      <Route path="/dating" component={Home} />
       <Route path="/matches" component={Matches} />
       <Route path="/chat/:matchId" component={GuestRedirectHome} />
       <Route path="/profile" component={Profile} />
@@ -233,7 +236,7 @@ function UnauthenticatedRouter() {
   );
 }
 
-const pagesWithOwnBackground = ["/login", "/register", "/forgot-password", "/", "/privacy", "/terms", "/onboarding", "/profile/edit", "/p/"];
+const pagesWithOwnBackground = ["/login", "/register", "/forgot-password", "/privacy", "/terms", "/onboarding", "/profile/edit", "/p/"];
 
 function GuestBanner() {
   const { exitGuestMode } = useGuest();
@@ -368,7 +371,7 @@ function AppContent() {
         </main>
         {showHeader && <BottomNav />}
       </div>
-      {isAuthenticated && !isPublicPage && <VibraAI />}
+      {isAuthenticated && !isPublicPage && location !== "/" && <VibraAI />}
     </>
   );
 

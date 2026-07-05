@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle, Film, Rss } from "lucide-react";
+import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle, Film, Rss, LayoutGrid } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -322,7 +322,7 @@ export function Header() {
             <span className="text-[11px] font-semibold text-primary/90 hidden sm:block">Blog</span>
           </motion.div>
         </Link>
-        {location === "/" && <LikesReceivedButton />}
+        {(location === "/" || location === "/dating") && <LikesReceivedButton />}
       </div>
     </header>
   );
@@ -402,7 +402,8 @@ export function BottomNav() {
   }, []);
 
   const navItems = [
-    { path: "/", icon: Home, label: t("nav.discover"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
+    { path: "/", icon: LayoutGrid, label: t("nav.hub"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
+    { path: "/dating", icon: Home, label: t("nav.dating"), badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
     { path: "/matches", icon: Heart, label: t("nav.matches"), badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
     { path: "/favorites", icon: Heart, label: "Preferiti", badge: 0, color: "text-pink-300", activeBg: "bg-pink-500" },
     { path: "/rooms", icon: Users, label: t("nav.rooms"), badge: 0, color: "text-cyan-400", activeBg: "bg-cyan-600" },
