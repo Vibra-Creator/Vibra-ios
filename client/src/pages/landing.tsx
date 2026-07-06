@@ -255,9 +255,30 @@ export default function Landing() {
               {t("landing.hero")}
             </h1>
 
-            <p className="text-xl md:text-2xl text-white/80 max-w-2xl mx-auto mb-8 leading-relaxed">
+            <p className="text-xl md:text-2xl text-white/80 max-w-2xl mx-auto mb-5 leading-relaxed">
               {t("landing.subtitle")}
             </p>
+
+            {/* Hub super-app strip */}
+            <div className="mb-7">
+              <p className="text-white font-bold text-base mb-1">{t("login.hubTagline")}</p>
+              <p className="text-white/55 text-sm italic mb-4">{t("login.hubPiazza")}</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {[
+                  { icon: Heart,       label: "Dating",      color: "bg-rose-500/20 border-rose-500/40 text-rose-300" },
+                  { icon: Share2,      label: "Social",      color: "bg-pink-500/20 border-pink-500/40 text-pink-300" },
+                  { icon: ShoppingBag, label: "Marketplace", color: "bg-orange-500/20 border-orange-500/40 text-orange-300" },
+                  { icon: Navigation,  label: "Mobilità",    color: "bg-blue-500/20 border-blue-500/40 text-blue-300" },
+                  { icon: Home,        label: "Casa",        color: "bg-teal-500/20 border-teal-500/40 text-teal-300" },
+                  { icon: Briefcase,   label: "Lavoro",      color: "bg-indigo-500/20 border-indigo-500/40 text-indigo-300" },
+                ].map((chip) => (
+                  <span key={chip.label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold backdrop-blur-sm ${chip.color}`}>
+                    <chip.icon className="w-3 h-3" />
+                    {chip.label}
+                  </span>
+                ))}
+              </div>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <Link href="/register">
