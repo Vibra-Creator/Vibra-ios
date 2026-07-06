@@ -34,6 +34,16 @@ function resolveVideoUrl(url: string): string {
   return url;
 }
 
+function isTikTokUrl(url: string): boolean {
+  return url.includes("tiktok.com");
+}
+
+function getTikTokEmbedUrl(url: string): string | null {
+  const match = url.match(/video\/(\d+)/);
+  if (match) return `https://www.tiktok.com/embed/v2/${match[1]}`;
+  return null;
+}
+
 // ─── Single Reel Item ────────────────────────────────────────────────────────
 
 interface VideoItemProps {
@@ -135,23 +145,47 @@ const VideoItem = memo(function VideoItem({
       style={{ height: "100%" }}
     >
       {/* Video layer */}
-      <video
-        ref={videoRef}
-        src={resolvedSrc}
-        poster={profile.imageUrl || undefined}
-        loop
-        muted
-        playsInline
-        autoPlay={isActive}
-        preload={preloadStrategy}
-        onClick={handleTapVideo}
-        className="absolute inset-0 w-full h-full object-cover cursor-pointer"
-        style={{
-          transform: "translateZ(0)",
-          willChange: "transform",
-          backgroundColor: "#000",
-        }}
-      />
+      {isTikTokUrl(profile.profileVideoUrl) ? (
+        <div className="absolute inset-0 w-full h-full bg-black flex flex-col">
+          {getTikTokEmbedUrl(profile.profileVideoUrl) ? (
+            <iframe
+              src={getTikTokEmbedUrl(profile.profileVideoUrl)!}
+              className="w-full flex-1 border-0"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title={`TikTok di ${profile.name}`}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
+              <span className="text-5xl">🎵</span>
+              <p className="text-white font-semibold text-center">{profile.name} ha un video TikTok</p>
+              <a href={profile.profileVideoUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white text-sm"
+                style={{ background:"linear-gradient(135deg,#010101,#69C9D0)" }}>
+                🎵 Apri su TikTok
+              </a>
+            </div>
+          )}
+        </div>
+      ) : (
+        <video
+          ref={videoRef}
+          src={resolvedSrc}
+          poster={profile.imageUrl || undefined}
+          loop
+          muted
+          playsInline
+          autoPlay={isActive}
+          preload={preloadStrategy}
+          onClick={handleTapVideo}
+          className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+          style={{
+            transform: "translateZ(0)",
+            willChange: "transform",
+            backgroundColor: "#000",
+          }}
+        />
+      )}
 
       {/* Pause indicator / tap-to-play */}
       {videoPaused && isActive && !isBuffering && (

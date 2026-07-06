@@ -55,6 +55,9 @@ export const profiles = pgTable("profiles", {
   highlightReason: text("highlight_reason"),
   profileVideoUrl: text("profile_video_url"),
   ghostModeExpiresAt: timestamp("ghost_mode_expires_at"),
+  instagramHandle: text("instagram_handle"),
+  tiktokHandle: text("tiktok_handle"),
+  facebookUrl: text("facebook_url"),
 });
 
 export const swipes = pgTable("swipes", {

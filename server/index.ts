@@ -318,6 +318,12 @@ app.use((req, res, next) => {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS hub_posts_profile_idx ON hub_posts(profile_id)`);
     console.log("[migration] Hub Posts table ready");
 
+    // ── Social links on profiles ───────────────────────────────────────────
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS instagram_handle TEXT`);
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tiktok_handle TEXT`);
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS facebook_url TEXT`);
+    console.log("[migration] Social link columns ready");
+
     // ── Email verification columns ─────────────────────────────────────────
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean DEFAULT false`);
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token varchar`);

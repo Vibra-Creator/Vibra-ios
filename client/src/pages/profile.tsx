@@ -879,6 +879,51 @@ export default function ProfilePage() {
           ))}
         </div>
 
+        {/* Social links */}
+        {((profile as any).instagramHandle || (profile as any).tiktokHandle || (profile as any).facebookUrl) && (
+          <div className="flex flex-wrap gap-2" data-testid="social-links-section">
+            {(profile as any).instagramHandle && (
+              <a href={`https://instagram.com/${(profile as any).instagramHandle}`} target="_blank" rel="noopener noreferrer"
+                data-testid="link-instagram"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
+                style={{ background:"linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)", boxShadow:"0 2px 12px rgba(253,29,29,0.2)" }}>
+                <span>📸</span> @{(profile as any).instagramHandle}
+              </a>
+            )}
+            {(profile as any).tiktokHandle && (
+              <a href={`https://tiktok.com/@${(profile as any).tiktokHandle}`} target="_blank" rel="noopener noreferrer"
+                data-testid="link-tiktok"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
+                style={{ background:"linear-gradient(135deg,#010101,#69C9D0)", boxShadow:"0 2px 12px rgba(105,201,208,0.2)" }}>
+                <span>🎵</span> @{(profile as any).tiktokHandle}
+              </a>
+            )}
+            {(profile as any).facebookUrl && (
+              <a href={(profile as any).facebookUrl} target="_blank" rel="noopener noreferrer"
+                data-testid="link-facebook"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
+                style={{ background:"linear-gradient(135deg,#1877f2,#0d5db8)", boxShadow:"0 2px 12px rgba(24,119,242,0.2)" }}>
+                <span>👤</span> Facebook
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Share to socials */}
+        <div className="flex gap-2 flex-wrap" data-testid="share-to-socials">
+          {[
+            { label:"Instagram", emoji:"📸", color:"#fd1d1d", fn: () => navigator.share ? navigator.share({ title:`${profile.name} su Vibra`, text:`Seguimi su Vibra 🛸`, url:`https://vibraalienmatch.com/p/${profile.id}` }).catch(()=>{}) : navigator.clipboard.writeText(`https://vibraalienmatch.com/p/${profile.id}`) },
+            { label:"TikTok",    emoji:"🎵", color:"#69C9D0", fn: () => navigator.share ? navigator.share({ title:`${profile.name} su Vibra`, text:`Guardami su Vibra 🛸`, url:`https://vibraalienmatch.com/p/${profile.id}` }).catch(()=>{}) : window.open("https://www.tiktok.com","_blank") },
+            { label:"Facebook",  emoji:"👤", color:"#1877f2", fn: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://vibraalienmatch.com/p/${profile.id}`)}`, "_blank") },
+          ].map(s => (
+            <button key={s.label} onClick={s.fn} data-testid={`button-share-${s.label.toLowerCase()}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white/70 active:scale-95 transition-all"
+              style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)" }}>
+              <span>{s.emoji}</span>{s.label}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-4 w-full">
           <div>
             <h3 className="text-base font-semibold mb-2 flex items-center gap-2 text-white">

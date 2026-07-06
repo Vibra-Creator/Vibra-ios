@@ -92,6 +92,9 @@ function createProfileFormSchema(t: (key: string) => string) {
     accessMotivation: z.string().optional(),
     phonePrefix: z.string().optional().or(z.literal("")),
     phoneNumber: z.string().max(15, t("profileEdit.validationPhoneTooLong")).optional().or(z.literal("")),
+    instagramHandle: z.string().max(50).optional().or(z.literal("")),
+    tiktokHandle: z.string().max(50).optional().or(z.literal("")),
+    facebookUrl: z.string().max(200).optional().or(z.literal("")),
   });
 }
 
@@ -238,6 +241,9 @@ export default function ProfileEdit() {
       accessMotivation: "",
       phonePrefix: "+39",
       phoneNumber: "",
+      instagramHandle: "",
+      tiktokHandle: "",
+      facebookUrl: "",
     },
   });
 
@@ -272,6 +278,9 @@ export default function ProfileEdit() {
         accessMotivation: existingProfile.accessMotivation || "",
         phonePrefix: existingProfile.phonePrefix || "+39",
         phoneNumber: existingProfile.phoneNumber || "",
+        instagramHandle: (existingProfile as any).instagramHandle || "",
+        tiktokHandle: (existingProfile as any).tiktokHandle || "",
+        facebookUrl: (existingProfile as any).facebookUrl || "",
       });
       setInterests(existingProfile.interests || []);
       setLanguages(existingProfile.languages || []);
@@ -1370,6 +1379,45 @@ export default function ProfileEdit() {
                         </FormItem>
                       )}
                     />
+                    {/* Social Links */}
+                    <div className="space-y-3 pt-2 border-t border-white/10">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-white/70 uppercase tracking-wide">
+                        <span className="text-base">📱</span> Social
+                      </div>
+                      <FormField control={form.control} name="instagramHandle" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white font-semibold text-xs tracking-wide uppercase">Instagram</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">@</span>
+                              <Input {...field} placeholder="tuonome" className="pl-7 bg-white/5 border-white/20 text-white placeholder:text-white/40" data-testid="input-instagram-handle"/>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="tiktokHandle" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white font-semibold text-xs tracking-wide uppercase">TikTok</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">@</span>
+                              <Input {...field} placeholder="tuonome" className="pl-7 bg-white/5 border-white/20 text-white placeholder:text-white/40" data-testid="input-tiktok-handle"/>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="facebookUrl" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white font-semibold text-xs tracking-wide uppercase">Facebook</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="https://facebook.com/tuonome" className="bg-white/5 border-white/20 text-white placeholder:text-white/40" data-testid="input-facebook-url"/>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}/>
+                    </div>
                 </div>
               )}
 
