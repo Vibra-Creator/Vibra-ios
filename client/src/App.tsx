@@ -48,6 +48,7 @@ const VibraQuests = lazy(() => import("@/pages/vibraquests"));
 const Costellazioni = lazy(() => import("@/pages/costellazioni"));
 const VibraLegacyPage = lazy(() => import("@/pages/vibralegacy"));
 const VerifyEmail = lazy(() => import("@/pages/verify-email"));
+const SocialPage = lazy(() => import("@/pages/social"));
 const MarketplacePage = lazy(() => import("@/pages/marketplace"));
 const MobilitaPage = lazy(() => import("@/pages/mobilita"));
 const CasaPage = lazy(() => import("@/pages/casa"));
@@ -161,6 +162,7 @@ function AuthenticatedRouter() {
       <Route path="/quests" component={VibraQuests} />
       <Route path="/constellations" component={Costellazioni} />
       <Route path="/legacy" component={VibraLegacyPage} />
+      <Route path="/social" component={SocialPage} />
       <Route path="/marketplace" component={MarketplacePage} />
       <Route path="/mobilita" component={MobilitaPage} />
       <Route path="/casa" component={CasaPage} />
