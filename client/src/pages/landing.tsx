@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Home, Briefcase, Share2, Mic } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,6 +99,12 @@ export default function Landing() {
     { icon: Telescope,    title: t("landing.feature14.title"), description: t("landing.feature14.desc"), color: "from-indigo-500 to-blue-700" },
     { icon: EyeOff,       title: t("landing.feature15.title"), description: t("landing.feature15.desc"), color: "from-slate-500 to-gray-700" },
     { icon: Clock,        title: t("landing.feature16.title"), description: t("landing.feature16.desc"), color: "from-yellow-500 to-amber-600" },
+    { icon: LayoutGrid,   title: t("landing.feature17.title"), description: t("landing.feature17.desc"), color: "from-purple-500 to-pink-500" },
+    { icon: Share2,       title: t("landing.feature18.title"), description: t("landing.feature18.desc"), color: "from-pink-500 to-rose-500" },
+    { icon: ShoppingBag,  title: t("landing.feature19.title"), description: t("landing.feature19.desc"), color: "from-orange-500 to-amber-500" },
+    { icon: Navigation,   title: t("landing.feature20.title"), description: t("landing.feature20.desc"), color: "from-slate-500 to-blue-600" },
+    { icon: Home,         title: t("landing.feature21.title"), description: t("landing.feature21.desc"), color: "from-teal-500 to-emerald-600" },
+    { icon: Briefcase,    title: t("landing.feature22.title"), description: t("landing.feature22.desc"), color: "from-indigo-500 to-violet-600" },
   ];
 
   return (
@@ -557,6 +563,78 @@ export default function Landing() {
               </motion.div>
             ))}
           </div>
+        </section>
+
+        {/* ── VIBRA HUB — SUPER-APP ── */}
+        <section className="px-4 py-10">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="max-w-5xl mx-auto"
+          >
+            {/* Header */}
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/40 backdrop-blur-sm mb-5">
+                <LayoutGrid className="w-4 h-4 text-purple-300" />
+                <span className="text-sm font-semibold text-purple-300 uppercase tracking-widest">{t("landing.hub.badge")}</span>
+              </div>
+              <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
+                {t("landing.hub.title")}
+              </h2>
+              <p className="text-lg text-white/65 max-w-2xl mx-auto">
+                {t("landing.hub.desc")}
+              </p>
+            </div>
+
+            {/* Hub tiles */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+              {[
+                { icon: Heart,        label: t("landing.hub.tile.dating"),      color: "from-rose-500 to-pink-600",     bg: "bg-rose-500/10 border-rose-500/25" },
+                { icon: Share2,       label: t("landing.hub.tile.social"),      color: "from-pink-500 to-purple-600",   bg: "bg-pink-500/10 border-pink-500/25" },
+                { icon: ShoppingBag,  label: t("landing.hub.tile.marketplace"), color: "from-orange-500 to-amber-500",  bg: "bg-orange-500/10 border-orange-500/25" },
+                { icon: Navigation,   label: t("landing.hub.tile.mobility"),    color: "from-slate-500 to-blue-600",    bg: "bg-blue-500/10 border-blue-500/25" },
+                { icon: Home,         label: t("landing.hub.tile.home"),        color: "from-teal-500 to-emerald-500",  bg: "bg-teal-500/10 border-teal-500/25" },
+                { icon: Briefcase,    label: t("landing.hub.tile.work"),        color: "from-indigo-500 to-violet-600", bg: "bg-indigo-500/10 border-indigo-500/25" },
+              ].map((tile, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className={`flex flex-col items-center gap-3 p-5 rounded-2xl border backdrop-blur-md ${tile.bg} hover:scale-105 transition-transform`}
+                >
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tile.color} flex items-center justify-center shadow-lg`}>
+                    <tile.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="text-sm font-semibold text-white/90 text-center">{tile.label}</span>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* AI assistant strip */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-900/60 via-pink-900/40 to-indigo-900/60 backdrop-blur-md p-6 flex flex-col md:flex-row items-start md:items-center gap-5"
+            >
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-purple-500/15 blur-3xl" />
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full bg-pink-500/15 blur-3xl" />
+              </div>
+              <div className="relative shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-2xl shadow-purple-500/30">
+                <Mic className="w-7 h-7 text-white" />
+              </div>
+              <div className="relative flex-1">
+                <p className="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1">{t("landing.hub.ai.tag")}</p>
+                <h3 className="text-xl font-bold text-white mb-1">{t("landing.hub.ai.title")}</h3>
+                <p className="text-white/65 text-sm leading-relaxed">{t("landing.hub.ai.desc")}</p>
+              </div>
+            </motion.div>
+          </motion.div>
         </section>
 
         {/* ── FAQ ── */}
