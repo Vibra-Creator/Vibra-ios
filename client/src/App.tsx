@@ -48,6 +48,10 @@ const VibraQuests = lazy(() => import("@/pages/vibraquests"));
 const Costellazioni = lazy(() => import("@/pages/costellazioni"));
 const VibraLegacyPage = lazy(() => import("@/pages/vibralegacy"));
 const VerifyEmail = lazy(() => import("@/pages/verify-email"));
+const MarketplacePage = lazy(() => import("@/pages/marketplace"));
+const MobilitaPage = lazy(() => import("@/pages/mobilita"));
+const CasaPage = lazy(() => import("@/pages/casa"));
+const LavoroPage = lazy(() => import("@/pages/lavoro"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -157,6 +161,10 @@ function AuthenticatedRouter() {
       <Route path="/quests" component={VibraQuests} />
       <Route path="/constellations" component={Costellazioni} />
       <Route path="/legacy" component={VibraLegacyPage} />
+      <Route path="/marketplace" component={MarketplacePage} />
+      <Route path="/mobilita" component={MobilitaPage} />
+      <Route path="/casa" component={CasaPage} />
+      <Route path="/lavoro" component={LavoroPage} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
       <Route path="/reels" component={Reels} />

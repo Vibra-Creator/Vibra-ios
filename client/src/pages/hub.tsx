@@ -70,16 +70,15 @@ const CARDS = [
   { key: "signals",   emoji: "📡",  route: "/signals",         color: ["#f59e0b","#d97706"], live: true },
   { key: "challenges",emoji: "🏆",  route: "/challenges",      color: ["#10b981","#059669"], live: true },
   { key: "vibing",    emoji: "⚡",  route: "/vibing",          color: ["#84cc16","#65a30d"], live: true },
-  { key: "reels",     emoji: "🎬",  route: "/reels",           color: ["#a855f7","#7c3aed"], live: true },
-  { key: "vibrapp",   emoji: "🛸",  route: "/vibrapp",         color: ["#3b82f6","#1d4ed8"], live: true },
+  { key: "reels",       emoji: "🎬",  route: "/reels",       color: ["#a855f7","#7c3aed"], live: true },
+  { key: "vibrapp",     emoji: "🛸",  route: "/vibrapp",     color: ["#3b82f6","#1d4ed8"], live: true },
+  { key: "marketplace", emoji: "🛒",  route: "/marketplace", color: ["#f97316","#ea580c"], live: true },
+  { key: "mobility",    emoji: "🚗",  route: "/mobilita",    color: ["#64748b","#475569"], live: true },
+  { key: "home",        emoji: "🏠",  route: "/casa",        color: ["#14b8a6","#0f766e"], live: true },
+  { key: "work",        emoji: "💼",  route: "/lavoro",      color: ["#6366f1","#4f46e5"], live: true },
 ] as const;
 
-const COMING = [
-  { key: "marketplace", emoji: "🛒", color: ["#f97316","#ea580c"] },
-  { key: "mobility",    emoji: "🚗", color: ["#64748b","#475569"] },
-  { key: "home",        emoji: "🏠", color: ["#14b8a6","#0f766e"] },
-  { key: "work",        emoji: "💼", color: ["#6366f1","#4f46e5"] },
-] as const;
+const COMING: never[] = [];
 
 export default function HubPage() {
   const { t } = useLanguage();
@@ -290,46 +289,7 @@ export default function HubPage() {
           ))}
         </div>
 
-        {/* Coming Soon */}
-        <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-          className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-3 mt-6"
-        >
-          {t("hub.coming")}
-        </motion.p>
-
-        <div className="grid grid-cols-2 gap-3 pb-2">
-          {COMING.map((card, i) => (
-            <motion.div
-              key={card.key}
-              data-testid={`hub-card-coming-${card.key}`}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 0.6, y: 0 }}
-              transition={{ delay: 0.65 + i * 0.05 }}
-              className="relative rounded-2xl p-4 overflow-hidden"
-              style={{
-                background: `linear-gradient(135deg, ${card.color[0]}12, ${card.color[1]}0c)`,
-                border: `1px solid ${card.color[0]}25`,
-              }}
-            >
-              <div className="absolute top-2 right-2">
-                <span
-                  className="text-[9px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}
-                >
-                  {t("hub.soon")}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 mb-1">
-                <Lock className="w-2.5 h-2.5 text-white/30" />
-              </div>
-              <span className="text-2xl block mb-2 opacity-50">{card.emoji}</span>
-              <p className="text-white/40 font-bold text-sm leading-tight" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
-                {t(`hub.card.${card.key}`)}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+        <div className="pb-2" />
       </div>
     </div>
   );

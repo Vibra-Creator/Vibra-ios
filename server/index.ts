@@ -295,6 +295,29 @@ app.use((req, res, next) => {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS user_room_orbits_profile_idx ON user_room_orbits(profile_id)`);
     console.log("[migration] Blocco 7 (Pianeti) tables ready");
 
+    // ── Hub Posts (Marketplace · Casa · Lavoro · Mobilità) ────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS hub_posts (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        profile_id VARCHAR NOT NULL,
+        profile_name TEXT NOT NULL,
+        profile_image_url TEXT NOT NULL,
+        category TEXT NOT NULL,
+        subcategory TEXT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        price INTEGER,
+        image_url TEXT,
+        city TEXT,
+        contact_info TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS hub_posts_category_idx ON hub_posts(category)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS hub_posts_profile_idx ON hub_posts(profile_id)`);
+    console.log("[migration] Hub Posts table ready");
+
     // ── Email verification columns ─────────────────────────────────────────
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean DEFAULT false`);
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token varchar`);

@@ -615,6 +615,27 @@ export const userRoomOrbits = pgTable("user_room_orbits", {
 });
 export type UserRoomOrbit = typeof userRoomOrbits.$inferSelect;
 
+// ─── Hub Posts (Marketplace · Casa · Lavoro · Mobilità) ──────────────────────
+export const hubPosts = pgTable("hub_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  profileName: text("profile_name").notNull(),
+  profileImageUrl: text("profile_image_url").notNull(),
+  category: text("category").notNull(), // "marketplace" | "casa" | "lavoro" | "mobilita"
+  subcategory: text("subcategory"),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  price: integer("price"),
+  imageUrl: text("image_url"),
+  city: text("city"),
+  contactInfo: text("contact_info"),
+  status: text("status").notNull().default("active"), // "active" | "sold" | "closed"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertHubPostSchema = createInsertSchema(hubPosts).omit({ id: true, createdAt: true });
+export type InsertHubPost = z.infer<typeof insertHubPostSchema>;
+export type HubPost = typeof hubPosts.$inferSelect;
+
 // ─── VibraTime — Activity Log ─────────────────────────────────────────────────
 export const userActivityLog = pgTable("user_activity_log", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

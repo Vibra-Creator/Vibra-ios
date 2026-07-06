@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -5805,6 +5805,62 @@ REGOLE:
       const label = await storage.getActivityLabel(req.params.profileId);
       res.json({ label });
     } catch { res.status(500).json({ error: "Errore label" }); }
+  });
+
+  // ─── Hub Posts (Marketplace · Casa · Lavoro) ─────────────────────────────────
+  app.get("/api/hub-posts", isAuthenticated, async (req: any, res) => {
+    try {
+      const { category, subcategory } = req.query;
+      const conditions = [eq(hubPosts.status, "active")];
+      if (category) conditions.push(eq(hubPosts.category, category as string));
+      if (subcategory) conditions.push(eq(hubPosts.subcategory, subcategory as string));
+      const posts = await db.select().from(hubPosts)
+        .where(and(...conditions))
+        .orderBy(desc(hubPosts.createdAt))
+        .limit(100);
+      res.json(posts);
+    } catch { res.status(500).json({ error: "Errore hub-posts" }); }
+  });
+
+  app.post("/api/hub-posts", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const parsed = insertHubPostSchema.safeParse({
+        ...req.body,
+        profileId: profile.id,
+        profileName: profile.name,
+        profileImageUrl: profile.imageUrl,
+      });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+      const [post] = await db.insert(hubPosts).values(parsed.data).returning();
+      res.json(post);
+    } catch { res.status(500).json({ error: "Errore creazione post" }); }
+  });
+
+  app.patch("/api/hub-posts/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const { status } = req.body;
+      if (!["active","sold","closed"].includes(status)) return res.status(400).json({ error: "Status non valido" });
+      const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, req.params.id));
+      if (!post || post.profileId !== profile.id) return res.status(403).json({ error: "Non autorizzato" });
+      await db.update(hubPosts).set({ status }).where(eq(hubPosts.id, req.params.id));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore aggiornamento status" }); }
+  });
+
+  app.delete("/api/hub-posts/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, req.params.id));
+      if (!post) return res.status(404).json({ error: "Post non trovato" });
+      if (post.profileId !== profile.id && !req.user.isAdmin) return res.status(403).json({ error: "Non autorizzato" });
+      await db.delete(hubPosts).where(eq(hubPosts.id, req.params.id));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore eliminazione post" }); }
   });
 
   // ─── Vibra AI Search ──────────────────────────────────────────────────────────
