@@ -155,6 +155,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Login extra
     "login.adminTitle": "Accesso Amministratore",
     "login.subtitle": "Accedi al tuo account",
+    "login.hubTagline": "Non è solo dating.",
+    "login.hubSubline": "Un account, un universo: connessioni, marketplace, mobilità, casa e lavoro — tutto qui.",
     "login.welcomeAdmin": "Benvenuto Admin!",
     "login.welcomeAdminDesc": "Accesso alla dashboard di controllo",
     "login.accessDenied": "Accesso negato",
@@ -1226,6 +1228,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Login extra
     "login.adminTitle": "Administrator Access",
     "login.subtitle": "Sign in to your account",
+    "login.hubTagline": "Not just dating.",
+    "login.hubSubline": "One account, one universe: connections, marketplace, mobility, housing and jobs — all here.",
     "login.welcomeAdmin": "Welcome Admin!",
     "login.welcomeAdminDesc": "Access to the control dashboard",
     "login.accessDenied": "Access denied",
