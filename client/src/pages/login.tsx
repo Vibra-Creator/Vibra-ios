@@ -129,8 +129,11 @@ export default function Login() {
               <p className="text-white/70 mt-1 text-lg font-semibold drop-shadow-lg">{t("login.subtitle")}</p>
               {/* Hub super-app strip */}
               <div className="mt-4 w-full text-center">
-                <p className="text-white font-bold text-base mb-3">
+                <p className="text-white font-bold text-base mb-1">
                   {t("login.hubTagline")}
+                </p>
+                <p className="text-white/60 text-sm mb-3 italic">
+                  {t("login.hubPiazza")}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {[
