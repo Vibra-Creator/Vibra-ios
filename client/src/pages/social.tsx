@@ -113,7 +113,7 @@ export default function SocialPage() {
 
   const saveMutation = useMutation({
     mutationFn: () =>
-      apiRequest("PATCH", `/api/profiles/${profile.id}`, {
+      apiRequest("PUT", `/api/profiles/${profile.id}`, {
         instagramHandle: currentValue("instagramHandle"),
         tiktokHandle: currentValue("tiktokHandle"),
         facebookUrl: currentValue("facebookUrl"),
