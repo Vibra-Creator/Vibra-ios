@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Home, Briefcase, Share2, Mic } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -103,7 +103,7 @@ export default function Landing() {
     { icon: Share2,       title: t("landing.feature18.title"), description: t("landing.feature18.desc"), color: "from-pink-500 to-rose-500" },
     { icon: ShoppingBag,  title: t("landing.feature19.title"), description: t("landing.feature19.desc"), color: "from-orange-500 to-amber-500" },
     { icon: Navigation,   title: t("landing.feature20.title"), description: t("landing.feature20.desc"), color: "from-slate-500 to-blue-600" },
-    { icon: Home,         title: t("landing.feature21.title"), description: t("landing.feature21.desc"), color: "from-teal-500 to-emerald-600" },
+    { icon: Music2,       title: t("landing.feature21.title"), description: t("landing.feature21.desc"), color: "from-green-500 to-emerald-600" },
     { icon: Briefcase,    title: t("landing.feature22.title"), description: t("landing.feature22.desc"), color: "from-indigo-500 to-violet-600" },
   ];
 
@@ -269,7 +269,7 @@ export default function Landing() {
                   { icon: Share2,      label: "Social",      color: "bg-pink-500/20 border-pink-500/40 text-pink-300" },
                   { icon: ShoppingBag, label: "Marketplace", color: "bg-orange-500/20 border-orange-500/40 text-orange-300" },
                   { icon: Navigation,  label: "Mobilità",    color: "bg-blue-500/20 border-blue-500/40 text-blue-300" },
-                  { icon: Home,        label: "Casa",        color: "bg-teal-500/20 border-teal-500/40 text-teal-300" },
+                  { icon: Music2,      label: "Spotify",     color: "bg-green-500/20 border-green-500/40 text-green-300" },
                   { icon: Briefcase,   label: "Lavoro",      color: "bg-indigo-500/20 border-indigo-500/40 text-indigo-300" },
                 ].map((chip) => (
                   <span key={chip.label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold backdrop-blur-sm ${chip.color}`}>
@@ -616,7 +616,7 @@ export default function Landing() {
                 { icon: Share2,       label: t("landing.hub.tile.social"),      color: "from-pink-500 to-purple-600",   bg: "bg-pink-500/10 border-pink-500/25" },
                 { icon: ShoppingBag,  label: t("landing.hub.tile.marketplace"), color: "from-orange-500 to-amber-500",  bg: "bg-orange-500/10 border-orange-500/25" },
                 { icon: Navigation,   label: t("landing.hub.tile.mobility"),    color: "from-slate-500 to-blue-600",    bg: "bg-blue-500/10 border-blue-500/25" },
-                { icon: Home,         label: t("landing.hub.tile.home"),        color: "from-teal-500 to-emerald-500",  bg: "bg-teal-500/10 border-teal-500/25" },
+                { icon: Music2,        label: t("landing.hub.tile.home"),        color: "from-green-500 to-emerald-500",  bg: "bg-green-500/10 border-green-500/25" },
                 { icon: Briefcase,    label: t("landing.hub.tile.work"),        color: "from-indigo-500 to-violet-600", bg: "bg-indigo-500/10 border-indigo-500/25" },
               ].map((tile, i) => (
                 <motion.div

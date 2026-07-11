@@ -75,7 +75,7 @@ const CARDS = [
   { key: "social",       emoji: "📱",  route: "/social",      color: ["#ec4899","#a855f7"], live: true },
   { key: "marketplace", emoji: "🛒",  route: "/marketplace", color: ["#f97316","#ea580c"], live: true },
   { key: "mobility",    emoji: "🚗",  route: "/mobilita",    color: ["#64748b","#475569"], live: true },
-  { key: "home",        emoji: "🏠",  route: "/casa",        color: ["#14b8a6","#0f766e"], live: true },
+  { key: "spotify",     emoji: "🎵",  route: "/spotify",     color: ["#1DB954","#158a3e"], live: true },
   { key: "work",        emoji: "💼",  route: "/lavoro",      color: ["#6366f1","#4f46e5"], live: true },
 ] as const;
 

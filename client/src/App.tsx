@@ -51,7 +51,7 @@ const VerifyEmail = lazy(() => import("@/pages/verify-email"));
 const SocialPage = lazy(() => import("@/pages/social"));
 const MarketplacePage = lazy(() => import("@/pages/marketplace"));
 const MobilitaPage = lazy(() => import("@/pages/mobilita"));
-const CasaPage = lazy(() => import("@/pages/casa"));
+const SpotifyPage = lazy(() => import("@/pages/spotify"));
 const LavoroPage = lazy(() => import("@/pages/lavoro"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
@@ -165,7 +165,7 @@ function AuthenticatedRouter() {
       <Route path="/social" component={SocialPage} />
       <Route path="/marketplace" component={MarketplacePage} />
       <Route path="/mobilita" component={MobilitaPage} />
-      <Route path="/casa" component={CasaPage} />
+      <Route path="/spotify" component={SpotifyPage} />
       <Route path="/lavoro" component={LavoroPage} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
