@@ -72,6 +72,7 @@ const CARDS = [
   { key: "vibing",    emoji: "⚡",  route: "/vibing",          color: ["#84cc16","#65a30d"], live: true },
   { key: "reels",       emoji: "🎬",  route: "/reels",       color: ["#a855f7","#7c3aed"], live: true },
   { key: "vibrapp",     emoji: "🛸",  route: "/vibrapp",     color: ["#3b82f6","#1d4ed8"], live: true },
+  { key: "blog",        emoji: "📜",  route: "/blog",        color: ["#a855f7","#7c3aed"], live: true },
   { key: "social",       emoji: "📱",  route: "/social",      color: ["#ec4899","#a855f7"], live: true },
   { key: "marketplace", emoji: "🛒",  route: "/marketplace", color: ["#f97316","#ea580c"], live: true },
   { key: "mobility",    emoji: "🚗",  route: "/mobilita",    color: ["#64748b","#475569"], live: true },

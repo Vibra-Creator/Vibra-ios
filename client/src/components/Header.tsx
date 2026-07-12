@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Heart, Home, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle, Film, Rss, LayoutGrid } from "lucide-react";
+import { User, Heart, Shield, Users, Trophy, Lock, Eye, Zap, MapPin, MessageCircle, Film, LayoutGrid } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -313,15 +313,6 @@ export function Header() {
           <img src={vibraLogo} alt="Vibra" className="w-9 h-9 object-contain rounded-full shrink-0" style={{ mixBlendMode: "screen" }} data-testid="vibra-logo-header" />
         </Link>
         <CosmicBanner />
-        <Link href="/blog" data-testid="link-blog-header">
-          <motion.div
-            whileTap={{ scale: 0.88 }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-primary/40 bg-primary/15 shrink-0"
-          >
-            <Rss className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] font-semibold text-primary/90 hidden sm:block">Blog</span>
-          </motion.div>
-        </Link>
         {(location === "/" || location === "/dating") && <LikesReceivedButton />}
       </div>
     </header>
@@ -403,14 +394,12 @@ export function BottomNav() {
 
   const navItems = [
     { path: "/", icon: LayoutGrid, label: t("nav.hub"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
-    { path: "/dating", icon: Home, label: t("nav.dating"), badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
     { path: "/matches", icon: Heart, label: t("nav.matches"), badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
     { path: "/favorites", icon: Heart, label: "Preferiti", badge: 0, color: "text-pink-300", activeBg: "bg-pink-500" },
     { path: "/rooms", icon: Users, label: t("nav.rooms"), badge: 0, color: "text-cyan-400", activeBg: "bg-cyan-600" },
     { path: "/challenges", icon: Trophy, label: t("nav.challenges"), badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
     { path: "/vibing", icon: Zap, label: t("nav.vibing"), badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
     { path: "/reels", icon: Film, label: "Profilo Video", badge: 0, color: "text-violet-400", activeBg: "bg-violet-600" },
-    { path: "/blog", icon: Rss, label: "Blog", badge: 0, color: "text-primary", activeBg: "bg-primary" },
     { path: "/vibrapp", icon: MessageCircle, label: t("nav.vibrapp"), badge: vibrappBadge, color: "text-green-400", activeBg: "bg-green-600" },
     { path: "/dove-sei", icon: MapPin, label: t("nav.location"), badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
     { path: "/private-rooms", icon: Lock, label: t("nav.private"), badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
