@@ -136,27 +136,6 @@ export function VibraAI() {
 
   return (
     <>
-      {/* Floating button */}
-      <motion.button
-        data-testid="vibra-ai-button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
-        style={{ background: "linear-gradient(135deg, #8b5cf6, #ec4899, #06b6d4)" }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        animate={{
-          boxShadow: [
-            "0 0 20px rgba(139,92,246,0.5)",
-            "0 0 35px rgba(236,72,153,0.6)",
-            "0 0 20px rgba(6,182,212,0.5)",
-            "0 0 20px rgba(139,92,246,0.5)",
-          ],
-        }}
-        transition={{ duration: 3, repeat: Infinity }}
-      >
-        <Sparkles className="w-6 h-6 text-white" />
-      </motion.button>
-
       {/* Modal */}
       <AnimatePresence>
         {open && (
