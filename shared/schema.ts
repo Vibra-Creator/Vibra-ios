@@ -649,3 +649,27 @@ export const userActivityLog = pgTable("user_activity_log", {
 });
 export type UserActivityLog = typeof userActivityLog.$inferSelect;
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Vibra Events ─────────────────────────────────────────────────────────────
+export const events = pgTable("events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  profileName: text("profile_name").notNull(),
+  profileImageUrl: text("profile_image_url").notNull(),
+  city: text("city").notNull(),
+  eventType: text("event_type").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  venue: text("venue"),
+  eventDate: text("event_date").notNull(),
+  eventTime: text("event_time"),
+  imageUrl: text("image_url"),
+  attendees: text("attendees").array().notNull().default(sql`ARRAY[]::text[]`),
+  goingCount: integer("going_count").notNull().default(0),
+  lookingForCompany: boolean("looking_for_company").notNull().default(false),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, attendees: true, goingCount: true });
+export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type EventItem = typeof events.$inferSelect;

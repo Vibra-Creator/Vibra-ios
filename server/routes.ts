@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -5861,6 +5861,72 @@ REGOLE:
       await db.delete(hubPosts).where(eq(hubPosts.id, req.params.id));
       res.json({ ok: true });
     } catch { res.status(500).json({ error: "Errore eliminazione post" }); }
+  });
+
+  // ─── Vibra Events ─────────────────────────────────────────────────────────────
+  app.get("/api/events", async (req, res) => {
+    try {
+      const city = req.query.city as string | undefined;
+      const type = req.query.type as string | undefined;
+      const conditions = [eq(events.status, "active")];
+      if (city) conditions.push(sql`LOWER(${events.city}) = LOWER(${city})`);
+      if (type) conditions.push(eq(events.eventType, type));
+      const list = await db.select().from(events).where(and(...conditions)).orderBy(desc(events.createdAt)).limit(50);
+      res.json(list);
+    } catch { res.status(500).json({ error: "Errore caricamento eventi" }); }
+  });
+
+  app.post("/api/events", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const body = { ...req.body, profileId: profile.id, profileName: profile.name || "Anonimo", profileImageUrl: profile.primaryPhoto || "" };
+      const parsed = insertEventSchema.parse(body);
+      const [event] = await db.insert(events).values(parsed).returning();
+      res.json(event);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Dati evento non validi", details: error.errors });
+      res.status(500).json({ error: "Errore creazione evento" });
+    }
+  });
+
+  app.patch("/api/events/:id/going", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const [event] = await db.select().from(events).where(eq(events.id, req.params.id));
+      if (!event) return res.status(404).json({ error: "Evento non trovato" });
+      const current = event.attendees || [];
+      const isGoing = current.includes(profile.id);
+      const newAttendees = isGoing ? current.filter((id: string) => id !== profile.id) : [...current, profile.id];
+      const [updated] = await db.update(events).set({ attendees: newAttendees, goingCount: newAttendees.length }).where(eq(events.id, req.params.id)).returning();
+      res.json({ event: updated, going: !isGoing });
+    } catch { res.status(500).json({ error: "Errore aggiornamento" }); }
+  });
+
+  app.patch("/api/events/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const { status } = req.body;
+      if (!["active","closed"].includes(status)) return res.status(400).json({ error: "Status non valido" });
+      const [event] = await db.select().from(events).where(eq(events.id, req.params.id));
+      if (!event || (event.profileId !== profile.id && !req.user.isAdmin)) return res.status(403).json({ error: "Non autorizzato" });
+      const [updated] = await db.update(events).set({ status }).where(eq(events.id, req.params.id)).returning();
+      res.json(updated);
+    } catch { res.status(500).json({ error: "Errore aggiornamento status" }); }
+  });
+
+  app.delete("/api/events/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const [event] = await db.select().from(events).where(eq(events.id, req.params.id));
+      if (!event) return res.status(404).json({ error: "Evento non trovato" });
+      if (event.profileId !== profile.id && !req.user.isAdmin) return res.status(403).json({ error: "Non autorizzato" });
+      await db.delete(events).where(eq(events.id, req.params.id));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore eliminazione evento" }); }
   });
 
   // ─── Vibra AI Search ──────────────────────────────────────────────────────────
