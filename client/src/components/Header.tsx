@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Heart, Shield, Trophy, Lock, Eye, Zap, MapPin, MessageCircle, Film, LayoutGrid } from "lucide-react";
+import { User, Heart, Shield, Trophy, Lock, Eye, Zap, MapPin, Film, LayoutGrid } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -399,7 +399,6 @@ export function BottomNav() {
     { path: "/challenges", icon: Trophy, label: t("nav.challenges"), badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
     { path: "/vibing", icon: Zap, label: t("nav.vibing"), badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
     { path: "/reels", icon: Film, label: "Profilo Video", badge: 0, color: "text-violet-400", activeBg: "bg-violet-600" },
-    { path: "/vibrapp", icon: MessageCircle, label: t("nav.vibrapp"), badge: vibrappBadge, color: "text-green-400", activeBg: "bg-green-600" },
     { path: "/dove-sei", icon: MapPin, label: t("nav.location"), badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
     { path: "/private-rooms", icon: Lock, label: t("nav.private"), badge: pendingRoomCount, color: "text-purple-400", activeBg: "bg-purple-500" },
     { path: "/profile", icon: User, label: t("nav.profile"), badge: 0, color: "text-emerald-400", activeBg: "bg-emerald-500" },
