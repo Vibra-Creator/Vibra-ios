@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Heart, Shield, Trophy, Lock, Eye, Zap, MapPin, Film, LayoutGrid } from "lucide-react";
+import { User, Heart, Shield, Lock, Eye, Zap, MapPin, Film, LayoutGrid } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -396,7 +396,6 @@ export function BottomNav() {
     { path: "/", icon: LayoutGrid, label: t("nav.hub"), badge: 0, color: "text-violet-400", activeBg: "bg-violet-500" },
     { path: "/matches", icon: Heart, label: t("nav.matches"), badge: 0, color: "text-pink-400", activeBg: "bg-pink-500" },
     { path: "/favorites", icon: Heart, label: "Preferiti", badge: 0, color: "text-pink-300", activeBg: "bg-pink-500" },
-    { path: "/challenges", icon: Trophy, label: t("nav.challenges"), badge: 0, color: "text-amber-400", activeBg: "bg-amber-500" },
     { path: "/vibing", icon: Zap, label: t("nav.vibing"), badge: 0, color: "text-lime-400", activeBg: "bg-lime-500" },
     { path: "/reels", icon: Film, label: "Profilo Video", badge: 0, color: "text-violet-400", activeBg: "bg-violet-600" },
     { path: "/dove-sei", icon: MapPin, label: t("nav.location"), badge: 0, color: "text-sky-400", activeBg: "bg-sky-500" },
