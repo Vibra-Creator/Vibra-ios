@@ -1040,6 +1040,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "hub.card.mobility": "Taxi · Bus · Treno",
     "hub.card.spotify": "Musica & Vibe Match",
     "hub.card.work": "Lavoro e stage",
+    "hub.card.giovani": "Sezione Giovani",
 
     // Vibrapp
     "nav.vibrapp": "Vibrapp",
@@ -2116,6 +2117,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "hub.card.mobility": "Taxi · Bus · Train",
     "hub.card.spotify": "Music & Vibe Match",
     "hub.card.work": "Jobs & internships",
+    "hub.card.giovani": "Youth Section",
 
     // Vibrapp
     "nav.vibrapp": "Chat",
@@ -3191,6 +3193,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "hub.card.mobility": "Taxi · Bus · Tren",
     "hub.card.spotify": "Música & Vibe Match",
     "hub.card.work": "Trabajo y prácticas",
+    "hub.card.giovani": "Sección Jóvenes",
 
     // Vibrapp
     "nav.vibrapp": "Chat",

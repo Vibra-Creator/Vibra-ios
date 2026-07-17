@@ -53,6 +53,7 @@ const MarketplacePage = lazy(() => import("@/pages/marketplace"));
 const MobilitaPage = lazy(() => import("@/pages/mobilita"));
 const SpotifyPage = lazy(() => import("@/pages/spotify"));
 const LavoroPage = lazy(() => import("@/pages/lavoro"));
+const GiovaniPage = lazy(() => import("@/pages/giovani"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
@@ -167,6 +168,7 @@ function AuthenticatedRouter() {
       <Route path="/mobilita" component={MobilitaPage} />
       <Route path="/spotify" component={SpotifyPage} />
       <Route path="/lavoro" component={LavoroPage} />
+      <Route path="/giovani" component={GiovaniPage} />
       <Route path="/dove-sei" component={LocationMap} />
       <Route path="/video-upload" component={VideoUpload} />
       <Route path="/reels" component={Reels} />
@@ -220,6 +222,7 @@ function GuestRouter() {
       <Route path="/signals" component={Signals} />
       <Route path="/reels" component={Reels} />
       <Route path="/blog" component={Blog} />
+      <Route path="/giovani" component={GiovaniPage} />
       <Route path="/p/:profileId" component={PublicProfile} />
       <Route component={NotFound} />
     </Switch>
@@ -239,6 +242,7 @@ function UnauthenticatedRouter() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/blog" component={Blog} />
+      <Route path="/giovani" component={GiovaniPage} />
       <Route path="/p/:profileId" component={PublicProfile} />
       <Route path="/" component={Landing} />
       <Route component={Landing} />
