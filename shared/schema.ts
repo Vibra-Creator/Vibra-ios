@@ -673,3 +673,22 @@ export const events = pgTable("events", {
 export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, attendees: true, goingCount: true });
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type EventItem = typeof events.$inferSelect;
+
+// ─── Blog Posts (Giornale Comunitario) ────────────────────────────────────────
+export const blogPosts = pgTable("blog_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id").notNull(),
+  profileName: text("profile_name").notNull(),
+  profileImageUrl: text("profile_image_url").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  category: text("category").notNull().default("notizie"),
+  likes: text("likes").array().notNull().default(sql`ARRAY[]::text[]`),
+  likesCount: integer("likes_count").notNull().default(0),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({ id: true, createdAt: true, likes: true, likesCount: true });
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+export type BlogPost = typeof blogPosts.$inferSelect;

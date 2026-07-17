@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -5861,6 +5861,57 @@ REGOLE:
       await db.delete(hubPosts).where(eq(hubPosts.id, req.params.id));
       res.json({ ok: true });
     } catch { res.status(500).json({ error: "Errore eliminazione post" }); }
+  });
+
+  // ─── Blog Posts (Giornale Comunitario) ────────────────────────────────────────
+  app.get("/api/blog-posts", async (req, res) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const conditions = [eq(blogPosts.status, "active")];
+      if (category && category !== "tutti") conditions.push(eq(blogPosts.category, category));
+      const list = await db.select().from(blogPosts).where(and(...conditions)).orderBy(desc(blogPosts.createdAt)).limit(50);
+      res.json(list);
+    } catch { res.status(500).json({ error: "Errore caricamento articoli" }); }
+  });
+
+  app.post("/api/blog-posts", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const body = { ...req.body, profileId: profile.id, profileName: profile.name || "Anonimo", profileImageUrl: profile.primaryPhoto || "" };
+      const parsed = insertBlogPostSchema.parse(body);
+      const [post] = await db.insert(blogPosts).values(parsed).returning();
+      res.json(post);
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: "Dati non validi", details: error.errors });
+      res.status(500).json({ error: "Errore creazione articolo" });
+    }
+  });
+
+  app.patch("/api/blog-posts/:id/like", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, req.params.id));
+      if (!post) return res.status(404).json({ error: "Articolo non trovato" });
+      const current = post.likes || [];
+      const hasLiked = current.includes(profile.id);
+      const newLikes = hasLiked ? current.filter((id: string) => id !== profile.id) : [...current, profile.id];
+      const [updated] = await db.update(blogPosts).set({ likes: newLikes, likesCount: newLikes.length }).where(eq(blogPosts.id, req.params.id)).returning();
+      res.json({ post: updated, liked: !hasLiked });
+    } catch { res.status(500).json({ error: "Errore like" }); }
+  });
+
+  app.delete("/api/blog-posts/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfileByUserId(req.user.id);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+      const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, req.params.id));
+      if (!post) return res.status(404).json({ error: "Non trovato" });
+      if (post.profileId !== profile.id && !req.user.isAdmin) return res.status(403).json({ error: "Non autorizzato" });
+      await db.delete(blogPosts).where(eq(blogPosts.id, req.params.id));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ error: "Errore eliminazione" }); }
   });
 
   // ─── Vibra Events ─────────────────────────────────────────────────────────────
