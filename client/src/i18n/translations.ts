@@ -1038,7 +1038,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "hub.card.social": "Instagram · TikTok · FB",
     "hub.card.marketplace": "Compra e vendi",
     "hub.card.mobility": "Taxi · Bus · Treno",
-    "hub.card.spotify": "Musica & Vibe Match",
+    "hub.card.spotify": "Musica & Vibe",
     "hub.card.work": "Lavoro e stage",
     "hub.card.giovani": "Sezione Giovani",
 
@@ -2115,7 +2115,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "hub.card.social": "Instagram · TikTok · FB",
     "hub.card.marketplace": "Buy & sell",
     "hub.card.mobility": "Taxi · Bus · Train",
-    "hub.card.spotify": "Music & Vibe Match",
+    "hub.card.spotify": "Music & Vibe",
     "hub.card.work": "Jobs & internships",
     "hub.card.giovani": "Youth Section",
 
@@ -3191,7 +3191,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "hub.card.social": "Instagram · TikTok · FB",
     "hub.card.marketplace": "Compra y vende",
     "hub.card.mobility": "Taxi · Bus · Tren",
-    "hub.card.spotify": "Música & Vibe Match",
+    "hub.card.spotify": "Música & Vibe",
     "hub.card.work": "Trabajo y prácticas",
     "hub.card.giovani": "Sección Jóvenes",
 

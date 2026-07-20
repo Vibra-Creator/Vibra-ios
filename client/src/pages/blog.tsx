@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Newspaper, Heart, Trash2, PenSquare, X, Image, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Newspaper, Heart, Trash2, PenSquare, X, Send, ChevronDown, ChevronUp, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,11 +55,12 @@ function timeAgo(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 }
 
-function ArticleCard({ post, profileId, onLike, onDelete }: {
+function ArticleCard({ post, profileId, onLike, onDelete, onReport }: {
   post: BlogPost;
   profileId: string | null;
   onLike: (id: string) => void;
   onDelete: (id: string) => void;
+  onReport: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasLiked = profileId ? post.likes?.includes(profileId) : false;
@@ -122,6 +123,17 @@ function ArticleCard({ post, profileId, onLike, onDelete }: {
             <Heart className={`w-3.5 h-3.5 ${hasLiked ? "fill-current" : ""}`} />
             {post.likesCount > 0 && post.likesCount}
           </button>
+
+          {!isOwner && (
+            <button
+              onClick={() => onReport(post.id)}
+              className="p-1.5 rounded-full text-white/30 hover:text-amber-400 hover:bg-amber-500/10 transition-all"
+              title="Segnala contenuto"
+              data-testid={`button-report-${post.id}`}
+            >
+              <Flag className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {isOwner && (
             <button
@@ -189,6 +201,13 @@ export default function Blog() {
       toast({ title: "Eliminato", description: "Articolo rimosso." });
     },
   });
+
+  const handleReport = (id: string) => {
+    const subject = encodeURIComponent("Segnalazione articolo Blog Vibra");
+    const body = encodeURIComponent(`Segnalo il seguente articolo del Blog Vibra per contenuto inappropriato o illecito.\n\nID articolo: ${id}\n\nMotivo della segnalazione:\n[scrivi qui]`);
+    window.open(`mailto:privacyvibra@gmail.com?subject=${subject}&body=${body}`, "_blank");
+    toast({ title: "Segnalazione aperta", description: "Si aprirà la tua email per inviare la segnalazione a Vibra." });
+  };
 
   const onSubmit = (data: z.infer<typeof formSchema>) => createMutation.mutate(data);
 
@@ -359,6 +378,7 @@ export default function Blog() {
                 profileId={profile?.id ?? null}
                 onLike={(id) => user ? likeMutation.mutate(id) : toast({ title: "Accedi per mettere like", variant: "destructive" })}
                 onDelete={(id) => deleteMutation.mutate(id)}
+                onReport={handleReport}
               />
             ))}
           </div>

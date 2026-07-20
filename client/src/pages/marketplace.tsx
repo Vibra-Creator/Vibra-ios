@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Tag, MapPin, Phone, Trash2, CheckCircle, ShoppingBag } from "lucide-react";
+import { Plus, X, Tag, MapPin, Phone, Trash2, CheckCircle, ShoppingBag, AlertTriangle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -58,6 +58,17 @@ export default function MarketplacePage() {
           </div>
           <p className="text-white/40 text-sm">{t("market.subtitle")}</p>
         </motion.div>
+
+        {/* Disclaimer legale */}
+        <div className="flex items-start gap-2.5 p-3 mb-4 rounded-xl border border-amber-500/25 bg-amber-500/8" data-testid="marketplace-disclaimer">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p className="text-amber-200/70 text-xs leading-relaxed">
+            <span className="font-semibold text-amber-300">Vibra non è parte delle transazioni.</span>{" "}
+            Gli annunci sono pubblicati da privati sotto la loro esclusiva responsabilità.
+            Vibra non garantisce la qualità, la sicurezza o la legalità degli oggetti in vendita.
+            Acquista e vendi in sicurezza, preferendo incontri in luoghi pubblici.
+          </p>
+        </div>
 
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
