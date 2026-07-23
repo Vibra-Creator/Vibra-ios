@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -212,6 +212,42 @@ STILE — scrivi come su WhatsApp, max 1-2 frasi cortissime:
       "dimmi che nn sei di quelli che spariscono dopo il match",
       "quindi, cosa ci fai su questa app?",
       "boh tipo ciao, vediamo come va",
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+}
+
+async function generateBotReengagement(botProfile: any, userProfile: any, lastMessageContent?: string): Promise<string> {
+  try {
+    const isMale = botProfile.gender === "Uomo";
+    const systemPrompt = `Sei ${botProfile.name}, ${isMale ? "un tizio" : "una tipa"} di ${botProfile.age} anni di ${botProfile.location}.
+Hai matchato con ${userProfile.name} ma non vi scrivete da qualche giorno.${lastMessageContent ? ` L'ultimo messaggio era: "${lastMessageContent.substring(0, 80)}"` : ""}
+
+Mandagli/le UN messaggio di ripresa. STILE WhatsApp, max 1-2 frasi cortissime:
+- Niente "ci sei?" o "come stai?" — troppo banale.
+- Puoi fare una battuta, una domanda curiosa, un commento su un interesse, o riferimento all'ultima conversazione.
+- Abbreviazioni ok: cmq, tipo, boh, ahah, nn.
+- Zero maiuscole all'inizio, zero punto finale, max 1 emoji o zero.
+- Tono: diretto, un po' ironico, come se avessi pensato a qualcosa di interessante da dire.
+- Non rivelare mai di essere un bot.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: "[Riprendi la conversazione]" },
+      ],
+      max_tokens: 80,
+      temperature: 1.1,
+    });
+    return response.choices[0]?.message?.content?.trim() || "ehi, stavo pensando a te ahah";
+  } catch {
+    const fallbacks = [
+      "ehi pensavo a una cosa che avevi detto...",
+      "scommetto che hai dimenticato che esistevo lol",
+      "ok tipo non so perché ma ho pensato a te oggi",
+      "ciao, ancora qui 👀",
+      "dimmi che non sono solo io a sparire ogni tanto",
     ];
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
@@ -6050,6 +6086,181 @@ Rispondi SOLO con questo JSON (nessun altro testo):
       res.status(500).json({ error: "Errore AI" });
     }
   });
+
+  // ─── Visite al profilo ────────────────────────────────────────────────────────
+
+  app.post("/api/profiles/:id/visit", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      const viewer = await storage.getProfileByUserId(userId);
+      if (!viewer) return res.status(404).json({ error: "Profile not found" });
+
+      const viewedId = req.params.id;
+      if (viewer.id === viewedId) return res.json({ ok: true });
+
+      const viewedProfile = await storage.getProfile(viewedId);
+      if (!viewedProfile || viewedProfile.isBot) return res.json({ ok: true });
+
+      const now = new Date();
+      const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      const [existing] = await db
+        .select()
+        .from(profileViews)
+        .where(
+          and(
+            eq(profileViews.viewerId, viewer.id),
+            eq(profileViews.viewedId, viewedId),
+            gt(profileViews.viewedAt, since24h)
+          )
+        )
+        .limit(1);
+
+      if (!existing) {
+        await db.insert(profileViews).values({
+          viewerId: viewer.id,
+          viewedId,
+        });
+
+        sendPushToProfile(viewedId, {
+          title: `👀 Qualcuno ha visitato il tuo profilo`,
+          body: `${viewer.name}, ${viewer.age} anni da ${viewer.location || "Italia"} ha visitato il tuo profilo`,
+          icon: viewer.imageUrl || "/icons/icon-192.png",
+          url: `/profile`,
+          type: "profile-visit",
+        });
+      }
+
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("[profile-visit] error:", err);
+      res.status(500).json({ error: "Errore interno" });
+    }
+  });
+
+  app.get("/api/profiles/visitors", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      const rows = await db
+        .select({
+          viewerId: profileViews.viewerId,
+          viewedAt: profileViews.viewedAt,
+        })
+        .from(profileViews)
+        .where(
+          and(
+            eq(profileViews.viewedId, profile.id),
+            gt(profileViews.viewedAt, since7d)
+          )
+        )
+        .orderBy(desc(profileViews.viewedAt))
+        .limit(50);
+
+      const uniqueViewerIds = [...new Set(rows.map((r) => r.viewerId))];
+      const visitorProfiles = await Promise.all(
+        uniqueViewerIds.map((id) => storage.getProfile(id))
+      );
+
+      const visitors = uniqueViewerIds
+        .map((id) => {
+          const p = visitorProfiles.find((vp) => vp?.id === id);
+          const row = rows.find((r) => r.viewerId === id);
+          if (!p) return null;
+          return {
+            id: p.id,
+            name: p.name,
+            age: p.age,
+            imageUrl: p.imageUrl,
+            location: p.location,
+            viewedAt: row?.viewedAt,
+          };
+        })
+        .filter(Boolean);
+
+      res.json(visitors);
+    } catch (err) {
+      console.error("[profile-visitors] error:", err);
+      res.status(500).json({ error: "Errore interno" });
+    }
+  });
+
+  // ─── Bot Re-engagement Job (ogni 8 ore) ──────────────────────────────────────
+  async function runBotReengagementJob() {
+    try {
+      console.log("[bot-reengagement] Starting job...");
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+      const allMatches = await db.select().from(matches);
+
+      let sent = 0;
+      for (const match of allMatches) {
+        try {
+          const [p1, p2] = await Promise.all([
+            storage.getProfile(match.profile1Id),
+            storage.getProfile(match.profile2Id),
+          ]);
+          if (!p1 || !p2) continue;
+
+          const botProfile = p1.isBot ? p1 : p2.isBot ? p2 : null;
+          const realProfile = p1.isBot ? p2 : p2.isBot ? p1 : null;
+          if (!botProfile || !realProfile) continue;
+
+          const matchMessages = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.matchId, match.id))
+            .orderBy(desc(messages.createdAt))
+            .limit(1);
+
+          const lastMsg = matchMessages[0];
+          if (lastMsg && new Date(lastMsg.createdAt) > threeDaysAgo) continue;
+          if (lastMsg && lastMsg.senderId === botProfile.id) continue;
+
+          const delayMs = Math.random() * 4 * 60 * 60 * 1000;
+          setTimeout(async () => {
+            try {
+              const text = await generateBotReengagement(
+                botProfile,
+                realProfile,
+                lastMsg?.content
+              );
+              await storage.createMessage({
+                matchId: match.id,
+                senderId: botProfile.id,
+                content: text,
+              });
+              sendPushToProfile(realProfile.id, {
+                title: `💫 ${botProfile.name} ti ha scritto!`,
+                body: text.substring(0, 100),
+                icon: botProfile.imageUrl || "/icons/icon-192.png",
+                url: `/chat/${match.id}`,
+                type: "bot-reengagement",
+              });
+              console.log(`[bot-reengagement] Sent from ${botProfile.name} → ${realProfile.name}`);
+            } catch (e) {
+              console.error("[bot-reengagement] send error:", e);
+            }
+          }, delayMs);
+
+          sent++;
+          if (sent >= 20) break;
+        } catch {}
+      }
+      console.log(`[bot-reengagement] Job done — queued ${sent} messages`);
+    } catch (err) {
+      console.error("[bot-reengagement] job error:", err);
+    }
+  }
+
+  setTimeout(() => {
+    runBotReengagementJob();
+    setInterval(runBotReengagementJob, 8 * 60 * 60 * 1000);
+  }, 60_000);
 
   // ─────────────────────────────────────────────────────────────────────────────
 

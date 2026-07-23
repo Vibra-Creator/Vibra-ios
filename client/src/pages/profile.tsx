@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint, BookMarked, ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint, BookMarked, ShieldCheck, CheckCircle2, XCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -700,6 +700,12 @@ export default function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: visitorsData } = useQuery<{ id: string; name: string; age: number; imageUrl: string; location: string; viewedAt: string }[]>({
+    queryKey: ["/api/profiles/visitors"],
+    enabled: !!profile && !isGuest,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: ghostStatus, refetch: refetchGhost } = useQuery<{ active: boolean; expiresAt: string | null }>({
     queryKey: ["/api/ghost/status"],
     enabled: !!profile && !isGuest,
@@ -878,6 +884,28 @@ export default function ProfilePage() {
             </motion.div>
           ))}
         </div>
+
+        {/* Chi ti ha visitato */}
+        {visitorsData && visitorsData.length > 0 && (
+          <div className="w-full" data-testid="section-visitors">
+            <h3 className="text-base font-semibold mb-3 flex items-center gap-2 text-white">
+              <Eye className="w-4 h-4 text-purple-400" />
+              Chi ha visitato il tuo profilo
+              <Badge className="bg-purple-500/30 text-purple-200 text-xs">{visitorsData.length}</Badge>
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+              {visitorsData.map((v) => (
+                <div key={v.id} className="flex flex-col items-center gap-1.5 min-w-[68px]" data-testid={`visitor-${v.id}`}>
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-purple-500/40">
+                    <img src={v.imageUrl} alt={v.name} className="w-full h-full object-cover object-top" />
+                  </div>
+                  <span className="text-white text-[11px] font-medium text-center leading-tight">{v.name}</span>
+                  <span className="text-white/40 text-[10px]">{v.age} anni</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Social links */}
         {((profile as any).instagramHandle || (profile as any).tiktokHandle || (profile as any).facebookUrl) && (

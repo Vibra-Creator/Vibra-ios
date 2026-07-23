@@ -1273,7 +1273,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {/* Profilo */}
-                    <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowDetail(true); }}
+                    <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowDetail(true); fetch(`/api/profiles/${profile.id}/visit`, { method: "POST", credentials: "include" }).catch(() => {}); }}
                       className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-profile-sidebar-${profile.id}`}>
                       <User className="w-9 h-9 text-blue-400 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" />
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Profilo</span>

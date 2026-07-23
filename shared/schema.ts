@@ -674,6 +674,16 @@ export const insertEventSchema = createInsertSchema(events).omit({ id: true, cre
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type EventItem = typeof events.$inferSelect;
 
+// ─── Profile Views ────────────────────────────────────────────────────────────
+export const profileViews = pgTable("profile_views", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  viewerId: varchar("viewer_id").notNull(),
+  viewedId: varchar("viewed_id").notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+});
+export type ProfileView = typeof profileViews.$inferSelect;
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ─── Blog Posts (Giornale Comunitario) ────────────────────────────────────────
 export const blogPosts = pgTable("blog_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

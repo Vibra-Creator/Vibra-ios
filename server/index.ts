@@ -379,6 +379,19 @@ app.use((req, res, next) => {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS events_profile_idx ON events(profile_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS events_date_idx ON events(event_date)`);
     console.log("[migration] Events table ready");
+
+    // ── Profile Views ──────────────────────────────────────────────────────
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS profile_views (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        viewer_id VARCHAR NOT NULL,
+        viewed_id VARCHAR NOT NULL,
+        viewed_at TIMESTAMP DEFAULT NOW() NOT NULL
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS profile_views_viewed_idx ON profile_views(viewed_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS profile_views_viewer_idx ON profile_views(viewer_id)`);
+    console.log("[migration] Profile Views table ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }
