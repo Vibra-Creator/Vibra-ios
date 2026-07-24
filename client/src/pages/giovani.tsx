@@ -72,7 +72,7 @@ const CATEGORIES: Category[] = [
     bg: "bg-red-500/8",
     items: [
       { label: "TED Talks Motivazionali", desc: "Inspira e cambia prospettiva", href: "https://www.ted.com/topics/motivation", external: true },
-      { label: "Supporto Psicologico", desc: "Aiuto online e gratuito", href: "https://www.telefono-amico.it", external: true },
+      { label: "Supporto Psicologico", desc: "Aiuto online e gratuito", href: "https://www.azzurro.it", external: true },
     ],
   },
   {
