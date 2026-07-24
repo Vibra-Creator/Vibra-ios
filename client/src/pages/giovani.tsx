@@ -94,7 +94,7 @@ const CATEGORIES: Category[] = [
     bg: "bg-sky-500/8",
     items: [
       { label: "Interrail Pass", desc: "Scopri l'Europa low cost", href: "https://www.interrail.eu/it", external: true },
-      { label: "Volontariato Estero", desc: "Parti e aiuta nel mondo", href: "https://www.serviziovolontario.eu", external: true },
+      { label: "Volontariato Estero", desc: "Parti e aiuta nel mondo", href: "https://www.europeansolidaritycorps.eu/it", external: true },
     ],
   },
   {
