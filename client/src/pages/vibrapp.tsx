@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useVibrappSocket } from "@/contexts/VibrappSocketContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink, Mic, Square, MicOff, ShieldBan } from "lucide-react";
+import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink, Mic, Square, MicOff, ShieldBan, Flag } from "lucide-react";
 import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -212,6 +212,8 @@ export default function Vibrapp() {
     setReplyText("");
     setColdMsgDeleteConfirm(false);
     setColdMsgBlockConfirm(false);
+    setColdMsgReportConfirm(false);
+    setReportReason("");
   }, []);
 
   const refreshSelectedColdMessage = useCallback(async (msg: ReceivedColdMsg) => {
@@ -221,6 +223,8 @@ export default function Vibrapp() {
       setReplyText("");
       setColdMsgDeleteConfirm(false);
       setColdMsgBlockConfirm(false);
+      setColdMsgReportConfirm(false);
+      setReportReason("");
       return;
     }
     const data = await res.json();
@@ -240,10 +244,14 @@ export default function Vibrapp() {
     setReplyText("");
     setColdMsgDeleteConfirm(false);
     setColdMsgBlockConfirm(false);
+    setColdMsgReportConfirm(false);
+    setReportReason("");
   }, []);
 
   const [coldMsgDeleteConfirm, setColdMsgDeleteConfirm] = useState(false);
   const [coldMsgBlockConfirm, setColdMsgBlockConfirm] = useState(false);
+  const [coldMsgReportConfirm, setColdMsgReportConfirm] = useState(false);
+  const [reportReason, setReportReason] = useState("");
 
   const blockSenderMutation = useMutation({
     mutationFn: async ({ blockedId, coldMsgId }: { blockedId: string; coldMsgId: string }) => {
@@ -258,6 +266,28 @@ export default function Vibrapp() {
     },
     onError: () => {
       alert("Errore nel blocco dell'utente. Riprova.");
+    },
+  });
+
+  const reportSenderMutation = useMutation({
+    mutationFn: async ({ reportedId, reason, coldMsgId, alsoBlock }: { reportedId: string; reason: string; coldMsgId: string; alsoBlock: boolean }) => {
+      await apiRequest("POST", "/api/reports", { reportedId, reason });
+      if (alsoBlock) {
+        await apiRequest("POST", "/api/block", { blockedId: reportedId });
+        await apiRequest("DELETE", `/api/cold-messages/${coldMsgId}`);
+      }
+    },
+    onSuccess: (_data, variables) => {
+      setSelectedColdMsg(null);
+      setColdMsgReportConfirm(false);
+      setReportReason("");
+      if (variables.alsoBlock) {
+        refetchColdMsgs();
+        queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
+      }
+    },
+    onError: () => {
+      alert("Errore nell'invio della segnalazione. Riprova.");
     },
   });
 
@@ -1863,6 +1893,45 @@ export default function Vibrapp() {
                     </Button>
                   </div>
                 </div>
+              ) : coldMsgReportConfirm ? (
+                <div className="space-y-3">
+                  <p className="text-white/70 text-sm text-center">Segnala {selectedColdMsg.fromProfile.name} per:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "spam", label: "🗑️ Spam" },
+                      { value: "inappropriate_content", label: "🔞 Contenuto inappropriato" },
+                      { value: "harassment", label: "😠 Molestie" },
+                      { value: "fake_profile", label: "🎭 Profilo falso" },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setReportReason(opt.value)}
+                        className={`text-sm rounded-lg px-3 py-2 border transition-colors ${reportReason === opt.value ? "border-yellow-500 bg-yellow-500/20 text-white" : "border-white/20 bg-white/5 text-white/70 hover:border-white/40"}`}
+                        data-testid={`button-report-reason-${opt.value}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 text-white/60"
+                      onClick={() => { setColdMsgReportConfirm(false); setReportReason(""); }}
+                      data-testid="button-cancel-report-confirm"
+                    >
+                      Annulla
+                    </Button>
+                    <Button
+                      className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white"
+                      disabled={!reportReason || reportSenderMutation.isPending}
+                      onClick={() => reportSenderMutation.mutate({ reportedId: selectedColdMsg.fromProfile.id, reason: reportReason, coldMsgId: selectedColdMsg.id, alsoBlock: true })}
+                      data-testid="button-confirm-report-sender"
+                    >
+                      {reportSenderMutation.isPending ? "..." : "🚩 Segnala e blocca"}
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex gap-2">
                   <Button
@@ -1882,7 +1951,16 @@ export default function Vibrapp() {
                   >
                     <ShieldBan className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" className="flex-1 text-white/60" onClick={() => { setSelectedColdMsg(null); setColdMsgDeleteConfirm(false); setColdMsgBlockConfirm(false); }} data-testid="button-cancel-cold-reply">
+                  <Button
+                    variant="ghost"
+                    className="text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-900/20 px-3"
+                    onClick={() => setColdMsgReportConfirm(true)}
+                    data-testid="button-report-sender"
+                    title="Segnala mittente"
+                  >
+                    <Flag className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" className="flex-1 text-white/60" onClick={() => { setSelectedColdMsg(null); setColdMsgDeleteConfirm(false); setColdMsgBlockConfirm(false); setColdMsgReportConfirm(false); setReportReason(""); }} data-testid="button-cancel-cold-reply">
                     Chiudi
                   </Button>
                   <Button
