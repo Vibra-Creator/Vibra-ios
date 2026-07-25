@@ -48,3 +48,7 @@ VITE_VAPID_PUBLIC_KEY = "BKrxlm25h6cieFN1OL6ZY1H62knRWDOu0qzbvjxWm7ByeAGxWUqMjUI
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 120000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
