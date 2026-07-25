@@ -106,6 +106,8 @@ export default function Vibrapp() {
   const [introIsUploading, setIntroIsUploading] = useState(false);
   const [viewedSenderProfile, setViewedSenderProfile] = useState<any | null>(null);
   const [returnToColdMsg, setReturnToColdMsg] = useState<ReceivedColdMsg | null>(null);
+  const [loadingSenderProfile, setLoadingSenderProfile] = useState(false);
+  const [senderProfileToast, setSenderProfileToast] = useState<string | null>(null);
   const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const introAudioChunksRef = useRef<Blob[]>([]);
   const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1725,48 +1727,64 @@ export default function Vibrapp() {
               <div className="flex items-center gap-3 mb-3">
                 <button
                   type="button"
-                  className="shrink-0 focus:outline-none"
+                  className="shrink-0 focus:outline-none relative"
                   onClick={async () => {
+                    if (loadingSenderProfile) return;
+                    const current = selectedColdMsg;
+                    setLoadingSenderProfile(true);
                     try {
-                      const current = selectedColdMsg;
-                      setReturnToColdMsg(current);
-                      setSelectedColdMsg(null);
                       const res = await fetch(`/api/profiles/${current.fromProfile.id}`, { credentials: "include" });
                       if (res.ok) {
                         const p = await res.json();
+                        setReturnToColdMsg(current);
+                        setSelectedColdMsg(null);
                         setViewedSenderProfile(p);
                       } else {
-                        setSelectedColdMsg(current);
-                        setReturnToColdMsg(null);
+                        setSenderProfileToast("Impossibile caricare il profilo. Riprova.");
+                        setTimeout(() => setSenderProfileToast(null), 3500);
                       }
                     } catch {
-                      setSelectedColdMsg(returnToColdMsg);
-                      setReturnToColdMsg(null);
+                      setSenderProfileToast("Impossibile caricare il profilo. Riprova.");
+                      setTimeout(() => setSenderProfileToast(null), 3500);
+                    } finally {
+                      setLoadingSenderProfile(false);
                     }
                   }}
                   data-testid="button-view-sender-profile"
                   title="Vedi profilo completo"
                 >
                   <img src={selectedColdMsg.fromProfile.imageUrl} alt={selectedColdMsg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 hover:border-purple-300 transition-colors" loading="lazy" />
+                  {loadingSenderProfile && (
+                    <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                      <svg className="w-5 h-5 text-white animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                    </span>
+                  )}
                 </button>
                 <div
                   className="cursor-pointer"
                   onClick={async () => {
+                    if (loadingSenderProfile) return;
+                    const current = selectedColdMsg;
+                    setLoadingSenderProfile(true);
                     try {
-                      const current = selectedColdMsg;
-                      setReturnToColdMsg(current);
-                      setSelectedColdMsg(null);
                       const res = await fetch(`/api/profiles/${current.fromProfile.id}`, { credentials: "include" });
                       if (res.ok) {
                         const p = await res.json();
+                        setReturnToColdMsg(current);
+                        setSelectedColdMsg(null);
                         setViewedSenderProfile(p);
                       } else {
-                        setSelectedColdMsg(current);
-                        setReturnToColdMsg(null);
+                        setSenderProfileToast("Impossibile caricare il profilo. Riprova.");
+                        setTimeout(() => setSenderProfileToast(null), 3500);
                       }
                     } catch {
-                      setSelectedColdMsg(returnToColdMsg);
-                      setReturnToColdMsg(null);
+                      setSenderProfileToast("Impossibile caricare il profilo. Riprova.");
+                      setTimeout(() => setSenderProfileToast(null), 3500);
+                    } finally {
+                      setLoadingSenderProfile(false);
                     }
                   }}
                   data-testid="button-view-sender-name"
@@ -2057,6 +2075,21 @@ export default function Vibrapp() {
                 </Button>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Sender profile fetch error toast ─────────────────────────────── */}
+      <AnimatePresence>
+        {senderProfileToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[300] bg-red-600/90 text-white text-sm px-4 py-2 rounded-full shadow-lg pointer-events-none"
+            data-testid="sender-profile-toast"
+          >
+            {senderProfileToast}
           </motion.div>
         )}
       </AnimatePresence>
