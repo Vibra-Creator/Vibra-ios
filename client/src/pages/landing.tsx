@@ -814,6 +814,12 @@ export default function Landing() {
               <img src={vibraLogo} alt="Vibra" className="w-6 h-6 rounded-full" style={{ mixBlendMode: "screen" }} />
               <span>{t("landing.footerRights")}</span>
             </div>
+            <div className="flex items-center gap-1 text-white/40 text-xs">
+              <span>Made with</span>
+              <span className="text-rose-400">♥</span>
+              <span>by</span>
+              <span className="text-white/60 font-medium">Fabio Mattoni</span>
+            </div>
             <div className="flex items-center gap-6">
               <Link href="/privacy" className="hover:text-white/80 transition-colors">
                 {t("landing.footerPrivacy")}
