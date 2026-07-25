@@ -105,6 +105,7 @@ export default function Vibrapp() {
   const [introAudioUrl, setIntroAudioUrl] = useState<string | null>(null);
   const [introIsUploading, setIntroIsUploading] = useState(false);
   const [viewedSenderProfile, setViewedSenderProfile] = useState<any | null>(null);
+  const [returnToColdMsg, setReturnToColdMsg] = useState<ReceivedColdMsg | null>(null);
   const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const introAudioChunksRef = useRef<Blob[]>([]);
   const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1702,10 +1703,59 @@ export default function Vibrapp() {
               data-testid="coldmsg-reply-panel"
             >
               <div className="flex items-center gap-3 mb-3">
-                <img src={selectedColdMsg.fromProfile.imageUrl} alt={selectedColdMsg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500" loading="lazy" />
-                <div>
-                  <p className="text-white font-bold">{selectedColdMsg.fromProfile.name}, {selectedColdMsg.fromProfile.age}</p>
-                  <p className="text-white/50 text-xs">Ti ha inviato una presentazione</p>
+                <button
+                  type="button"
+                  className="shrink-0 focus:outline-none"
+                  onClick={async () => {
+                    try {
+                      const current = selectedColdMsg;
+                      setReturnToColdMsg(current);
+                      setSelectedColdMsg(null);
+                      const res = await fetch(`/api/profiles/${current.fromProfile.id}`, { credentials: "include" });
+                      if (res.ok) {
+                        const p = await res.json();
+                        setViewedSenderProfile(p);
+                      } else {
+                        setSelectedColdMsg(current);
+                        setReturnToColdMsg(null);
+                      }
+                    } catch {
+                      setSelectedColdMsg(returnToColdMsg);
+                      setReturnToColdMsg(null);
+                    }
+                  }}
+                  data-testid="button-view-sender-profile"
+                  title="Vedi profilo completo"
+                >
+                  <img src={selectedColdMsg.fromProfile.imageUrl} alt={selectedColdMsg.fromProfile.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 hover:border-purple-300 transition-colors" loading="lazy" />
+                </button>
+                <div
+                  className="cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      const current = selectedColdMsg;
+                      setReturnToColdMsg(current);
+                      setSelectedColdMsg(null);
+                      const res = await fetch(`/api/profiles/${current.fromProfile.id}`, { credentials: "include" });
+                      if (res.ok) {
+                        const p = await res.json();
+                        setViewedSenderProfile(p);
+                      } else {
+                        setSelectedColdMsg(current);
+                        setReturnToColdMsg(null);
+                      }
+                    } catch {
+                      setSelectedColdMsg(returnToColdMsg);
+                      setReturnToColdMsg(null);
+                    }
+                  }}
+                  data-testid="button-view-sender-name"
+                >
+                  <p className="text-white font-bold hover:text-purple-300 transition-colors flex items-center gap-1">
+                    {selectedColdMsg.fromProfile.name}, {selectedColdMsg.fromProfile.age}
+                    <ExternalLink className="w-3.5 h-3.5 text-purple-400/70" />
+                  </p>
+                  <p className="text-white/50 text-xs">Ti ha inviato una presentazione · <span className="text-purple-400">Vedi profilo</span></p>
                 </div>
               </div>
               <div className="bg-[#1f2937] rounded-xl p-3 mb-4 border border-purple-500/20">
@@ -1816,7 +1866,13 @@ export default function Vibrapp() {
         <ProfileDetailModal
           profile={viewedSenderProfile}
           isOpen={!!viewedSenderProfile}
-          onClose={() => setViewedSenderProfile(null)}
+          onClose={() => {
+            setViewedSenderProfile(null);
+            if (returnToColdMsg) {
+              setSelectedColdMsg(returnToColdMsg);
+              setReturnToColdMsg(null);
+            }
+          }}
         />
       )}
 
