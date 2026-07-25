@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useVibrappSocket } from "@/contexts/VibrappSocketContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink, Mic, Square, MicOff } from "lucide-react";
+import { Send, Reply, X, ChevronDown, Smile, Check, CheckCheck, ArrowDown, MessageCircle, Lock, Trash2, Paperclip, Image as ImageIcon, Video, ZoomIn, ExternalLink, Mic, Square, MicOff, ShieldBan } from "lucide-react";
 import { playNotificationSound, initNotificationSound } from "@/lib/notification-sound";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -209,6 +209,7 @@ export default function Vibrapp() {
     setSelectedColdMsg(msg);
     setReplyText("");
     setColdMsgDeleteConfirm(false);
+    setColdMsgBlockConfirm(false);
   }, []);
 
   const refreshSelectedColdMessage = useCallback(async (msg: ReceivedColdMsg) => {
@@ -217,6 +218,7 @@ export default function Vibrapp() {
       setSelectedColdMsg(msg);
       setReplyText("");
       setColdMsgDeleteConfirm(false);
+      setColdMsgBlockConfirm(false);
       return;
     }
     const data = await res.json();
@@ -235,9 +237,27 @@ export default function Vibrapp() {
     }
     setReplyText("");
     setColdMsgDeleteConfirm(false);
+    setColdMsgBlockConfirm(false);
   }, []);
 
   const [coldMsgDeleteConfirm, setColdMsgDeleteConfirm] = useState(false);
+  const [coldMsgBlockConfirm, setColdMsgBlockConfirm] = useState(false);
+
+  const blockSenderMutation = useMutation({
+    mutationFn: async ({ blockedId, coldMsgId }: { blockedId: string; coldMsgId: string }) => {
+      await apiRequest("POST", "/api/block", { blockedId });
+      await apiRequest("DELETE", `/api/cold-messages/${coldMsgId}`);
+    },
+    onSuccess: () => {
+      setSelectedColdMsg(null);
+      setColdMsgBlockConfirm(false);
+      refetchColdMsgs();
+      queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
+    },
+    onError: () => {
+      alert("Errore nel blocco dell'utente. Riprova.");
+    },
+  });
 
   const deleteColdMsgMutation = useMutation({
     mutationFn: async (id: string) =>
@@ -1803,6 +1823,28 @@ export default function Vibrapp() {
                     </Button>
                   </div>
                 </div>
+              ) : coldMsgBlockConfirm ? (
+                <div className="space-y-2">
+                  <p className="text-white/70 text-sm text-center">Bloccare {selectedColdMsg.fromProfile.name}? Non potrà più contattarti.</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      className="flex-1 text-white/60"
+                      onClick={() => setColdMsgBlockConfirm(false)}
+                      data-testid="button-cancel-block-confirm"
+                    >
+                      Annulla
+                    </Button>
+                    <Button
+                      className="flex-1 bg-orange-600 hover:bg-orange-500 text-white"
+                      disabled={blockSenderMutation.isPending}
+                      onClick={() => blockSenderMutation.mutate({ blockedId: selectedColdMsg.fromProfile.id, coldMsgId: selectedColdMsg.id })}
+                      data-testid="button-confirm-block-sender"
+                    >
+                      {blockSenderMutation.isPending ? "..." : "🚫 Sì, blocca"}
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex gap-2">
                   <Button
@@ -1813,7 +1855,16 @@ export default function Vibrapp() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" className="flex-1 text-white/60" onClick={() => { setSelectedColdMsg(null); setColdMsgDeleteConfirm(false); }} data-testid="button-cancel-cold-reply">
+                  <Button
+                    variant="ghost"
+                    className="text-orange-400/70 hover:text-orange-400 hover:bg-orange-900/20 px-3"
+                    onClick={() => setColdMsgBlockConfirm(true)}
+                    data-testid="button-block-sender"
+                    title="Blocca mittente"
+                  >
+                    <ShieldBan className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" className="flex-1 text-white/60" onClick={() => { setSelectedColdMsg(null); setColdMsgDeleteConfirm(false); setColdMsgBlockConfirm(false); }} data-testid="button-cancel-cold-reply">
                     Chiudi
                   </Button>
                   <Button
