@@ -292,6 +292,66 @@ export default function HubPage() {
           ))}
         </div>
 
+        {/* Musica & Locali */}
+        <motion.p
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+          className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-3 mt-5"
+        >
+          🎶 Musica & Locali
+        </motion.p>
+        <div className="flex flex-col gap-3">
+          {[
+            {
+              name: "Resident Advisor",
+              desc: "Club, serate elettroniche e DJ set vicino a te",
+              emoji: "🎧",
+              url: "https://ra.co/events/it",
+              color: ["#f43f5e", "#e11d48"],
+            },
+            {
+              name: "Songkick",
+              desc: "Concerti live di tutti i generi in Italia",
+              emoji: "🎤",
+              url: "https://www.songkick.com/metro-areas/28376-italy",
+              color: ["#f97316", "#ea580c"],
+            },
+            {
+              name: "TicketOne",
+              desc: "Karaoke, discoteche, concerti — eventi italiani",
+              emoji: "🎟️",
+              url: "https://www.ticketone.it",
+              color: ["#8b5cf6", "#7c3aed"],
+            },
+          ].map((tool, i) => (
+            <motion.button
+              key={tool.name}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.07 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => window.open(tool.url, "_blank")}
+              className="relative rounded-2xl p-4 text-left overflow-hidden flex items-center gap-4"
+              style={{
+                background: `linear-gradient(135deg, ${tool.color[0]}22, ${tool.color[1]}18)`,
+                border: `1px solid ${tool.color[0]}40`,
+              }}
+            >
+              <div
+                className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20 -translate-y-6 translate-x-6"
+                style={{ background: `radial-gradient(circle, ${tool.color[0]}, transparent)` }}
+              />
+              <span className="text-3xl">{tool.emoji}</span>
+              <div>
+                <p className="text-white font-bold text-sm leading-tight" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+                  {tool.name}
+                </p>
+                <p className="text-white/50 text-xs mt-0.5">{tool.desc}</p>
+              </div>
+              <span className="ml-auto text-white/30 text-lg">↗</span>
+            </motion.button>
+          ))}
+        </div>
+
         {/* Strumenti AI */}
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
