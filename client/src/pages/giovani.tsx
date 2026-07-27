@@ -60,7 +60,7 @@ const CATEGORIES: Category[] = [
     border: "border-purple-500/30",
     bg: "bg-purple-500/8",
     items: [
-      { label: "Call per Startup", desc: "Bandi e acceleratori", href: "https://www.mise.gov.it/it/impresa/competitivita-e-nuove-imprese/startup-e-pmi-innovative", external: true },
+      { label: "Call per Startup", desc: "Bandi e acceleratori", href: "https://www.mimit.gov.it/it/impresa/competitivita-e-nuove-imprese/startup-e-pmi-innovative", external: true },
       { label: "Giovani Imprenditori", desc: "Mentorship e corsi", href: "https://www.giovanimprenditori.org", external: true },
     ],
   },
