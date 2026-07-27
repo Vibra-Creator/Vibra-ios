@@ -234,6 +234,8 @@ export const reports = pgTable("reports", {
   reason: text("reason").notNull(),
   description: text("description"),
   status: text("status").default("pending"),
+  coldMessageId: varchar("cold_message_id"),
+  coldMessageContent: text("cold_message_content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
 });

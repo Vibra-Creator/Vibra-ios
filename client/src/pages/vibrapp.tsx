@@ -271,7 +271,7 @@ export default function Vibrapp() {
 
   const reportSenderMutation = useMutation({
     mutationFn: async ({ reportedId, reason, coldMsgId, alsoBlock }: { reportedId: string; reason: string; coldMsgId: string; alsoBlock: boolean }) => {
-      await apiRequest("POST", "/api/reports", { reportedId, reason });
+      await apiRequest("POST", "/api/reports", { reportedId, reason, coldMessageId: coldMsgId });
       if (alsoBlock) {
         await apiRequest("POST", "/api/block", { blockedId: reportedId });
         await apiRequest("DELETE", `/api/cold-messages/${coldMsgId}`);

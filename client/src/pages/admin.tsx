@@ -81,7 +81,7 @@ export default function Admin() {
     queryKey: ["/api/admin/users"],
   });
 
-  const { data: reports } = useQuery<Report[]>({
+  const { data: reports } = useQuery<(Report & { coldMessageContent?: string | null })[]>({
     queryKey: ["/api/admin/reports"],
   });
 
@@ -1069,6 +1069,12 @@ export default function Admin() {
                             <p className="text-sm text-foreground"><strong>Da:</strong> {getProfileName(report.reporterId)} <strong>Contro:</strong> {getProfileName(report.reportedId)}</p>
                             <p className="text-sm text-foreground mt-1"><strong>Motivo:</strong> {report.reason}</p>
                             {report.description && <p className="text-sm text-muted-foreground mt-1">{report.description}</p>}
+                            {report.coldMessageContent && (
+                              <div className="mt-2 p-2 rounded bg-muted border-l-2 border-orange-400">
+                                <p className="text-xs text-muted-foreground mb-1 font-medium">Messaggio freddo che ha scatenato la segnalazione:</p>
+                                <p className="text-sm text-foreground italic">"{report.coldMessageContent}"</p>
+                              </div>
+                            )}
                           </div>
                           {report.status === "pending" && (
                             <div className="flex gap-2">

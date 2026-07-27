@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -406,6 +406,16 @@ ${urlEntries}
   }
   cleanExpiredRoomMembers();
   setInterval(cleanExpiredRoomMembers, 30 * 60 * 1000);
+
+  // ─── Ensure reports cold-message columns exist ───────────────────────────
+  (async () => {
+    try {
+      await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_id VARCHAR`);
+      await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);
+    } catch (e) {
+      console.error("[reports] migration error:", e);
+    }
+  })();
 
   // ─── Ensure vibrapp_dms table exists (background, non-blocking) ─────────
   (async () => {
@@ -2215,10 +2225,22 @@ ${urlEntries}
       const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
 
-      const { reportedId, reason, description } = req.body;
+      const { reportedId, reason, description, coldMessageId } = req.body;
       if (!reportedId || !reason) return res.status(400).json({ error: "reportedId and reason are required" });
 
-      const report = await storage.createReport({ reporterId: profile.id, reportedId, reason, description });
+      // Snapshot the cold message content immediately so it remains visible to
+      // admins even if the message is later deleted (e.g. after report+block).
+      let coldMessageContent: string | undefined;
+      if (coldMessageId) {
+        try {
+          const [cm] = await db.select().from(coldMessages).where(
+            and(eq(coldMessages.id, coldMessageId), or(eq(coldMessages.toProfileId, profile.id), eq(coldMessages.fromProfileId, profile.id)))
+          );
+          if (cm) coldMessageContent = cm.content;
+        } catch { /* non-critical */ }
+      }
+
+      const report = await storage.createReport({ reporterId: profile.id, reportedId, reason, description, coldMessageId: coldMessageId || undefined, coldMessageContent });
       res.json(report);
     } catch (error) {
       res.status(500).json({ error: "Failed to create report" });

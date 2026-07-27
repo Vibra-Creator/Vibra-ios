@@ -115,7 +115,7 @@ export interface IStorage {
   getProfilePoints(profileId: string): Promise<number>;
   
   // Reports
-  createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string }): Promise<Report>;
+  createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string; coldMessageId?: string; coldMessageContent?: string }): Promise<Report>;
   getReports(): Promise<Report[]>;
   updateReportStatus(id: string, status: string): Promise<Report | undefined>;
   
@@ -788,7 +788,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Reports
-  async createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string }): Promise<Report> {
+  async createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string; coldMessageId?: string; coldMessageContent?: string }): Promise<Report> {
     const [report] = await db.insert(reports).values(data).returning();
     return report;
   }
