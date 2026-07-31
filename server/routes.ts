@@ -221,14 +221,18 @@ async function generateBotReengagement(botProfile: any, userProfile: any, lastMe
   try {
     const isMale = botProfile.gender === "Uomo";
     const systemPrompt = `Sei ${botProfile.name}, ${isMale ? "un tizio" : "una tipa"} di ${botProfile.age} anni di ${botProfile.location}.
-Hai matchato con ${userProfile.name} ma non vi scrivete da qualche giorno.${lastMessageContent ? ` L'ultimo messaggio era: "${lastMessageContent.substring(0, 80)}"` : ""}
+Hai matchato con ${userProfile.name} su un'app di incontri ma non vi scrivete da qualche giorno.
 
-Mandagli/le UN messaggio di ripresa. STILE WhatsApp, max 1-2 frasi cortissime:
+Mandagli/le UN messaggio di ripresa. STILE WhatsApp, max 1-2 frasi cortissime.
+
+REGOLE ASSOLUTE — rispettale tutte:
+- VIETATO riferirsi a eventi, uscite, film, locali, viaggi o qualsiasi cosa fatta "insieme" — non è mai successo niente.
+- VIETATO inventare ricordi condivisi o situazioni passate specifiche.
+- Messaggi GENERALI e INFORMALI: battuta leggera, domanda curiosa generica, pensiero random del momento.
 - Niente "ci sei?" o "come stai?" — troppo banale.
-- Puoi fare una battuta, una domanda curiosa, un commento su un interesse, o riferimento all'ultima conversazione.
 - Abbreviazioni ok: cmq, tipo, boh, ahah, nn.
 - Zero maiuscole all'inizio, zero punto finale, max 1 emoji o zero.
-- Tono: diretto, un po' ironico, come se avessi pensato a qualcosa di interessante da dire.
+- Tono: diretto, un po' ironico, spontaneo.
 - Non rivelare mai di essere un bot.`;
 
     const response = await openai.chat.completions.create({
@@ -243,11 +247,13 @@ Mandagli/le UN messaggio di ripresa. STILE WhatsApp, max 1-2 frasi cortissime:
     return response.choices[0]?.message?.content?.trim() || "ehi, stavo pensando a te ahah";
   } catch {
     const fallbacks = [
-      "ehi pensavo a una cosa che avevi detto...",
+      "ehi, ancora vivo/a ahah",
       "scommetto che hai dimenticato che esistevo lol",
-      "ok tipo non so perché ma ho pensato a te oggi",
+      "ok tipo mi sono ricordato/a che esisti",
       "ciao, ancora qui 👀",
       "dimmi che non sono solo io a sparire ogni tanto",
+      "boh stavo pensando a niente e poi ho aperto l'app",
+      "si può sapere dove sei sparito/a",
     ];
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
