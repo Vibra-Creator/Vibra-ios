@@ -6303,6 +6303,79 @@ Rispondi SOLO con questo JSON (nessun altro testo):
     setInterval(runBotReengagementJob, 8 * 60 * 60 * 1000);
   }, 60_000);
 
+  // ─── Bot Visit Job ────────────────────────────────────────────────────────────
+  async function runBotVisitJob() {
+    try {
+      console.log("[bot-visit] Starting job...");
+
+      // Fetch all real users and all bots
+      const [realProfiles, botProfiles] = await Promise.all([
+        db.execute(sql`SELECT id, name, age, location, image_url FROM profiles WHERE is_bot = false AND id IS NOT NULL`),
+        db.execute(sql`SELECT id, name, age, location, image_url FROM profiles WHERE is_bot = true`),
+      ]);
+
+      const reals = (realProfiles as any).rows ?? realProfiles;
+      const bots  = (botProfiles  as any).rows ?? botProfiles;
+
+      if (!bots.length || !reals.length) return;
+
+      const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      let sent = 0;
+
+      for (const realUser of reals) {
+        try {
+          // ~40% probability per run so not every user gets a visit every day
+          if (Math.random() > 0.4) continue;
+
+          // Pick a bot that hasn't visited this user in the last 48h
+          const recentVisitors = await db
+            .select({ viewerId: profileViews.viewerId })
+            .from(profileViews)
+            .where(
+              and(
+                eq(profileViews.viewedId, realUser.id),
+                gt(profileViews.viewedAt, since48h)
+              )
+            );
+
+          const recentIds = new Set(recentVisitors.map((r: any) => r.viewerId));
+          const eligible = bots.filter((b: any) => !recentIds.has(b.id));
+          if (!eligible.length) continue;
+
+          const bot = eligible[Math.floor(Math.random() * eligible.length)];
+
+          // Record the visit
+          await db.insert(profileViews).values({
+            viewerId: bot.id,
+            viewedId: realUser.id,
+          }).onConflictDoNothing();
+
+          // Send push notification
+          await sendPushToProfile(realUser.id, {
+            title: `👀 Qualcuno ha visitato il tuo profilo`,
+            body: `${bot.name}, ${bot.age} anni da ${bot.location || "Italia"} ha visitato il tuo profilo`,
+            icon: bot.image_url || "/icons/icon-192.png",
+            url: `/profile`,
+            type: "profile-visit",
+          });
+
+          sent++;
+          console.log(`[bot-visit] ${bot.name} → ${realUser.name}`);
+        } catch {}
+      }
+
+      console.log(`[bot-visit] Job done — notified ${sent} users`);
+    } catch (err) {
+      console.error("[bot-visit] job error:", err);
+    }
+  }
+
+  // Run once 2 minutes after startup, then every 24h
+  setTimeout(() => {
+    runBotVisitJob();
+    setInterval(runBotVisitJob, 24 * 60 * 60 * 1000);
+  }, 2 * 60_000);
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return httpServer;
