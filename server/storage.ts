@@ -1099,6 +1099,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getColdMessagesReceived(toProfileId: string): Promise<Array<ColdMessage & { fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {
+    // Fetch IDs of profiles that this user has ever reported (soft ignore list)
+    const reportedRows = await db
+      .select({ reportedId: reports.reportedId })
+      .from(reports)
+      .where(eq(reports.reporterId, toProfileId));
+    const reportedIds = new Set(reportedRows.map(r => r.reportedId));
+
     const rows = await db.select({
       id: coldMessages.id,
       fromProfileId: coldMessages.fromProfileId,
@@ -1119,7 +1126,12 @@ export class DatabaseStorage implements IStorage {
     .innerJoin(profiles, eq(profiles.id, coldMessages.fromProfileId))
     .where(eq(coldMessages.toProfileId, toProfileId))
     .orderBy(desc(coldMessages.createdAt));
-    return rows.map(r => ({
+
+    // Filter out messages from reported senders (persistent soft-ignore regardless of block status)
+    const filtered = reportedIds.size > 0
+      ? rows.filter(r => !reportedIds.has(r.fromProfileId))
+      : rows;
+    return filtered.map(r => ({
       id: r.id, fromProfileId: r.fromProfileId, toProfileId: r.toProfileId,
       content: r.content, mediaUrl: r.mediaUrl, mediaType: r.mediaType,
       replied: r.replied, replyContent: r.replyContent,

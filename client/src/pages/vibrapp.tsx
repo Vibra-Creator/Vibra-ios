@@ -1913,6 +1913,9 @@ export default function Vibrapp() {
                       </button>
                     ))}
                   </div>
+                  <p className="text-white/40 text-xs text-center">
+                    🛡️ Dopo la segnalazione, i futuri messaggi di questo utente non ti raggiungeranno più — anche se il blocco venisse rimosso.
+                  </p>
                   <div className="flex gap-2">
                     <Button
                       variant="ghost"

@@ -4327,6 +4327,19 @@ REGOLE:
       const { toProfileId, content, mediaUrl, mediaType } = req.body;
       if (!toProfileId || (!content?.trim() && !mediaUrl)) return res.status(400).json({ error: "Parametri mancanti" });
       if (toProfileId === myProfile.id) return res.status(400).json({ error: "Non puoi scrivere a te stesso" });
+
+      // If the recipient has ever reported this sender, silently discard the message
+      // (permanent soft-ignore tied to the report, independent of any block)
+      const [existingReport] = await db
+        .select({ id: reports.id })
+        .from(reports)
+        .where(and(eq(reports.reporterId, toProfileId), eq(reports.reportedId, myProfile.id)))
+        .limit(1);
+      if (existingReport) {
+        // Respond as if sent so the sender gets no information about the filter
+        return res.json({ status: "sent" });
+      }
+
       const result = await storage.sendColdMessage(myProfile.id, toProfileId, (content || "").trim().substring(0, 500), mediaUrl || undefined, mediaType || undefined);
       if (result.status === "sent") {
         const targetProfile = await storage.getProfile(toProfileId);
