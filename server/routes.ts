@@ -2253,6 +2253,67 @@ ${urlEntries}
     }
   });
 
+  // ─── User's own reports (read + delete) ─────────────────────────────────
+  app.get("/api/reports/mine", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const myReports = await db
+        .select({
+          id: reports.id,
+          reportedId: reports.reportedId,
+          reason: reports.reason,
+          description: reports.description,
+          status: reports.status,
+          createdAt: reports.createdAt,
+          reportedName: profiles.name,
+          reportedImage: profiles.imageUrl,
+          reportedAge: profiles.age,
+        })
+        .from(reports)
+        .leftJoin(profiles, eq(reports.reportedId, profiles.id))
+        .where(eq(reports.reporterId, profile.id))
+        .orderBy(desc(reports.createdAt));
+
+      res.json(myReports);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch reports" });
+    }
+  });
+
+  app.delete("/api/reports/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      // Only the reporter can delete their own report
+      const [existing] = await db
+        .select({ id: reports.id, reporterId: reports.reporterId, reportedId: reports.reportedId })
+        .from(reports)
+        .where(and(eq(reports.id, req.params.id), eq(reports.reporterId, profile.id)));
+
+      if (!existing) return res.status(404).json({ error: "Report not found" });
+
+      // Deleting the report is the only action needed: the cold-message delivery
+      // route (POST /api/cold-messages) filters exclusively on the reports table,
+      // so once this record is gone the sender can reach the user again.
+      // Blocks (blockedUsers) are a separate safety mechanism managed independently
+      // and are intentionally NOT touched here.
+      await db.delete(reports).where(
+        and(eq(reports.id, req.params.id), eq(reports.reporterId, profile.id))
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete report" });
+    }
+  });
+
   // Suspensions
   app.get("/api/admin/suspensions", isAuthenticated, isAdmin, async (req: any, res) => {
     try {

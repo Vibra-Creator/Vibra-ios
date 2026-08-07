@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint, BookMarked, ShieldCheck, CheckCircle2, XCircle, Users } from "lucide-react";
+import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint, BookMarked, ShieldCheck, CheckCircle2, XCircle, Users, Flag, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -588,6 +588,8 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [showReportsList, setShowReportsList] = useState(false);
+  const [removeReportConfirmId, setRemoveReportConfirmId] = useState<string | null>(null);
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
   if (isGuest) {
@@ -767,6 +769,25 @@ export default function ProfilePage() {
   const { data: receivedReactions = [] } = useQuery<ReceivedReaction[]>({
     queryKey: ["/api/reactions/received"],
     enabled: !!profile,
+  });
+
+  type MyReport = { id: string; reportedId: string; reason: string; description: string | null; status: string | null; createdAt: string; reportedName: string | null; reportedImage: string | null; reportedAge: number | null };
+  const { data: myReports = [], refetch: refetchMyReports } = useQuery<MyReport[]>({
+    queryKey: ["/api/reports/mine"],
+    enabled: !!profile && showReportsList,
+  });
+
+  const removeReportMutation = useMutation({
+    mutationFn: async (reportId: string) => apiRequest("DELETE", `/api/reports/${reportId}`),
+    onSuccess: () => {
+      setRemoveReportConfirmId(null);
+      refetchMyReports();
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/mine"] });
+      toast({ title: "Segnalazione rimossa", description: "Questo utente potrà di nuovo inviarti presentazioni." });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile rimuovere la segnalazione. Riprova.", variant: "destructive" });
+    },
   });
 
   const { data: selectedReactionProfile } = useQuery<Profile>({
@@ -1238,6 +1259,18 @@ export default function ProfilePage() {
               )}
             </Button>
           )}
+          {/* Segnalazioni */}
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 text-base h-12 text-orange-300 border-orange-500/30 hover:bg-orange-500/10"
+            onClick={() => setShowReportsList(true)}
+            data-testid="button-segnalazioni"
+          >
+            <Flag className="w-5 h-5" />
+            Segnalazioni
+            <ChevronRight className="w-4 h-4 ml-auto" />
+          </Button>
+
           <Button 
             variant="outline" 
             className="w-full justify-start gap-3 text-base h-12"
@@ -1341,6 +1374,92 @@ export default function ProfilePage() {
           isOpen={!!selectedReactionProfile}
           onClose={() => setSelectedReactionProfileId(null)}
         />
+      )}
+
+      {/* ── Segnalazioni Panel ────────────────────────────────────── */}
+      {showReportsList && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col" data-testid="segnalazioni-panel">
+          <div className="flex items-center gap-3 px-4 pt-6 pb-4 border-b border-white/10">
+            <Button variant="ghost" size="icon" className="text-white" onClick={() => { setShowReportsList(false); setRemoveReportConfirmId(null); }}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h2 className="text-lg font-bold text-white">🚩 Segnalazioni</h2>
+              <p className="text-xs text-white/50">Profili che hai segnalato</p>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            {myReports.length === 0 ? (
+              <div className="text-center py-16 text-white/40">
+                <Flag className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">Nessuna segnalazione attiva</p>
+              </div>
+            ) : (
+              myReports.map((report) => (
+                <div key={report.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    {report.reportedImage ? (
+                      <img src={report.reportedImage} alt={report.reportedName ?? ""} className="w-12 h-12 rounded-full object-cover object-top" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                        <User className="w-6 h-6 text-white/40" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-white truncate">
+                        {report.reportedName ?? "Utente rimosso"}{report.reportedAge ? `, ${report.reportedAge}` : ""}
+                      </p>
+                      <p className="text-xs text-white/50 truncate">Motivo: {report.reason}</p>
+                      <p className="text-xs text-white/30">
+                        {new Date(report.createdAt).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}
+                      </p>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${report.status === "resolved" ? "text-green-400 border-green-400/30" : report.status === "dismissed" ? "text-white/30 border-white/10" : "text-orange-400 border-orange-400/30"}`}>
+                      {report.status === "resolved" ? "Risolto" : report.status === "dismissed" ? "Archiviato" : "In esame"}
+                    </span>
+                  </div>
+
+                  {removeReportConfirmId === report.id ? (
+                    <div className="bg-orange-900/30 border border-orange-500/30 rounded-lg p-3 space-y-2">
+                      <p className="text-xs text-orange-200 leading-snug">
+                        ⚠️ <strong>Attenzione:</strong> rimuovendo questa segnalazione, <strong>{report.reportedName ?? "questo utente"}</strong> potrà di nuovo inviarti presentazioni (cold message). Eventuali blocchi restano invariati.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-white/70 border-white/20 text-xs h-8"
+                          onClick={() => setRemoveReportConfirmId(null)}
+                        >
+                          Annulla
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-xs h-8"
+                          onClick={() => removeReportMutation.mutate(report.id)}
+                          disabled={removeReportMutation.isPending}
+                        >
+                          {removeReportMutation.isPending ? "Rimozione…" : "Conferma rimozione"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs h-8 text-red-400 border-red-400/20 hover:bg-red-500/10"
+                      onClick={() => setRemoveReportConfirmId(report.id)}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Rimuovi segnalazione
+                    </Button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
