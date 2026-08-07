@@ -6298,10 +6298,7 @@ Rispondi SOLO con questo JSON (nessun altro testo):
     }
   }
 
-  setTimeout(() => {
-    runBotReengagementJob();
-    setInterval(runBotReengagementJob, 8 * 60 * 60 * 1000);
-  }, 60_000);
+  // Bot re-engagement is intentionally disabled. Vibra now serves real users only.
 
   // ─── Bot Visit Job ────────────────────────────────────────────────────────────
   async function runBotVisitJob() {
@@ -6371,10 +6368,7 @@ Rispondi SOLO con questo JSON (nessun altro testo):
   }
 
   // Run once 2 minutes after startup, then every 24h
-  setTimeout(() => {
-    runBotVisitJob();
-    setInterval(runBotVisitJob, 24 * 60 * 60 * 1000);
-  }, 2 * 60_000);
+  // Simulated bot visits are intentionally disabled. Vibra now serves real users only.
 
   // ─────────────────────────────────────────────────────────────────────────────
 
