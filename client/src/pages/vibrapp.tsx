@@ -2016,11 +2016,24 @@ export default function Vibrapp() {
         <ProfileDetailModal
           profile={viewedSenderProfile}
           isOpen={!!viewedSenderProfile}
-          onClose={() => {
+          onClose={async () => {
             setViewedSenderProfile(null);
             if (returnToColdMsg) {
-              setSelectedColdMsg(returnToColdMsg);
+              const msgId = returnToColdMsg.id;
               setReturnToColdMsg(null);
+              try {
+                const res = await fetch(`/api/cold-messages/${msgId}`, { credentials: "include" });
+                if (res.ok) {
+                  setSelectedColdMsg(returnToColdMsg);
+                } else {
+                  // Message was deleted while the profile was open — don't restore the panel
+                  setSenderProfileToast("Questo messaggio non è più disponibile");
+                  setTimeout(() => setSenderProfileToast(null), 3500);
+                }
+              } catch {
+                // Network error: restore the panel rather than losing the user's context
+                setSelectedColdMsg(returnToColdMsg);
+              }
             }
           }}
         />
