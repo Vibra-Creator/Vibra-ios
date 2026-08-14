@@ -45,7 +45,28 @@ function filterOffensiveContent(text: string): string {
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  timeout: 15_000,
 });
+
+function getAiSearchFallback(query: string) {
+  const q = query.toLowerCase();
+  const routes: Array<{ words: string[]; route: string; message: string; emoji: string }> = [
+    { words: ["conoscere", "gente", "persone", "dating", "profili", "swipe"], route: "/", message: "Ti porto a scoprire nuove persone", emoji: "❤️" },
+    { words: ["match", "chat", "messaggi", "conversazione"], route: "/matches", message: "Apri i tuoi match e le conversazioni", emoji: "💬" },
+    { words: ["stanza", "stanze", "gruppo", "community"], route: "/rooms", message: "Dai un'occhiata alle stanze della community", emoji: "🌐" },
+    { words: ["sfida", "challenge", "concorso"], route: "/challenges", message: "Scopri le challenge di oggi", emoji: "🏆" },
+    { words: ["video", "reel", "reels"], route: "/reels", message: "Guarda gli ultimi video", emoji: "🎬" },
+    { words: ["online", "vicine", "vicino"], route: "/vibing", message: "Scopri chi sta vibing ora", emoji: "⚡" },
+    { words: ["profilo", "modifica"], route: "/profile", message: "Apri il tuo profilo", emoji: "👤" },
+    { words: ["musica", "spotify", "canzoni"], route: "/spotify", message: "Apri la sezione musica", emoji: "🎵" },
+    { words: ["lavoro", "lavorare"], route: "/lavoro", message: "Vai alla sezione lavoro", emoji: "💼" },
+    { words: ["giovani", "erasmus", "volontariato"], route: "/giovani", message: "Scopri le opportunità per giovani", emoji: "✨" },
+  ];
+  const match = routes.find((item) => item.words.some((word) => q.includes(word)));
+  return match
+    ? { action: "navigate" as const, route: match.route, external_url: null, message: match.message, emoji: match.emoji }
+    : { action: "none" as const, route: null, external_url: null, message: "Posso aiutarti a trovare una sezione di Vibra: prova con chat, musica, lavoro o profili", emoji: "✨" };
+}
 
 async function moderateVideoThumbnail(thumbnailBase64: string): Promise<{ approved: boolean; reason: string }> {
   try {
@@ -6199,7 +6220,8 @@ Rispondi SOLO con questo JSON (nessun altro testo):
       res.json(result);
     } catch (e) {
       console.error("[ai-search] error:", e);
-      res.status(500).json({ error: "Errore AI" });
+      // Keep the banner usable even when the AI provider is unavailable or slow.
+      res.json(getAiSearchFallback(String(req.body?.query || "")));
     }
   });
 

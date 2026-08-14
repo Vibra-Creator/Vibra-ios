@@ -62,7 +62,7 @@ function useVoiceInput(onResult: (text: string) => void) {
         else interim += t;
       }
       setInterim(interim || final);
-      if (final) {
+       if (final) {
         setVoiceState("processing");
         setInterim("");
         onResult(final.trim());
@@ -103,6 +103,13 @@ export function VibraAI() {
       return res.json() as Promise<AIResult>;
     },
     onSuccess: (data) => setResult(data),
+    onError: () => setResult({
+      action: "none",
+      route: null,
+      external_url: null,
+      message: "La ricerca non è riuscita. Prova con una parola chiave come chat, musica o profili",
+      emoji: "⚠️",
+    }),
   });
 
   const handleSubmit = useCallback((q?: string) => {

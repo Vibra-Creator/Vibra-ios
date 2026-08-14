@@ -46,7 +46,11 @@ function useVoiceInput(onResult: (text: string) => void) {
         if (e.results[i].isFinal) final += t; else interim += t;
       }
       setInterim(interim || final);
-      if (final) { setVoiceState("processing"); setInterim(""); onResult(final.trim()); }
+       if (final) {
+         setVoiceState("processing");
+         setInterim("");
+         onResult(final.trim());
+       }
     };
     rec.onerror = () => { setVoiceState("idle"); setInterim(""); };
     rec.onend = () => setVoiceState(v => v === "listening" ? "idle" : v);
@@ -110,6 +114,13 @@ export default function HubPage() {
       return res.json() as Promise<AIResult>;
     },
     onSuccess: setAiResult,
+    onError: () => setAiResult({
+      action: "none",
+      route: null,
+      external_url: null,
+      message: "La ricerca non è riuscita. Prova a scrivere una parola chiave come chat, musica o profili",
+      emoji: "⚠️",
+    }),
   });
 
   const handleSubmit = useCallback((q?: string) => {
