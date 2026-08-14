@@ -197,6 +197,10 @@ export interface IStorage {
 
   // Cold Messages
   deleteColdMessage(messageId: string, toProfileId: string): Promise<void>;
+  /** Returns true if recipientProfileId has ever reported the sender — checked
+   *  both by direct profile UUID and by the sender's underlying auth userId so
+   *  recreated accounts (same userId, new profile UUID) are also caught. */
+  isSenderReportedByRecipient(senderProfileId: string, recipientProfileId: string): Promise<boolean>;
 
   // VibraDNA
   trackDnaEvent(profileId: string, eventType: string, value: number): Promise<void>;
@@ -508,7 +512,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(privateRoomRequests).where(eq(privateRoomRequests.requesterId, id));
     await db.delete(profileRatings).where(or(eq(profileRatings.raterId, id), eq(profileRatings.ratedId, id)));
     await db.delete(blockedUsers).where(or(eq(blockedUsers.blockerId, id), eq(blockedUsers.blockedId, id)));
-    await db.delete(reports).where(or(eq(reports.reporterId, id), eq(reports.reportedId, id)));
+    // Keep reports where this profile WAS reported (reportedId = id) so the userId-level
+    // filter in getColdMessagesReceived survives account recreation. Only remove reports
+    // this profile filed as the reporter — those become meaningless once the profile is gone.
+    await db.delete(reports).where(eq(reports.reporterId, id));
     await db.delete(vibingSessions).where(eq(vibingSessions.profileId, id));
     await db.delete(locationShares).where(eq(locationShares.profileId, id));
     await db.delete(profileReactions).where(or(eq(profileReactions.fromProfileId, id), eq(profileReactions.toProfileId, id)));
@@ -789,7 +796,19 @@ export class DatabaseStorage implements IStorage {
 
   // Reports
   async createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string; coldMessageId?: string; coldMessageContent?: string }): Promise<Report> {
-    const [report] = await db.insert(reports).values(data).returning();
+    // Denormalise the underlying auth-user id of the reported profile so the
+    // filter survives if that profile row is later deleted (account recreation gap).
+    const [reportedProfile] = await db
+      .select({ userId: profiles.userId })
+      .from(profiles)
+      .where(eq(profiles.id, data.reportedId))
+      .limit(1);
+    const reportedUserId = reportedProfile?.userId ?? null;
+
+    const [report] = await db
+      .insert(reports)
+      .values({ ...data, reportedUserId })
+      .returning();
     return report;
   }
 
@@ -1099,12 +1118,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getColdMessagesReceived(toProfileId: string): Promise<Array<ColdMessage & { fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {
-    // Fetch IDs of profiles that this user has ever reported (soft ignore list)
+    // Fetch IDs of profiles that this user has ever reported (soft ignore list).
+    // Also capture the underlying userId so we can catch account re-creations:
+    // if B deletes their profile and creates a new one (new UUID, same userId),
+    // the old report's reportedUserId links to the new profile.
     const reportedRows = await db
-      .select({ reportedId: reports.reportedId })
+      .select({ reportedId: reports.reportedId, reportedUserId: reports.reportedUserId })
       .from(reports)
       .where(eq(reports.reporterId, toProfileId));
     const reportedIds = new Set(reportedRows.map(r => r.reportedId));
+
+    // Collect underlying userIds from reports (non-null only)
+    const reportedUserIds = reportedRows
+      .map(r => r.reportedUserId)
+      .filter((uid): uid is string => !!uid);
+
+    // Find all current profiles that share a reported userId (catches re-created accounts)
+    if (reportedUserIds.length > 0) {
+      const sibling = await db
+        .select({ id: profiles.id })
+        .from(profiles)
+        .where(inArray(profiles.userId, reportedUserIds));
+      sibling.forEach(p => reportedIds.add(p.id));
+    }
 
     const rows = await db.select({
       id: coldMessages.id,
@@ -1245,6 +1281,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(coldMessages).where(
       and(eq(coldMessages.id, messageId), eq(coldMessages.toProfileId, toProfileId))
     );
+  }
+
+  async isSenderReportedByRecipient(senderProfileId: string, recipientProfileId: string): Promise<boolean> {
+    // Direct UUID match (the usual case: reporter still holds the original report row)
+    const [direct] = await db
+      .select({ id: reports.id })
+      .from(reports)
+      .where(and(eq(reports.reporterId, recipientProfileId), eq(reports.reportedId, senderProfileId)))
+      .limit(1);
+    if (direct) return true;
+
+    // userId-level match: catches recreated accounts (same underlying auth user, new profile UUID).
+    // Look up the sender's userId, then check if the recipient has ever reported a profile
+    // that carried that same userId (stored in reportedUserId at report-creation time).
+    const [senderProfile] = await db
+      .select({ userId: profiles.userId })
+      .from(profiles)
+      .where(eq(profiles.id, senderProfileId))
+      .limit(1);
+    if (!senderProfile?.userId) return false;
+
+    const [byUserId] = await db
+      .select({ id: reports.id })
+      .from(reports)
+      .where(and(eq(reports.reporterId, recipientProfileId), eq(reports.reportedUserId, senderProfile.userId)))
+      .limit(1);
+    return !!byUserId;
   }
 
   async deleteSentColdMessage(fromProfileId: string, toProfileId: string): Promise<void> {

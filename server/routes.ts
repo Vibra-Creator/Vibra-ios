@@ -413,11 +413,23 @@ ${urlEntries}
   cleanExpiredRoomMembers();
   setInterval(cleanExpiredRoomMembers, 30 * 60 * 1000);
 
-  // ─── Ensure reports cold-message columns exist ───────────────────────────
+  // ─── Ensure reports columns exist ────────────────────────────────────────
   (async () => {
     try {
       await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_id VARCHAR`);
       await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);
+      // reportedUserId: denormalised auth-user id captured at report creation time so
+      // the filter survives profile deletion (account re-creation gap fix).
+      await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_user_id VARCHAR`);
+      // Backfill reportedUserId for pre-existing reports whose reported profile still exists
+      await db.execute(sql`
+        UPDATE reports r
+        SET reported_user_id = p.user_id
+        FROM profiles p
+        WHERE r.reported_id = p.id
+          AND r.reported_user_id IS NULL
+          AND p.user_id IS NOT NULL
+      `);
     } catch (e) {
       console.error("[reports] migration error:", e);
     }
@@ -987,7 +999,11 @@ ${urlEntries}
       await db.delete(privateRoomRequests).where(eq(privateRoomRequests.requesterId, profileId));
       await db.delete(profileRatings).where(or(eq(profileRatings.raterId, profileId), eq(profileRatings.ratedId, profileId)));
       await db.delete(blockedUsers).where(or(eq(blockedUsers.blockerId, profileId), eq(blockedUsers.blockedId, profileId)));
-      await db.delete(reports).where(or(eq(reports.reporterId, profileId), eq(reports.reportedId, profileId)));
+      // Keep reports where this profile WAS reported so the reportedUserId anchor
+      // survives — getColdMessagesReceived uses it to filter messages from
+      // re-created accounts (same userId, new profile UUID). Only remove reports
+      // this profile filed as the reporter.
+      await db.delete(reports).where(eq(reports.reporterId, profileId));
       await db.delete(vibingSessions).where(eq(vibingSessions.profileId, profileId));
       await db.delete(locationShares).where(eq(locationShares.profileId, profileId));
       const userMatches = await db.select().from(matches).where(or(eq(matches.profile1Id, profileId), eq(matches.profile2Id, profileId)));
@@ -4396,13 +4412,11 @@ REGOLE:
       if (toProfileId === myProfile.id) return res.status(400).json({ error: "Non puoi scrivere a te stesso" });
 
       // If the recipient has ever reported this sender, silently discard the message
-      // (permanent soft-ignore tied to the report, independent of any block)
-      const [existingReport] = await db
-        .select({ id: reports.id })
-        .from(reports)
-        .where(and(eq(reports.reporterId, toProfileId), eq(reports.reportedId, myProfile.id)))
-        .limit(1);
-      if (existingReport) {
+      // (permanent soft-ignore tied to the report, independent of any block).
+      // Uses userId-level linkage so recreated accounts (new profile UUID, same
+      // underlying auth user) are also caught.
+      const senderReported = await storage.isSenderReportedByRecipient(myProfile.id, toProfileId);
+      if (senderReported) {
         // Respond as if sent so the sender gets no information about the filter
         return res.json({ status: "sent" });
       }

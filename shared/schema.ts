@@ -231,6 +231,9 @@ export const reports = pgTable("reports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   reporterId: varchar("reporter_id").notNull(),
   reportedId: varchar("reported_id").notNull(),
+  /** Underlying auth-user id of the reported profile (denormalised at report-creation time).
+   *  Survives profile deletion so the filter can catch account re-creations. */
+  reportedUserId: varchar("reported_user_id"),
   reason: text("reason").notNull(),
   description: text("description"),
   status: text("status").default("pending"),
