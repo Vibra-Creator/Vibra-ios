@@ -232,6 +232,18 @@ export default function Vibrapp() {
   const refreshSelectedColdMessage = useCallback(async (msg: ReceivedColdMsg) => {
     const res = await fetch(`/api/cold-messages/${msg.id}`, { credentials: "include" });
     if (!res.ok) {
+      // If the server explicitly tells us the sender is gone or has blocked us,
+      // suppress the reply panel and show the unavailability toast instead.
+      try {
+        const errData = await res.json();
+        if (errData?.reason === "sender_deleted" || errData?.reason === "sender_blocked" || errData?.reason === "message_deleted") {
+          setSenderProfileToast("Questo messaggio non è più disponibile");
+          setTimeout(() => setSenderProfileToast(null), 3500);
+          return;
+        }
+      } catch { /* ignore parse errors */ }
+      // For any other error (network issues, unknown errors) fall back to showing
+      // the panel so the user doesn't lose context.
       setSelectedColdMsg(msg);
       setReplyText("");
       setColdMsgDeleteConfirm(false);

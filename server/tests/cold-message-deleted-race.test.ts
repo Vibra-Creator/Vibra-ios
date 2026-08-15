@@ -1,11 +1,16 @@
 /**
  * Integration test: cold-message deletion race condition
  *
- * Verifies that getColdMessageById returns null (→ HTTP 404) when the
- * message is deleted while the recipient's profile-detail modal is open.
- * This is the storage-level guarantee that the client-side guard in
- * ProfileDetailModal.onClose relies on to prevent restoring a stale
- * reply panel after the message has been removed.
+ * Verifies that:
+ * 1. getColdMessageById returns null (→ HTTP 404) when the message is deleted
+ *    while the recipient's profile-detail modal is open.
+ * 2. getProfile returns undefined when the sender deletes their account
+ *    (→ HTTP 404 with reason "sender_deleted" from the route).
+ * 3. isBlocked returns true when the sender blocks the recipient after sending
+ *    (→ HTTP 403 with reason "sender_blocked" from the route).
+ *
+ * These are the storage-level guarantees that the GET /api/cold-messages/:id
+ * route relies on to suppress the reply panel cleanly.
  *
  * Run with:
  *   npx tsx --test server/tests/cold-message-deleted-race.test.ts
@@ -112,5 +117,56 @@ describe("Cold-message deletion race condition", () => {
     const msg = await storage.getColdMessageById(coldMessage.id);
     assert.ok(msg !== null, "undeleted message must still be retrievable");
     assert.equal(msg.content, "still here");
+  });
+
+  test("getProfile returns undefined after the sender deletes their account (sender-deleted scenario)", async () => {
+    // Simulates: sender sends a cold message, recipient opens it, then sender
+    // deletes their account. The GET /api/cold-messages/:id route calls
+    // storage.getProfile(msg.fromProfileId) and returns 404 when this is falsy.
+    const sender3 = await createTestProfile("sender3");
+    const recipient3 = await createTestProfile("recipient3");
+    createdProfileIds.push(recipient3); // sender3 will be deleted in this test
+
+    const { coldMessage } = await storage.sendColdMessage(sender3, recipient3, "goodbye");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    // Sender deletes their account
+    await storage.deleteProfile(sender3);
+
+    // Cold message row may still exist (cascade depends on schema); what matters
+    // is that the sender profile lookup returns falsy — the route uses this to
+    // return HTTP 404 with reason "sender_deleted".
+    const senderProfile = await storage.getProfile(sender3);
+    assert.equal(
+      senderProfile,
+      undefined,
+      "getProfile must return undefined after the sender deletes their account"
+    );
+  });
+
+  test("isBlocked returns true when sender blocks the recipient after sending (sender-blocked scenario)", async () => {
+    // Simulates: sender sends a cold message, recipient opens it, then sender
+    // blocks the recipient. The GET /api/cold-messages/:id route calls
+    // storage.isBlocked(msg.fromProfileId, recipientProfileId) and returns 403
+    // with reason "sender_blocked" when this is true.
+    const sender4 = await createTestProfile("sender4");
+    const recipient4 = await createTestProfile("recipient4");
+    createdProfileIds.push(sender4, recipient4);
+
+    const { coldMessage } = await storage.sendColdMessage(sender4, recipient4, "then I blocked you");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    // Sender blocks the recipient after the message was sent
+    await storage.blockUser(sender4, recipient4);
+
+    const blocked = await storage.isBlocked(sender4, recipient4);
+    assert.equal(
+      blocked,
+      true,
+      "isBlocked must return true after the sender blocks the recipient — route must return 403 sender_blocked"
+    );
+
+    // Cleanup block so the cascade delete in `after()` doesn't leave orphan rows
+    await storage.unblockUser(sender4, recipient4);
   });
 });
