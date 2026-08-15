@@ -36,6 +36,17 @@ Vibra employs a modern web application architecture:
 -   **Database Schema**: Key tables include `users`, `profiles`, `swipes`, `matches`, `messages`, `rooms`, `private_rooms`, `daily_challenges`, `challenge_submissions`, `profile_ratings`, `sent_gifts`, `vibing_sessions`, `push_subscriptions`, `vibrapp_messages`, and `profile_videos`.
 -   **Security**: Regular automatic daily database backups to Object Storage ensure data integrity and disaster recovery.
 
+## Running End-to-End Tests (Playwright)
+
+Playwright requires Chromium and its system libraries to be installed once per fresh environment (Replit workspace, CI runner, etc.). Run the setup helper before executing the test suite for the first time:
+
+```bash
+npm run test:e2e:setup   # installs Chromium + system deps via Playwright
+npm run test:e2e         # runs the full Playwright suite
+```
+
+The helper (`scripts/setup-playwright.sh`) calls `npx playwright install chromium` followed by `npx playwright install-deps chromium`. It is idempotent — safe to run again after the workspace is recycled. The dev server is started automatically by `playwright.config.ts` (`webServer` option), so no separate server process is needed.
+
 ## External Dependencies
 -   **Replit Object Storage**: For persistent storage of all user-uploaded photos, videos, and daily database backups.
 -   **OpenAI API (gpt-4o-mini)**: Powers AI bot chat responses and performs content moderation on uploaded profile videos (analyzing first frame thumbnails).
