@@ -136,3 +136,96 @@ test("reply panel stays visible and shows error toast when profile fetch returns
   await expect(toast).toBeVisible({ timeout: 3_000 });
   await expect(toast).toContainText(/profilo|errore/i);
 });
+
+test("error toast auto-dismisses after ~3.5 s so it never permanently blocks the reply panel", async ({
+  page,
+  request,
+}) => {
+  // ── 1. Register users and build the cold message via the API ─────────────
+  const userA = await registerUser(request, "A");
+  const userB = await registerUser(request, "B");
+
+  const profileAId = await loginAs(request, userA);
+  const profileBId = await loginAs(request, userB);
+
+  const sendRes = await request.post("/api/cold-messages", {
+    data: { toProfileId: profileAId, content: `E2E dismiss ${RUN_ID}` },
+  });
+  if (!sendRes.ok()) throw new Error(`Send cold msg: ${sendRes.status()} – ${await sendRes.text()}`);
+
+  await loginAs(request, userA);
+  const inboxJson = (await (await request.get("/api/cold-messages/received")).json()) as Array<{
+    id: string; fromProfileId: string;
+  }>;
+  const coldMsg = inboxJson.find((m) => m.fromProfileId === profileBId);
+  if (!coldMsg) throw new Error("Cold message not in A's inbox – setup failed");
+  const coldMsgId = coldMsg.id;
+
+  // ── 2. Copy session cookie (A) from API context → browser ─────────────────
+  const state = await request.storageState();
+  if (state.cookies.length > 0) {
+    await page.context().addCookies(
+      state.cookies.map((c) => ({
+        name:     c.name,
+        value:    c.value,
+        domain:   "localhost",
+        path:     c.path || "/",
+        httpOnly: c.httpOnly ?? true,
+        secure:   false,
+        sameSite: "Lax" as const,
+      }))
+    );
+  }
+
+  // ── 3. Patch /api/auth/user to mark email as verified ────────────────────
+  await page.route("**/api/auth/user", async (route) => {
+    const response = await route.fetch();
+    if (response.ok()) {
+      const body = (await response.json()) as Record<string, unknown>;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ...body, emailVerified: true }),
+      });
+    } else {
+      await route.fulfill({ response });
+    }
+  });
+
+  // ── 4. Navigate to /vibrapp ───────────────────────────────────────────────
+  const coldMsgsFetched = page.waitForResponse(
+    (r) => r.url().includes("/api/cold-messages/received"),
+    { timeout: 20_000 }
+  );
+  await page.goto("/vibrapp", { waitUntil: "load" });
+  await coldMsgsFetched;
+
+  // ── 5. Open the reply panel ───────────────────────────────────────────────
+  const introBubble = page.locator(`[data-testid="intro-bubble-${coldMsgId}"]`);
+  await expect(introBubble).toBeVisible({ timeout: 10_000 });
+  await introBubble.click();
+
+  const replyPanel = page.locator('[data-testid="coldmsg-reply-panel"]');
+  await expect(replyPanel).toBeVisible({ timeout: 5_000 });
+
+  // ── 6. Intercept the sender's profile fetch so it returns 500 ─────────────
+  await page.route(`**/api/profiles/${profileBId}`, (route) =>
+    route.fulfill({ status: 500, body: "Internal Server Error" })
+  );
+
+  // ── 7. Tap the sender avatar to trigger the error ─────────────────────────
+  const avatarBtn = page.locator('[data-testid="button-view-sender-profile"]');
+  await expect(avatarBtn).toBeVisible();
+  await avatarBtn.click();
+
+  // ── 8. Toast must appear first ────────────────────────────────────────────
+  const toast = page.locator('[data-testid="sender-profile-toast"]');
+  await expect(toast).toBeVisible({ timeout: 3_000 });
+
+  // ── 9. After 4 s the toast must have disappeared on its own ───────────────
+  // The production code clears it after 3 500 ms; we give an extra 500 ms margin.
+  await expect(toast).not.toBeVisible({ timeout: 4_500 });
+
+  // ── 10. Reply panel must still be visible (toast gone, panel intact) ───────
+  await expect(replyPanel).toBeVisible();
+});
