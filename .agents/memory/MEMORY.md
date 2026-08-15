@@ -3,3 +3,4 @@
 - [Blocco 6 Completato](blocco6.md) — VibraLegacy page, VibraConsent inbox, VibraTime schema+storage+routes+chat UI
 - [Hub Super-App](hub-superapp.md) — Hub home 12 card attive, hub_posts DB, Marketplace/Mobilità/Casa/Lavoro pagine live
 - [Production data safety](production-data-safety.md) — la produzione si verifica in sola lettura; le pulizie devono passare da una nuova pubblicazione
+- [Freeze Dating Section](freeze-dating-section.md) — rimuovere temporaneamente la sezione dating dall'UI per superare Apple 4.3(b); da fare tra ~2 giorni, attendere conferma esplicita
