@@ -7,10 +7,10 @@
  *  2. The filter is independent of block status (works even if A has NOT
  *     explicitly blocked B via the blockedUsers table).
  *  3. Messages from non-reported senders are unaffected.
- *  4. The silent-drop guard in storage.sendColdMessage is NOT exercised here
- *     (that guard lives in the HTTP route layer); this test targets the
- *     storage-level filter in getColdMessagesReceived, which is the persistent
- *     layer that survives restarts and session expiry.
+ *  4. The silent-drop guard lives in storage.sendColdMessage (not in the HTTP
+ *     route layer). Calling sendColdMessage after a report silently discards
+ *     the message without inserting a DB row. This test verifies both the
+ *     send-time drop and the read-time filter in getColdMessagesReceived.
  *  5. (Edge case) A re-created account (same underlying userId, new profile UUID)
  *     is still caught by the filter because createReport denormalises the
  *     reportedUserId and getColdMessagesReceived expands the filter set to include
@@ -23,6 +23,7 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { db } from "../db.js";
+import { sql } from "drizzle-orm";
 import { DatabaseStorage } from "../storage.js";
 import {
   profiles,
@@ -31,6 +32,26 @@ import {
   blockedUsers,
 } from "../../shared/schema.js";
 import { eq, and, inArray, or } from "drizzle-orm";
+
+// ─── Schema migration (runs once before any test suite) ──────────────────────
+// These columns are normally added at HTTP-server startup (registerRoutes).
+// When the tests run without the server, we apply them here so every suite
+// can rely on the full schema being present.
+
+before(async () => {
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_id VARCHAR`);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_user_id VARCHAR`);
+  // Backfill reportedUserId for any pre-existing rows whose profile still exists
+  await db.execute(sql`
+    UPDATE reports r
+    SET reported_user_id = p.user_id
+    FROM profiles p
+    WHERE r.reported_id = p.id
+      AND r.reported_user_id IS NULL
+      AND p.user_id IS NOT NULL
+  `);
+});
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -479,15 +500,15 @@ describe("isSenderReportedByRecipient — send-time guard", () => {
     );
   });
 
-  test("silently drops a cold message from a recreated account (send-path simulation)", async () => {
-    // Simulate what POST /api/cold-messages does: check the guard BEFORE persisting.
-    const reported = await storage.isSenderReportedByRecipient(senderNew, recipient);
-    // Guard fires → do NOT call sendColdMessage
-    if (!reported) {
-      await storage.sendColdMessage(senderNew, recipient, "this should be dropped");
-    }
+  test("silently drops a cold message from a recreated account (storage-layer guard)", async () => {
+    // The guard now lives inside storage.sendColdMessage itself — no HTTP layer needed.
+    // Calling sendColdMessage directly must silently discard the message (return "sent"
+    // without inserting a DB row) when the sender is reported by the recipient.
+    const result = await storage.sendColdMessage(senderNew, recipient, "this should be dropped");
+    assert.equal(result.status, "sent", "Guard must return 'sent' to hide the filter from the caller");
+    assert.equal(result.coldMessage, undefined, "No ColdMessage object must be returned when silently dropped");
 
-    // No cold-message row should exist from senderNew
+    // Confirm no DB row was created
     const rows = await db
       .select({ id: coldMessages.id })
       .from(coldMessages)
@@ -500,7 +521,7 @@ describe("isSenderReportedByRecipient — send-time guard", () => {
     assert.equal(
       rows.length,
       0,
-      "Cold-message must not be persisted when the send-time guard fires for a recreated account",
+      "Cold-message must not be persisted when the storage-layer guard fires for a recreated account",
     );
   });
 });

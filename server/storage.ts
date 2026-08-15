@@ -1107,6 +1107,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async sendColdMessage(fromProfileId: string, toProfileId: string, content: string, mediaUrl?: string, mediaType?: string): Promise<{ status: "sent" | "already_exists" | "already_replied"; coldMessage?: ColdMessage }> {
+    // Silent-drop guard: if the recipient has ever reported this sender (including
+    // recreated accounts sharing the same underlying userId), discard the message
+    // without persisting it. Return "sent" so the caller gets no information about
+    // the filter. This lives here — not only in the HTTP route — so every delivery
+    // path (direct call, tests, future integrations) enforces the same rule.
+    const reported = await this.isSenderReportedByRecipient(fromProfileId, toProfileId);
+    if (reported) {
+      return { status: "sent" };
+    }
+
     const existing = await db.select().from(coldMessages)
       .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
       .limit(1);

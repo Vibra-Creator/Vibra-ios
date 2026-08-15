@@ -4432,25 +4432,21 @@ REGOLE:
       if (!toProfileId || (!content?.trim() && !mediaUrl)) return res.status(400).json({ error: "Parametri mancanti" });
       if (toProfileId === myProfile.id) return res.status(400).json({ error: "Non puoi scrivere a te stesso" });
 
-      // If the recipient has ever reported this sender, silently discard the message
-      // (permanent soft-ignore tied to the report, independent of any block).
-      // Uses userId-level linkage so recreated accounts (new profile UUID, same
-      // underlying auth user) are also caught.
-      const senderReported = await storage.isSenderReportedByRecipient(myProfile.id, toProfileId);
-      if (senderReported) {
-        // Respond as if sent so the sender gets no information about the filter
-        return res.json({ status: "sent" });
-      }
-
+      // Note: the silent-drop guard (report-based filter) is enforced inside
+      // storage.sendColdMessage — no HTTP-layer check needed here.
       const result = await storage.sendColdMessage(myProfile.id, toProfileId, (content || "").trim().substring(0, 500), mediaUrl || undefined, mediaType || undefined);
-      if (result.status === "sent") {
+      // Gate ALL delivery side effects (push notifications, bot reply, match creation)
+      // on a real persisted message. When the guard silently drops the message it
+      // returns { status: "sent" } without a coldMessage — we must not trigger any
+      // notification or bot logic in that case.
+      if (result.status === "sent" && result.coldMessage) {
         const targetProfile = await storage.getProfile(toProfileId);
         if (targetProfile) {
           sendPushToProfile(toProfileId, {
             title: `🛸 ${myProfile.name} ti ha scritto`,
             body: mediaType === "audio" ? "🎤 Ha inviato un messaggio vocale" : (content || "").trim().substring(0, 100),
             icon: "/icons/icon-192.png",
-            url: result.coldMessage ? `/vibrapp?coldMessageId=${result.coldMessage.id}` : "/vibrapp",
+            url: `/vibrapp?coldMessageId=${result.coldMessage.id}`,
             type: "vibrapp",
           });
 
