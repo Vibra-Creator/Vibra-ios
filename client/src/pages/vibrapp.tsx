@@ -153,6 +153,19 @@ export default function Vibrapp() {
     },
   });
 
+  const { data: myReports } = useQuery<{ id: string; reportedId: string }[]>({
+    queryKey: ["/api/reports/mine"],
+    queryFn: async () => {
+      const res = await fetch("/api/reports/mine", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!profile,
+    staleTime: 60_000,
+  });
+
+  const reportedProfileIds = new Set((myReports ?? []).map(r => r.reportedId));
+
   const { data: receivedColdMsgs, refetch: refetchColdMsgs } = useQuery<ReceivedColdMsg[]>({
     queryKey: ["/api/cold-messages/received"],
     queryFn: async () => {
@@ -1838,6 +1851,22 @@ export default function Vibrapp() {
                   <p className="text-white/80 text-sm">{selectedColdMsg.content}</p>
                 )}
               </div>
+              {reportedProfileIds.has(selectedColdMsg.fromProfile.id) && (
+                <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30" data-testid="banner-already-reported">
+                  <Flag className="w-4 h-4 text-yellow-400 shrink-0" />
+                  <p className="text-yellow-200 text-xs flex-1">
+                    Hai già segnalato questo utente —{" "}
+                    <button
+                      type="button"
+                      className="underline text-yellow-300 font-semibold"
+                      onClick={() => { setSelectedColdMsg(null); setLocation("/profile?segnalazioni=1"); }}
+                      data-testid="link-gestisci-segnalazione"
+                    >
+                      Gestisci segnalazione
+                    </button>
+                  </p>
+                </div>
+              )}
               <p className="text-white/50 text-xs mb-2">La tua risposta apre una chat privata 🔐</p>
               <textarea
                 ref={replyInputRef}

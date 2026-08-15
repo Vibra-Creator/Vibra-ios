@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { User, MapPin, Sparkles, Edit2, Settings, Heart, Star, Coins, Gift, Plus, LogOut, Trash2, ArrowLeft, Eye, UserPlus, Lock, EyeOff, HelpCircle, Download, Ban, X, Share2, Bell, BellOff, Play, VideoIcon, AlertCircle, Ghost, Dna, Zap, Moon, Fingerprint, BookMarked, ShieldCheck, CheckCircle2, XCircle, Users, Flag, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -582,6 +582,7 @@ function ConsentInbox() {
 
 export default function ProfilePage() {
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { user, logout, isLoggingOut } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
@@ -590,6 +591,13 @@ export default function ProfilePage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [showReportsList, setShowReportsList] = useState(false);
   const [removeReportConfirmId, setRemoveReportConfirmId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    if (params.get("segnalazioni") === "1") {
+      setShowReportsList(true);
+    }
+  }, [searchString]);
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
   if (isGuest) {
