@@ -23,7 +23,7 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { db } from "../db.js";
-import { sql } from "drizzle-orm";
+import { runMigrations } from "../migrate.js";
 import { DatabaseStorage } from "../storage.js";
 import {
   profiles,
@@ -35,36 +35,11 @@ import {
 import { eq, and, inArray, or } from "drizzle-orm";
 
 // ─── Schema migration (runs once before any test suite) ──────────────────────
-// These columns are normally added at HTTP-server startup (registerRoutes).
-// When the tests run without the server, we apply them here so every suite
-// can rely on the full schema being present.
+// Delegates to the shared migration runner so tests and the HTTP server always
+// apply exactly the same set of migrations — no duplication, no drift.
 
 before(async () => {
-  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_id VARCHAR`);
-  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);
-  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_user_id VARCHAR`);
-  // reportedEmail: email-level anchor added by Task #30 to catch same-email re-registrations.
-  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_email TEXT`);
-  // Backfill reportedUserId for any pre-existing rows whose profile still exists
-  await db.execute(sql`
-    UPDATE reports r
-    SET reported_user_id = p.user_id
-    FROM profiles p
-    WHERE r.reported_id = p.id
-      AND r.reported_user_id IS NULL
-      AND p.user_id IS NOT NULL
-  `);
-  // Backfill reportedEmail for any pre-existing rows that can be joined to users
-  await db.execute(sql`
-    UPDATE reports r
-    SET reported_email = u.email
-    FROM profiles p
-    JOIN users u ON u.id = p.user_id
-    WHERE r.reported_id = p.id
-      AND r.reported_email IS NULL
-      AND p.user_id IS NOT NULL
-      AND u.email IS NOT NULL
-  `);
+  await runMigrations();
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
