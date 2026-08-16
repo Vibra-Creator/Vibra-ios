@@ -6,11 +6,37 @@ import { ArrowLeft, MapPin, Euro, Search, ExternalLink } from "lucide-react";
 import type { HubPost } from "@shared/schema";
 
 const CITIES = [
-  "Ovunque","Roma","Milano","Napoli","Torino","Palermo",
-  "Genova","Bologna","Firenze","Bari","Catania","Venezia",
-  "Verona","Padova","Trieste","Brescia","Parma","Perugia",
-  "Livorno","Cagliari","Rimini","Salerno","Modena","Reggio Emilia",
+  "Ovunque",
+  "Agrigento","Alessandria","Ancona","Aosta","Arezzo","Ascoli Piceno",
+  "Asti","Avellino","Bari","Barletta","Belluno","Benevento","Bergamo",
+  "Biella","Bologna","Bolzano","Brescia","Brindisi","Cagliari",
+  "Caltanissetta","Campobasso","Caserta","Catania","Catanzaro","Chieti",
+  "Como","Cosenza","Cremona","Crotone","Cuneo","Enna","Fermo","Ferrara",
+  "Firenze","Foggia","Forlì","Frosinone","Genova","Gorizia","Grosseto",
+  "Imperia","Isernia","L'Aquila","La Spezia","Latina","Lecce","Lecco",
+  "Livorno","Lodi","Lucca","Macerata","Mantova","Massa","Matera",
+  "Messina","Milano","Modena","Monza","Napoli","Novara","Nuoro",
+  "Oristano","Padova","Palermo","Parma","Pavia","Perugia","Pesaro",
+  "Pescara","Piacenza","Pisa","Pistoia","Pordenone","Potenza","Prato",
+  "Ragusa","Ravenna","Reggio Calabria","Reggio Emilia","Rieti","Rimini",
+  "Roma","Rovigo","Salerno","Sassari","Savona","Siena","Siracusa",
+  "Sondrio","Taranto","Teramo","Terni","Torino","Trapani","Trento",
+  "Treviso","Trieste","Udine","Varese","Venezia","Verbania","Vercelli",
+  "Verona","Vibo Valentia","Vicenza","Viterbo",
 ];
+
+// Mapping città → slug Resident Advisor
+const RA_SLUGS: Record<string, string> = {
+  "Roma": "rome", "Milano": "milan", "Napoli": "naples", "Torino": "turin",
+  "Firenze": "florence", "Bologna": "bologna", "Venezia": "venice",
+  "Genova": "genoa", "Palermo": "palermo", "Bari": "bari",
+  "Catania": "catania", "Verona": "verona", "Trieste": "trieste",
+  "Padova": "padova", "Brescia": "brescia", "Cagliari": "cagliari",
+  "Rimini": "rimini", "Reggio Emilia": "reggio-emilia",
+  "Parma": "parma", "Modena": "modena", "Perugia": "perugia",
+  "Bergamo": "bergamo", "Lecce": "lecce", "Pescara": "pescara",
+  "Reggio Calabria": "reggio-calabria",
+};
 
 const BUDGETS = [
   { label: "Gratis", value: 0 },
@@ -36,7 +62,9 @@ const CATEGORIES: CatDef[] = [
     label: "Ristoranti",
     color: "#f59e0b",
     externalUrl: (city) =>
-      `https://www.thefork.it/search?q=${encodeURIComponent(city === "Ovunque" ? "Italia" : city)}`,
+      city === "Ovunque"
+        ? "https://www.thefork.it/ristoranti/italia/"
+        : `https://www.thefork.it/ristoranti/${encodeURIComponent(city.toLowerCase())}/`,
     externalLabel: "TheFork",
   },
   {
@@ -53,7 +81,10 @@ const CATEGORIES: CatDef[] = [
     emoji: "🎉",
     label: "Serate & Club",
     color: "#8b5cf6",
-    externalUrl: (_city) => `https://ra.co/events/it`,
+    externalUrl: (city) => {
+      const slug = RA_SLUGS[city];
+      return slug ? `https://ra.co/events/it/${slug}` : "https://ra.co/events/it";
+    },
     externalLabel: "Resident Advisor",
   },
   {
@@ -168,23 +199,29 @@ export default function CosaFarePage() {
             <MapPin className="w-3.5 h-3.5 text-purple-400" />
             <p className="text-white/60 text-xs font-semibold uppercase tracking-wider">Città</p>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {CITIES.map((city) => (
-              <button
-                key={city}
-                onClick={() => setSelectedCity(city)}
-                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                style={{
-                  background:
-                    selectedCity === city
-                      ? "linear-gradient(135deg,#8b5cf6,#ec4899)"
-                      : "rgba(255,255,255,0.08)",
-                  color: selectedCity === city ? "#fff" : "rgba(255,255,255,0.5)",
-                }}
-              >
-                {city}
-              </button>
-            ))}
+          <div className="relative">
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="w-full appearance-none rounded-xl px-4 py-3 text-sm font-semibold pr-10"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(139,92,246,0.35)",
+                color: "#fff",
+                outline: "none",
+              }}
+            >
+              {CITIES.map((city) => (
+                <option key={city} value={city} style={{ background: "#1a1035", color: "#fff" }}>
+                  {city === "Ovunque" ? "📍 Ovunque in Italia" : city}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+              <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
 
