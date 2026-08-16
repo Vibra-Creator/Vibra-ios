@@ -2245,7 +2245,7 @@ ${urlEntries}
   // User report from any authenticated user
   app.post("/api/reports", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
