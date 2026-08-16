@@ -83,6 +83,7 @@ const CARDS = [
   { key: "spotify",     emoji: "🎵",  route: "/spotify",     color: ["#7c3aed","#4f46e5"], live: true },
   { key: "work",        emoji: "💼",  route: "/lavoro",      color: ["#6366f1","#4f46e5"], live: true },
   { key: "giovani",     emoji: "⚡",  route: "/giovani",     color: ["#e879f9","#06b6d4"], live: true },
+  { key: "cosfare",     emoji: "🎯",  route: "/cosa-fare",   color: ["#f59e0b","#d97706"], live: true },
 ] as const;
 
 const COMING: never[] = [];

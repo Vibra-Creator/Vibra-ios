@@ -6025,6 +6025,30 @@ REGOLE:
     } catch { res.status(500).json({ error: "Errore label" }); }
   });
 
+  // ─── Cosa Faccio — offerte leisure filtrate per città e budget ───────────────
+  app.get("/api/cosa-fare", isAuthenticated, async (req: any, res) => {
+    try {
+      const city = (req.query.city as string | undefined)?.trim();
+      const maxPrice = req.query.max_price !== undefined ? parseInt(req.query.max_price as string) : undefined;
+      const LEISURE_CATEGORIES = ['ristorante','concerto','discoteca','cinema','sagra','fiera','aperitivo','lastminute','weekend'];
+      const conditions: any[] = [
+        eq(hubPosts.status, "active"),
+        sql`${hubPosts.category} = ANY(ARRAY[${sql.raw(LEISURE_CATEGORIES.map(c => `'${c}'`).join(","))}]::text[])`,
+      ];
+      if (city) conditions.push(sql`LOWER(${hubPosts.city}) = LOWER(${city})`);
+      if (maxPrice !== undefined && maxPrice >= 0) {
+        conditions.push(sql`(${hubPosts.price} IS NULL OR ${hubPosts.price} <= ${maxPrice})`);
+      }
+      const posts = await db.select().from(hubPosts)
+        .where(and(...conditions))
+        .orderBy(desc(hubPosts.createdAt))
+        .limit(60);
+      res.json(posts);
+    } catch (e) {
+      res.status(500).json({ error: "Errore interno" });
+    }
+  });
+
   // ─── Hub Posts (Marketplace · Casa · Lavoro) ─────────────────────────────────
   app.get("/api/hub-posts", isAuthenticated, async (req: any, res) => {
     try {
