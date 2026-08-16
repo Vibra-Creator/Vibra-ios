@@ -99,7 +99,10 @@ const CATEGORIES: CatDef[] = [
     emoji: "✈️",
     label: "Last Minute",
     color: "#3b82f6",
-    externalUrl: (_city) => `https://www.lastminute.com/it/voli-last-minute/`,
+    externalUrl: (city) =>
+      city === "Ovunque"
+        ? "https://www.lastminute.com/it/offerte/"
+        : `https://www.lastminute.com/it/hotel/${encodeURIComponent(city.toLowerCase())}/`,
     externalLabel: "lastminute.com",
   },
   {
@@ -119,14 +122,13 @@ export default function CosaFarePage() {
   const [selectedBudget, setSelectedBudget] = useState(-1);
   const [searched, setSearched] = useState(false);
 
-  const queryParams = new URLSearchParams();
-  if (selectedCity !== "Ovunque") queryParams.set("city", selectedCity);
-  if (selectedBudget >= 0) queryParams.set("max_price", String(selectedBudget));
-
   const { data: posts = [], isFetching, refetch } = useQuery<HubPost[]>({
     queryKey: ["/api/cosa-fare", selectedCity, selectedBudget],
     queryFn: async () => {
-      const r = await fetch(`/api/cosa-fare?${queryParams}`, { credentials: "include" });
+      const params = new URLSearchParams();
+      if (selectedCity !== "Ovunque") params.set("city", selectedCity);
+      if (selectedBudget >= 0) params.set("max_price", String(selectedBudget));
+      const r = await fetch(`/api/cosa-fare?${params}`, { credentials: "include" });
       if (!r.ok) return [];
       return r.json();
     },
