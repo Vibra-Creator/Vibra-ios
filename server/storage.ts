@@ -118,6 +118,12 @@ export interface IStorage {
   createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string; coldMessageId?: string; coldMessageContent?: string }): Promise<Report>;
   getReports(): Promise<Report[]>;
   updateReportStatus(id: string, status: string): Promise<Report | undefined>;
+  /** Removes orphaned report rows that are safe to delete:
+   *  - the reportedId profile no longer exists, AND
+   *  - the reportedUserId has no active profiles (so the userId linkage is no longer needed), AND
+   *  - the report is older than olderThanDays.
+   *  Returns the number of rows deleted. */
+  pruneOrphanedReports(olderThanDays: number): Promise<number>;
   
   // Suspensions
   suspendUser(data: { userId: string; reason: string; expiresAt?: Date; isPermanent?: boolean }): Promise<UserSuspension>;
@@ -836,6 +842,48 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reports.id, id))
       .returning();
     return report;
+  }
+
+  async pruneOrphanedReports(olderThanDays: number): Promise<number> {
+    // Only delete a report when ALL three conditions hold:
+    // 1. The report is older than the TTL threshold.
+    // 2. The reportedId profile no longer exists (the profile was deleted).
+    // 3. The reportedUserId either is NULL  OR  has no surviving active profile —
+    //    i.e. the userId linkage that Task #23 intentionally preserves is no longer
+    //    needed because the user hasn't recreated their account.
+    // A report row is safe to delete only when ALL four conditions hold:
+    // 1. The report is older than the TTL threshold.
+    // 2. The reportedId profile no longer exists.
+    // 3. The reportedUserId (auth-user id anchor) has no surviving active profile.
+    // 4. The reportedEmail (email anchor) does not belong to any current user
+    //    who in turn has an active profile.
+    // Conditions 3 and 4 cover the two known account-recreation paths that Task #23
+    // intentionally preserved: same auth-userId re-registration and same-email
+    // re-registration (possibly under a different auth provider).
+    const result = await db.execute(sql`
+      DELETE FROM reports
+      WHERE created_at < NOW() - make_interval(days => ${olderThanDays})
+        AND NOT EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = reports.reported_id
+        )
+        AND (
+          reported_user_id IS NULL
+          OR NOT EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.user_id = reports.reported_user_id
+          )
+        )
+        AND (
+          reported_email IS NULL
+          OR NOT EXISTS (
+            SELECT 1 FROM users
+            JOIN profiles ON profiles.user_id = users.id
+            WHERE users.email = reports.reported_email
+          )
+        )
+    `);
+    return (result as any).rowCount ?? 0;
   }
 
   // Suspensions

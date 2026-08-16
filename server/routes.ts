@@ -506,6 +506,26 @@ ${urlEntries}
   cleanOldVibrappMessages();
   setInterval(cleanOldVibrappMessages, 30 * 60 * 1000);
 
+  // ─── Orphaned report row cleanup ─────────────────────────────────────────
+  // Reports whose reported profile has been deleted AND whose reportedUserId
+  // no longer maps to any active profile are safe to remove after 90 days.
+  // Reports where the userId still has a live profile are kept intentionally
+  // so the cold-message filter survives account recreation (Task #23).
+  const ORPHANED_REPORT_TTL_DAYS = 90;
+  async function pruneOrphanedReports() {
+    try {
+      const deleted = await storage.pruneOrphanedReports(ORPHANED_REPORT_TTL_DAYS);
+      if (deleted > 0) {
+        console.log(`[report-cleanup] Pruned ${deleted} orphaned report row(s) older than ${ORPHANED_REPORT_TTL_DAYS} days`);
+      }
+    } catch (e) {
+      console.error("[report-cleanup] Error:", e);
+    }
+  }
+  pruneOrphanedReports();
+  // Run once a day (every 24 h)
+  setInterval(pruneOrphanedReports, 24 * 60 * 60 * 1000);
+
   app.get("/api/auth/social-config", (req, res) => {
     res.json({
       googleClientId: process.env.GOOGLE_CLIENT_ID || null,
