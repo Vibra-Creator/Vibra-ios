@@ -306,6 +306,8 @@ export default function Vibrapp() {
       setSelectedColdMsg(null);
       setColdMsgReportConfirm(false);
       setReportReason("");
+      // Keep the "already reported" banner accurate immediately after reporting
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/mine"] });
       if (variables.alsoBlock) {
         refetchColdMsgs();
         queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
