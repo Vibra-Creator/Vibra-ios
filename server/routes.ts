@@ -442,6 +442,10 @@ ${urlEntries}
       // reportedUserId: denormalised auth-user id captured at report creation time so
       // the filter survives profile deletion (account re-creation gap fix).
       await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_user_id VARCHAR`);
+      // reportedEmail: email address of the reported user captured at report-creation time.
+      // Provides a second linkage anchor so that a bad actor who re-registers with the same
+      // email (even under a new auth provider / userId) can still be matched.
+      await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_email TEXT`);
       // Backfill reportedUserId for pre-existing reports whose reported profile still exists
       await db.execute(sql`
         UPDATE reports r
@@ -450,6 +454,17 @@ ${urlEntries}
         WHERE r.reported_id = p.id
           AND r.reported_user_id IS NULL
           AND p.user_id IS NOT NULL
+      `);
+      // Backfill reportedEmail for pre-existing reports where we can still join to users
+      await db.execute(sql`
+        UPDATE reports r
+        SET reported_email = u.email
+        FROM profiles p
+        JOIN users u ON u.id = p.user_id
+        WHERE r.reported_id = p.id
+          AND r.reported_email IS NULL
+          AND p.user_id IS NOT NULL
+          AND u.email IS NOT NULL
       `);
     } catch (e) {
       console.error("[reports] migration error:", e);

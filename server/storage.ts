@@ -796,8 +796,12 @@ export class DatabaseStorage implements IStorage {
 
   // Reports
   async createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string; coldMessageId?: string; coldMessageContent?: string }): Promise<Report> {
-    // Denormalise the underlying auth-user id of the reported profile so the
+    // Denormalise the underlying auth-user id and email of the reported profile so the
     // filter survives if that profile row is later deleted (account recreation gap).
+    // • reportedUserId catches same-user re-registrations (same auth identity, new profile UUID)
+    // • reportedEmail catches re-registrations with the same email under a new auth provider
+    // NOTE: re-registration with a brand-new email address cannot be caught without
+    //       device-fingerprint or phone-number linkage — that is a known remaining gap.
     const [reportedProfile] = await db
       .select({ userId: profiles.userId })
       .from(profiles)
@@ -805,9 +809,19 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     const reportedUserId = reportedProfile?.userId ?? null;
 
+    let reportedEmail: string | null = null;
+    if (reportedUserId) {
+      const [reportedUser] = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, reportedUserId))
+        .limit(1);
+      reportedEmail = reportedUser?.email ?? null;
+    }
+
     const [report] = await db
       .insert(reports)
-      .values({ ...data, reportedUserId })
+      .values({ ...data, reportedUserId, reportedEmail })
       .returning();
     return report;
   }
@@ -1129,11 +1143,16 @@ export class DatabaseStorage implements IStorage {
 
   async getColdMessagesReceived(toProfileId: string): Promise<Array<ColdMessage & { fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {
     // Fetch IDs of profiles that this user has ever reported (soft ignore list).
-    // Also capture the underlying userId so we can catch account re-creations:
-    // if B deletes their profile and creates a new one (new UUID, same userId),
-    // the old report's reportedUserId links to the new profile.
+    // Captures two extra anchors at report-creation time to survive account re-creations:
+    //   • reportedUserId — same auth identity, new profile UUID
+    //   • reportedEmail  — same email address, new auth provider / userId
+    // NOTE: a brand-new email address is a known remaining gap (device fingerprint needed).
     const reportedRows = await db
-      .select({ reportedId: reports.reportedId, reportedUserId: reports.reportedUserId })
+      .select({
+        reportedId: reports.reportedId,
+        reportedUserId: reports.reportedUserId,
+        reportedEmail: reports.reportedEmail,
+      })
       .from(reports)
       .where(eq(reports.reporterId, toProfileId));
     const reportedIds = new Set(reportedRows.map(r => r.reportedId));
@@ -1143,6 +1162,11 @@ export class DatabaseStorage implements IStorage {
       .map(r => r.reportedUserId)
       .filter((uid): uid is string => !!uid);
 
+    // Collect reported emails (non-null only)
+    const reportedEmails = reportedRows
+      .map(r => r.reportedEmail)
+      .filter((e): e is string => !!e);
+
     // Find all current profiles that share a reported userId (catches re-created accounts)
     if (reportedUserIds.length > 0) {
       const sibling = await db
@@ -1150,6 +1174,23 @@ export class DatabaseStorage implements IStorage {
         .from(profiles)
         .where(inArray(profiles.userId, reportedUserIds));
       sibling.forEach(p => reportedIds.add(p.id));
+    }
+
+    // Find all current profiles whose auth-user email matches a reported email
+    // (catches same email re-registered under a new auth provider / userId)
+    if (reportedEmails.length > 0) {
+      const emailMatchedUsers = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(inArray(users.email, reportedEmails));
+      if (emailMatchedUsers.length > 0) {
+        const emailMatchedUserIds = emailMatchedUsers.map(u => u.id);
+        const emailMatchedProfiles = await db
+          .select({ id: profiles.id })
+          .from(profiles)
+          .where(inArray(profiles.userId, emailMatchedUserIds));
+        emailMatchedProfiles.forEach(p => reportedIds.add(p.id));
+      }
     }
 
     const rows = await db.select({
@@ -1303,8 +1344,9 @@ export class DatabaseStorage implements IStorage {
     if (direct) return true;
 
     // userId-level match: catches recreated accounts (same underlying auth user, new profile UUID).
-    // Look up the sender's userId, then check if the recipient has ever reported a profile
-    // that carried that same userId (stored in reportedUserId at report-creation time).
+    // email-level match: catches re-registrations with the same email under a new auth provider/userId.
+    // NOTE: re-registration with a brand-new email address is a known remaining gap (would require
+    //       device-fingerprint or phone-number linkage to close fully).
     const [senderProfile] = await db
       .select({ userId: profiles.userId })
       .from(profiles)
@@ -1312,12 +1354,32 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     if (!senderProfile?.userId) return false;
 
-    const [byUserId] = await db
+    // Look up email for the email-level check
+    const [senderUser] = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, senderProfile.userId))
+      .limit(1);
+
+    // Build a combined OR condition: match by userId OR by email (when available)
+    const userIdCondition = and(
+      eq(reports.reporterId, recipientProfileId),
+      eq(reports.reportedUserId, senderProfile.userId)
+    );
+    const emailCondition = senderUser?.email
+      ? and(eq(reports.reporterId, recipientProfileId), eq(reports.reportedEmail, senderUser.email))
+      : null;
+
+    const whereClause = emailCondition
+      ? or(userIdCondition, emailCondition)
+      : userIdCondition;
+
+    const [byIdentity] = await db
       .select({ id: reports.id })
       .from(reports)
-      .where(and(eq(reports.reporterId, recipientProfileId), eq(reports.reportedUserId, senderProfile.userId)))
+      .where(whereClause)
       .limit(1);
-    return !!byUserId;
+    return !!byIdentity;
   }
 
   async deleteSentColdMessage(fromProfileId: string, toProfileId: string): Promise<void> {

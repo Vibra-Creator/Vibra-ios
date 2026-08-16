@@ -234,6 +234,12 @@ export const reports = pgTable("reports", {
   /** Underlying auth-user id of the reported profile (denormalised at report-creation time).
    *  Survives profile deletion so the filter can catch account re-creations. */
   reportedUserId: varchar("reported_user_id"),
+  /** Email address of the reported user (from the users table) captured at report-creation time.
+   *  Provides a second linkage anchor: if a bad actor deletes their account and registers with
+   *  the same email address (even under a new auth provider / userId), the filter can still
+   *  match them.  NOTE: this does NOT catch a truly-new email address — that gap is documented
+   *  as a known limitation requiring device-fingerprint or phone-number linkage to close fully. */
+  reportedEmail: text("reported_email"),
   reason: text("reason").notNull(),
   description: text("description"),
   status: text("status").default("pending"),

@@ -30,6 +30,7 @@ import {
   reports,
   coldMessages,
   blockedUsers,
+  users,
 } from "../../shared/schema.js";
 import { eq, and, inArray, or } from "drizzle-orm";
 
@@ -42,6 +43,8 @@ before(async () => {
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_id VARCHAR`);
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_user_id VARCHAR`);
+  // reportedEmail: email-level anchor added by Task #30 to catch same-email re-registrations.
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_email TEXT`);
   // Backfill reportedUserId for any pre-existing rows whose profile still exists
   await db.execute(sql`
     UPDATE reports r
@@ -50,6 +53,17 @@ before(async () => {
     WHERE r.reported_id = p.id
       AND r.reported_user_id IS NULL
       AND p.user_id IS NOT NULL
+  `);
+  // Backfill reportedEmail for any pre-existing rows that can be joined to users
+  await db.execute(sql`
+    UPDATE reports r
+    SET reported_email = u.email
+    FROM profiles p
+    JOIN users u ON u.id = p.user_id
+    WHERE r.reported_id = p.id
+      AND r.reported_email IS NULL
+      AND p.user_id IS NOT NULL
+      AND u.email IS NOT NULL
   `);
 });
 
@@ -647,6 +661,200 @@ describe("Self-service profile deletion preserves report linkage (DELETE /api/pr
       fromBNew.length,
       0,
       "Cold messages from a recreated account must be filtered even after self-service profile deletion",
+    );
+  });
+});
+
+// ─── Email-level linkage (Task #30) ───────────────────────────────────────────
+//
+// Scenario: B deletes their account entirely and re-registers with a completely
+// NEW userId (e.g. switches from Google auth to Apple auth) but keeps the same
+// email address.  Without email-level linkage the new userId would not match any
+// reportedUserId stored in the report row, and B's messages would slip through.
+//
+// Fix applied:
+//  • createReport now also stores reportedEmail (looked up from the users table
+//    via the profile's userId) alongside reportedUserId.
+//  • isSenderReportedByRecipient additionally matches by current sender email vs
+//    stored reportedEmail.
+//  • getColdMessagesReceived additionally expands the filtered-ID set by joining
+//    current users on email to find profiles with a matching email.
+//
+// NOTE: this does NOT catch a brand-new email address — that gap is explicitly
+//       documented in the codebase as a known limitation.
+
+describe("Email-level linkage filter (same email, new userId/auth provider)", () => {
+  const SHARED_EMAIL = `test_email_${RUN_ID}@example.invalid`;
+
+  // Two distinct synthetic auth-user ids to simulate a provider switch
+  const USER_ID_OLD = `__test_uid_email_old_${RUN_ID}`;
+  const USER_ID_NEW = `__test_uid_email_new_${RUN_ID}`;
+
+  let recipientA: string;     // reporter / cold-message recipient (no auth user needed)
+  let senderB_old: string;    // B's original profile (linked to USER_ID_OLD / SHARED_EMAIL)
+  let senderB_new: string;    // B's new profile (linked to USER_ID_NEW / same SHARED_EMAIL)
+
+  const localIds: string[] = [];
+  const localUserIds: string[] = [];
+
+  before(async () => {
+    recipientA = await createTestProfile("EmlA");
+    localIds.push(recipientA);
+
+    // Insert two distinct users rows that share the same email
+    await db.insert(users).values({
+      id: USER_ID_OLD,
+      email: SHARED_EMAIL,
+      firstName: "B",
+      lastName: "Old",
+    }).onConflictDoNothing();
+
+    await db.insert(users).values({
+      id: USER_ID_NEW,
+      email: SHARED_EMAIL,
+      firstName: "B",
+      lastName: "New",
+    }).onConflictDoNothing();
+
+    localUserIds.push(USER_ID_OLD, USER_ID_NEW);
+
+    // B's original profile linked to the old user id
+    const [rowOld] = await db
+      .insert(profiles)
+      .values({
+        name: testProfileName("EmlBold"),
+        age: 26,
+        bio: "",
+        imageUrl: "/images/test.png",
+        location: "",
+        interests: [],
+        alienType: "test",
+        isBot: false,
+        userId: USER_ID_OLD,
+      })
+      .returning({ id: profiles.id });
+    senderB_old = rowOld.id;
+    localIds.push(senderB_old);
+
+    // B's new profile linked to the NEW user id (simulates fresh auth registration)
+    const [rowNew] = await db
+      .insert(profiles)
+      .values({
+        name: testProfileName("EmlBnew"),
+        age: 26,
+        bio: "",
+        imageUrl: "/images/test.png",
+        location: "",
+        interests: [],
+        alienType: "test",
+        isBot: false,
+        userId: USER_ID_NEW,
+      })
+      .returning({ id: profiles.id });
+    senderB_new = rowNew.id;
+    localIds.push(senderB_new);
+  });
+
+  after(async () => {
+    if (localIds.length > 0) {
+      await db.delete(coldMessages).where(
+        or(
+          inArray(coldMessages.fromProfileId, localIds),
+          inArray(coldMessages.toProfileId, localIds),
+        ),
+      );
+      await db.delete(reports).where(
+        or(
+          inArray(reports.reporterId, localIds),
+          inArray(reports.reportedId, localIds),
+        ),
+      );
+      await db.delete(profiles).where(inArray(profiles.id, localIds)).catch(() => {});
+    }
+    if (localUserIds.length > 0) {
+      await db.delete(users).where(inArray(users.id, localUserIds)).catch(() => {});
+    }
+  });
+
+  test("createReport captures reportedEmail from the users table", async () => {
+    await storage.createReport({
+      reporterId: recipientA,
+      reportedId: senderB_old,
+      reason: "spam",
+    });
+
+    const [reportRow] = await db
+      .select({ reportedEmail: reports.reportedEmail, reportedUserId: reports.reportedUserId })
+      .from(reports)
+      .where(
+        and(
+          eq(reports.reporterId, recipientA),
+          eq(reports.reportedId, senderB_old),
+        ),
+      );
+    assert.equal(
+      reportRow?.reportedEmail,
+      SHARED_EMAIL,
+      "createReport must store the reported user's email in the report row",
+    );
+    assert.equal(
+      reportRow?.reportedUserId,
+      USER_ID_OLD,
+      "createReport must also store reportedUserId as a secondary anchor",
+    );
+  });
+
+  test("isSenderReportedByRecipient returns true for a new account sharing the same email", async () => {
+    // senderB_old was reported; senderB_new has a DIFFERENT userId but the SAME email.
+    const result = await storage.isSenderReportedByRecipient(senderB_new, recipientA);
+    assert.equal(
+      result,
+      true,
+      "isSenderReportedByRecipient must match by reportedEmail when the userId differs",
+    );
+  });
+
+  test("getColdMessagesReceived filters out messages from a same-email new account", async () => {
+    // senderB_new sends a cold message to recipientA
+    await storage.sendColdMessage(senderB_new, recipientA, "hi from my new email account");
+
+    const received = await storage.getColdMessagesReceived(recipientA);
+    const fromBNew = received.filter((m) => m.fromProfileId === senderB_new);
+    assert.equal(
+      fromBNew.length,
+      0,
+      "getColdMessagesReceived must filter out messages from a profile whose email matches a reported email",
+    );
+  });
+
+  test("sendColdMessage silently drops message from same-email new account (send-time guard)", async () => {
+    // The storage-layer guard inside sendColdMessage must fire for the new account too.
+    // We need to clean up any existing row first (previous test may have inserted before the filter).
+    await db.delete(coldMessages).where(
+      and(
+        eq(coldMessages.fromProfileId, senderB_new),
+        eq(coldMessages.toProfileId, recipientA),
+      ),
+    );
+
+    const result = await storage.sendColdMessage(senderB_new, recipientA, "dropped at send time");
+    assert.equal(result.status, "sent", "Guard must return 'sent' to hide the filter from the caller");
+    assert.equal(result.coldMessage, undefined, "No ColdMessage object must be returned when silently dropped");
+
+    // Confirm no DB row was created
+    const rows = await db
+      .select({ id: coldMessages.id })
+      .from(coldMessages)
+      .where(
+        and(
+          eq(coldMessages.fromProfileId, senderB_new),
+          eq(coldMessages.toProfileId, recipientA),
+        ),
+      );
+    assert.equal(
+      rows.length,
+      0,
+      "Cold message must not be persisted when email-level filter fires at send time",
     );
   });
 });
