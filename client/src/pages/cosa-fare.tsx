@@ -62,10 +62,8 @@ const CATEGORIES: CatDef[] = [
     label: "Ristoranti",
     color: "#f59e0b",
     externalUrl: (city) =>
-      city === "Ovunque"
-        ? "https://www.thefork.it/ristoranti/italia/"
-        : `https://www.thefork.it/ristoranti/${encodeURIComponent(city.toLowerCase())}/`,
-    externalLabel: "TheFork",
+      `https://www.google.com/maps/search/ristoranti+a+${encodeURIComponent(city === "Ovunque" ? "Italia" : city)}`,
+    externalLabel: "Google Maps",
   },
   {
     key: "concerto",
@@ -83,9 +81,10 @@ const CATEGORIES: CatDef[] = [
     color: "#8b5cf6",
     externalUrl: (city) => {
       const slug = RA_SLUGS[city];
-      return slug ? `https://ra.co/events/it/${slug}` : "https://ra.co/events/it";
+      if (slug) return `https://ra.co/events/it/${slug}`;
+      return `https://www.google.com/maps/search/discoteche+club+${encodeURIComponent(city === "Ovunque" ? "Italia" : city)}`;
     },
-    externalLabel: "Resident Advisor",
+    externalLabel: "RA / Maps",
   },
   {
     key: "cinema",
@@ -130,11 +129,12 @@ const CATEGORIES: CatDef[] = [
     emoji: "✈️",
     label: "Last Minute",
     color: "#3b82f6",
-    externalUrl: (city) =>
-      city === "Ovunque"
-        ? "https://www.lastminute.com/it/offerte/"
-        : `https://www.lastminute.com/it/hotel/${encodeURIComponent(city.toLowerCase())}/`,
-    externalLabel: "lastminute.com",
+    externalUrl: (city) => {
+      const dest = city === "Ovunque" ? "Italia" : city;
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, "-");
+      return `https://www.booking.com/searchresults.it.html?ss=${encodeURIComponent(dest)}&checkin=${today}&checkout=${today}&order=price`;
+    },
+    externalLabel: "Booking.com",
   },
   {
     key: "weekend",
