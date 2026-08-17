@@ -108,6 +108,7 @@ export default function Vibrapp() {
   const [returnToColdMsg, setReturnToColdMsg] = useState<ReceivedColdMsg | null>(null);
   const [loadingSenderProfile, setLoadingSenderProfile] = useState(false);
   const [senderProfileToast, setSenderProfileToast] = useState<string | null>(null);
+  const senderProfileToastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const introAudioChunksRef = useRef<Blob[]>([]);
   const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1797,12 +1798,14 @@ export default function Vibrapp() {
                         setSelectedColdMsg(null);
                         setViewedSenderProfile(p);
                       } else {
+                        if (senderProfileToastTimerRef.current) clearTimeout(senderProfileToastTimerRef.current);
                         setSenderProfileToast("Impossibile caricare il profilo. Riprova.");
-                        setTimeout(() => setSenderProfileToast(null), 3500);
+                        senderProfileToastTimerRef.current = setTimeout(() => setSenderProfileToast(null), 3500);
                       }
                     } catch {
+                      if (senderProfileToastTimerRef.current) clearTimeout(senderProfileToastTimerRef.current);
                       setSenderProfileToast("Impossibile caricare il profilo. Riprova.");
-                      setTimeout(() => setSenderProfileToast(null), 3500);
+                      senderProfileToastTimerRef.current = setTimeout(() => setSenderProfileToast(null), 3500);
                     } finally {
                       setLoadingSenderProfile(false);
                     }
