@@ -8,6 +8,8 @@
  *    (→ HTTP 404 with reason "sender_deleted" from the route).
  * 3. isBlocked returns true when the sender blocks the recipient after sending
  *    (→ HTTP 403 with reason "sender_blocked" from the route).
+ * 4. replyColdMessage refuses to persist a reply when the sender is deleted
+ *    or has blocked the recipient.
  *
  * These are the storage-level guarantees that the GET /api/cold-messages/:id
  * route relies on to suppress the reply panel cleanly.
@@ -168,5 +170,47 @@ describe("Cold-message deletion race condition", () => {
 
     // Cleanup block so the cascade delete in `after()` doesn't leave orphan rows
     await storage.unblockUser(sender4, recipient4);
+  });
+
+  test("replyColdMessage does not persist after the sender deletes their account", async () => {
+    const sender5 = await createTestProfile("sender5");
+    const recipient5 = await createTestProfile("recipient5");
+    createdProfileIds.push(recipient5); // sender5 is deleted in this test
+
+    const { coldMessage } = await storage.sendColdMessage(sender5, recipient5, "reply race");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    await storage.deleteProfile(sender5);
+
+    await assert.rejects(
+      () => storage.replyColdMessage(coldMessage.id, "too late"),
+      (error: any) => error?.code === "sender_deleted",
+      "replyColdMessage must reject when the sender profile no longer exists"
+    );
+
+    const unchanged = await storage.getColdMessageById(coldMessage.id);
+    assert.equal(unchanged?.replied, false, "deleted sender must not result in a persisted reply");
+  });
+
+  test("replyColdMessage does not persist after the sender blocks the recipient", async () => {
+    const sender5 = await createTestProfile("sender5_blocked");
+    const recipient5 = await createTestProfile("recipient5_blocked");
+    createdProfileIds.push(sender5, recipient5);
+
+    const { coldMessage } = await storage.sendColdMessage(sender5, recipient5, "blocked reply race");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    await storage.blockUser(sender5, recipient5);
+
+    await assert.rejects(
+      () => storage.replyColdMessage(coldMessage.id, "should not open"),
+      (error: any) => error?.code === "sender_blocked",
+      "replyColdMessage must reject when the sender blocks the recipient"
+    );
+
+    const unchanged = await storage.getColdMessageById(coldMessage.id);
+    assert.equal(unchanged?.replied, false, "blocked sender must not result in a persisted reply");
+
+    await storage.unblockUser(sender5, recipient5);
   });
 });

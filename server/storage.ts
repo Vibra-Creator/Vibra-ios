@@ -1294,7 +1294,13 @@ export class DatabaseStorage implements IStorage {
 
     const fromProfile = await db.select().from(profiles).where(eq(profiles.id, msg.fromProfileId)).limit(1);
     const toProfile = await db.select().from(profiles).where(eq(profiles.id, msg.toProfileId)).limit(1);
-    if (!fromProfile[0] || !toProfile[0]) throw new Error("Profiles not found");
+    if (!fromProfile[0]) {
+      throw Object.assign(new Error("Sender profile not found"), { code: "sender_deleted" });
+    }
+    if (!toProfile[0]) throw new Error("Recipient profile not found");
+    if (await this.isBlocked(msg.fromProfileId, msg.toProfileId)) {
+      throw Object.assign(new Error("Sender has blocked the recipient"), { code: "sender_blocked" });
+    }
 
     const [room] = await db.insert(privateRooms).values({
       ownerId: msg.toProfileId,

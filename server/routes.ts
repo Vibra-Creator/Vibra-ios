@@ -4616,7 +4616,44 @@ REGOLE:
       if (!msg) return res.status(404).json({ error: "Messaggio non trovato" });
       if (msg.toProfileId !== myProfile.id) return res.status(403).json({ error: "Non autorizzato" });
       if (msg.replied) return res.status(400).json({ error: "Già risposto" });
-      const { privateRoomId } = await storage.replyColdMessage(req.params.id, content.trim().substring(0, 500));
+      // The sender may have deleted their account or blocked the recipient
+      // after the reply panel was opened. Re-check reachability immediately
+      // before creating the private room.
+      const senderProfile = await storage.getProfile(msg.fromProfileId);
+      if (!senderProfile) {
+        return res.status(403).json({
+          error: "Questo messaggio non è più disponibile: il mittente ha eliminato il proprio account",
+          reason: "sender_deleted",
+        });
+      }
+      const senderBlockedRecipient = await storage.isBlocked(msg.fromProfileId, myProfile.id);
+      if (senderBlockedRecipient) {
+        return res.status(403).json({
+          error: "Questo messaggio non è più disponibile: il mittente ti ha bloccato",
+          reason: "sender_blocked",
+        });
+      }
+
+      let privateRoomId: string;
+      try {
+        ({ privateRoomId } = await storage.replyColdMessage(req.params.id, content.trim().substring(0, 500)));
+      } catch (err: any) {
+        // Keep the HTTP contract stable if either reachability check changes
+        // between the route validation and the storage operation.
+        if (err?.code === "sender_deleted") {
+          return res.status(403).json({
+            error: "Questo messaggio non è più disponibile: il mittente ha eliminato il proprio account",
+            reason: "sender_deleted",
+          });
+        }
+        if (err?.code === "sender_blocked") {
+          return res.status(403).json({
+            error: "Questo messaggio non è più disponibile: il mittente ti ha bloccato",
+            reason: "sender_blocked",
+          });
+        }
+        throw err;
+      }
       sendPushToProfile(msg.fromProfileId, {
         title: `🛸 ${myProfile.name} ha risposto!`,
         body: "La conversazione privata è ora aperta 🎉",

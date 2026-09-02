@@ -216,7 +216,20 @@ export default function Vibrapp() {
       refetchColdMsgs();
       queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
     },
-    onError: () => {
+    onError: (err: any) => {
+      // apiRequest includes the JSON error body in Error.message. The sender
+      // can disappear or block us after the reply panel was opened, so show
+      // the same unavailable-message toast used by the GET re-validation.
+      const errorMessage = typeof err?.message === "string" ? err.message : "";
+      if (/"reason"\s*:\s*"(sender_deleted|sender_blocked)"/.test(errorMessage)) {
+        setSelectedColdMsg(null);
+        setReplyText("");
+        setSenderProfileToast("Questo messaggio non è più disponibile");
+        setTimeout(() => setSenderProfileToast(null), 3500);
+        refetchColdMsgs();
+        queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
+        return;
+      }
       alert("Errore nell'invio della risposta. Riprova.");
     },
   });
