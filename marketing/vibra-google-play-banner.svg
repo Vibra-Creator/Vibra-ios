@@ -37,7 +37,7 @@
     <circle cx="333" cy="574" r="1.5"/><circle cx="1024" cy="242" r="1.5"/>
   </g>
 
-  <g filter="url(#orbShadow)">
+  <g filter="url(#orbShadow)" transform="translate(294 0)">
     <circle cx="676" cy="286" r="142" fill="#090B16"/>
     <circle cx="676" cy="286" r="101" fill="url(#accent)"/>
     <circle cx="676" cy="286" r="101" fill="url(#glow)" opacity="0.6"/>
@@ -45,9 +45,9 @@
   </g>
 
   <text x="78" y="188" fill="#D8B4FE" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="5">VIBRA</text>
-  <text x="78" y="276" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800">Non è dating.</text>
-  <text x="78" y="350" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800">È connessione vera.</text>
-  <text x="82" y="397" fill="#E9D5FF" font-family="Arial, Helvetica, sans-serif" font-size="24">Trova persone, storie e vibrazioni autentiche.</text>
+  <text x="78" y="276" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800">Un hub universale.</text>
+  <text x="78" y="350" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="68" font-weight="800">Interagisci col mondo.</text>
+  <text x="82" y="397" fill="#E9D5FF" font-family="Arial, Helvetica, sans-serif" font-size="23">Servizi, eventi, chat, social, lavoro e casa in un unico spazio.</text>
 
   <g filter="url(#shadow)">
     <rect x="78" y="458" width="330" height="82" rx="16" fill="url(#button)"/>
