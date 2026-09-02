@@ -124,6 +124,8 @@ export interface IStorage {
    *  - the report is older than olderThanDays.
    *  Returns the number of rows deleted. */
   pruneOrphanedReports(olderThanDays: number): Promise<number>;
+  /** Returns the number of orphaned reports eligible for pruning. */
+  countOrphanedReports(olderThanDays: number): Promise<number>;
   
   // Suspensions
   suspendUser(data: { userId: string; reason: string; expiresAt?: Date; isPermanent?: boolean }): Promise<UserSuspension>;
@@ -884,6 +886,34 @@ export class DatabaseStorage implements IStorage {
         )
     `);
     return (result as any).rowCount ?? 0;
+  }
+
+  async countOrphanedReports(olderThanDays: number): Promise<number> {
+    const result = await db.execute(sql`
+      SELECT COUNT(*)::int AS count
+      FROM reports
+      WHERE created_at < NOW() - make_interval(days => ${olderThanDays})
+        AND NOT EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = reports.reported_id
+        )
+        AND (
+          reported_user_id IS NULL
+          OR NOT EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.user_id = reports.reported_user_id
+          )
+        )
+        AND (
+          reported_email IS NULL
+          OR NOT EXISTS (
+            SELECT 1 FROM users
+            JOIN profiles ON profiles.user_id = users.id
+            WHERE users.email = reports.reported_email
+          )
+        )
+    `);
+    return Number((result as any).rows?.[0]?.count ?? 0);
   }
 
   // Suspensions

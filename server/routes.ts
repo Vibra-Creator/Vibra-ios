@@ -358,6 +358,22 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const ORPHANED_REPORT_TTL_DAYS = 90;
+  const reportCleanupStatus: {
+    lastAttemptAt: string | null;
+    lastSuccessAt: string | null;
+    status: "never" | "running" | "success" | "failure";
+    lastDeletedCount: number | null;
+    consecutiveFailures: number;
+    lastError: string | null;
+  } = {
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    status: "never",
+    lastDeletedCount: null,
+    consecutiveFailures: 0,
+    lastError: null,
+  };
 
   app.get("/sw.js", (req, res, next) => {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -497,15 +513,33 @@ ${urlEntries}
   // no longer maps to any active profile are safe to remove after 90 days.
   // Reports where the userId still has a live profile are kept intentionally
   // so the cold-message filter survives account recreation (Task #23).
-  const ORPHANED_REPORT_TTL_DAYS = 90;
   async function pruneOrphanedReports() {
+    const attemptAt = new Date().toISOString();
+    reportCleanupStatus.lastAttemptAt = attemptAt;
+    reportCleanupStatus.status = "running";
     try {
       const deleted = await storage.pruneOrphanedReports(ORPHANED_REPORT_TTL_DAYS);
-      if (deleted > 0) {
-        console.log(`[report-cleanup] Pruned ${deleted} orphaned report row(s) older than ${ORPHANED_REPORT_TTL_DAYS} days`);
-      }
+      const completedAt = new Date().toISOString();
+      reportCleanupStatus.lastSuccessAt = completedAt;
+      reportCleanupStatus.status = "success";
+      reportCleanupStatus.lastDeletedCount = deleted;
+      reportCleanupStatus.consecutiveFailures = 0;
+      reportCleanupStatus.lastError = null;
+      console.log(
+        `[report-cleanup] status=success deleted=${deleted} ttlDays=${ORPHANED_REPORT_TTL_DAYS} ` +
+        `attemptedAt=${attemptAt} completedAt=${completedAt}`
+      );
     } catch (e) {
-      console.error("[report-cleanup] Error:", e);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      reportCleanupStatus.status = "failure";
+      reportCleanupStatus.consecutiveFailures += 1;
+      reportCleanupStatus.lastError = errorMessage;
+      console.error(
+        `[report-cleanup] status=failure ttlDays=${ORPHANED_REPORT_TTL_DAYS} ` +
+        `attemptedAt=${attemptAt} consecutiveFailures=${reportCleanupStatus.consecutiveFailures} ` +
+        `error=${errorMessage}`,
+        e
+      );
     }
   }
   pruneOrphanedReports();
@@ -1648,6 +1682,34 @@ ${urlEntries}
       res.status(500).json({ error: "Server error" });
     }
   };
+
+  app.get("/api/admin/report-cleanup/status", isAuthenticated, isAdmin, async (_req: any, res) => {
+    const lastAttemptMs = reportCleanupStatus.lastAttemptAt
+      ? Date.parse(reportCleanupStatus.lastAttemptAt)
+      : null;
+    const schedulerStale = lastAttemptMs === null || Date.now() - lastAttemptMs > 26 * 60 * 60 * 1000;
+
+    try {
+      const orphanedReportsOlderThanTtl = await storage.countOrphanedReports(ORPHANED_REPORT_TTL_DAYS);
+      res.json({
+        ...reportCleanupStatus,
+        ttlDays: ORPHANED_REPORT_TTL_DAYS,
+        orphanedReportsOlderThanTtl,
+        schedulerStale,
+        healthy: reportCleanupStatus.status === "success" && !schedulerStale,
+      });
+    } catch (error) {
+      console.error("[report-cleanup] status-check-failure:", error);
+      res.status(503).json({
+        ...reportCleanupStatus,
+        ttlDays: ORPHANED_REPORT_TTL_DAYS,
+        orphanedReportsOlderThanTtl: null,
+        schedulerStale,
+        healthy: false,
+        error: "Unable to read orphaned report backlog",
+      });
+    }
+  });
 
   app.get("/api/referral/my-code", isAuthenticated, async (req: any, res) => {
     try {
