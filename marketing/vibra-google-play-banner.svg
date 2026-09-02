@@ -37,11 +37,11 @@
     <circle cx="333" cy="574" r="1.5"/><circle cx="1024" cy="242" r="1.5"/>
   </g>
 
-  <g filter="url(#orbShadow)" transform="translate(294 0)">
+  <g filter="url(#orbShadow)" transform="translate(339 0)">
     <circle cx="676" cy="286" r="142" fill="#090B16"/>
     <circle cx="676" cy="286" r="101" fill="url(#accent)"/>
     <circle cx="676" cy="286" r="101" fill="url(#glow)" opacity="0.6"/>
-    <path d="M676 347C668 337 627 306 627 271C627 249 643 234 662 234C674 234 683 241 690 251C697 241 706 234 718 234C737 234 753 249 753 271C753 306 712 337 704 347L690 363L676 347Z" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path transform="translate(-14 -13)" d="M676 347C668 337 627 306 627 271C627 249 643 234 662 234C674 234 683 241 690 251C697 241 706 234 718 234C737 234 753 249 753 271C753 306 712 337 704 347L690 363L676 347Z" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
   <text x="78" y="188" fill="#D8B4FE" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="5">VIBRA</text>
