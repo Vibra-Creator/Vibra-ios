@@ -20,7 +20,10 @@
 
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
+import express from "express";
+import { createServer, request as httpRequest, type Server as HttpServer } from "node:http";
 import { db } from "../db.js";
+import { getColdMessageByIdHandler } from "../routes.js";
 import { DatabaseStorage } from "../storage.js";
 import { profiles, coldMessages } from "../../shared/schema.js";
 import { eq, inArray } from "drizzle-orm";
@@ -50,6 +53,66 @@ async function createTestProfile(label: string): Promise<string> {
     })
     .returning({ id: profiles.id });
   return row.id;
+}
+
+async function startRouteTestServer(recipientUserId: string): Promise<HttpServer> {
+  const app = express();
+  app.use((req: any, _res, next) => {
+    req.user = { claims: { sub: recipientUserId } };
+    next();
+  });
+  app.get("/api/cold-messages/:id", getColdMessageByIdHandler);
+
+  const server = createServer(app);
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  return server;
+}
+
+async function getColdMessageOverHttp(server: HttpServer, messageId: string): Promise<{ statusCode: number; body: any }> {
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Route test server is not listening");
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(
+      {
+        hostname: "127.0.0.1",
+        port: address.port,
+        path: `/api/cold-messages/${encodeURIComponent(messageId)}`,
+        method: "GET",
+        headers: { Accept: "application/json" },
+      },
+      (response) => {
+        let rawBody = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          rawBody += chunk;
+        });
+        response.on("end", () => {
+          try {
+            resolve({
+              statusCode: response.statusCode ?? 0,
+              body: JSON.parse(rawBody),
+            });
+          } catch (error) {
+            reject(error);
+          }
+        });
+      },
+    );
+    request.on("error", reject);
+    request.end();
+  });
+}
+
+async function closeRouteTestServer(server: HttpServer): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
 }
 
 // ─── Cleanup ─────────────────────────────────────────────────────────────────
@@ -212,5 +275,75 @@ describe("Cold-message deletion race condition", () => {
     assert.equal(unchanged?.replied, false, "blocked sender must not result in a persisted reply");
 
     await storage.unblockUser(sender5, recipient5);
+  });
+});
+
+describe("GET /api/cold-messages/:id sender reachability", () => {
+  test("returns 200 for a recipient when the sender still exists and has not blocked them", async () => {
+    const recipientUserId = `__test_http_recipient_${RUN_ID}`;
+    const sender = await createTestProfile("http_sender_happy");
+    const recipient = await createTestProfile("http_recipient_happy");
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "visible over HTTP");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    const server = await startRouteTestServer(recipientUserId);
+    try {
+      const response = await getColdMessageOverHttp(server, coldMessage.id);
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.id, coldMessage.id);
+      assert.equal(response.body.isSentByMe, false);
+      assert.equal(response.body.otherProfile.id, sender);
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
+  test("returns 404 with sender_deleted when the sender deletes their profile", async () => {
+    const recipientUserId = `__test_http_recipient_deleted_${RUN_ID}`;
+    const sender = await createTestProfile("http_sender_deleted");
+    const recipient = await createTestProfile("http_recipient_deleted");
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "deleted before reply");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+    await storage.deleteProfile(sender);
+
+    const server = await startRouteTestServer(recipientUserId);
+    try {
+      const response = await getColdMessageOverHttp(server, coldMessage.id);
+      assert.equal(response.statusCode, 404);
+      assert.equal(response.body.reason, "sender_deleted");
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
+  test("returns 403 with sender_blocked when the sender blocks the recipient", async () => {
+    const recipientUserId = `__test_http_recipient_blocked_${RUN_ID}`;
+    const sender = await createTestProfile("http_sender_blocked");
+    const recipient = await createTestProfile("http_recipient_blocked");
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "blocked before reply");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+    await storage.blockUser(sender, recipient);
+
+    try {
+      const server = await startRouteTestServer(recipientUserId);
+      try {
+        const response = await getColdMessageOverHttp(server, coldMessage.id);
+        assert.equal(response.statusCode, 403);
+        assert.equal(response.body.reason, "sender_blocked");
+      } finally {
+        await closeRouteTestServer(server);
+      }
+    } finally {
+      await storage.unblockUser(sender, recipient);
+    }
   });
 });

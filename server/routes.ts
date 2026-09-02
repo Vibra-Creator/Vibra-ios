@@ -315,6 +315,45 @@ const videoUpload = multer({
 
 const objectStorageService = new ObjectStorageService();
 
+export async function getColdMessageByIdHandler(req: any, res: any) {
+  try {
+    const userId = req.user?.claims?.sub || req.session?.userId;
+    if (!userId) return res.status(401).json({ error: "Non autenticato" });
+    const myProfile = await storage.getProfileByUserId(userId);
+    if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+    const msg = await storage.getColdMessageById(req.params.id);
+    if (!msg) return res.status(404).json({ error: "Messaggio non trovato", reason: "message_deleted" });
+    // Autorizzato solo se è il mittente o il destinatario
+    if (msg.fromProfileId !== myProfile.id && msg.toProfileId !== myProfile.id) {
+      return res.status(403).json({ error: "Non autorizzato" });
+    }
+    const isSentByMe = msg.fromProfileId === myProfile.id;
+    // When the current user is the recipient, verify the sender is still reachable:
+    // 1. Their profile must still exist (account not deleted)
+    // 2. They must not have blocked the recipient after sending the message
+    if (!isSentByMe) {
+      const senderProfile = await storage.getProfile(msg.fromProfileId);
+      if (!senderProfile) {
+        return res.status(404).json({ error: "Il mittente ha eliminato il proprio account", reason: "sender_deleted" });
+      }
+      const senderBlockedRecipient = await storage.isBlocked(msg.fromProfileId, myProfile.id);
+      if (senderBlockedRecipient) {
+        return res.status(403).json({ error: "Messaggio non più disponibile", reason: "sender_blocked" });
+      }
+    }
+    // Restituisce anche il profilo dell'altra persona
+    const otherProfileId = isSentByMe ? msg.toProfileId : msg.fromProfileId;
+    const otherProfile = await storage.getProfile(otherProfileId);
+    res.json({
+      ...msg,
+      otherProfile: otherProfile ? { id: otherProfile.id, name: otherProfile.name, age: otherProfile.age, imageUrl: otherProfile.imageUrl } : null,
+      isSentByMe,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Errore" });
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -4565,44 +4604,7 @@ REGOLE:
   });
 
   // Recupera cold message per ID (usato dal deeplink da notifica push e dalla ri-validazione on-close)
-  app.get("/api/cold-messages/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      if (!userId) return res.status(401).json({ error: "Non autenticato" });
-      const myProfile = await storage.getProfileByUserId(userId);
-      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
-      const msg = await storage.getColdMessageById(req.params.id);
-      if (!msg) return res.status(404).json({ error: "Messaggio non trovato", reason: "message_deleted" });
-      // Autorizzato solo se è il mittente o il destinatario
-      if (msg.fromProfileId !== myProfile.id && msg.toProfileId !== myProfile.id) {
-        return res.status(403).json({ error: "Non autorizzato" });
-      }
-      const isSentByMe = msg.fromProfileId === myProfile.id;
-      // When the current user is the recipient, verify the sender is still reachable:
-      // 1. Their profile must still exist (account not deleted)
-      // 2. They must not have blocked the recipient after sending the message
-      if (!isSentByMe) {
-        const senderProfile = await storage.getProfile(msg.fromProfileId);
-        if (!senderProfile) {
-          return res.status(404).json({ error: "Il mittente ha eliminato il proprio account", reason: "sender_deleted" });
-        }
-        const senderBlockedRecipient = await storage.isBlocked(msg.fromProfileId, myProfile.id);
-        if (senderBlockedRecipient) {
-          return res.status(403).json({ error: "Messaggio non più disponibile", reason: "sender_blocked" });
-        }
-      }
-      // Restituisce anche il profilo dell'altra persona
-      const otherProfileId = isSentByMe ? msg.toProfileId : msg.fromProfileId;
-      const otherProfile = await storage.getProfile(otherProfileId);
-      res.json({
-        ...msg,
-        otherProfile: otherProfile ? { id: otherProfile.id, name: otherProfile.name, age: otherProfile.age, imageUrl: otherProfile.imageUrl } : null,
-        isSentByMe,
-      });
-    } catch (err) {
-      res.status(500).json({ error: "Errore" });
-    }
-  });
+  app.get("/api/cold-messages/:id", isAuthenticated, getColdMessageByIdHandler);
 
   app.post("/api/cold-messages/:id/reply", isAuthenticated, async (req: any, res) => {
     try {
