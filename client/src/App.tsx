@@ -63,7 +63,6 @@ import { Button } from "@/components/ui/button";
 import { ViewportSelector } from "@/components/ViewportSelector";
 import { VibraAI } from "@/components/VibraAI";
 import { AlertTriangle, RefreshCw, Bell, X } from "lucide-react";
-import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useToast } from "@/hooks/use-toast";
 
 const publicPages = ["/privacy", "/terms", "/child-safety", "/login", "/register", "/onboarding", "/forgot-password"];

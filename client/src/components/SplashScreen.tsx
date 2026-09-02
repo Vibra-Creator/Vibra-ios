@@ -159,14 +159,23 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         fontWeight: 600,
         letterSpacing: "0.3em",
         textTransform: "uppercase",
-        backgroundImage: phase >= 3
-          ? "linear-gradient(90deg, #c084fc, #f472b6, #67e8f9, #c084fc)"
-          : "none",
-        backgroundColor: phase >= 3 ? "transparent" : "transparent",
-        backgroundSize: "200% 100%",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: phase >= 3 ? "transparent" : "rgba(192, 132, 252, 0)",
-        animation: phase >= 3 ? "splash-text-shimmer 3s linear infinite" : "none",
+        // Only apply background-clip:text when backgroundImage is actually set (phase >= 3).
+        // Applying WebkitBackgroundClip:"text" with backgroundImage:"none" causes a WebKit
+        // rendering assertion failure on iOS 16.4+ / iOS 26 that crashes the app at launch.
+        ...(phase >= 3
+          ? {
+              backgroundImage: "linear-gradient(90deg, #c084fc, #f472b6, #67e8f9, #c084fc)",
+              backgroundSize: "200% 100%",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",           // unprefixed — required by iOS 26 WebKit
+              WebkitTextFillColor: "transparent",
+              color: "transparent",
+              animation: "splash-text-shimmer 3s linear infinite",
+            }
+          : {
+              color: "rgba(192, 132, 252, 0.85)",
+              animation: "none",
+            }),
         opacity: phase >= 2 ? 1 : 0,
         transform: phase >= 2 ? "translateY(0)" : "translateY(10px)",
         transition: "all 0.6s ease-out",

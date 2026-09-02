@@ -18,14 +18,32 @@ export function usePushNotifications() {
   const [autoSubscribeAttempted, setAutoSubscribeAttempted] = useState(false);
 
   useEffect(() => {
-    const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    // Guard: check API availability without relying on property access that may throw on iOS 26
+    let supported = false;
+    try {
+      supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    } catch {
+      supported = false;
+    }
     setIsSupported(supported);
     if (supported) {
-      setPermission(Notification.permission);
+      try {
+        // Notification.permission access can throw on iOS 26 in restricted contexts
+        setPermission(Notification.permission);
+      } catch {
+        setPermission("default");
+      }
       checkExistingSubscription().then(() => {
-        // Auto-subscribe if no prior decision has been made
-        if (!localStorage.getItem("vibra-push-decision-made")) {
-          attemptAutoSubscribe();
+        // Auto-subscribe only if already granted — never call requestPermission() here:
+        // iOS 16.4+ (and stricter on iOS 26) requires a direct user-gesture call stack
+        // for requestPermission(); calling it from a Promise chain throws TypeError and
+        // can crash the app at launch.
+        try {
+          if (Notification.permission === "granted" && !localStorage.getItem("vibra-push-decision-made")) {
+            attemptAutoSubscribe();
+          }
+        } catch {
+          // Notification.permission access threw — skip silently
         }
       });
     }
@@ -34,18 +52,9 @@ export function usePushNotifications() {
   const attemptAutoSubscribe = async () => {
     setAutoSubscribeAttempted(true);
     try {
-      if (Notification.permission === "default") {
-        // Request permission silently (or request if needed)
-        const perm = await Notification.requestPermission();
-        setPermission(perm);
-        if (perm === "granted") {
-          await performSubscribe();
-          localStorage.setItem("vibra-push-decision-made", "true");
-        } else if (perm === "denied") {
-          localStorage.setItem("vibra-push-decision-made", "true");
-        }
-      } else if (Notification.permission === "granted") {
-        // Already granted, subscribe
+      // Only subscribe if permission is already granted.
+      // Never call requestPermission() here — it requires a user gesture on iOS 16.4+/26.
+      if (Notification.permission === "granted") {
         await performSubscribe();
         localStorage.setItem("vibra-push-decision-made", "true");
       }

@@ -71,9 +71,17 @@ self.addEventListener('push', (event) => {
       silent: false,
     };
 
+    // showNotification may return undefined on some WebKit versions; use async/await
+    // so the Promise chain doesn't break if the return value is not a thenable.
     event.waitUntil(
-      self.registration.showNotification(title, options).then(() => {
-        return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      (async () => {
+        try {
+          await self.registration.showNotification(title, options);
+        } catch (notifErr) {
+          console.warn('[sw] showNotification failed:', notifErr);
+        }
+        try {
+          const windowClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
           windowClients.forEach((client) => {
             client.postMessage({
               type: 'VIBRA_PUSH_RECEIVED',
@@ -81,8 +89,10 @@ self.addEventListener('push', (event) => {
               shouldPlaySound: isVibrappLike
             });
           });
-        });
-      })
+        } catch (msgErr) {
+          console.warn('[sw] postMessage failed:', msgErr);
+        }
+      })()
     );
   } catch (e) {
     console.error('[sw] push parse error:', e);
@@ -95,14 +105,26 @@ self.addEventListener('notificationclick', (event) => {
   // client.navigate e clients.openWindow richiedono URL assoluti
   const absUrl = relUrl.startsWith('http') ? relUrl : (self.location.origin + relUrl);
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+    (async () => {
+      const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.navigate(absUrl).then(() => client.focus());
+          try {
+            // client.navigate() is not available in all WebKit versions; fall back to openWindow
+            if ('navigate' in client) {
+              await client.navigate(absUrl);
+              await client.focus();
+              return;
+            }
+          } catch {
+            // navigate() threw (e.g. cross-origin restriction or unsupported) — fall through
+          }
+          await client.focus();
+          return;
         }
       }
-      return clients.openWindow(absUrl);
-    })
+      await clients.openWindow(absUrl);
+    })()
   );
 });
 
