@@ -19,7 +19,7 @@
       <stop stop-color="#A855F7"/>
       <stop offset="1" stop-color="#EC4899"/>
     </linearGradient>
-    <filter id="shadow" x="620" y="354" width="424" height="190" filterUnits="userSpaceOnUse">
+    <filter id="shadow" x="48" y="430" width="390" height="135" filterUnits="userSpaceOnUse">
       <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.45"/>
     </filter>
     <filter id="orbShadow" x="492" y="105" width="368" height="368" filterUnits="userSpaceOnUse">
