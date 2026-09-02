@@ -204,6 +204,8 @@ export interface IStorage {
   getVibrappDmConversations(myProfileId: string): Promise<Array<{ otherProfileId: string; lastMessage: VibrappDm; unreadCount: number }>>;
 
   // Cold Messages
+  /** Removes cold messages addressed to deleted profiles once they are older than the TTL. */
+  pruneOrphanedColdMessages(olderThanDays: number): Promise<number>;
   deleteColdMessage(messageId: string, toProfileId: string): Promise<void>;
   /** Returns true if recipientProfileId has ever reported the sender — checked
    *  both by direct profile UUID and by the sender's underlying auth userId so
@@ -1416,6 +1418,18 @@ export class DatabaseStorage implements IStorage {
     await db.delete(coldMessages).where(
       and(eq(coldMessages.id, messageId), eq(coldMessages.toProfileId, toProfileId))
     );
+  }
+
+  async pruneOrphanedColdMessages(olderThanDays: number): Promise<number> {
+    const result = await db.execute(sql`
+      DELETE FROM cold_messages
+      WHERE created_at < NOW() - make_interval(days => ${olderThanDays})
+        AND NOT EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = cold_messages.to_profile_id
+        )
+    `);
+    return (result as any).rowCount ?? 0;
   }
 
   async isSenderReportedByRecipient(senderProfileId: string, recipientProfileId: string): Promise<boolean> {

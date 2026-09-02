@@ -359,6 +359,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const ORPHANED_REPORT_TTL_DAYS = 90;
+  const ORPHANED_COLD_MESSAGE_TTL_DAYS = 90;
   const reportCleanupStatus: {
     lastAttemptAt: string | null;
     lastSuccessAt: string | null;
@@ -545,6 +546,23 @@ ${urlEntries}
   pruneOrphanedReports();
   // Run once a day (every 24 h)
   setInterval(pruneOrphanedReports, 24 * 60 * 60 * 1000);
+
+  // ─── Orphaned cold-message cleanup ───────────────────────────────────────
+  // Cold messages addressed to deleted profiles no longer have a recipient and
+  // can be removed once they are outside the retention window.
+  async function pruneOrphanedColdMessages() {
+    try {
+      const deleted = await storage.pruneOrphanedColdMessages(ORPHANED_COLD_MESSAGE_TTL_DAYS);
+      if (deleted > 0) {
+        console.log(`[cold-message-cleanup] Pruned ${deleted} orphaned cold message row(s) older than ${ORPHANED_COLD_MESSAGE_TTL_DAYS} days`);
+      }
+    } catch (e) {
+      console.error("[cold-message-cleanup] Error:", e);
+    }
+  }
+  pruneOrphanedColdMessages();
+  // Run once a day (every 24 h)
+  setInterval(pruneOrphanedColdMessages, 24 * 60 * 60 * 1000);
 
   app.get("/api/auth/social-config", (req, res) => {
     res.json({
