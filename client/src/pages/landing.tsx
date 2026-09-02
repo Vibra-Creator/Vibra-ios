@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, X, Play, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_177048012
 export default function Landing() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const [showPromo, setShowPromo] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { enterGuestMode } = useGuest();
   const [, setLocation] = useLocation();
@@ -109,51 +108,6 @@ export default function Landing() {
 
   return (
     <div className="relative h-full overflow-y-auto">
-      {showPromo && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-[#12061f]/95 p-5 shadow-2xl shadow-black/40">
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/50">Promo Android</p>
-                <h2 className="text-2xl font-bold text-white mt-1">Scarica Vibra su Google Play</h2>
-              </div>
-              <button type="button" onClick={() => setShowPromo(false)} className="text-white/60 hover:text-white" data-testid="button-close-promo">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-white/70 mb-5">
-              Accedi, registrati oppure scarica l'app su iOS o Android per vivere Vibra sul tuo telefono.
-            </p>
-            <div className="flex flex-col gap-3">
-              <a href="https://play.google.com/store/apps/details?id=com.vibra.app" target="_blank" rel="noreferrer" data-testid="link-google-play">
-                <Button className="w-full h-12 bg-white text-black hover:bg-white/90">
-                  <Play className="w-4 h-4 mr-2 fill-current" />
-                  {t("landing.googleplay")}
-                </Button>
-              </a>
-              <a href="https://apps.apple.com/it/app/vibra/id6759167028" target="_blank" rel="noreferrer" data-testid="link-app-store">
-                <Button className="w-full h-12 bg-black text-white border border-white/20 hover:bg-black/80">
-                  <svg className="w-4 h-4 mr-2 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-                  </svg>
-                  {t("landing.appstore")}
-                </Button>
-              </a>
-              <Link href="/register">
-                <Button className="w-full h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90" data-testid="button-promo-register">
-                  Registrati
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button variant="outline" className="w-full h-12 border-white/20 text-white hover:bg-white/10" data-testid="button-promo-login">
-                  Accedi
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Video background */}
       <div className="fixed inset-0 z-0">
         {!videoPlaying && (
@@ -302,6 +256,22 @@ export default function Landing() {
                 {t("landing.explore")}
               </Button>
             </div>
+
+            <a
+              href="https://play.google.com/store/apps/details?id=com.vibraalienmatch.twa"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-3 rounded-xl border border-white/20 bg-black/60 px-5 py-3 text-left shadow-lg transition hover:scale-[1.02] hover:border-white/40 hover:bg-black/80"
+              data-testid="link-google-play-hero"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-black">
+                <Play className="h-5 w-5 fill-current" />
+              </div>
+              <span className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wider text-white/60">Disponibile su</span>
+                <span className="text-base font-semibold leading-tight text-white">Google Play</span>
+              </span>
+            </a>
 
             <Link href="/onboarding">
               <Button

@@ -65,3 +65,46 @@ id = "1NNPbQfN3vKgn-l0kiIBi"
 uri = "file://src/assets/images/placeholder.png"
 type = "image"
 title = "No call. Need web video sources, not images."
+logical_id = "daac2ccc-f016-48e2-9e3f-fa8e3c4751a7"
+
+[[outputs]]
+id = "noHaefuLJ2MADBGZVKl8B"
+uri = "file://marketing/vibra-google-play-banner.svg"
+type = "image"
+title = "Banner pubblicitario Vibra — Google Play"
+description = "Banner 1200×628 separato dall'app, pronto per campagne pubblicitarie. Link di destinazione Google Play: https://play.google.com/store/apps/details?id=com.vibraalienmatch.twa"
+logical_id = "acd75345-5aee-4fb7-80cc-2b32f79e1ee8"
+content_hash = "sha256:5824384a84cf3f291eea385367f6bc1a6c13518b66d8a51326b9e62da6bb5f77"
+size = 3842
+mtime_ms = 1788357564182
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/acd75345-5aee-4fb7-80cc-2b32f79e1ee8/dc71113b-0d90-4124-a991-ef543a093d51"
+storage_version_token = "1788357596370268"
+content_type = "image/svg+xml"
+
+[[outputs]]
+id = "MnMetVff6Lg60Lg4RTNL9"
+uri = "file://marketing/vibra-google-play-banner.html"
+type = "text"
+title = "Banner HTML cliccabile Vibra — Google Play"
+description = "Versione HTML cliccabile del banner, separata dall'app. Il click porta alla pagina ufficiale Vibra su Google Play."
+logical_id = "51b57450-6f00-4526-abd7-8c6bef13bd5c"
+content_hash = "sha256:81d4a96207936e8a408aadbebc61955b797296ea2cdb2e8c3d223445301a00f7"
+size = 3913
+mtime_ms = 1788357573653
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/51b57450-6f00-4526-abd7-8c6bef13bd5c/d2e3b7e7-c774-4178-9174-e0b0ed423f9a"
+storage_version_token = "1788357597092475"
+content_type = "text/html"
+
+[[outputs]]
+id = "jEkirMsDXmEPOCUbcmSce"
+uri = "file://marketing/vibra-google-play-banner.png"
+type = "image"
+title = "Banner PNG pubblicitario Vibra — Google Play"
+description = "Versione PNG 1200×628 pronta per Facebook, Instagram, Google Ads e altre campagne pubblicitarie. Destinazione click: https://play.google.com/store/apps/details?id=com.vibraalienmatch.twa"
+logical_id = "8e1e47a9-5086-485d-a72c-fefe6c2c9d00"
+content_hash = "sha256:b0525d9dcd7466be6a7b079115db537d49868282540ebe51795bc2d02de6bc11"
+size = 289920
+mtime_ms = 1788357608525
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/8e1e47a9-5086-485d-a72c-fefe6c2c9d00/da25a80c-f4ac-4589-a3d6-1a285e20e263"
+storage_version_token = "1788357615069777"
+content_type = "image/png"
