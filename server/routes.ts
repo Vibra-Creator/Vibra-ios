@@ -6131,7 +6131,7 @@ REGOLE:
   });
 
   app.post("/api/hub-posts/upload-image", isAuthenticated, (req: any, res: any, next: any) => {
-    memoryUpload.single("image")(req, res, (err: any) => {
+    memoryUpload.array("images", 6)(req, res, (err: any) => {
       if (err) {
         if (err.code === "LIMIT_FILE_SIZE") {
           return res.status(400).json({ error: "Foto troppo grande. Massimo 5 MB." });
@@ -6144,27 +6144,32 @@ REGOLE:
     try {
       const userId = req.user?.claims?.sub || req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
-      if (!req.file) return res.status(400).json({ error: "Nessuna foto caricata" });
+      const files = (req.files || []) as Express.Multer.File[];
+      if (files.length === 0) return res.status(400).json({ error: "Nessuna foto caricata" });
 
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-      const putResponse = await fetch(uploadURL, {
-        method: "PUT",
-        body: req.file.buffer,
-        headers: { "Content-Type": req.file.mimetype },
-      });
+      const urls: string[] = [];
+      for (const file of files) {
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+        const putResponse = await fetch(uploadURL, {
+          method: "PUT",
+          body: file.buffer,
+          headers: { "Content-Type": file.mimetype },
+        });
 
-      if (!putResponse.ok) {
-        console.error("Marketplace image PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
-        return res.status(500).json({ error: "Errore nel salvataggio della foto. Riprova." });
+        if (!putResponse.ok) {
+          console.error("Marketplace image PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+          return res.status(500).json({ error: "Errore nel salvataggio di una foto. Riprova." });
+        }
+
+        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+          owner: userId,
+          visibility: "public",
+        });
+        urls.push(objectPath);
       }
 
-      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: userId,
-        visibility: "public",
-      });
-
-      res.json({ url: objectPath });
+      res.json({ urls });
     } catch (error: any) {
       console.error("Error uploading marketplace image:", error?.message || error);
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
@@ -6177,11 +6182,22 @@ REGOLE:
       if (!userId) return res.status(401).json({ error: "Non autenticato" });
       const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
+      const imageUrls = Array.isArray(req.body.imageUrls)
+        ? [...new Set(req.body.imageUrls.filter((url: unknown): url is string => typeof url === "string" && url.trim().length > 0))]
+        : (typeof req.body.imageUrl === "string" && req.body.imageUrl.trim() ? [req.body.imageUrl.trim()] : []);
+      if (req.body.category === "marketplace" && imageUrls.length < 3) {
+        return res.status(400).json({ error: "Un annuncio Marketplace deve avere almeno 3 foto." });
+      }
+      if (imageUrls.length > 6) {
+        return res.status(400).json({ error: "Puoi caricare al massimo 6 foto per annuncio." });
+      }
       const parsed = insertHubPostSchema.safeParse({
         ...req.body,
         profileId: profile.id,
         profileName: profile.name,
         profileImageUrl: profile.imageUrl,
+        imageUrl: imageUrls[0] || req.body.imageUrl || null,
+        imageUrls,
       });
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
       const [post] = await db.insert(hubPosts).values(parsed.data).returning();

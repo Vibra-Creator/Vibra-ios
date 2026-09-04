@@ -246,6 +246,16 @@ app.use((req, res, next) => {
         created_at TIMESTAMP DEFAULT NOW() NOT NULL
       )
     `);
+    await db.execute(sql`
+      ALTER TABLE hub_posts
+      ADD COLUMN IF NOT EXISTS image_urls TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]
+    `);
+    await db.execute(sql`
+      UPDATE hub_posts
+      SET image_urls = ARRAY[image_url]
+      WHERE COALESCE(array_length(image_urls, 1), 0) = 0
+        AND image_url IS NOT NULL
+    `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS hub_posts_category_idx ON hub_posts(category)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS hub_posts_profile_idx ON hub_posts(profile_id)`);
     console.log("[migration] Hub Posts table ready");

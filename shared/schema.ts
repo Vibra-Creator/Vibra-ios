@@ -641,6 +641,7 @@ export const hubPosts = pgTable("hub_posts", {
   description: text("description").notNull(),
   price: integer("price"),
   imageUrl: text("image_url"),
+  imageUrls: text("image_urls").array().notNull().default(sql`ARRAY[]::text[]`),
   city: text("city"),
   contactInfo: text("contact_info"),
   status: text("status").notNull().default("active"), // "active" | "sold" | "closed"

@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, MapPin, Phone, Trash2, CheckCircle, ShoppingBag, AlertTriangle, ImagePlus, Loader2 } from "lucide-react";
+import { Plus, X, MapPin, Phone, Trash2, CheckCircle, ShoppingBag, AlertTriangle, ImagePlus, Loader2, MessageCircle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import type { HubPost } from "@shared/schema";
 
 const SUBCATEGORIES = ["Elettronica","Abbigliamento","Auto & Moto","Casa & Arredo","Sport","Libri","Altro"] as const;
@@ -21,7 +22,7 @@ export default function MarketplacePage() {
   const { toast } = useToast();
   const [filter, setFilter] = useState<string>("tutti");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title:"", description:"", price:"", subcategory:"Elettronica", city:"", contactInfo:"", imageUrl:"" });
+  const [form, setForm] = useState({ title:"", description:"", price:"", subcategory:"Elettronica", city:"", contactInfo:"", imageUrls: [] as string[] });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +43,7 @@ export default function MarketplacePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/hub-posts"] });
       setShowForm(false);
-      setForm({ title:"", description:"", price:"", subcategory:"Elettronica", city:"", contactInfo:"", imageUrl:"" });
+      setForm({ title:"", description:"", price:"", subcategory:"Elettronica", city:"", contactInfo:"", imageUrls: [] });
       toast({ title: t("market.publishSuccess"), description: t("market.publishSuccessDesc") });
     },
     onError: (error: Error) => {
@@ -51,25 +52,32 @@ export default function MarketplacePage() {
   });
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
-      toast({ title: t("market.invalidImage"), description: t("market.invalidImageDesc"), variant: "destructive" });
+    if (form.imageUrls.length + files.length > 6) {
+      toast({ title: t("market.tooManyImages"), description: t("market.tooManyImagesDesc"), variant: "destructive" });
       event.target.value = "";
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: t("market.imageTooLarge"), description: "Massimo 5 MB", variant: "destructive" });
-      event.target.value = "";
-      return;
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        toast({ title: t("market.invalidImage"), description: t("market.invalidImageDesc"), variant: "destructive" });
+        event.target.value = "";
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: t("market.imageTooLarge"), description: t("market.imageTooLargeDesc"), variant: "destructive" });
+        event.target.value = "";
+        return;
+      }
     }
 
     setIsUploadingImage(true);
     try {
       const body = new FormData();
-      body.append("image", file);
+      files.forEach((file) => body.append("images", file));
       const response = await fetch("/api/hub-posts/upload-image", {
         method: "POST",
         body,
@@ -77,8 +85,8 @@ export default function MarketplacePage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || t("market.uploadError"));
-      setForm((current) => ({ ...current, imageUrl: data.url }));
-      toast({ title: t("market.photoUploaded"), description: t("market.photoUploadedDesc") });
+      setForm((current) => ({ ...current, imageUrls: [...current.imageUrls, ...(data.urls || [])] }));
+      toast({ title: t("market.photosUploaded"), description: t("market.photosUploadedDesc") });
     } catch (error: any) {
       toast({ title: t("common.error"), description: error?.message || t("market.uploadError"), variant: "destructive" });
     } finally {
@@ -141,12 +149,20 @@ export default function MarketplacePage() {
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
-            {posts.map((post, i) => (
-              <motion.div key={post.id} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay: i*0.04 }}
-                className="rounded-2xl overflow-hidden"
-                style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)" }}>
-                <div className="flex gap-3 p-4">
-                  {post.imageUrl && <img src={post.imageUrl} alt="" className="w-20 h-20 rounded-xl object-cover shrink-0"/>}
+             {posts.map((post, i) => {
+               const postImages = post.imageUrls?.length ? post.imageUrls : (post.imageUrl ? [post.imageUrl] : []);
+               return (
+               <motion.div key={post.id} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay: i*0.04 }}
+                 className="rounded-2xl overflow-hidden"
+                 style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)" }}>
+                 {postImages.length > 0 && (
+                   <div className="flex gap-2 overflow-x-auto px-4 pt-4 scrollbar-hide">
+                     {postImages.map((image, imageIndex) => (
+                       <img key={`${post.id}-image-${imageIndex}`} src={image} alt={`${post.title} ${imageIndex + 1}`} className="w-24 h-24 rounded-xl object-cover shrink-0" />
+                     ))}
+                   </div>
+                 )}
+                 <div className="flex gap-3 p-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-white font-semibold text-sm leading-tight">{post.title}</p>
@@ -168,6 +184,11 @@ export default function MarketplacePage() {
                             <Phone className="w-3 h-3"/>{t("market.contact")}
                           </a>
                         )}
+                         {myProfile && post.profileId !== myProfile.id && (
+                           <Link href={`/vibrapp?dm=${encodeURIComponent(post.profileId)}`} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-cyan-300" style={{ background:"rgba(34,211,238,0.12)" }}>
+                             <MessageCircle className="w-3 h-3"/>{t("market.messageSeller")}
+                           </Link>
+                         )}
                         {myProfile && post.profileId === myProfile.id && (
                           <>
                             <button onClick={() => markSold.mutate(post.id)} className="p-1.5 rounded-lg" style={{ background:"rgba(251,191,36,0.12)" }} title="Segna come venduto"><CheckCircle className="w-3.5 h-3.5 text-yellow-400"/></button>
@@ -179,7 +200,8 @@ export default function MarketplacePage() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+               );
+             })}
           </div>
         )}
       </div>
@@ -222,7 +244,7 @@ export default function MarketplacePage() {
                        <div>
                          <p className="text-white text-sm font-semibold flex items-center gap-2">
                            <ImagePlus className="w-4 h-4 text-orange-400" />
-                           {t("market.form.photo")}
+                           {t("market.form.photos")} ({form.imageUrls.length}/6)
                          </p>
                          <p className="text-white/40 text-[11px] mt-1">{t("market.form.photoHint")}</p>
                        </div>
@@ -230,6 +252,7 @@ export default function MarketplacePage() {
                          ref={imageInputRef}
                          type="file"
                          accept="image/jpeg,image/png,image/webp,image/gif"
+                         multiple
                          className="hidden"
                          onChange={handleImageUpload}
                          disabled={isUploadingImage}
@@ -240,24 +263,28 @@ export default function MarketplacePage() {
                          disabled={isUploadingImage}
                          className="shrink-0 rounded-lg bg-orange-500/20 px-3 py-2 text-xs font-semibold text-orange-300 disabled:opacity-50"
                        >
-                         {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : t("market.form.addPhoto")}
+                         {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : t("market.form.addPhotos")}
                        </button>
                      </div>
-                     {form.imageUrl && (
-                       <div className="relative mt-2 w-24 h-24">
-                         <img src={form.imageUrl} alt={t("market.form.photo")} className="w-full h-full rounded-lg object-cover" />
-                         <button
-                           type="button"
-                           onClick={() => setForm((current) => ({ ...current, imageUrl: "" }))}
-                           className="absolute -right-2 -top-2 w-6 h-6 rounded-full bg-black/80 flex items-center justify-center"
-                           aria-label={t("market.form.removePhoto")}
-                         >
-                           <X className="w-3 h-3 text-white" />
-                         </button>
+                     {form.imageUrls.length > 0 && (
+                       <div className="grid grid-cols-3 gap-2 mt-2">
+                         {form.imageUrls.map((image, index) => (
+                           <div key={`${image}-${index}`} className="relative aspect-square">
+                             <img src={image} alt={`${t("market.form.photo")} ${index + 1}`} className="w-full h-full rounded-lg object-cover" />
+                             <button
+                               type="button"
+                               onClick={() => setForm((current) => ({ ...current, imageUrls: current.imageUrls.filter((_, imageIndex) => imageIndex !== index) }))}
+                               className="absolute -right-1 -top-1 w-6 h-6 rounded-full bg-black/80 flex items-center justify-center"
+                               aria-label={t("market.form.removePhoto")}
+                             >
+                               <X className="w-3 h-3 text-white" />
+                             </button>
+                           </div>
+                         ))}
                        </div>
                      )}
                    </div>
-                   <button onClick={() => createPost.mutate()} disabled={!form.title || !form.description || createPost.isPending || isUploadingImage}
+                   <button onClick={() => createPost.mutate()} disabled={!form.title || !form.description || form.imageUrls.length < 3 || createPost.isPending || isUploadingImage}
                     className="w-full py-3 rounded-xl font-bold text-white disabled:opacity-40"
                     style={{ background:"linear-gradient(135deg,#f97316,#ea580c)", fontFamily:"Space Grotesk,sans-serif" }}>
                     {createPost.isPending ? "..." : t("market.publish")}
