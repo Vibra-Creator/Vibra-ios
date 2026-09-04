@@ -267,19 +267,20 @@ export default function Vibrapp() {
       return;
     }
     const data = await res.json();
-    if (data?.otherProfile) {
-      setSelectedColdMsg({
-        ...msg,
-        content: data.content ?? msg.content,
-        mediaUrl: data.mediaUrl ?? msg.mediaUrl,
-        mediaType: data.mediaType ?? msg.mediaType,
-        replied: data.replied ?? msg.replied,
-        replyContent: data.replyContent ?? msg.replyContent,
-        privateRoomId: data.privateRoomId ?? msg.privateRoomId,
-      });
-    } else {
-      setSelectedColdMsg(msg);
+    if (!data?.otherProfile) {
+      setSenderProfileToast("Questo messaggio non è più disponibile");
+      setTimeout(() => setSenderProfileToast(null), 3500);
+      return;
     }
+    setSelectedColdMsg({
+      ...msg,
+      content: data.content ?? msg.content,
+      mediaUrl: data.mediaUrl ?? msg.mediaUrl,
+      mediaType: data.mediaType ?? msg.mediaType,
+      replied: data.replied ?? msg.replied,
+      replyContent: data.replyContent ?? msg.replyContent,
+      privateRoomId: data.privateRoomId ?? msg.privateRoomId,
+    });
     setReplyText("");
     setColdMsgDeleteConfirm(false);
     setColdMsgBlockConfirm(false);
