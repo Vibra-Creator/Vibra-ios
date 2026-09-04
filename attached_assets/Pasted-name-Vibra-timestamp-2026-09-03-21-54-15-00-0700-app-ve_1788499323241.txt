@@ -1,0 +1,122 @@
+name":"Vibra","timestamp":"2026-09-03 21:54:15.00 -0700","app_version":"6","slice_uuid":"a74c4a86-d497-37ca-9a1d-cf0c961322f5","adam_id":"6759167028","build_version":"1.0.6","bundleID":"com.vibraalienmatch","platform":2,"share_with_app_devs":0,"is_first_party":0,"bug_type":"309","os_version":"iPhone OS 26.6 (23G71)","roots_installed":0,"incident_id":"CDA795D1-32E2-49D4-A5AD-29152A8E1A9D","name":"Vibra"}
+{
+  "uptime" : 680000,
+  "procRole" : "Foreground",
+  "version" : 2,
+  "userID" : 501,
+  "deployVersion" : 210,
+  "modelCode" : "iPhone18,2",
+  "coalitionID" : 17540,
+  "osVersion" : {
+    "isEmbedded" : true,
+    "train" : "iPhone OS 26.6",
+    "releaseType" : "User",
+    "build" : "23G71"
+  },
+  "captureTime" : "2026-09-03 21:54:15.3659 -0700",
+  "codeSigningMonitor" : 2,
+  "incident" : "CDA795D1-32E2-49D4-A5AD-29152A8E1A9D",
+  "pid" : 16276,
+  "translated" : false,
+  "cpuType" : "ARM-64",
+  "procLaunch" : "2026-09-03 21:54:15.3604 -0700",
+  "procStartAbsTime" : 16541537866331,
+  "procExitAbsTime" : 16541537957514,
+  "procName" : "Vibra",
+  "procPath" : "\/private\/var\/containers\/Bundle\/Application\/EF60F326-6A62-41D7-A4D0-1935A4359369\/Vibra.app\/Vibra",
+  "bundleInfo" : {"CFBundleShortVersionString":"6","CFBundleVersion":"1.0.6","CFBundleIdentifier":"com.vibraalienmatch","DTAppStoreToolsBuild":"17F106"},
+  "storeInfo" : {"itemID":"6759167028","deviceIdentifierForVendor":"E1FC83FB-4900-4C0B-B395-A086091D5A8E","thirdParty":true,"softwareVersionExternalIdentifier":"882448151"},
+  "parentProc" : "launchd",
+  "parentPid" : 1,
+  "coalitionName" : "com.vibraalienmatch",
+  "crashReporterKey" : "78a575c744ad22eab0a9ed9633049cda988fe641",
+  "appleIntelligenceStatus" : {"state":"unavailable","reasons":["notOptedIn","assetIsNotReady"]},
+  "bootProgressRegister" : "0x2000000c",
+  "wasUnlockedSinceBoot" : 1,
+  "isLocked" : 0,
+  "codeSigningID" : "com.vibraalienmatch",
+  "codeSigningTeamID" : "MA8PHU39TR",
+  "codeSigningFlags" : 570450689,
+  "codeSigningValidationCategory" : 4,
+  "codeSigningTrustLevel" : 5,
+  "codeSigningAuxiliaryInfo" : 0,
+  "instructionByteStream" : {"beforePC":"AByhTgCoMW4DACYeY0AA0QRoYzglaGM4gAAFy8ADX9YwQYDSARAA1A==","atPC":"AwEAVH8jA9X9e7+p\/QMAkcyV\/5e\/AwCR\/XvBqP8PX9bAA1\/WEC2A0g=="},
+  "bootSessionUUID" : "DB98C6E4-ED68-45A0-B3E8-39199DA56D91",
+  "basebandVersion" : "1.70.01",
+  "exception" : {"codes":"0x0000000000000000, 0x0000000000000000","rawCodes":[0,0],"type":"EXC_CRASH","signal":"SIGABRT"},
+  "termination" : {"code":1,"flags":518,"namespace":"DYLD","indicator":"Library missing","details":["(terminated at launch; ignore backtrace)"],"reasons":["Library not loaded: @rpath\/FBLPromises.framework\/FBLPromises","Referenced from: <A74C4A86-D497-37CA-9A1D-CF0C961322F5> \/Volumes\/VOLUME\/*\/Vibra.app\/Vibra","Reason: tried: '\/usr\/lib\/swift\/FBLPromises.framework\/FBLPromises' (no such file, not in dyld cache), '\/private\/preboot\/Cryptexes\/OS\/usr\/lib\/swift\/FBLPromises.framework\/FBLPromises' (no such file), '\/private\/var\/containers\/Bundle\/Application\/EF60F326-6A62-41D7-A4D0-1935A4359369\/Vibra.app\/Frameworks\/FBLPromises.framework\/FBLPromises' (no such file), '\/private\/var\/containers\/Bundle\/Application\/EF60F326-6A62-41D7-A4D0-1935A4359369\/Vibra.app\/Frameworks\/FBLPromises.framework\/FBLPromises' (no such file), '\/usr\/lib\/swift\/FBLPromises.framework\/FBLPromises' (no such file, not in dyld cache), '\/private\/preboot\/Cryptexes\/OS\/usr\/lib\/swift\/FBLPromises.framework\/FBLPromises' (no such file), '\/private\/var\/containers\/Bundle\/Application\/EF60F326-6A62-41D7-A4D0-1935A4359369\/Vibra.app\/Frameworks\/FBLPromises.framewo"]},
+  "faultingThread" : 0,
+  "threads" : [{"triggered":true,"id":8918660,"threadState":{"x":[{"value":6},{"value":1},{"value":6163982080},{"value":157},{"value":6163981056},{"value":0},{"value":0},{"value":0},{"value":32},{"value":9750924708036673623},{"value":8487665176,"symbolLocation":15576,"symbol":"lsl::sPoolBytes"},{"value":8487780672},{"value":131072},{"value":6667026672,"symbolLocation":0,"symbol":"_dyld_start"},{"value":1},{"value":118},{"value":521},{"value":6163980592},{"value":0},{"value":0},{"value":6163981056},{"value":157},{"value":6163982080},{"value":1},{"value":6},{"value":0},{"value":0},{"value":5},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6667614504},"cpsr":{"value":2147483648},"fp":{"value":6163981008},"sp":{"value":6163980944},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6667297236,"matchesCrashFrame":1},"far":{"value":0}},"frames":[{"imageOffset":283092,"symbol":"__abort_with_payload","symbolLocation":8,"imageIndex":1},{"imageOffset":600360,"symbol":"abort_with_payload_wrapper_internal","symbolLocation":104,"imageIndex":1},{"imageOffset":600412,"symbol":"abort_with_payload","symbolLocation":16,"imageIndex":1},{"imageOffset":74776,"symbol":"dyld4::halt(char const*, dyld4::StructuredError const*)","symbolLocation":312,"imageIndex":1},{"imageOffset":326940,"symbol":"dyld4::prepare(dyld4::APIs&, mach_o::UnsafeHeader const*)","symbolLocation":4932,"imageIndex":1},{"imageOffset":321980,"symbol":"dyld4::start(dyld4::KernelArgs*, void*, void*, unsigned long long)::$_1::operator()() const","symbolLocation":320,"imageIndex":1},{"imageOffset":19396,"symbol":"start","symbolLocation":6840,"imageIndex":1}]}],
+  "usedImages" : [
+  {
+    "source" : "P",
+    "arch" : "arm64",
+    "base" : 4302897152,
+    "size" : 114688,
+    "uuid" : "a74c4a86-d497-37ca-9a1d-cf0c961322f5",
+    "path" : "\/private\/var\/containers\/Bundle\/Application\/EF60F326-6A62-41D7-A4D0-1935A4359369\/Vibra.app\/Vibra",
+    "name" : "Vibra"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6667014144,
+    "size" : 676992,
+    "uuid" : "0ba28ce2-8718-3cb3-bef4-6dd44464ebe2",
+    "path" : "\/usr\/lib\/dyld",
+    "name" : "dyld"
+  },
+  {
+    "size" : 0,
+    "source" : "A",
+    "base" : 0,
+    "uuid" : "00000000-0000-0000-0000-000000000000"
+  }
+],
+  "sharedCache" : {
+  "base" : 6665846784,
+  "size" : 5415927808,
+  "uuid" : "eb819a3a-3960-3eb2-97db-bc619885df55"
+},
+  "vmSummary" : "ReadOnly portion of Libraries: Total=179.9M resident=0K(0%) swapped_out_or_unallocated=179.9M(100%)\nWritable regions: Total=2144K written=96K(4%) resident=96K(4%) swapped_out=0K(0%) unallocated=2048K(96%)\n\n                                VIRTUAL   REGION \nREGION TYPE                        SIZE    COUNT (non-coalesced) \n===========                     =======  ======= \nSTACK GUARD                         16K        1 \nStack                             1008K        1 \n__AUTH_CONST                         9K        1 \n__DATA                              20K        2 \n__DATA_CONST                        35K        2 \n__DATA_DIRTY                        12K        1 \n__LINKEDIT                       179.2M        2 \n__TEXT                             776K        2 \n__TPRO_CONST                       128K        1 \ndyld private memory               1040K        2 \npage table in kernel                96K        1 \n===========                     =======  ======= \nTOTAL                            182.2M       16 \n",
+  "legacyInfo" : {
+  "threadTriggered" : {
+
+  }
+},
+  "logWritingSignature" : "1590a29b98a80b147b3cae807b499f12fc9d6011",
+  "bug_type" : "309",
+  "roots_installed" : 0,
+  "trmStatus" : 1,
+  "sandboxProfileName" : "container",
+  "trialInfo" : {
+  "rollouts" : [
+    {
+      "rolloutId" : "60186475825c62000ccf5450",
+      "factorPackIds" : [
+        "66b396850482dd62276ffe0b"
+      ],
+      "deploymentId" : 240000083
+    },
+    {
+      "rolloutId" : "6761d0c9df60af01adb250fb",
+      "factorPackIds" : [
+
+      ],
+      "deploymentId" : 240000009
+    }
+  ],
+  "experiments" : [
+    {
+      "treatmentId" : "d5c127b8-b13e-42a1-acf5-c483124a1bb5",
+      "experimentId" : "66b1602abe27b2208fd291ba",
+      "deploymentId" : 400000022
+    },
+    {
+      "treatmentId" : "b94e9aec-71bd-46f0-b53b-72fe0d8e9aa4",
+      "experimentId" : "67e32776f470dc0e83d9e147",
+      "deploymentId" : 400000014
+    }
+  ]
+}
+}
