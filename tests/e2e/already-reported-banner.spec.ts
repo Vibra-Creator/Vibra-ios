@@ -226,3 +226,89 @@ test("banner-already-reported is absent when the sender has NOT been reported", 
   const banner = page.locator('[data-testid="banner-already-reported"]');
   await expect(banner).not.toBeVisible();
 });
+
+test("banner-already-reported disappears after the report is retracted", async ({
+  page,
+  request,
+}) => {
+  // ── 1. Register two users ────────────────────────────────────────────────
+  const userA = await registerUser(request, "E"); // recipient / reporter
+  const userB = await registerUser(request, "F"); // sender / to be reported
+
+  // ── 2. User B sends a cold message to user A ─────────────────────────────
+  const profileAId = await loginAs(request, userA);
+  const profileBId = await loginAs(request, userB);
+
+  const sendRes = await request.post("/api/cold-messages", {
+    data: { toProfileId: profileAId, content: `E2E retract banner test ${RUN_ID}` },
+  });
+  if (!sendRes.ok()) throw new Error(`Send cold msg: ${sendRes.status()} – ${await sendRes.text()}`);
+
+  // ── 3. Switch to A and capture the message before reporting ──────────────
+  await loginAs(request, userA);
+  const inboxRes = await request.get("/api/cold-messages/received");
+  const inboxJson = (await inboxRes.json()) as Array<{ id: string; fromProfileId: string; [key: string]: unknown }>;
+  const coldMsg = inboxJson.find((m) => m.fromProfileId === profileBId);
+  if (!coldMsg) throw new Error("Cold message not in A's inbox – setup failed");
+  const coldMsgId = coldMsg.id;
+
+  // ── 4. Create the report through the API, as in the appearance test ──────
+  const reportRes = await request.post("/api/reports", {
+    data: { reportedId: profileBId, reason: "spam" },
+  });
+  if (!reportRes.ok()) throw new Error(`Create report: ${reportRes.status()} – ${await reportRes.text()}`);
+
+  // ── 5. Inject A's session and bypass the email verification gate ─────────
+  await injectSessionCookies(page, request);
+  await patchEmailVerified(page);
+
+  // The real inbox filters out reported senders. Keep the pre-report snapshot
+  // visible so the browser can exercise the stale-message banner state.
+  await page.route("**/api/cold-messages/received", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(inboxJson),
+    })
+  );
+
+  const reportsFetched = page.waitForResponse(
+    (r) => r.url().includes("/api/reports/mine"),
+    { timeout: 20_000 }
+  );
+  await page.goto("/vibrapp", { waitUntil: "load" });
+  await reportsFetched;
+
+  // ── 6. Confirm the banner is visible before retracting the report ─────────
+  const introBubble = page.locator(`[data-testid="intro-bubble-${coldMsgId}"]`);
+  await expect(introBubble).toBeVisible({ timeout: 10_000 });
+  await introBubble.click();
+
+  const replyPanel = page.locator('[data-testid="coldmsg-reply-panel"]');
+  await expect(replyPanel).toBeVisible({ timeout: 5_000 });
+  const banner = page.locator('[data-testid="banner-already-reported"]');
+  await expect(banner).toBeVisible({ timeout: 5_000 });
+
+  // ── 7. Retract the report through the profile UI ──────────────────────────
+  await page.locator('[data-testid="link-gestisci-segnalazione"]').click();
+  await expect(page).toHaveURL(/\/profile\?segnalazioni=1/, { timeout: 5_000 });
+
+  const reportsPanel = page.locator('[data-testid="segnalazioni-panel"]');
+  await expect(reportsPanel).toBeVisible({ timeout: 5_000 });
+  await reportsPanel.getByRole("button", { name: "Rimuovi segnalazione" }).click();
+  await reportsPanel.getByRole("button", { name: "Conferma rimozione" }).click();
+  await expect(reportsPanel).toContainText("Nessuna segnalazione attiva", { timeout: 10_000 });
+
+  // ── 8. Return to the stale message and confirm the banner is gone ─────────
+  const reportsRefetched = page.waitForResponse(
+    (r) => r.url().includes("/api/reports/mine"),
+    { timeout: 20_000 }
+  );
+  await page.goto("/vibrapp", { waitUntil: "load" });
+  await reportsRefetched;
+
+  await expect(page.locator(`[data-testid="intro-bubble-${coldMsgId}"]`)).toBeVisible({ timeout: 10_000 });
+  await page.locator(`[data-testid="intro-bubble-${coldMsgId}"]`).click();
+  await expect(page.locator('[data-testid="coldmsg-reply-panel"]')).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator('[data-testid="banner-already-reported"]')).not.toBeVisible();
+});
