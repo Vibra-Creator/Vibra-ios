@@ -6130,9 +6130,52 @@ REGOLE:
     } catch { res.status(500).json({ error: "Errore hub-posts" }); }
   });
 
+  app.post("/api/hub-posts/upload-image", isAuthenticated, (req: any, res: any, next: any) => {
+    memoryUpload.single("image")(req, res, (err: any) => {
+      if (err) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ error: "Foto troppo grande. Massimo 5 MB." });
+        }
+        return res.status(400).json({ error: err.message || "Errore nel caricamento della foto" });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      if (!req.file) return res.status(400).json({ error: "Nessuna foto caricata" });
+
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      const putResponse = await fetch(uploadURL, {
+        method: "PUT",
+        body: req.file.buffer,
+        headers: { "Content-Type": req.file.mimetype },
+      });
+
+      if (!putResponse.ok) {
+        console.error("Marketplace image PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+        return res.status(500).json({ error: "Errore nel salvataggio della foto. Riprova." });
+      }
+
+      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+        owner: userId,
+        visibility: "public",
+      });
+
+      res.json({ url: objectPath });
+    } catch (error: any) {
+      console.error("Error uploading marketplace image:", error?.message || error);
+      res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
+    }
+  });
+
   app.post("/api/hub-posts", isAuthenticated, async (req: any, res) => {
     try {
-      const profile = await storage.getProfileByUserId(req.user.id);
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
       const parsed = insertHubPostSchema.safeParse({
         ...req.body,
@@ -6148,7 +6191,9 @@ REGOLE:
 
   app.patch("/api/hub-posts/:id/status", isAuthenticated, async (req: any, res) => {
     try {
-      const profile = await storage.getProfileByUserId(req.user.id);
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(403).json({ error: "Non autorizzato" });
       const { status } = req.body;
       if (!["active","sold","closed"].includes(status)) return res.status(400).json({ error: "Status non valido" });
@@ -6161,7 +6206,9 @@ REGOLE:
 
   app.delete("/api/hub-posts/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const profile = await storage.getProfileByUserId(req.user.id);
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(403).json({ error: "Non autorizzato" });
       const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, req.params.id));
       if (!post) return res.status(404).json({ error: "Post non trovato" });
