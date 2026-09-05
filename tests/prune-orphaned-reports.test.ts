@@ -1,7 +1,13 @@
 /**
- * Integration test for DatabaseStorage.pruneOrphanedReports()
+ * Regression tests for orphaned report cleanup monitoring and
+ * DatabaseStorage.pruneOrphanedReports()
  *
- * Run with:  npx tsx tests/prune-orphaned-reports.test.ts
+ * Run the safe monitoring tests with:
+ *   npx tsx tests/prune-orphaned-reports.test.ts
+ *
+ * The database integration cases are opt-in:
+ *   RUN_REPORT_CLEANUP_DB_TESTS=true npx tsx tests/prune-orphaned-reports.test.ts
+ * They must only be run against a disposable development database.
  *
  * The test inserts controlled rows, runs the pruner, and asserts:
  *   1. A report whose reported profile is gone AND reportedUserId has no active
@@ -11,7 +17,17 @@
  *   3. A recent orphaned report (within TTL) is NOT deleted regardless.
  */
 
+import assert from "node:assert/strict";
 import { db } from "../server/db";
+import {
+  buildReportCleanupStatusFailure,
+  buildReportCleanupStatusResponse,
+  createReportCleanupState,
+  getReportCleanupHealth,
+  markReportCleanupFailed,
+  markReportCleanupStarted,
+  markReportCleanupSucceeded,
+} from "../server/report-cleanup";
 import { storage } from "../server/storage";
 import { reports, profiles, users } from "../shared/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -98,6 +114,64 @@ async function insertBackdatedReport(opts: {
 // ─── test runner ─────────────────────────────────────────────────────────────
 
 const TTL_DAYS = 90;
+const RUN_DATABASE_INTEGRATION = process.env.RUN_REPORT_CLEANUP_DB_TESTS === "true";
+const IS_PRODUCTION =
+  process.env.NODE_ENV === "production" ||
+  process.env.REPLIT_DEPLOYMENT === "1" ||
+  process.env.REPLIT_DEPLOYMENT === "true";
+
+function testCleanupMonitoring() {
+  const startedAt = "2026-09-05T10:00:00.000Z";
+  const completedAt = "2026-09-05T10:00:01.000Z";
+  const now = Date.parse("2026-09-05T10:05:00.000Z");
+
+  let state = markReportCleanupStarted(createReportCleanupState(), startedAt);
+  state = markReportCleanupSucceeded(state, 0, completedAt);
+  assert.deepEqual(
+    buildReportCleanupStatusResponse(state, 0, now),
+    {
+      ...state,
+      ttlDays: 90,
+      orphanedReportsOlderThanTtl: 0,
+      schedulerStale: false,
+      healthy: true,
+    },
+    "a successful zero-deletion run should be healthy",
+  );
+
+  state = markReportCleanupStarted(state, "2026-09-05T11:00:00.000Z");
+  state = markReportCleanupSucceeded(state, 4, "2026-09-05T11:00:01.000Z");
+  assert.equal(state.lastDeletedCount, 4, "a successful run should expose its deletion count");
+  assert.equal(state.consecutiveFailures, 0);
+
+  state = markReportCleanupStarted(state, "2026-09-05T12:00:00.000Z");
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  assert.equal(state.status, "failure");
+  assert.equal(state.lastError, "database unavailable");
+  assert.equal(state.consecutiveFailures, 1);
+  assert.equal(
+    buildReportCleanupStatusResponse(state, 4, now).healthy,
+    false,
+    "a failed cleanup attempt should be unhealthy",
+  );
+
+  const staleState = markReportCleanupSucceeded(
+    markReportCleanupStarted(createReportCleanupState(), "2026-09-03T00:00:00.000Z"),
+    0,
+    "2026-09-03T00:00:01.000Z",
+  );
+  assert.deepEqual(getReportCleanupHealth(staleState, now), {
+    schedulerStale: true,
+    healthy: false,
+  });
+
+  const backlogFailure = buildReportCleanupStatusFailure(staleState, now);
+  assert.equal(backlogFailure.orphanedReportsOlderThanTtl, null);
+  assert.equal(backlogFailure.healthy, false);
+  assert.equal(backlogFailure.error, "Unable to read orphaned report backlog");
+
+  console.log("✓ cleanup monitoring reports zero deletions, deletion counts, failures, stale runs, and backlog-query failures");
+}
 
 /** Ensure the columns added by the runtime migration in routes.ts exist before
  *  the test tries to read/write the reports table. */
@@ -110,6 +184,16 @@ async function ensureReportColumns() {
 
 async function main() {
   console.log("\nprune-orphaned-reports integration tests\n");
+  testCleanupMonitoring();
+
+  if (!RUN_DATABASE_INTEGRATION) {
+    console.log("Skipping database mutation cases (set RUN_REPORT_CLEANUP_DB_TESTS=true to opt in).\n");
+    return;
+  }
+  if (IS_PRODUCTION) {
+    throw new Error("Refusing database mutation cases in a production environment");
+  }
+
   await ensureReportColumns();
 
   // ── Case 1: old orphaned report with NO surviving userId profile → deleted ──

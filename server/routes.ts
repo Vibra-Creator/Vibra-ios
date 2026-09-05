@@ -23,6 +23,15 @@ import { runMigrations } from "./migrate";
 import { Server as SocketIOServer } from "socket.io";
 import { getSession } from "./replit_integrations/auth/replitAuth";
 import webpush from "web-push";
+import {
+  REPORT_CLEANUP_TTL_DAYS,
+  buildReportCleanupStatusFailure,
+  buildReportCleanupStatusResponse,
+  createReportCleanupState,
+  markReportCleanupFailed,
+  markReportCleanupStarted,
+  markReportCleanupSucceeded,
+} from "./report-cleanup";
 
 const OFFENSIVE_WORDS = [
   "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
@@ -358,23 +367,8 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  const ORPHANED_REPORT_TTL_DAYS = 90;
+  let reportCleanupStatus = createReportCleanupState();
   const ORPHANED_COLD_MESSAGE_TTL_DAYS = 90;
-  const reportCleanupStatus: {
-    lastAttemptAt: string | null;
-    lastSuccessAt: string | null;
-    status: "never" | "running" | "success" | "failure";
-    lastDeletedCount: number | null;
-    consecutiveFailures: number;
-    lastError: string | null;
-  } = {
-    lastAttemptAt: null,
-    lastSuccessAt: null,
-    status: "never",
-    lastDeletedCount: null,
-    consecutiveFailures: 0,
-    lastError: null,
-  };
 
   app.get("/sw.js", (req, res, next) => {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -516,27 +510,20 @@ ${urlEntries}
   // so the cold-message filter survives account recreation (Task #23).
   async function pruneOrphanedReports() {
     const attemptAt = new Date().toISOString();
-    reportCleanupStatus.lastAttemptAt = attemptAt;
-    reportCleanupStatus.status = "running";
+    reportCleanupStatus = markReportCleanupStarted(reportCleanupStatus, attemptAt);
     try {
-      const deleted = await storage.pruneOrphanedReports(ORPHANED_REPORT_TTL_DAYS);
+      const deleted = await storage.pruneOrphanedReports(REPORT_CLEANUP_TTL_DAYS);
       const completedAt = new Date().toISOString();
-      reportCleanupStatus.lastSuccessAt = completedAt;
-      reportCleanupStatus.status = "success";
-      reportCleanupStatus.lastDeletedCount = deleted;
-      reportCleanupStatus.consecutiveFailures = 0;
-      reportCleanupStatus.lastError = null;
+      reportCleanupStatus = markReportCleanupSucceeded(reportCleanupStatus, deleted, completedAt);
       console.log(
-        `[report-cleanup] status=success deleted=${deleted} ttlDays=${ORPHANED_REPORT_TTL_DAYS} ` +
+        `[report-cleanup] status=success deleted=${deleted} ttlDays=${REPORT_CLEANUP_TTL_DAYS} ` +
         `attemptedAt=${attemptAt} completedAt=${completedAt}`
       );
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
-      reportCleanupStatus.status = "failure";
-      reportCleanupStatus.consecutiveFailures += 1;
-      reportCleanupStatus.lastError = errorMessage;
+      reportCleanupStatus = markReportCleanupFailed(reportCleanupStatus, e);
       console.error(
-        `[report-cleanup] status=failure ttlDays=${ORPHANED_REPORT_TTL_DAYS} ` +
+        `[report-cleanup] status=failure ttlDays=${REPORT_CLEANUP_TTL_DAYS} ` +
         `attemptedAt=${attemptAt} consecutiveFailures=${reportCleanupStatus.consecutiveFailures} ` +
         `error=${errorMessage}`,
         e
@@ -1702,30 +1689,12 @@ ${urlEntries}
   };
 
   app.get("/api/admin/report-cleanup/status", isAuthenticated, isAdmin, async (_req: any, res) => {
-    const lastAttemptMs = reportCleanupStatus.lastAttemptAt
-      ? Date.parse(reportCleanupStatus.lastAttemptAt)
-      : null;
-    const schedulerStale = lastAttemptMs === null || Date.now() - lastAttemptMs > 26 * 60 * 60 * 1000;
-
     try {
-      const orphanedReportsOlderThanTtl = await storage.countOrphanedReports(ORPHANED_REPORT_TTL_DAYS);
-      res.json({
-        ...reportCleanupStatus,
-        ttlDays: ORPHANED_REPORT_TTL_DAYS,
-        orphanedReportsOlderThanTtl,
-        schedulerStale,
-        healthy: reportCleanupStatus.status === "success" && !schedulerStale,
-      });
+      const orphanedReportsOlderThanTtl = await storage.countOrphanedReports(REPORT_CLEANUP_TTL_DAYS);
+      res.json(buildReportCleanupStatusResponse(reportCleanupStatus, orphanedReportsOlderThanTtl));
     } catch (error) {
       console.error("[report-cleanup] status-check-failure:", error);
-      res.status(503).json({
-        ...reportCleanupStatus,
-        ttlDays: ORPHANED_REPORT_TTL_DAYS,
-        orphanedReportsOlderThanTtl: null,
-        schedulerStale,
-        healthy: false,
-        error: "Unable to read orphaned report backlog",
-      });
+      res.status(503).json(buildReportCleanupStatusFailure(reportCleanupStatus));
     }
   });
 
