@@ -301,6 +301,32 @@ describe("GET /api/cold-messages/:id sender reachability", () => {
     }
   });
 
+  test("returns 404 with message_deleted and no message body after deletion", async () => {
+    const recipientUserId = `__test_http_recipient_message_deleted_${RUN_ID}`;
+    const sender = await createTestProfile("http_sender_message_deleted");
+    const recipient = await createTestProfile("http_recipient_message_deleted");
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "deleted before revalidation");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+    await storage.deleteColdMessage(coldMessage.id, recipient);
+
+    const server = await startRouteTestServer(recipientUserId);
+    try {
+      const response = await getColdMessageOverHttp(server, coldMessage.id);
+      assert.equal(response.statusCode, 404);
+      assert.deepEqual(response.body, {
+        error: "Messaggio non trovato",
+        reason: "message_deleted",
+      });
+      assert.equal(response.body.content, undefined);
+      assert.equal(response.body.otherProfile, undefined);
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
   test("returns 403 with the unauthorized response contract for an unrelated profile", async () => {
     const unrelatedUserId = `__test_http_unrelated_${RUN_ID}`;
     const sender = await createTestProfile("http_sender_unrelated");
