@@ -312,3 +312,88 @@ test("banner-already-reported disappears after the report is retracted", async (
   await expect(page.locator('[data-testid="coldmsg-reply-panel"]')).toBeVisible({ timeout: 5_000 });
   await expect(page.locator('[data-testid="banner-already-reported"]')).not.toBeVisible();
 });
+
+test("retracting a report restores cold-message delivery", async ({
+  page,
+  request,
+}) => {
+  // ── 1. Register two users ────────────────────────────────────────────────
+  const userA = await registerUser(request, "G"); // recipient / reporter
+  const userB = await registerUser(request, "H"); // sender / reported user
+
+  // ── 2. Have A report B before B sends a cold message ─────────────────────
+  const profileAId = await loginAs(request, userA);
+  const profileBId = await loginAs(request, userB);
+  await loginAs(request, userA);
+
+  const reportRes = await request.post("/api/reports", {
+    data: { reportedId: profileBId, reason: "spam" },
+  });
+  if (!reportRes.ok()) throw new Error(`Create report: ${reportRes.status()} – ${await reportRes.text()}`);
+
+  // ── 3. A reported sender is silently rejected while the report exists ───
+  await loginAs(request, userB);
+  const blockedContent = `E2E blocked after report ${RUN_ID}`;
+  const blockedSendRes = await request.post("/api/cold-messages", {
+    data: { toProfileId: profileAId, content: blockedContent },
+  });
+  if (!blockedSendRes.ok()) {
+    throw new Error(`Blocked cold msg request: ${blockedSendRes.status()} – ${await blockedSendRes.text()}`);
+  }
+  const blockedSend = (await blockedSendRes.json()) as {
+    status?: string;
+    coldMessage?: unknown;
+  };
+  expect(blockedSend.status).toBe("sent");
+  expect(blockedSend.coldMessage).toBeUndefined();
+
+  await loginAs(request, userA);
+  const blockedInbox = (await (await request.get("/api/cold-messages/received")).json()) as Array<{
+    fromProfileId: string;
+    content: string;
+  }>;
+  expect(blockedInbox.some((message) =>
+    message.fromProfileId === profileBId && message.content === blockedContent
+  )).toBe(false);
+
+  // ── 4. Retract the report through the profile UI ─────────────────────────
+  await injectSessionCookies(page, request);
+  await patchEmailVerified(page);
+  await page.goto("/profile?segnalazioni=1", { waitUntil: "load" });
+
+  const reportsPanel = page.locator('[data-testid="segnalazioni-panel"]');
+  await expect(reportsPanel).toBeVisible({ timeout: 10_000 });
+  await reportsPanel.getByRole("button", { name: "Rimuovi segnalazione" }).click();
+  await reportsPanel.getByRole("button", { name: "Conferma rimozione" }).click();
+  await expect(reportsPanel).toContainText("Nessuna segnalazione attiva", { timeout: 10_000 });
+
+  // ── 5. The same sender can deliver a new cold message afterward ─────────
+  const acceptedContent = `E2E accepted after report retraction ${RUN_ID}`;
+  await loginAs(request, userB);
+  const acceptedSendRes = await request.post("/api/cold-messages", {
+    data: { toProfileId: profileAId, content: acceptedContent },
+  });
+  if (!acceptedSendRes.ok()) {
+    throw new Error(`Accepted cold msg request: ${acceptedSendRes.status()} – ${await acceptedSendRes.text()}`);
+  }
+  const acceptedSend = (await acceptedSendRes.json()) as {
+    status?: string;
+    coldMessage?: { fromProfileId: string; toProfileId: string; content: string };
+  };
+  expect(acceptedSend.status).toBe("sent");
+  expect(acceptedSend.coldMessage).toMatchObject({
+    fromProfileId: profileBId,
+    toProfileId: profileAId,
+    content: acceptedContent,
+  });
+
+  await loginAs(request, userA);
+  const acceptedInbox = (await (await request.get("/api/cold-messages/received")).json()) as Array<{
+    fromProfileId: string;
+    content: string;
+  }>;
+  expect(acceptedInbox).toContainEqual(expect.objectContaining({
+    fromProfileId: profileBId,
+    content: acceptedContent,
+  }));
+});
