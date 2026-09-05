@@ -34,6 +34,14 @@ import {
   markReportCleanupSucceeded,
   shouldNotifyReportCleanupFailure,
 } from "./report-cleanup";
+import {
+  COLD_MESSAGE_CLEANUP_TTL_DAYS,
+  buildColdMessageCleanupStatusResponse,
+  createColdMessageCleanupState,
+  markColdMessageCleanupFailed,
+  markColdMessageCleanupStarted,
+  markColdMessageCleanupSucceeded,
+} from "./cold-message-cleanup";
 
 const OFFENSIVE_WORDS = [
   "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
@@ -372,7 +380,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   let reportCleanupStatus = createReportCleanupState();
-  const ORPHANED_COLD_MESSAGE_TTL_DAYS = 90;
+  let coldMessageCleanupStatus = createColdMessageCleanupState();
 
   async function notifyAdminsOfReportCleanupFailure() {
     if (!shouldNotifyReportCleanupFailure(reportCleanupStatus)) {
@@ -601,13 +609,29 @@ ${urlEntries}
   // Cold messages addressed to deleted profiles no longer have a recipient and
   // can be removed once they are outside the retention window.
   async function pruneOrphanedColdMessages() {
+    const attemptAt = new Date().toISOString();
+    coldMessageCleanupStatus = markColdMessageCleanupStarted(coldMessageCleanupStatus, attemptAt);
     try {
-      const deleted = await storage.pruneOrphanedColdMessages(ORPHANED_COLD_MESSAGE_TTL_DAYS);
-      if (deleted > 0) {
-        console.log(`[cold-message-cleanup] Pruned ${deleted} orphaned cold message row(s) older than ${ORPHANED_COLD_MESSAGE_TTL_DAYS} days`);
-      }
+      const deleted = await storage.pruneOrphanedColdMessages(COLD_MESSAGE_CLEANUP_TTL_DAYS);
+      const completedAt = new Date().toISOString();
+      coldMessageCleanupStatus = markColdMessageCleanupSucceeded(
+        coldMessageCleanupStatus,
+        deleted,
+        completedAt,
+      );
+      console.log(
+        `[cold-message-cleanup] status=success deleted=${deleted} ` +
+        `ttlDays=${COLD_MESSAGE_CLEANUP_TTL_DAYS} attemptedAt=${attemptAt} completedAt=${completedAt}`,
+      );
     } catch (e) {
-      console.error("[cold-message-cleanup] Error:", e);
+      coldMessageCleanupStatus = markColdMessageCleanupFailed(coldMessageCleanupStatus, e);
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      console.error(
+        `[cold-message-cleanup] status=failure ttlDays=${COLD_MESSAGE_CLEANUP_TTL_DAYS} ` +
+        `attemptedAt=${attemptAt} consecutiveFailures=${coldMessageCleanupStatus.consecutiveFailures} ` +
+        `error=${errorMessage}`,
+        e,
+      );
     }
   }
   pruneOrphanedColdMessages();
@@ -1757,6 +1781,15 @@ ${urlEntries}
       console.error("[report-cleanup] status-check-failure:", error);
       res.status(503).json(buildReportCleanupStatusFailure(reportCleanupStatus));
     }
+  });
+
+  app.get("/api/admin/cold-message-cleanup/status", isAuthenticated, isAdmin, (_req: any, res) => {
+    res.json(
+      buildColdMessageCleanupStatusResponse(
+        coldMessageCleanupStatus,
+        Date.now(),
+      ),
+    );
   });
 
   app.get("/api/referral/my-code", isAuthenticated, async (req: any, res) => {
