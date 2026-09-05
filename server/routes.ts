@@ -29,8 +29,10 @@ import {
   buildReportCleanupStatusResponse,
   createReportCleanupState,
   markReportCleanupFailed,
+  markReportCleanupNotificationSent,
   markReportCleanupStarted,
   markReportCleanupSucceeded,
+  shouldNotifyReportCleanupFailure,
 } from "./report-cleanup";
 
 const OFFENSIVE_WORDS = [
@@ -42,6 +44,8 @@ const OFFENSIVE_WORDS = [
   "fuck", "shit", "bitch", "asshole", "nigger", "faggot", "retard",
   "dick pic", "nudes", "sesso orale",
 ];
+
+const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
 function filterOffensiveContent(text: string): string {
   let filtered = text;
@@ -370,6 +374,64 @@ export async function registerRoutes(
   let reportCleanupStatus = createReportCleanupState();
   const ORPHANED_COLD_MESSAGE_TTL_DAYS = 90;
 
+  async function notifyAdminsOfReportCleanupFailure() {
+    if (!shouldNotifyReportCleanupFailure(reportCleanupStatus)) {
+      return;
+    }
+
+    try {
+      const adminUsers = await storage.getAllUsers();
+      const recipientEmails = Array.from(new Set(
+        adminUsers
+          .filter((user) =>
+            Boolean(user.email) &&
+            (Boolean(user.isAdmin) || ADMIN_EMAILS.includes(user.email!.toLowerCase()))
+          )
+          .map((user) => user.email!.trim().toLowerCase())
+          .filter((email) => email && !email.endsWith("@vibra.com")),
+      ));
+
+      if (recipientEmails.length === 0) {
+        console.warn("[report-cleanup] failure alert skipped: no admin email recipients");
+        return;
+      }
+
+      const { sendBulkCustomEmails } = await import("./gmail");
+      const failureStreak = reportCleanupStatus.consecutiveFailures;
+      const lastError = reportCleanupStatus.lastError || "Unknown cleanup error";
+      const safeError = lastError
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+      const subject = `[Vibra] Orphaned report cleanup failed ${failureStreak} times`;
+      const htmlBody = `
+        <h2>Orphaned report cleanup requires attention</h2>
+        <p>The scheduled cleanup has failed <strong>${failureStreak} consecutive times</strong>.</p>
+        <p><strong>Last observed error:</strong> ${safeError}</p>
+        <p>Check the admin cleanup status endpoint and deployment logs for more details.</p>
+      `;
+
+      const result = await sendBulkCustomEmails(
+        recipientEmails.map((email) => ({ email, name: "Vibra admin" })),
+        subject,
+        htmlBody,
+      );
+
+      if (result.sent > 0) {
+        reportCleanupStatus = markReportCleanupNotificationSent(reportCleanupStatus);
+        console.warn(
+          `[report-cleanup] failure alert sent=${result.sent} failed=${result.failed} ` +
+          `consecutiveFailures=${failureStreak}`,
+        );
+      } else {
+        console.error("[report-cleanup] failure alert could not be sent to any admin");
+      }
+    } catch (notificationError) {
+      console.error("[report-cleanup] failure alert error:", notificationError);
+    }
+  }
+
   app.get("/sw.js", (req, res, next) => {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Pragma", "no-cache");
@@ -528,6 +590,7 @@ ${urlEntries}
         `error=${errorMessage}`,
         e
       );
+      await notifyAdminsOfReportCleanupFailure();
     }
   }
   pruneOrphanedReports();
@@ -1658,8 +1721,6 @@ ${urlEntries}
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
-
-  const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
   const isAdmin = async (req: any, res: any, next: any) => {
     try {

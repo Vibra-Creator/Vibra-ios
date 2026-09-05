@@ -1,5 +1,7 @@
 export const REPORT_CLEANUP_TTL_DAYS = 90;
 export const REPORT_CLEANUP_STALE_AFTER_MS = 26 * 60 * 60 * 1000;
+export const REPORT_CLEANUP_ALERT_AFTER_FAILURES = 2;
+export const REPORT_CLEANUP_NOTIFICATION_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 export type ReportCleanupState = {
   lastAttemptAt: string | null;
@@ -8,6 +10,7 @@ export type ReportCleanupState = {
   lastDeletedCount: number | null;
   consecutiveFailures: number;
   lastError: string | null;
+  lastNotificationAt: string | null;
 };
 
 export function createReportCleanupState(): ReportCleanupState {
@@ -18,6 +21,7 @@ export function createReportCleanupState(): ReportCleanupState {
     lastDeletedCount: null,
     consecutiveFailures: 0,
     lastError: null,
+    lastNotificationAt: null,
   };
 }
 
@@ -44,6 +48,7 @@ export function markReportCleanupSucceeded(
     lastDeletedCount: deletedCount,
     consecutiveFailures: 0,
     lastError: null,
+    lastNotificationAt: null,
   };
 }
 
@@ -56,6 +61,38 @@ export function markReportCleanupFailed(
     status: "failure",
     consecutiveFailures: state.consecutiveFailures + 1,
     lastError: error instanceof Error ? error.message : String(error),
+  };
+}
+
+export function shouldNotifyReportCleanupFailure(
+  state: ReportCleanupState,
+  now = Date.now(),
+): boolean {
+  if (
+    state.status !== "failure" ||
+    state.consecutiveFailures < REPORT_CLEANUP_ALERT_AFTER_FAILURES
+  ) {
+    return false;
+  }
+
+  if (!state.lastNotificationAt) {
+    return true;
+  }
+
+  const lastNotificationMs = Date.parse(state.lastNotificationAt);
+  return (
+    !Number.isFinite(lastNotificationMs) ||
+    now - lastNotificationMs >= REPORT_CLEANUP_NOTIFICATION_COOLDOWN_MS
+  );
+}
+
+export function markReportCleanupNotificationSent(
+  state: ReportCleanupState,
+  notifiedAt = new Date().toISOString(),
+): ReportCleanupState {
+  return {
+    ...state,
+    lastNotificationAt: notifiedAt,
   };
 }
 

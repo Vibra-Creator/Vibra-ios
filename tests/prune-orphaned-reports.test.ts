@@ -25,8 +25,10 @@ import {
   createReportCleanupState,
   getReportCleanupHealth,
   markReportCleanupFailed,
+  markReportCleanupNotificationSent,
   markReportCleanupStarted,
   markReportCleanupSucceeded,
+  shouldNotifyReportCleanupFailure,
 } from "../server/report-cleanup";
 import { storage } from "../server/storage";
 import { reports, profiles, users } from "../shared/schema";
@@ -154,6 +156,31 @@ function testCleanupMonitoring() {
     false,
     "a failed cleanup attempt should be unhealthy",
   );
+  assert.equal(
+    shouldNotifyReportCleanupFailure(state, now),
+    false,
+    "the first failed cleanup attempt should not notify admins",
+  );
+
+  state = markReportCleanupStarted(state, "2026-09-05T13:00:00.000Z");
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  assert.equal(
+    shouldNotifyReportCleanupFailure(state, now),
+    true,
+    "repeated cleanup failures should notify admins",
+  );
+
+  state = markReportCleanupNotificationSent(state, "2026-09-05T13:00:01.000Z");
+  assert.equal(
+    shouldNotifyReportCleanupFailure(state, now),
+    false,
+    "a recent notification should be rate limited",
+  );
+
+  state = markReportCleanupStarted(state, "2026-09-05T14:00:00.000Z");
+  state = markReportCleanupSucceeded(state, 0, "2026-09-05T14:00:01.000Z");
+  assert.equal(state.lastNotificationAt, null, "success should clear the alert condition");
+  assert.equal(state.consecutiveFailures, 0);
 
   const staleState = markReportCleanupSucceeded(
     markReportCleanupStarted(createReportCleanupState(), "2026-09-03T00:00:00.000Z"),
