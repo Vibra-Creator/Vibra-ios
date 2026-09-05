@@ -301,6 +301,27 @@ describe("GET /api/cold-messages/:id sender reachability", () => {
     }
   });
 
+  test("returns 403 with the unauthorized response contract for an unrelated profile", async () => {
+    const unrelatedUserId = `__test_http_unrelated_${RUN_ID}`;
+    const sender = await createTestProfile("http_sender_unrelated");
+    const recipient = await createTestProfile("http_recipient_unrelated");
+    const unrelated = await createTestProfile("http_unrelated");
+    await db.update(profiles).set({ userId: unrelatedUserId }).where(eq(profiles.id, unrelated));
+    createdProfileIds.push(sender, recipient, unrelated);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "private content");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    const server = await startRouteTestServer(unrelatedUserId);
+    try {
+      const response = await getColdMessageOverHttp(server, coldMessage.id);
+      assert.equal(response.statusCode, 403);
+      assert.deepEqual(response.body, { error: "Non autorizzato" });
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
   test("returns 404 with sender_deleted when the sender deletes their profile", async () => {
     const recipientUserId = `__test_http_recipient_deleted_${RUN_ID}`;
     const sender = await createTestProfile("http_sender_deleted");
