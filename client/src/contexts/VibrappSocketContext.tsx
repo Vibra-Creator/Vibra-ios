@@ -50,7 +50,7 @@ export function VibrappSocketProvider({
   const [onlineCount, setOnlineCount] = useState(0);
   const [dmUnreadCount, setDmUnreadCount] = useState(0);
   const [dmBanner, setDmBanner] = useState<{ name: string; text: string; fromId: string } | null>(null);
-  const dmBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const dmBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dmHandlerRef = useRef<((msg: DmMessage) => void) | null>(null);
 
   const registerDmHandler = useCallback((cb: ((msg: DmMessage) => void) | null) => {
@@ -74,7 +74,13 @@ export function VibrappSocketProvider({
   useEffect(() => {
     if (!profileId) return;
 
-    const socket = io(window.location.origin, { path: "/vibrapp-socket" });
+    let socket: Socket;
+    try {
+      socket = io(window.location.origin, { path: "/vibrapp-socket" });
+    } catch (error) {
+      console.error("[vibrapp] socket initialization failed:", error);
+      return;
+    }
     socketRef.current = socket;
 
     socket.on("connect", () => setSocketConnected(true));
@@ -82,18 +88,25 @@ export function VibrappSocketProvider({
     socket.on("vibrapp:online-count", (count: number) => setOnlineCount(count));
 
     socket.on("vibrapp:dm-message", (msg: DmMessage) => {
-      if (msg.fromProfileId === profileId) return;
+      if (!msg || typeof msg !== "object") return;
+      const fromProfileId = typeof msg.fromProfileId === "string" ? msg.fromProfileId : "";
+      if (!fromProfileId || fromProfileId === profileId) return;
+      const content = typeof msg.content === "string" ? msg.content : "";
 
       if (dmHandlerRef.current) {
-        dmHandlerRef.current(msg);
+        try {
+          dmHandlerRef.current({ ...msg, fromProfileId, content });
+        } catch (error) {
+          console.error("[vibrapp] DM handler failed:", error);
+        }
         return;
       }
 
       // User is not on vibrapp page — show global banner + sound
       showDmBanner(
         msg.senderName || "Qualcuno",
-        msg.content ? msg.content.substring(0, 60) : "📩 Messaggio",
-        msg.fromProfileId
+        content ? content.substring(0, 60) : "📩 Messaggio",
+        fromProfileId
       );
     });
 

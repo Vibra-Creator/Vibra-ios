@@ -67,6 +67,27 @@ import { AlertTriangle, RefreshCw, Bell, X } from "lucide-react";
 
 const publicPages = ["/privacy", "/terms", "/child-safety", "/login", "/register", "/onboarding", "/forgot-password"];
 
+function reportClientError(error: Error, errorInfo: React.ErrorInfo, scope: string) {
+  console.error(`[app] ${scope}:`, error, errorInfo);
+  try {
+    void fetch("/api/client-errors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      keepalive: true,
+      body: JSON.stringify({
+        scope,
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack,
+        componentStack: errorInfo?.componentStack,
+        path: window.location.pathname,
+        userAgent: navigator.userAgent,
+      }),
+    }).catch(() => {});
+  } catch {}
+}
+
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
     super(props);
@@ -78,7 +99,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("[app] render error:", error, errorInfo);
+    reportClientError(error, errorInfo, "render error");
   }
 
   render() {
@@ -116,7 +137,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-class OptionalFeatureBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+class OptionalFeatureBoundary extends Component<{ children: ReactNode; feature: string }, { hasError: boolean }> {
   state = { hasError: false };
 
   static getDerivedStateFromError() {
@@ -124,7 +145,7 @@ class OptionalFeatureBoundary extends Component<{ children: ReactNode }, { hasEr
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("[app] optional feature disabled after error:", error, errorInfo);
+    reportClientError(error, errorInfo, `optional feature ${this.props.feature}`);
   }
 
   render() {
@@ -470,11 +491,19 @@ function AppContent() {
 
   const content = (
     <>
-      {!hideVideoBackground && <VideoBackground fallbackGradient={true} />}
+      {!hideVideoBackground && (
+        <OptionalFeatureBoundary feature="video-background">
+          <VideoBackground fallbackGradient={true} />
+        </OptionalFeatureBoundary>
+      )}
       <div className="h-full flex flex-col overflow-hidden">
-        {showHeader && <Header />}
+        {showHeader && (
+          <OptionalFeatureBoundary feature="header">
+            <Header />
+          </OptionalFeatureBoundary>
+        )}
         {isAuthenticated && !isPublicPage && (
-          <OptionalFeatureBoundary>
+          <OptionalFeatureBoundary feature="notification-banner">
             <NotificationBanner />
           </OptionalFeatureBoundary>
         )}
@@ -483,9 +512,17 @@ function AppContent() {
             {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
           </Suspense>
         </main>
-        {showHeader && <BottomNav />}
+        {showHeader && (
+          <OptionalFeatureBoundary feature="bottom-navigation">
+            <BottomNav />
+          </OptionalFeatureBoundary>
+        )}
       </div>
-      {isAuthenticated && !isPublicPage && location !== "/" && <VibraAI />}
+      {isAuthenticated && !isPublicPage && location !== "/" && (
+        <OptionalFeatureBoundary feature="vibra-ai">
+          <VibraAI />
+        </OptionalFeatureBoundary>
+      )}
     </>
   );
 

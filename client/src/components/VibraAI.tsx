@@ -44,40 +44,48 @@ function useVoiceInput(onResult: (text: string) => void) {
   const start = useCallback(() => {
     if (!supported) { setVoiceState("unsupported"); return; }
 
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-    rec.lang = "it-IT";
-    rec.continuous = false;
-    rec.interimResults = true;
-    rec.maxAlternatives = 3;
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new SR();
+      rec.lang = "it-IT";
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.maxAlternatives = 3;
 
-    rec.onstart = () => { setVoiceState("listening"); setInterim(""); };
+      rec.onstart = () => { setVoiceState("listening"); setInterim(""); };
 
-    rec.onresult = (e: SpeechRecognitionEvent) => {
-      let interim = "";
-      let final = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += t;
-        else interim += t;
-      }
-      setInterim(interim || final);
-       if (final) {
-        setVoiceState("processing");
-        setInterim("");
-        onResult(final.trim());
-      }
-    };
+      rec.onresult = (e: SpeechRecognitionEvent) => {
+        let interim = "";
+        let final = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) final += t;
+          else interim += t;
+        }
+        setInterim(interim || final);
+         if (final) {
+          setVoiceState("processing");
+          setInterim("");
+          onResult(final.trim());
+        }
+      };
 
-    rec.onerror = () => { setVoiceState("idle"); setInterim(""); };
-    rec.onend = () => { setVoiceState(v => v === "listening" ? "idle" : v); };
+      rec.onerror = () => { setVoiceState("idle"); setInterim(""); };
+      rec.onend = () => { setVoiceState(v => v === "listening" ? "idle" : v); };
 
-    recognitionRef.current = rec;
-    rec.start();
+      recognitionRef.current = rec;
+      rec.start();
+    } catch {
+      recognitionRef.current = null;
+      setVoiceState("unsupported");
+      setInterim("");
+    }
   }, [supported, onResult]);
 
   const stop = useCallback(() => {
-    recognitionRef.current?.stop();
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
     setVoiceState("idle");
     setInterim("");
   }, []);

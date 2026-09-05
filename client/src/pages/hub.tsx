@@ -33,33 +33,41 @@ function useVoiceInput(onResult: (text: string) => void) {
 
   const start = useCallback(() => {
     if (!supported) return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-    rec.lang = "it-IT";
-    rec.continuous = false;
-    rec.interimResults = true;
-    rec.onstart = () => { setVoiceState("listening"); setInterim(""); };
-    rec.onresult = (e: SpeechRecognitionEvent) => {
-      let interim = "", final = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += t; else interim += t;
-      }
-      setInterim(interim || final);
-       if (final) {
-         setVoiceState("processing");
-         setInterim("");
-         onResult(final.trim());
-       }
-    };
-    rec.onerror = () => { setVoiceState("idle"); setInterim(""); };
-    rec.onend = () => setVoiceState(v => v === "listening" ? "idle" : v);
-    recognitionRef.current = rec;
-    rec.start();
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new SR();
+      rec.lang = "it-IT";
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.onstart = () => { setVoiceState("listening"); setInterim(""); };
+      rec.onresult = (e: SpeechRecognitionEvent) => {
+        let interim = "", final = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) final += t; else interim += t;
+        }
+        setInterim(interim || final);
+         if (final) {
+           setVoiceState("processing");
+           setInterim("");
+           onResult(final.trim());
+         }
+      };
+      rec.onerror = () => { setVoiceState("idle"); setInterim(""); };
+      rec.onend = () => setVoiceState(v => v === "listening" ? "idle" : v);
+      recognitionRef.current = rec;
+      rec.start();
+    } catch {
+      recognitionRef.current = null;
+      setVoiceState("idle");
+      setInterim("");
+    }
   }, [supported, onResult]);
 
   const stop = useCallback(() => {
-    recognitionRef.current?.stop();
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
     setVoiceState("idle");
     setInterim("");
   }, []);
@@ -142,7 +150,9 @@ export default function HubPage() {
     else if (aiResult.action === "external" && aiResult.external_url) window.open(aiResult.external_url, "_blank");
   };
 
-  const firstName = profile?.name?.split(" ")[0] || user?.username || "";
+  const profileName = typeof profile?.name === "string" ? profile.name.trim() : "";
+  const userName = typeof (user as any)?.username === "string" ? (user as any).username : "";
+  const firstName = profileName.split(/\s+/)[0] || userName;
 
   return (
     <div className="flex-1 overflow-y-auto pb-6" style={{ background: "transparent" }}>

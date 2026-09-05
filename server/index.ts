@@ -31,6 +31,31 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+app.post("/api/client-errors", (req, res) => {
+  const sameSite = req.get("sec-fetch-site");
+  if (sameSite && sameSite !== "same-origin") {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  const text = (value: unknown, maxLength: number) =>
+    typeof value === "string" ? value.slice(0, maxLength) : "";
+  const message = text(req.body?.message, 1000);
+  if (!message) {
+    return res.status(400).json({ message: "Missing error message" });
+  }
+
+  console.error("[client-error]", JSON.stringify({
+    scope: text(req.body?.scope, 120),
+    name: text(req.body?.name, 120),
+    message,
+    path: text(req.body?.path, 500),
+    userAgent: text(req.body?.userAgent, 500),
+    stack: text(req.body?.stack, 6000),
+    componentStack: text(req.body?.componentStack, 6000),
+  }));
+  return res.status(204).end();
+});
+
 // Redirect dal sottodominio Replit al dominio ufficiale
 app.use((req, res, next) => {
   const host = req.hostname || "";

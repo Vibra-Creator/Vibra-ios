@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic, Play } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
