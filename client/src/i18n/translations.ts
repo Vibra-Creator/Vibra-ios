@@ -1093,6 +1093,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "push.denied": "Notifiche bloccate dal browser. Vai nelle impostazioni per abilitarle.",
     "push.success": "Notifiche attivate!",
     "push.successDesc": "Riceverai avvisi per messaggi privati e risposte in Vibrapp.",
+    "push.promptTitle": "Non perdere i tuoi messaggi",
+    "push.promptDescription": "Attiva le notifiche per ricevere avvisi quando qualcuno ti scrive o risponde.",
+    "push.dismiss": "Non ora",
   },
 
   en: {
@@ -2186,6 +2189,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "push.denied": "Notifications blocked by browser. Go to settings to enable them.",
     "push.success": "Notifications enabled!",
     "push.successDesc": "You'll receive alerts for private messages and Vibrapp replies.",
+    "push.promptTitle": "Don't miss your messages",
+    "push.promptDescription": "Enable notifications to get alerts when someone messages or replies to you.",
+    "push.dismiss": "Not now",
   },
 
   es: {
@@ -3279,5 +3285,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "push.denied": "Notificaciones bloqueadas por el navegador. Ve a ajustes para habilitarlas.",
     "push.success": "¡Notificaciones activadas!",
     "push.successDesc": "Recibirás alertas por mensajes privados y respuestas en Vibrapp.",
+    "push.promptTitle": "No te pierdas tus mensajes",
+    "push.promptDescription": "Activa las notificaciones para recibir avisos cuando alguien te escriba o responda.",
+    "push.dismiss": "Ahora no",
   },
 };

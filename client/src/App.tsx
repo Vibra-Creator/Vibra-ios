@@ -57,13 +57,13 @@ const GiovaniPage = lazy(() => import("@/pages/giovani"));
 const CosaFarePage = lazy(() => import("@/pages/cosa-fare"));
 import { useAuth } from "@/hooks/use-auth";
 import { GuestProvider, useGuest } from "@/hooks/use-guest";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { VibrappSocketProvider } from "@/contexts/VibrappSocketContext";
 import { LanguageProvider, useLanguage } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { ViewportSelector } from "@/components/ViewportSelector";
 import { VibraAI } from "@/components/VibraAI";
 import { AlertTriangle, RefreshCw, Bell, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 const publicPages = ["/privacy", "/terms", "/child-safety", "/login", "/register", "/onboarding", "/forgot-password"];
 
@@ -112,13 +112,88 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-const DISMISS_KEY = "vibra-push-banner-dismissed";
-const DISMISS_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
+const PUSH_DECISION_KEY = "vibra-push-decision-made";
 
 function NotificationBanner() {
-  // Auto-subscription now happens in the hook, banner is hidden
-  // Users can manage notifications in profile settings instead
-  return null;
+  const { t } = useLanguage();
+  const { isSupported, isSubscribed, permission, subscribe } = usePushNotifications();
+  const [hasDecision, setHasDecision] = useState(() => {
+    try {
+      return localStorage.getItem(PUSH_DECISION_KEY) === "true";
+    } catch {
+      // If storage is unavailable, do not repeatedly prompt the user.
+      return true;
+    }
+  });
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  const rememberDecision = () => {
+    setHasDecision(true);
+    try {
+      localStorage.setItem(PUSH_DECISION_KEY, "true");
+    } catch {
+      // The local state still prevents the banner from reappearing this session.
+    }
+  };
+
+  const handleAllow = async () => {
+    rememberDecision();
+    setIsRequesting(true);
+    try {
+      await subscribe();
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  if (
+    hasDecision ||
+    !isSupported ||
+    isSubscribed ||
+    permission !== "default"
+  ) {
+    return null;
+  }
+
+  return (
+    <div
+      className="sticky top-0 z-40 w-full border-b border-primary/30 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 px-4 py-3 backdrop-blur-md"
+      role="status"
+      data-testid="notification-banner"
+    >
+      <div className="mx-auto flex max-w-5xl items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+          <Bell className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-white">{t("push.promptTitle")}</p>
+          <p className="mt-0.5 text-sm text-white/70">{t("push.promptDescription")}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              onClick={handleAllow}
+              disabled={isRequesting}
+              data-testid="button-enable-notifications-banner"
+            >
+              <Bell className="h-4 w-4" />
+              {t("push.enable")}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={rememberDecision}
+              disabled={isRequesting}
+              className="text-white/70 hover:text-white"
+              data-testid="button-dismiss-notifications-banner"
+            >
+              <X className="h-4 w-4" />
+              {t("push.dismiss")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function RedirectHome() {
