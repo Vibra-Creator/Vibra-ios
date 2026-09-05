@@ -77,6 +77,10 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
     return { hasError: true };
   }
 
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("[app] render error:", error, errorInfo);
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -109,6 +113,22 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
       );
     }
     return this.props.children;
+  }
+}
+
+class OptionalFeatureBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("[app] optional feature disabled after error:", error, errorInfo);
+  }
+
+  render() {
+    return this.state.hasError ? null : this.props.children;
   }
 }
 
@@ -453,7 +473,11 @@ function AppContent() {
       {!hideVideoBackground && <VideoBackground fallbackGradient={true} />}
       <div className="h-full flex flex-col overflow-hidden">
         {showHeader && <Header />}
-        {isAuthenticated && !isPublicPage && <NotificationBanner />}
+        {isAuthenticated && !isPublicPage && (
+          <OptionalFeatureBoundary>
+            <NotificationBanner />
+          </OptionalFeatureBoundary>
+        )}
         <main className="flex-1 flex flex-col overflow-hidden">
           <Suspense fallback={pageFallback}>
             {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
