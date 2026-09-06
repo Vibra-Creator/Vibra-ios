@@ -41,6 +41,21 @@ interface ChatMessage {
   receiverImage: string | null;
 }
 
+interface ReportCleanupStatus {
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  status: "never" | "running" | "success" | "failure";
+  lastDeletedCount: number | null;
+  consecutiveFailures: number;
+  lastError: string | null;
+  lastNotificationAt: string | null;
+  ttlDays: number;
+  orphanedReportsOlderThanTtl: number | null;
+  schedulerStale: boolean;
+  healthy: boolean;
+  error?: string;
+}
+
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -83,6 +98,30 @@ export default function Admin() {
 
   const { data: reports } = useQuery<(Report & { coldMessageContent?: string | null })[]>({
     queryKey: ["/api/admin/reports"],
+  });
+
+  const {
+    data: reportCleanupStatus,
+    isLoading: reportCleanupStatusLoading,
+    isError: reportCleanupStatusError,
+  } = useQuery<ReportCleanupStatus>({
+    queryKey: ["/api/admin/report-cleanup/status"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/report-cleanup/status", {
+        credentials: "include",
+      });
+      const payload = await response.json();
+
+      // The status endpoint intentionally returns a useful health payload with
+      // 503 when the backlog query fails. Preserve that payload for admins.
+      if (!response.ok && response.status !== 503) {
+        throw new Error(`${response.status}: ${payload.error || response.statusText}`);
+      }
+
+      return payload as ReportCleanupStatus;
+    },
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { data: suspensions } = useQuery<UserSuspension[]>({
@@ -489,6 +528,48 @@ export default function Admin() {
 
   const realSubscriberCount = stats?.realSubscriberCount || 0;
 
+  const reportCleanupBacklogUnavailable = Boolean(reportCleanupStatus?.error);
+  const reportCleanupBacklogCount = reportCleanupStatus?.orphanedReportsOlderThanTtl;
+  const reportCleanupHasBacklog = reportCleanupBacklogCount !== null && reportCleanupBacklogCount !== undefined && reportCleanupBacklogCount > 0;
+  const reportCleanupIsHealthy = Boolean(
+    reportCleanupStatus?.healthy && !reportCleanupBacklogUnavailable && !reportCleanupHasBacklog,
+  );
+  const reportCleanupHealthLabel = reportCleanupStatusLoading
+    ? "Caricamento..."
+    : reportCleanupStatusError
+      ? "Non disponibile"
+      : reportCleanupBacklogUnavailable
+        ? "Errore backlog"
+        : reportCleanupStatus?.status === "failure"
+          ? "Fallita"
+          : reportCleanupStatus?.schedulerStale
+            ? "Obsoleta"
+            : reportCleanupStatus?.status === "running"
+              ? "In esecuzione"
+              : reportCleanupStatus?.status === "never"
+                ? "Mai eseguita"
+                : reportCleanupBacklogCount && reportCleanupBacklogCount > 0
+                  ? "Backlog da pulire"
+                  : "Sana";
+  const reportCleanupStatusLabel =
+    reportCleanupStatus?.status === "success"
+      ? "Completata"
+      : reportCleanupStatus?.status === "failure"
+        ? "Fallita"
+        : reportCleanupStatus?.status === "running"
+          ? "In esecuzione"
+          : "Mai eseguita";
+  const reportCleanupTone = reportCleanupIsHealthy
+    ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300"
+    : reportCleanupStatusLoading
+      ? "border-border bg-muted/40 text-muted-foreground"
+      : reportCleanupStatusError || reportCleanupBacklogUnavailable || reportCleanupStatus?.status === "failure"
+        ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+        : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+
+  const formatReportCleanupDate = (value: string | null | undefined) =>
+    value ? new Date(value).toLocaleString("it-IT") : "Mai";
+
   const statCards = [
     { label: "Utenti Reali", value: stats?.realUsersCount || 0, icon: Users, color: "from-blue-500 to-cyan-500" },
     { label: "Profili", value: stats?.totalProfiles || 0, icon: UserCheck, color: "from-purple-500 to-pink-500" },
@@ -569,6 +650,79 @@ export default function Admin() {
               <RotateCcw className="w-4 h-4 mr-2" />
               {resetTestDataMutation.isPending ? "Resettando..." : "Reset Test Data"}
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card className={`mb-6 border ${reportCleanupTone}`} data-testid="card-report-cleanup-health">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Database className="w-5 h-5" />
+                  Pulizia segnalazioni orfane
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Segnalazioni oltre {reportCleanupStatus?.ttlDays ?? 90} giorni senza profilo associato
+                </p>
+              </div>
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium"
+                data-testid="report-cleanup-health-state"
+              >
+                {reportCleanupStatusError || reportCleanupBacklogUnavailable ? (
+                  <AlertTriangle className="w-4 h-4" />
+                ) : reportCleanupIsHealthy ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : reportCleanupStatusLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4" />
+                )}
+                {reportCleanupHealthLabel}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3" data-testid="report-cleanup-last-run">
+                <p className="text-xs text-muted-foreground">Ultima esecuzione</p>
+                <p className="mt-1 text-sm font-medium text-foreground">
+                  {formatReportCleanupDate(reportCleanupStatus?.lastAttemptAt)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Stato: {reportCleanupStatus ? reportCleanupStatusLabel : "—"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3" data-testid="report-cleanup-deleted-count">
+                <p className="text-xs text-muted-foreground">Eliminati ultima esecuzione</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">
+                  {reportCleanupStatus?.lastDeletedCount ?? "—"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3" data-testid="report-cleanup-backlog-count">
+                <p className="text-xs text-muted-foreground">Backlog oltre soglia</p>
+                <p className="mt-1 text-2xl font-semibold text-foreground">
+                  {reportCleanupBacklogCount ?? "Non disponibile"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/60 bg-background/40 p-3" data-testid="report-cleanup-health-detail">
+                <p className="text-xs text-muted-foreground">Stato scheduler</p>
+                <p className="mt-1 text-sm font-medium text-foreground">
+                  {reportCleanupStatus?.schedulerStale ? "Nessuna esecuzione recente" : reportCleanupStatus ? "Aggiornato" : "—"}
+                </p>
+                {reportCleanupStatus?.consecutiveFailures ? (
+                  <p className="text-xs text-red-600 dark:text-red-300 mt-1">
+                    Errori consecutivi: {reportCleanupStatus.consecutiveFailures}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            {(reportCleanupBacklogUnavailable || reportCleanupStatus?.lastError) && (
+              <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300" data-testid="report-cleanup-error">
+                <strong>{reportCleanupBacklogUnavailable ? "Impossibile leggere il backlog." : "Ultima pulizia non riuscita."}</strong>
+                {reportCleanupStatus?.lastError && <span className="ml-1">{reportCleanupStatus.lastError}</span>}
+              </div>
+            )}
           </CardContent>
         </Card>
 
