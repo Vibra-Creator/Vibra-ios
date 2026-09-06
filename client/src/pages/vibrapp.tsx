@@ -211,10 +211,19 @@ export default function Vibrapp() {
     mutationFn: async ({ id, content }: { id: string; content: string }) =>
       apiRequest("POST", `/api/cold-messages/${id}/reply`, { content }),
     onSuccess: () => {
+      const sender = selectedColdMsg?.fromProfile;
       setSelectedColdMsg(null);
       setReplyText("");
       refetchColdMsgs();
       queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
+      if (sender) {
+        openDmPanel({
+          id: sender.id,
+          name: sender.name,
+          age: sender.age,
+          imageUrl: sender.imageUrl || "",
+        });
+      }
     },
     onError: (err: any) => {
       // apiRequest includes the JSON error body in Error.message. The sender
@@ -401,9 +410,9 @@ export default function Vibrapp() {
             // Salva in sessionStorage per uso futuro
             sessionStorage.setItem(`vibrapp_intro_${coldMessageId}`, JSON.stringify(target));
             setIntroTarget(target);
-            if (data.replied && data.privateRoomId) {
+            if (data.replied) {
               setIntroColdStatus("replied");
-              setIntroPrivateRoomId(data.privateRoomId);
+              setIntroPrivateRoomId(data.privateRoomId ?? null);
             } else {
               setIntroColdStatus(data.isSentByMe ? "already_exists" : "idle");
             }
@@ -1154,7 +1163,7 @@ export default function Vibrapp() {
               <p className="text-white/50 text-[11px]">
                 {introColdStatus === "sent" && "✅ Presentazione inviata — aspetta che risponda"}
                 {introColdStatus === "already_exists" && "⏳ Presentazione in attesa di risposta"}
-                {introColdStatus === "replied" && "🎉 Ha risposto! Vai alla chat privata"}
+                {introColdStatus === "replied" && "🎉 Ha risposto! Apri la chat Vibrapp"}
                 {(introColdStatus === "idle" && introCheckDone) && "Invia una presentazione per iniziare"}
                 {(introColdStatus === "idle" && !introCheckDone) && "Caricamento..."}
               </p>
@@ -1169,14 +1178,14 @@ export default function Vibrapp() {
                 🛸 Scrivi
               </Button>
             )}
-            {(introColdStatus === "replied" && introPrivateRoomId) && (
+            {introColdStatus === "replied" && (
               <Button
                 size="sm"
-                className="bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 h-8 shrink-0"
-                onClick={() => setLocation(`/private-room/${introPrivateRoomId}`)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 h-8 shrink-0"
+                onClick={() => openDmPanel(introTarget)}
                 data-testid="button-go-private-room"
               >
-                💬 Chat
+                💬 Vibrapp
               </Button>
             )}
             <button onClick={() => { setIntroTarget(null); sessionStorage.removeItem("vibrapp_intro_target"); }} className="text-white/30 hover:text-white/60 ml-1" data-testid="button-dismiss-intro">
@@ -1218,8 +1227,13 @@ export default function Vibrapp() {
               <button
                 key={msg.id}
                 onClick={() => {
-                  if (msg.replied && msg.privateRoomId) {
-                    setLocation(`/private-room/${msg.privateRoomId}`);
+                  if (msg.replied) {
+                    openDmPanel({
+                      id: msg.toProfile.id,
+                      name: msg.toProfile.name,
+                      age: msg.toProfile.age,
+                      imageUrl: msg.toProfile.imageUrl || "",
+                    });
                   }
                 }}
                 className="flex flex-col items-center gap-1 shrink-0"
@@ -1898,7 +1912,7 @@ export default function Vibrapp() {
                   </p>
                 </div>
               )}
-              <p className="text-white/50 text-xs mb-2">La tua risposta apre una chat privata 🔐</p>
+              <p className="text-white/50 text-xs mb-2">La tua risposta continua la conversazione su Vibrapp 💬</p>
               <textarea
                 ref={replyInputRef}
                 className="w-full bg-[#1f2937] text-white text-sm rounded-xl p-3 resize-none outline-none border border-white/10 focus:border-purple-500/50 mb-4"
@@ -2027,12 +2041,12 @@ export default function Vibrapp() {
                     Chiudi
                   </Button>
                   <Button
-                    className="flex-1 bg-purple-600 hover:bg-purple-500 text-white"
+                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white"
                     disabled={replyText.trim().length < 5 || replyColdMsgMutation.isPending}
                     onClick={() => replyColdMsgMutation.mutate({ id: selectedColdMsg.id, content: replyText })}
                     data-testid="button-confirm-cold-reply"
                   >
-                    {replyColdMsgMutation.isPending ? "Apertura..." : "🔐 Apri chat privata"}
+                    {replyColdMsgMutation.isPending ? "Invio..." : "💬 Rispondi su Vibrapp"}
                   </Button>
                 </div>
               )}

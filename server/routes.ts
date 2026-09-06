@@ -4816,7 +4816,7 @@ REGOLE:
       if (msg.replied) return res.status(400).json({ error: "Già risposto" });
       // The sender may have deleted their account or blocked the recipient
       // after the reply panel was opened. Re-check reachability immediately
-      // before creating the private room.
+      // before creating the Vibrapp DM.
       const senderProfile = await storage.getProfile(msg.fromProfileId);
       if (!senderProfile) {
         return res.status(403).json({
@@ -4832,9 +4832,9 @@ REGOLE:
         });
       }
 
-      let privateRoomId: string;
+      let vibrappDm: any;
       try {
-        ({ privateRoomId } = await storage.replyColdMessage(req.params.id, content.trim().substring(0, 500)));
+        ({ vibrappDm } = await storage.replyColdMessage(req.params.id, content.trim().substring(0, 500)));
       } catch (err: any) {
         // Keep the HTTP contract stable if either reachability check changes
         // between the route validation and the storage operation.
@@ -4852,14 +4852,27 @@ REGOLE:
         }
         throw err;
       }
+
+      const dmMsg = {
+        id: vibrappDm.id,
+        fromProfileId: vibrappDm.fromProfileId,
+        toProfileId: vibrappDm.toProfileId,
+        content: vibrappDm.content,
+        readAt: vibrappDm.readAt,
+        createdAt: vibrappDm.createdAt,
+        senderName: myProfile.name,
+        senderImage: myProfile.imageUrl,
+      };
+      io.to(`user:${msg.fromProfileId}`).emit("vibrapp:dm-message", dmMsg);
+      io.to(`user:${myProfile.id}`).emit("vibrapp:dm-sent", dmMsg);
       sendPushToProfile(msg.fromProfileId, {
         title: `🛸 ${myProfile.name} ha risposto!`,
-        body: "La conversazione privata è ora aperta 🎉",
+        body: "Ha risposto su Vibrapp 💬",
         icon: "/icons/icon-192.png",
-        url: `/private-room/${privateRoomId}`,
-        type: "vibrapp",
+        url: `/vibrapp?dm=${myProfile.id}`,
+        type: "vibrapp-dm",
       });
-      res.json({ privateRoomId });
+      res.json({ dm: dmMsg, privateRoomId: null });
     } catch (err) {
       console.error("[cold-messages reply]", err);
       res.status(500).json({ error: "Errore" });

@@ -921,15 +921,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         apiRequest("POST", "/api/cold-messages", vars),
       onSuccess: (_data: any, vars: any) => {
         // A real person can already have an older cold message with this
-        // profile pair. Do not echo a new unsaved message or reuse its old
-        // reply; continue in the private room that already exists instead.
+        // profile pair. Continue in the dedicated Vibrapp DM instead of
+        // sending the user into the separate private-room area.
         if (!isBotProfile && _data?.status === "already_replied") {
-          const privateRoomId = _data?.coldMessage?.privateRoomId;
-          if (privateRoomId) {
-            navigate(`/private-room/${privateRoomId}`);
-          } else {
-            toast({ title: "Conversazione già aperta", description: "Apri la chat privata per continuare." });
-          }
+          navigate(`/vibrapp?dm=${encodeURIComponent(profile.id)}`);
           setVibText("");
           return;
         }
@@ -1330,10 +1325,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     {/* Vibrapp */}
                     <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => {
                         e.stopPropagation(); e.preventDefault();
-                        const laa = (profile as any).lastActiveAt;
-                        setVibBotOnline(!!laa && (Date.now() - new Date(laa).getTime()) / 60000 < 60);
-                        setVibShowTyping(false);
-                        setShowVibCompose(true);
+                        navigate(`/vibrapp?dm=${encodeURIComponent(profile.id)}`);
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-vibrapp-${profile.id}`}>
                       <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">👽</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Vibrapp</span>

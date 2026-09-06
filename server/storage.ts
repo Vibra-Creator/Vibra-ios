@@ -1320,7 +1320,7 @@ export class DatabaseStorage implements IStorage {
     return msg ?? null;
   }
 
-  async replyColdMessage(messageId: string, replyContent: string): Promise<{ privateRoomId: string }> {
+  async replyColdMessage(messageId: string, replyContent: string): Promise<{ vibrappDm: VibrappDm }> {
     const [msg] = await db.select().from(coldMessages).where(eq(coldMessages.id, messageId)).limit(1);
     if (!msg) throw new Error("Cold message not found");
 
@@ -1334,44 +1334,28 @@ export class DatabaseStorage implements IStorage {
       throw Object.assign(new Error("Sender has blocked the recipient"), { code: "sender_blocked" });
     }
 
-    const [room] = await db.insert(privateRooms).values({
-      ownerId: msg.toProfileId,
-      name: `${toProfile[0].name} & ${fromProfile[0].name}`,
-      description: "Conversazione privata",
-      isActive: true,
-    }).returning();
-
-    await db.insert(privateRoomRequests).values({
-      roomId: room.id,
-      requesterId: msg.fromProfileId,
-      status: "approved",
-    });
-
-    // Inserisci il messaggio originale dell'utente nella room
+    // A cold message is only the introduction/notification layer. Once the
+    // recipient answers, both messages belong to the WhatsApp-style Vibrapp
+    // DM thread, never to a private room.
     if (msg.content?.trim()) {
-      await db.insert(privateRoomMessages).values({
-        roomId: room.id,
-        senderId: fromProfile[0].id,
-        senderName: fromProfile[0].name,
-        senderImage: fromProfile[0].imageUrl,
+      await db.insert(vibrappDms).values({
+        fromProfileId: fromProfile[0].id,
+        toProfileId: toProfile[0].id,
         content: msg.content,
       });
     }
 
-    // Inserisci la risposta nella room
-    await db.insert(privateRoomMessages).values({
-      roomId: room.id,
-      senderId: toProfile[0].id,
-      senderName: toProfile[0].name,
-      senderImage: toProfile[0].imageUrl,
+    const [replyDm] = await db.insert(vibrappDms).values({
+      fromProfileId: toProfile[0].id,
+      toProfileId: fromProfile[0].id,
       content: replyContent,
-    });
+    }).returning();
 
     await db.update(coldMessages)
-      .set({ replied: true, replyContent, privateRoomId: room.id })
+      .set({ replied: true, replyContent, privateRoomId: null })
       .where(eq(coldMessages.id, messageId));
 
-    return { privateRoomId: room.id };
+    return { vibrappDm: replyDm };
   }
 
   async getSentColdMessages(fromProfileId: string): Promise<Array<{
