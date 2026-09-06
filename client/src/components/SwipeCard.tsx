@@ -615,6 +615,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const vibMediaRecorderRef = useRef<MediaRecorder | null>(null);
     const vibAudioChunksRef = useRef<Blob[]>([]);
     const vibTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const isBotProfile = profile.isBot === true;
 
     // Scorro sempre in fondo quando arrivano nuovi messaggi
     useEffect(() => {
@@ -623,7 +624,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
     // Polling per risposta bot (cold message check → prima risposta)
     useEffect(() => {
-      if (!vibSent || vibReply !== null) return;
+      if (!isBotProfile || !vibSent || vibReply !== null) return;
       const poll = async () => {
         try {
           const res = await fetch(`/api/cold-messages/check/${profile.id}`, { credentials: "include" });
@@ -645,7 +646,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       };
       vibPollRef.current = setInterval(poll, 5000);
       return () => { if (vibPollRef.current) clearInterval(vibPollRef.current); };
-    }, [vibSent, vibReply, profile.id]);
+    }, [isBotProfile, vibSent, vibReply, profile.id]);
 
     // Polling messaggi della private room (conversazione continuata)
     useEffect(() => {
@@ -919,10 +920,33 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
       mutationFn: (vars: { toProfileId: string; content: string; mediaUrl?: string; mediaType?: string }) =>
         apiRequest("POST", "/api/cold-messages", vars),
       onSuccess: (_data: any, vars: any) => {
+        // A real person can already have an older cold message with this
+        // profile pair. Do not echo a new unsaved message or reuse its old
+        // reply; continue in the private room that already exists instead.
+        if (!isBotProfile && _data?.status === "already_replied") {
+          const privateRoomId = _data?.coldMessage?.privateRoomId;
+          if (privateRoomId) {
+            navigate(`/private-room/${privateRoomId}`);
+          } else {
+            toast({ title: "Conversazione già aperta", description: "Apri la chat privata per continuare." });
+          }
+          setVibText("");
+          return;
+        }
+
         setVibSentContent(vars.content || "");
         setVibSent(true);
         setVibText("");
         vibClearAudio();
+
+        // A real profile receives the message as a normal cold message.
+        // Never simulate bot presence/typing or poll a legacy bot reply for it.
+        if (!isBotProfile) {
+          const laa = (profile as any).lastActiveAt;
+          setVibBotOnline(!!laa && (Date.now() - new Date(laa).getTime()) / 60000 < 60);
+          setVibShowTyping(false);
+          return;
+        }
 
         // Se il bot era già online (lastActiveAt < 60 min) i puntini arrivano prima
         const laa = (profile as any).lastActiveAt;
@@ -1307,7 +1331,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => {
                         e.stopPropagation(); e.preventDefault();
                         const laa = (profile as any).lastActiveAt;
-                        if (laa && (Date.now() - new Date(laa).getTime()) / 60000 < 60) { setVibBotOnline(true); setVibShowTyping(false); }
+                        setVibBotOnline(!!laa && (Date.now() - new Date(laa).getTime()) / 60000 < 60);
+                        setVibShowTyping(false);
                         setShowVibCompose(true);
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-vibrapp-${profile.id}`}>
                       <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">👽</span>
