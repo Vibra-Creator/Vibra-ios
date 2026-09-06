@@ -16,6 +16,16 @@ import { db } from "./db.js";
 import { sql } from "drizzle-orm";
 
 export async function runMigrations(): Promise<void> {
+  // Real profiles are linked to an auth account. Legacy schema defaulted is_bot
+  // to true, which could make a real recipient trigger automated bot replies.
+  await db.execute(sql`ALTER TABLE profiles ALTER COLUMN is_bot SET DEFAULT FALSE`);
+  await db.execute(sql`
+    UPDATE profiles
+    SET is_bot = FALSE
+    WHERE user_id IS NOT NULL
+      AND is_bot IS DISTINCT FROM FALSE
+  `);
+
   // ── reports table extra columns ───────────────────────────────────────────
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_id VARCHAR`);
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);

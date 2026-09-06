@@ -42,6 +42,7 @@ import {
   markColdMessageCleanupStarted,
   markColdMessageCleanupSucceeded,
 } from "./cold-message-cleanup";
+import { shouldAutoReplyToDirectMessage } from "./vibrapp-dm-policy";
 
 const OFFENSIVE_WORDS = [
   "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
@@ -2742,7 +2743,7 @@ ${urlEntries}
       });
 
       const otherProfile = await storage.getProfile(otherProfileId);
-      if (otherProfile && otherProfile.isBot) {
+      if (shouldAutoReplyToDirectMessage(otherProfile)) {
         // Delay realistico basato su lastActiveAt del bot
         const { readDelayMs } = getBotDelay(otherProfile);
         (async () => {
@@ -3349,7 +3350,9 @@ REGOLE:
       // Bot auto-reply in private room: find bot member and reply with a natural delay
       try {
         const roomMembers = await storage.getPrivateRoomMembers(req.params.id);
-        const botMember = roomMembers.find((m: any) => m.isBot && m.id !== userProfile.id);
+        const botMember = roomMembers.find((m: any) =>
+          m.id !== userProfile.id && shouldAutoReplyToDirectMessage(m)
+        );
         if (botMember) {
           const prMessages = await storage.getPrivateRoomMessages(req.params.id);
           const chatHistory = prMessages.map((m: any) => ({ senderId: m.senderId, content: m.content }));
@@ -4216,6 +4219,7 @@ REGOLE:
   });
 
   const vibrappOnlineUsers = new Map<string, Set<string>>();
+  const vibrappForegroundUsers = new Map<string, Set<string>>();
   const vibrappUserProfiles = new Map<string, { name: string; image: string | null }>();
   const vibrappTypingUsers = new Map<string, { name: string; timeout: NodeJS.Timeout }>();
 
@@ -4242,6 +4246,22 @@ REGOLE:
     vibrappOnlineUsers.get(profileId)!.add(socket.id);
     vibrappUserProfiles.set(profileId, { name: userProfile.name, image: userProfile.imageUrl });
     io.emit("vibrapp:online-count", vibrappOnlineUsers.size);
+
+    socket.on("vibrapp:visibility", (data: { visible?: boolean }) => {
+      const visible = data?.visible === true;
+      if (visible) {
+        if (!vibrappForegroundUsers.has(profileId)) {
+          vibrappForegroundUsers.set(profileId, new Set());
+        }
+        vibrappForegroundUsers.get(profileId)!.add(socket.id);
+      } else {
+        const foregroundSockets = vibrappForegroundUsers.get(profileId);
+        foregroundSockets?.delete(socket.id);
+        if (foregroundSockets?.size === 0) {
+          vibrappForegroundUsers.delete(profileId);
+        }
+      }
+    });
 
     socket.on("vibrapp:message", async (data: {
       content?: string;
@@ -4419,6 +4439,9 @@ REGOLE:
         const content = data.content.trim().substring(0, 1000);
         if (!content) return;
 
+        const dmTarget = await storage.getProfile(data.toProfileId);
+        if (!dmTarget) return;
+
         const dm = await storage.sendVibrappDm(profileId, data.toProfileId, content);
 
         const dmMsg = {
@@ -4435,8 +4458,8 @@ REGOLE:
         io.to(`user:${profileId}`).emit("vibrapp:dm-sent", dmMsg);
         io.to(`user:${data.toProfileId}`).emit("vibrapp:dm-message", dmMsg);
 
-        const isOnline = vibrappOnlineUsers.has(data.toProfileId);
-        if (!isOnline) {
+        const isForeground = (vibrappForegroundUsers.get(data.toProfileId)?.size ?? 0) > 0;
+        if (!isForeground) {
           sendPushToProfile(data.toProfileId, {
             title: `💬 ${userProfile.name}`,
             body: content.substring(0, 100),
@@ -4447,8 +4470,7 @@ REGOLE:
         }
 
         // ── Bot auto-reply per DM diretti ────────────────────────────────
-        const dmTarget = await storage.getProfile(data.toProfileId);
-        if (dmTarget && dmTarget.isBot) {
+        if (shouldAutoReplyToDirectMessage(dmTarget)) {
           (async () => {
             try {
               const { readDelayMs } = getBotDelay(dmTarget);
@@ -4506,6 +4528,11 @@ REGOLE:
         }
       }
       vibrappTypingUsers.delete(profileId);
+      const foregroundSockets = vibrappForegroundUsers.get(profileId);
+      foregroundSockets?.delete(socket.id);
+      if (foregroundSockets?.size === 0) {
+        vibrappForegroundUsers.delete(profileId);
+      }
       io.emit("vibrapp:online-count", vibrappOnlineUsers.size);
     });
   });
@@ -4615,7 +4642,7 @@ REGOLE:
           });
 
           // Se il destinatario è un bot: risposta proporzionale alla lunghezza del testo
-          if (targetProfile.isBot && result.coldMessage) {
+          if (shouldAutoReplyToDirectMessage(targetProfile) && result.coldMessage) {
             const coldMsgId = result.coldMessage.id;
             // Delay realistico basato su lastActiveAt del bot
             (async () => {
@@ -4916,6 +4943,9 @@ REGOLE:
       const trimmed = content.trim().substring(0, 1000);
       if (!trimmed) return res.status(400).json({ error: "Messaggio vuoto" });
 
+      const targetProfile = await storage.getProfile(toProfileId);
+      if (!targetProfile) return res.status(404).json({ error: "Destinatario non trovato" });
+
       const dm = await storage.sendVibrappDm(myProfile.id, toProfileId, trimmed);
 
       const dmMsg = {
@@ -4932,8 +4962,8 @@ REGOLE:
       io.to(`user:${myProfile.id}`).emit("vibrapp:dm-sent", dmMsg);
       io.to(`user:${toProfileId}`).emit("vibrapp:dm-message", dmMsg);
 
-      const isOnline = vibrappOnlineUsers.has(toProfileId);
-      if (!isOnline) {
+      const isForeground = (vibrappForegroundUsers.get(toProfileId)?.size ?? 0) > 0;
+      if (!isForeground) {
         sendPushToProfile(toProfileId, {
           title: `💬 ${myProfile.name}`,
           body: trimmed.substring(0, 100),

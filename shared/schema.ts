@@ -15,7 +15,7 @@ export const profiles = pgTable("profiles", {
   location: text("location").default("").notNull(),
   interests: text("interests").array().default(sql`'{}'::text[]`).notNull(),
   alienType: text("alien_type").notNull(),
-  isBot: boolean("is_bot").default(true),
+  isBot: boolean("is_bot").default(false),
   isVerified: boolean("is_verified").default(false),
   
   // Nuovi campi profilo estesi

@@ -83,9 +83,17 @@ export function VibrappSocketProvider({
     }
     socketRef.current = socket;
 
-    socket.on("connect", () => setSocketConnected(true));
+    const syncVisibility = () => {
+      socket.emit("vibrapp:visibility", { visible: document.visibilityState === "visible" });
+    };
+
+    socket.on("connect", () => {
+      setSocketConnected(true);
+      syncVisibility();
+    });
     socket.on("disconnect", () => setSocketConnected(false));
     socket.on("vibrapp:online-count", (count: number) => setOnlineCount(count));
+    document.addEventListener("visibilitychange", syncVisibility);
 
     socket.on("vibrapp:dm-message", (msg: DmMessage) => {
       if (!msg || typeof msg !== "object") return;
@@ -112,6 +120,7 @@ export function VibrappSocketProvider({
 
     return () => {
       socket.disconnect();
+      document.removeEventListener("visibilitychange", syncVisibility);
       socketRef.current = null;
       setSocketConnected(false);
       if (dmBannerTimerRef.current) clearTimeout(dmBannerTimerRef.current);

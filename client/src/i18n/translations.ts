@@ -1094,7 +1094,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "push.success": "Notifiche attivate!",
     "push.successDesc": "Riceverai avvisi per messaggi privati e risposte in Vibrapp.",
     "push.promptTitle": "Non perdere i tuoi messaggi",
-    "push.promptDescription": "Attiva le notifiche per ricevere avvisi quando qualcuno ti scrive o risponde.",
+    "push.promptDescription": "Attiva le notifiche per ricevere avvisi quando qualcuno ti scrive o risponde, anche con l'app chiusa.",
     "push.dismiss": "Non ora",
   },
 
@@ -2190,7 +2190,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "push.success": "Notifications enabled!",
     "push.successDesc": "You'll receive alerts for private messages and Vibrapp replies.",
     "push.promptTitle": "Don't miss your messages",
-    "push.promptDescription": "Enable notifications to get alerts when someone messages or replies to you.",
+    "push.promptDescription": "Enable notifications to get alerts when someone messages or replies to you, even when the app is closed.",
     "push.dismiss": "Not now",
   },
 
@@ -3286,7 +3286,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "push.success": "¡Notificaciones activadas!",
     "push.successDesc": "Recibirás alertas por mensajes privados y respuestas en Vibrapp.",
     "push.promptTitle": "No te pierdas tus mensajes",
-    "push.promptDescription": "Activa las notificaciones para recibir avisos cuando alguien te escriba o responda.",
+    "push.promptDescription": "Activa las notificaciones para recibir avisos cuando alguien te escriba o responda, incluso con la app cerrada.",
     "push.dismiss": "Ahora no",
   },
 };
