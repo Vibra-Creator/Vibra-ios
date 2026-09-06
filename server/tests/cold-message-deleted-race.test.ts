@@ -55,12 +55,14 @@ async function createTestProfile(label: string): Promise<string> {
   return row.id;
 }
 
-async function startRouteTestServer(recipientUserId: string): Promise<HttpServer> {
+async function startRouteTestServer(recipientUserId?: string): Promise<HttpServer> {
   const app = express();
-  app.use((req: any, _res, next) => {
-    req.user = { claims: { sub: recipientUserId } };
-    next();
-  });
+  if (recipientUserId) {
+    app.use((req: any, _res, next) => {
+      req.user = { claims: { sub: recipientUserId } };
+      next();
+    });
+  }
   app.get("/api/cold-messages/:id", getColdMessageByIdHandler);
 
   const server = createServer(app);
@@ -279,6 +281,27 @@ describe("Cold-message deletion race condition", () => {
 });
 
 describe("GET /api/cold-messages/:id sender reachability", () => {
+  test("returns 401 without an authenticated user and no message payload", async () => {
+    const sender = await createTestProfile("http_sender_unauthenticated");
+    const recipient = await createTestProfile("http_recipient_unauthenticated");
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "private content");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    const server = await startRouteTestServer();
+    try {
+      const response = await getColdMessageOverHttp(server, coldMessage.id);
+      assert.equal(response.statusCode, 401);
+      assert.deepEqual(response.body, { error: "Non autenticato" });
+      assert.equal(response.body.id, undefined);
+      assert.equal(response.body.content, undefined);
+      assert.equal(response.body.otherProfile, undefined);
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
   test("returns 200 for a recipient when the sender still exists and has not blocked them", async () => {
     const recipientUserId = `__test_http_recipient_${RUN_ID}`;
     const sender = await createTestProfile("http_sender_happy");
