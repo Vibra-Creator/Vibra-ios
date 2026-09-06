@@ -56,6 +56,43 @@ const OFFENSIVE_WORDS = [
 
 const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
+type AdminUserLookup = (userId: string) => Promise<Pick<NonNullable<Awaited<ReturnType<typeof storage.getUser>>>, "isAdmin" | "email"> | undefined>;
+type AdminPromotion = (userId: string) => Promise<void>;
+
+export function createAdminAuthorizationMiddleware(
+  getUser: AdminUserLookup = (userId) => storage.getUser(userId),
+  promoteUser: AdminPromotion = async (userId) => {
+    await db.update(users).set({ isAdmin: true }).where(eq(users.id, userId));
+  },
+) {
+  return async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await getUser(userId);
+      if (!user) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      if (!user.isAdmin && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+        await promoteUser(userId);
+        user.isAdmin = true;
+      }
+
+      if (!user.isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      return next();
+    } catch (error) {
+      return res.status(500).json({ error: "Server error" });
+    }
+  };
+}
+
 function filterOffensiveContent(text: string): string {
   let filtered = text;
   for (const word of OFFENSIVE_WORDS) {
@@ -1747,32 +1784,7 @@ ${urlEntries}
     }
   });
 
-  const isAdmin = async (req: any, res: any, next: any) => {
-    try {
-      const userId = req.user?.claims?.sub;
-      if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-
-      if (!user.isAdmin && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-        await db.update(users).set({ isAdmin: true }).where(eq(users.id, userId));
-        user.isAdmin = true;
-      }
-
-      if (!user.isAdmin) {
-        return res.status(403).json({ error: "Admin access required" });
-      }
-      
-      next();
-    } catch (error) {
-      res.status(500).json({ error: "Server error" });
-    }
-  };
+  const isAdmin = createAdminAuthorizationMiddleware();
 
   app.get("/api/admin/report-cleanup/status", isAuthenticated, isAdmin, async (_req: any, res) => {
     try {

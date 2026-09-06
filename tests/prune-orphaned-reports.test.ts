@@ -30,6 +30,7 @@ import {
   markReportCleanupSucceeded,
   shouldNotifyReportCleanupFailure,
 } from "../server/report-cleanup";
+import { createAdminAuthorizationMiddleware } from "../server/routes";
 import { storage } from "../server/storage";
 import { reports, profiles, users } from "../shared/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -122,6 +123,80 @@ const IS_PRODUCTION =
   process.env.REPLIT_DEPLOYMENT === "1" ||
   process.env.REPLIT_DEPLOYMENT === "true";
 
+type ResponseFixture = {
+  statusCode: number | null;
+  body: unknown;
+  status: (code: number) => ResponseFixture;
+  json: (payload: unknown) => ResponseFixture;
+};
+
+function createResponseFixture(): ResponseFixture {
+  const response: ResponseFixture = {
+    statusCode: null,
+    body: undefined,
+    status(code) {
+      response.statusCode = code;
+      return response;
+    },
+    json(payload) {
+      response.body = payload;
+      return response;
+    },
+  };
+  return response;
+}
+
+async function testCleanupStatusAuthorization() {
+  const usersById = new Map([
+    ["member-1", { isAdmin: false, email: "member@example.test" }],
+    ["admin-1", { isAdmin: true, email: "admin@example.test" }],
+  ]);
+  const isAdmin = createAdminAuthorizationMiddleware(
+    async (userId) => usersById.get(userId),
+    async () => {
+      throw new Error("the isolated fixture must not attempt a database write");
+    },
+  );
+  const statusPayload = buildReportCleanupStatusResponse(
+    markReportCleanupSucceeded(
+      markReportCleanupStarted(createReportCleanupState(), "2026-09-05T10:00:00.000Z"),
+      0,
+      "2026-09-05T10:00:01.000Z",
+    ),
+    0,
+    Date.parse("2026-09-05T10:05:00.000Z"),
+  );
+
+  async function runAuthorization(userId?: string, onAuthorized?: (response: ResponseFixture) => void) {
+    const response = createResponseFixture();
+    let reachedStatusHandler = false;
+    await isAdmin(
+      userId ? { user: { claims: { sub: userId } } } : {},
+      response,
+      () => {
+        reachedStatusHandler = true;
+        onAuthorized?.(response);
+      },
+    );
+    return { response, reachedStatusHandler };
+  }
+
+  const unauthenticated = await runAuthorization();
+  assert.equal(unauthenticated.response.statusCode, 401);
+  assert.equal(unauthenticated.reachedStatusHandler, false);
+
+  const nonAdmin = await runAuthorization("member-1");
+  assert.equal(nonAdmin.response.statusCode, 403);
+  assert.equal(nonAdmin.reachedStatusHandler, false);
+
+  const admin = await runAuthorization("admin-1", (response) => response.json(statusPayload));
+  assert.equal(admin.response.statusCode, null);
+  assert.equal(admin.reachedStatusHandler, true);
+  assert.deepEqual(admin.response.body, statusPayload);
+  assert.equal(statusPayload.healthy, true);
+  console.log("✓ cleanup status rejects unauthenticated and non-admin requests and allows admins through to the status payload");
+}
+
 function testCleanupMonitoring() {
   const startedAt = "2026-09-05T10:00:00.000Z";
   const completedAt = "2026-09-05T10:00:01.000Z";
@@ -211,6 +286,7 @@ async function ensureReportColumns() {
 
 async function main() {
   console.log("\nprune-orphaned-reports integration tests\n");
+  await testCleanupStatusAuthorization();
   testCleanupMonitoring();
 
   if (!RUN_DATABASE_INTEGRATION) {
