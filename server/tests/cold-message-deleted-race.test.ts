@@ -301,6 +301,28 @@ describe("GET /api/cold-messages/:id sender reachability", () => {
     }
   });
 
+  test("returns 200 for the sender and includes the recipient profile", async () => {
+    const senderUserId = `__test_http_sender_${RUN_ID}`;
+    const sender = await createTestProfile("http_sender_own_message");
+    const recipient = await createTestProfile("http_recipient_own_message");
+    await db.update(profiles).set({ userId: senderUserId }).where(eq(profiles.id, sender));
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "my sent message");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    const server = await startRouteTestServer(senderUserId);
+    try {
+      const response = await getColdMessageOverHttp(server, coldMessage.id);
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.id, coldMessage.id);
+      assert.equal(response.body.isSentByMe, true);
+      assert.equal(response.body.otherProfile.id, recipient);
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
   test("returns 404 with message_deleted and no message body after deletion", async () => {
     const recipientUserId = `__test_http_recipient_message_deleted_${RUN_ID}`;
     const sender = await createTestProfile("http_sender_message_deleted");
