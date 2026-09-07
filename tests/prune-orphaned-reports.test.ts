@@ -28,6 +28,7 @@ import {
   markReportCleanupNotificationSent,
   markReportCleanupStarted,
   markReportCleanupSucceeded,
+  restoreReportCleanupAlertState,
   shouldNotifyReportCleanupFailure,
 } from "../server/report-cleanup";
 import { createAdminAuthorizationMiddleware } from "../server/routes";
@@ -252,6 +253,19 @@ function testCleanupMonitoring() {
     "a recent notification should be rate limited",
   );
 
+  const restoredState = restoreReportCleanupAlertState(createReportCleanupState(), {
+    consecutiveFailures: state.consecutiveFailures,
+    lastNotificationAt: state.lastNotificationAt,
+    lastError: state.lastError,
+  });
+  assert.equal(restoredState.status, "failure");
+  assert.equal(restoredState.consecutiveFailures, 2);
+  assert.equal(
+    shouldNotifyReportCleanupFailure(restoredState, now),
+    false,
+    "a restarted app should retain the notification cooldown",
+  );
+
   state = markReportCleanupStarted(state, "2026-09-05T14:00:00.000Z");
   state = markReportCleanupSucceeded(state, 0, "2026-09-05T14:00:01.000Z");
   assert.equal(state.lastNotificationAt, null, "success should clear the alert condition");
@@ -282,6 +296,52 @@ async function ensureReportColumns() {
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_user_id VARCHAR`);
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_email TEXT`);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS report_cleanup_alert_state (
+      id VARCHAR PRIMARY KEY,
+      consecutive_failures INTEGER NOT NULL DEFAULT 0,
+      last_notification_at TIMESTAMP,
+      last_error TEXT
+    )
+  `);
+}
+
+async function testPersistedCleanupAlertState() {
+  const notifiedAt = new Date("2026-09-05T13:00:01.000Z");
+  await storage.saveReportCleanupAlertState({
+    consecutiveFailures: 2,
+    lastNotificationAt: notifiedAt,
+    lastError: "database unavailable",
+  });
+
+  const persisted = await storage.getReportCleanupAlertState();
+  assert.ok(persisted);
+  assert.equal(persisted.consecutiveFailures, 2);
+  assert.equal(persisted.lastNotificationAt?.toISOString(), notifiedAt.toISOString());
+  assert.equal(persisted.lastError, "database unavailable");
+
+  const restored = restoreReportCleanupAlertState(createReportCleanupState(), {
+    consecutiveFailures: persisted.consecutiveFailures,
+    lastNotificationAt: persisted.lastNotificationAt?.toISOString() ?? null,
+    lastError: persisted.lastError,
+  });
+  assert.equal(
+    shouldNotifyReportCleanupFailure(restored, Date.parse("2026-09-05T13:05:00.000Z")),
+    false,
+    "persisted alert timestamp should keep a restarted app within the cooldown",
+  );
+
+  await storage.saveReportCleanupAlertState({
+    consecutiveFailures: 0,
+    lastNotificationAt: null,
+    lastError: null,
+  });
+  const cleared = await storage.getReportCleanupAlertState();
+  assert.ok(cleared);
+  assert.equal(cleared.consecutiveFailures, 0);
+  assert.equal(cleared.lastNotificationAt, null);
+  assert.equal(cleared.lastError, null);
+  console.log("✓ cleanup alert streak and notification cooldown persist and clear in storage");
 }
 
 async function main() {
@@ -298,6 +358,7 @@ async function main() {
   }
 
   await ensureReportColumns();
+  await testPersistedCleanupAlertState();
 
   // ── Case 1: old orphaned report with NO surviving userId profile → deleted ──
   {

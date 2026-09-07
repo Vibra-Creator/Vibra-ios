@@ -32,6 +32,7 @@ import {
   markReportCleanupNotificationSent,
   markReportCleanupStarted,
   markReportCleanupSucceeded,
+  restoreReportCleanupAlertState,
   shouldNotifyReportCleanupFailure,
 } from "./report-cleanup";
 import {
@@ -420,6 +421,15 @@ export async function registerRoutes(
   let reportCleanupStatus = createReportCleanupState();
   let coldMessageCleanupStatus = createColdMessageCleanupState();
 
+  async function persistReportCleanupAlertState() {
+    const lastNotificationAt = reportCleanupStatus.lastNotificationAt;
+    await storage.saveReportCleanupAlertState({
+      consecutiveFailures: reportCleanupStatus.consecutiveFailures,
+      lastNotificationAt: lastNotificationAt ? new Date(lastNotificationAt) : null,
+      lastError: reportCleanupStatus.lastError,
+    });
+  }
+
   async function notifyAdminsOfReportCleanupFailure() {
     if (!shouldNotifyReportCleanupFailure(reportCleanupStatus)) {
       return;
@@ -466,6 +476,7 @@ export async function registerRoutes(
 
       if (result.sent > 0) {
         reportCleanupStatus = markReportCleanupNotificationSent(reportCleanupStatus);
+        await persistReportCleanupAlertState();
         console.warn(
           `[report-cleanup] failure alert sent=${result.sent} failed=${result.failed} ` +
           `consecutiveFailures=${failureStreak}`,
@@ -594,7 +605,20 @@ ${urlEntries}
   setInterval(cleanExpiredRoomMembers, 30 * 60 * 1000);
 
   // ─── Run schema migrations (idempotent) ──────────────────────────────────
-  runMigrations().catch((e) => console.error("[migrate] migration error:", e));
+  try {
+    await runMigrations();
+    const persistedReportCleanupState = await storage.getReportCleanupAlertState();
+    if (persistedReportCleanupState) {
+      reportCleanupStatus = restoreReportCleanupAlertState(reportCleanupStatus, {
+        consecutiveFailures: persistedReportCleanupState.consecutiveFailures,
+        lastNotificationAt: persistedReportCleanupState.lastNotificationAt?.toISOString() ?? null,
+        lastError: persistedReportCleanupState.lastError,
+      });
+    }
+  } catch (e) {
+    console.error("[migrate] migration error:", e);
+    throw e;
+  }
 
   async function cleanOldVibrappMessages() {
     try {
@@ -623,6 +647,11 @@ ${urlEntries}
       const deleted = await storage.pruneOrphanedReports(REPORT_CLEANUP_TTL_DAYS);
       const completedAt = new Date().toISOString();
       reportCleanupStatus = markReportCleanupSucceeded(reportCleanupStatus, deleted, completedAt);
+      try {
+        await persistReportCleanupAlertState();
+      } catch (stateError) {
+        console.error("[report-cleanup] alert state reset persistence failed:", stateError);
+      }
       console.log(
         `[report-cleanup] status=success deleted=${deleted} ttlDays=${REPORT_CLEANUP_TTL_DAYS} ` +
         `attemptedAt=${attemptAt} completedAt=${completedAt}`
@@ -630,6 +659,11 @@ ${urlEntries}
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       reportCleanupStatus = markReportCleanupFailed(reportCleanupStatus, e);
+      try {
+        await persistReportCleanupAlertState();
+      } catch (stateError) {
+        console.error("[report-cleanup] alert state persistence failed:", stateError);
+      }
       console.error(
         `[report-cleanup] status=failure ttlDays=${REPORT_CLEANUP_TTL_DAYS} ` +
         `attemptedAt=${attemptAt} consecutiveFailures=${reportCleanupStatus.consecutiveFailures} ` +

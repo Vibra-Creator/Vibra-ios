@@ -13,6 +13,12 @@ export type ReportCleanupState = {
   lastNotificationAt: string | null;
 };
 
+export type PersistedReportCleanupAlertState = {
+  consecutiveFailures: number;
+  lastNotificationAt: string | null;
+  lastError: string | null;
+};
+
 export function createReportCleanupState(): ReportCleanupState {
   return {
     lastAttemptAt: null,
@@ -22,6 +28,19 @@ export function createReportCleanupState(): ReportCleanupState {
     consecutiveFailures: 0,
     lastError: null,
     lastNotificationAt: null,
+  };
+}
+
+export function restoreReportCleanupAlertState(
+  state: ReportCleanupState,
+  persisted: PersistedReportCleanupAlertState,
+): ReportCleanupState {
+  return {
+    ...state,
+    status: persisted.consecutiveFailures > 0 ? "failure" : state.status,
+    consecutiveFailures: persisted.consecutiveFailures,
+    lastError: persisted.lastError,
+    lastNotificationAt: persisted.lastNotificationAt,
   };
 }
 

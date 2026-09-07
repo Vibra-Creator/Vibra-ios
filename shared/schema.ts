@@ -249,6 +249,13 @@ export const reports = pgTable("reports", {
   resolvedAt: timestamp("resolved_at"),
 });
 
+export const reportCleanupAlertState = pgTable("report_cleanup_alert_state", {
+  id: varchar("id").primaryKey(),
+  consecutiveFailures: integer("consecutive_failures").default(0).notNull(),
+  lastNotificationAt: timestamp("last_notification_at"),
+  lastError: text("last_error"),
+});
+
 // Utenti bloccati/sospesi
 export const userSuspensions = pgTable("user_suspensions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -291,6 +298,7 @@ export type VirtualGift = typeof virtualGifts.$inferSelect;
 export type SentGift = typeof sentGifts.$inferSelect;
 
 export type Report = typeof reports.$inferSelect;
+export type ReportCleanupAlertState = typeof reportCleanupAlertState.$inferSelect;
 export type UserSuspension = typeof userSuspensions.$inferSelect;
 export type BannedWord = typeof bannedWords.$inferSelect;
 

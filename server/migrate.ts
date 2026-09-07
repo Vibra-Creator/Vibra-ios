@@ -76,6 +76,18 @@ export async function runMigrations(): Promise<void> {
   // email (even under a new auth provider / userId) can still be matched.
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_email TEXT`);
 
+  // ── report cleanup alert state ────────────────────────────────────────────
+  // Keep the failure streak and successful notification timestamp across
+  // application restarts so an ongoing incident remains rate-limited.
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS report_cleanup_alert_state (
+      id VARCHAR PRIMARY KEY,
+      consecutive_failures INTEGER NOT NULL DEFAULT 0,
+      last_notification_at TIMESTAMP,
+      last_error TEXT
+    )
+  `);
+
   // Backfill reportedUserId for pre-existing reports whose reported profile still exists
   await db.execute(sql`
     UPDATE reports r

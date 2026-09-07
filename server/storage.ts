@@ -7,7 +7,7 @@ import {
   type Room, type RoomMessage, type PrivateRoom, type PrivateRoomRequest, type PrivateRoomMessage,
   type DailyChallenge, type ChallengeSubmission,
   type VirtualGift, type SentGift,
-  type Report, type UserSuspension, type BannedWord,
+  type Report, type ReportCleanupAlertState, type UserSuspension, type BannedWord,
   type ProfileRating,
   type VibingSession,
   type BlockedUser,
@@ -22,6 +22,7 @@ import {
   dailyChallenges, challengeSubmissions,
   virtualGifts, sentGifts,
   reports, userSuspensions, bannedWords,
+  reportCleanupAlertState,
   profileRatings,
   vibingSessions,
   profileFavorites,
@@ -126,6 +127,12 @@ export interface IStorage {
   pruneOrphanedReports(olderThanDays: number): Promise<number>;
   /** Returns the number of orphaned reports eligible for pruning. */
   countOrphanedReports(olderThanDays: number): Promise<number>;
+  getReportCleanupAlertState(): Promise<ReportCleanupAlertState | undefined>;
+  saveReportCleanupAlertState(state: {
+    consecutiveFailures: number;
+    lastNotificationAt: Date | null;
+    lastError: string | null;
+  }): Promise<void>;
   
   // Suspensions
   suspendUser(data: { userId: string; reason: string; expiresAt?: Date; isPermanent?: boolean }): Promise<UserSuspension>;
@@ -916,6 +923,38 @@ export class DatabaseStorage implements IStorage {
         )
     `);
     return Number((result as any).rows?.[0]?.count ?? 0);
+  }
+
+  async getReportCleanupAlertState(): Promise<ReportCleanupAlertState | undefined> {
+    const [state] = await db
+      .select()
+      .from(reportCleanupAlertState)
+      .where(eq(reportCleanupAlertState.id, "default"))
+      .limit(1);
+    return state;
+  }
+
+  async saveReportCleanupAlertState(state: {
+    consecutiveFailures: number;
+    lastNotificationAt: Date | null;
+    lastError: string | null;
+  }): Promise<void> {
+    await db
+      .insert(reportCleanupAlertState)
+      .values({
+        id: "default",
+        consecutiveFailures: state.consecutiveFailures,
+        lastNotificationAt: state.lastNotificationAt,
+        lastError: state.lastError,
+      })
+      .onConflictDoUpdate({
+        target: reportCleanupAlertState.id,
+        set: {
+          consecutiveFailures: state.consecutiveFailures,
+          lastNotificationAt: state.lastNotificationAt,
+          lastError: state.lastError,
+        },
+      });
   }
 
   // Suspensions
