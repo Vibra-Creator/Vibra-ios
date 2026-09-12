@@ -40,6 +40,7 @@ self.addEventListener('push', (event) => {
     const isVibrapp = data.type === 'vibrapp';
     const isVibrappReply = data.type === 'vibrapp-reply';
     const isVibrappDm = data.type === 'vibrapp-dm';
+    const isProfileVisit = data.type === 'profile-visit';
     const isVibrappLike = isVibrapp || isVibrappReply || isVibrappDm;
     const title = data.title || 'Vibra';
 
@@ -61,13 +62,13 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: data.icon || '/favicon.png',
       badge: '/favicon.png',
-      vibrate: isVibrappLike
+      vibrate: isVibrappLike || isProfileVisit
         ? [100, 50, 100, 50, 300, 100, 100, 50, 100]
         : [200, 100, 200, 100, 200],
       data: { url: data.url || '/', type: data.type },
       tag: notifTag,
       renotify: true,
-      requireInteraction: isVibrappLike,
+      requireInteraction: isVibrappLike || isProfileVisit,
       silent: false,
     };
 

@@ -33,13 +33,13 @@ export function usePushNotifications() {
       } catch {
         setPermission("default");
       }
-      checkExistingSubscription().then(() => {
+      checkExistingSubscription().then((hasSubscription) => {
         // Auto-subscribe only if already granted — never call requestPermission() here:
         // iOS 16.4+ (and stricter on iOS 26) requires a direct user-gesture call stack
         // for requestPermission(); calling it from a Promise chain throws TypeError and
         // can crash the app at launch.
         try {
-          if (Notification.permission === "granted" && !localStorage.getItem("vibra-push-decision-made")) {
+          if (Notification.permission === "granted" && !hasSubscription) {
             attemptAutoSubscribe();
           }
         } catch {
@@ -55,8 +55,10 @@ export function usePushNotifications() {
       // Only subscribe if permission is already granted.
       // Never call requestPermission() here — it requires a user gesture on iOS 16.4+/26.
       if (Notification.permission === "granted") {
-        await performSubscribe();
-        localStorage.setItem("vibra-push-decision-made", "true");
+        const result = await performSubscribe();
+        if (result) {
+          localStorage.setItem("vibra-push-decision-made", "true");
+        }
       }
     } catch (err) {
       console.error("[push] auto-subscribe error:", err);
@@ -67,8 +69,11 @@ export function usePushNotifications() {
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
-      setIsSubscribed(!!sub);
+      const hasSubscription = !!sub;
+      setIsSubscribed(hasSubscription);
+      return hasSubscription;
     } catch {}
+    return false;
   }, []);
 
   const performSubscribe = useCallback(async () => {

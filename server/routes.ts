@@ -6624,7 +6624,7 @@ Rispondi SOLO con questo JSON (nessun altro testo):
           viewedId,
         });
 
-        sendPushToProfile(viewedId, {
+        await sendPushToProfile(viewedId, {
           title: `👀 Qualcuno ha visitato il tuo profilo`,
           body: `${viewer.name}, ${viewer.age} anni da ${viewer.location || "Italia"} ha visitato il tuo profilo`,
           icon: viewer.imageUrl || "/icons/icon-192.png",
