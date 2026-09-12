@@ -34,6 +34,7 @@ import {
   markReportCleanupSucceeded,
   restoreReportCleanupAlertState,
   shouldNotifyReportCleanupFailure,
+  type ReportCleanupState,
 } from "./report-cleanup";
 import {
   COLD_MESSAGE_CLEANUP_TTL_DAYS,
@@ -59,6 +60,112 @@ const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
 type AdminUserLookup = (userId: string) => Promise<Pick<NonNullable<Awaited<ReturnType<typeof storage.getUser>>>, "isAdmin" | "email"> | undefined>;
 type AdminPromotion = (userId: string) => Promise<void>;
+type ReportCleanupAdminUser = {
+  email?: string | null;
+  isAdmin?: boolean | null;
+};
+type ReportCleanupEmailRecipient = {
+  email: string;
+  name: string;
+};
+type ReportCleanupBulkEmailSender = (
+  recipients: ReportCleanupEmailRecipient[],
+  subject: string,
+  htmlBody: string,
+) => Promise<{ sent: number; failed: number }>;
+
+export type ReportCleanupFailureNotifierDependencies = {
+  getAllUsers: () => Promise<ReportCleanupAdminUser[]>;
+  sendBulkCustomEmails: ReportCleanupBulkEmailSender;
+  persistState: (state: ReportCleanupState) => Promise<void>;
+  now?: () => string;
+};
+
+/**
+ * Builds the cleanup alert sender used by the daily scheduler.
+ *
+ * Keeping recipient discovery and the Gmail boundary injectable makes this
+ * operational path testable without connecting to Gmail or waiting on the
+ * scheduler interval.
+ */
+export function createReportCleanupFailureNotifier(
+  dependencies: ReportCleanupFailureNotifierDependencies,
+) {
+  return async (
+    state: ReportCleanupState,
+  ): Promise<ReportCleanupState> => {
+    const notificationTimestamp = dependencies.now?.() ?? new Date().toISOString();
+    const notificationTime = Date.parse(notificationTimestamp);
+    if (!shouldNotifyReportCleanupFailure(
+      state,
+      Number.isFinite(notificationTime) ? notificationTime : Date.now(),
+    )) {
+      return state;
+    }
+
+    try {
+      const adminUsers = await dependencies.getAllUsers();
+      const recipientEmails = Array.from(new Set(
+        adminUsers
+          .filter((user) =>
+            Boolean(user.email) &&
+            (Boolean(user.isAdmin) || ADMIN_EMAILS.includes(user.email!.toLowerCase()))
+          )
+          .map((user) => user.email!.trim().toLowerCase())
+          .filter((email) => email && !email.endsWith("@vibra.com")),
+      ));
+
+      if (recipientEmails.length === 0) {
+        console.warn("[report-cleanup] failure alert skipped: no admin email recipients");
+        return state;
+      }
+
+      const failureStreak = state.consecutiveFailures;
+      const lastError = state.lastError || "Unknown cleanup error";
+      const safeError = lastError
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+      const subject = `[Vibra] Orphaned report cleanup failed ${failureStreak} times`;
+      const htmlBody = `
+        <h2>Orphaned report cleanup requires attention</h2>
+        <p>The scheduled cleanup has failed <strong>${failureStreak} consecutive times</strong>.</p>
+        <p><strong>Last observed error:</strong> ${safeError}</p>
+        <p>Check the admin cleanup status endpoint and deployment logs for more details.</p>
+      `;
+
+      const result = await dependencies.sendBulkCustomEmails(
+        recipientEmails.map((email) => ({ email, name: "Vibra admin" })),
+        subject,
+        htmlBody,
+      );
+
+      if (result.sent > 0) {
+        const notifiedState = markReportCleanupNotificationSent(
+          state,
+          notificationTimestamp,
+        );
+        try {
+          await dependencies.persistState(notifiedState);
+        } catch (stateError) {
+          console.error("[report-cleanup] alert state persistence failed:", stateError);
+        }
+        console.warn(
+          `[report-cleanup] failure alert sent=${result.sent} failed=${result.failed} ` +
+          `consecutiveFailures=${failureStreak}`,
+        );
+        return notifiedState;
+      }
+
+      console.error("[report-cleanup] failure alert could not be sent to any admin");
+    } catch (notificationError) {
+      console.error("[report-cleanup] failure alert error:", notificationError);
+    }
+
+    return state;
+  };
+}
 
 export function createAdminAuthorizationMiddleware(
   getUser: AdminUserLookup = (userId) => storage.getUser(userId),
@@ -430,64 +537,17 @@ export async function registerRoutes(
     });
   }
 
-  async function notifyAdminsOfReportCleanupFailure() {
-    if (!shouldNotifyReportCleanupFailure(reportCleanupStatus)) {
-      return;
-    }
-
-    try {
-      const adminUsers = await storage.getAllUsers();
-      const recipientEmails = Array.from(new Set(
-        adminUsers
-          .filter((user) =>
-            Boolean(user.email) &&
-            (Boolean(user.isAdmin) || ADMIN_EMAILS.includes(user.email!.toLowerCase()))
-          )
-          .map((user) => user.email!.trim().toLowerCase())
-          .filter((email) => email && !email.endsWith("@vibra.com")),
-      ));
-
-      if (recipientEmails.length === 0) {
-        console.warn("[report-cleanup] failure alert skipped: no admin email recipients");
-        return;
-      }
-
+  const notifyAdminsOfReportCleanupFailure = createReportCleanupFailureNotifier({
+    getAllUsers: () => storage.getAllUsers(),
+    sendBulkCustomEmails: async (recipients, subject, htmlBody) => {
       const { sendBulkCustomEmails } = await import("./gmail");
-      const failureStreak = reportCleanupStatus.consecutiveFailures;
-      const lastError = reportCleanupStatus.lastError || "Unknown cleanup error";
-      const safeError = lastError
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-      const subject = `[Vibra] Orphaned report cleanup failed ${failureStreak} times`;
-      const htmlBody = `
-        <h2>Orphaned report cleanup requires attention</h2>
-        <p>The scheduled cleanup has failed <strong>${failureStreak} consecutive times</strong>.</p>
-        <p><strong>Last observed error:</strong> ${safeError}</p>
-        <p>Check the admin cleanup status endpoint and deployment logs for more details.</p>
-      `;
-
-      const result = await sendBulkCustomEmails(
-        recipientEmails.map((email) => ({ email, name: "Vibra admin" })),
-        subject,
-        htmlBody,
-      );
-
-      if (result.sent > 0) {
-        reportCleanupStatus = markReportCleanupNotificationSent(reportCleanupStatus);
-        await persistReportCleanupAlertState();
-        console.warn(
-          `[report-cleanup] failure alert sent=${result.sent} failed=${result.failed} ` +
-          `consecutiveFailures=${failureStreak}`,
-        );
-      } else {
-        console.error("[report-cleanup] failure alert could not be sent to any admin");
-      }
-    } catch (notificationError) {
-      console.error("[report-cleanup] failure alert error:", notificationError);
-    }
-  }
+      return sendBulkCustomEmails(recipients, subject, htmlBody);
+    },
+    persistState: async (state) => {
+      reportCleanupStatus = state;
+      await persistReportCleanupAlertState();
+    },
+  });
 
   app.get("/sw.js", (req, res, next) => {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -670,7 +730,7 @@ ${urlEntries}
         `error=${errorMessage}`,
         e
       );
-      await notifyAdminsOfReportCleanupFailure();
+      reportCleanupStatus = await notifyAdminsOfReportCleanupFailure(reportCleanupStatus);
     }
   }
   pruneOrphanedReports();

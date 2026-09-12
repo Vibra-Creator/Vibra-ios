@@ -31,7 +31,10 @@ import {
   restoreReportCleanupAlertState,
   shouldNotifyReportCleanupFailure,
 } from "../server/report-cleanup";
-import { createAdminAuthorizationMiddleware } from "../server/routes";
+import {
+  createAdminAuthorizationMiddleware,
+  createReportCleanupFailureNotifier,
+} from "../server/routes";
 import { storage } from "../server/storage";
 import { reports, profiles, users } from "../shared/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -289,6 +292,101 @@ function testCleanupMonitoring() {
   console.log("✓ cleanup monitoring reports zero deletions, deletion counts, failures, stale runs, and backlog-query failures");
 }
 
+async function testCleanupFailureAlertWiring() {
+  const sentAlerts: Array<{
+    recipients: Array<{ email: string; name: string }>;
+    subject: string;
+    htmlBody: string;
+  }> = [];
+  const persistedStates: Array<{
+    consecutiveFailures: number;
+    lastNotificationAt: string | null;
+    lastError: string | null;
+  }> = [];
+  const notifier = createReportCleanupFailureNotifier({
+    getAllUsers: async () => [
+      { email: "Admin@Example.test", isAdmin: true },
+      { email: "famax61@gmail.com", isAdmin: false },
+      { email: "member@example.test", isAdmin: false },
+      { email: "internal@vibra.com", isAdmin: true },
+      { email: "admin@example.test", isAdmin: true },
+      { email: "admin@example.test", isAdmin: true },
+    ],
+    sendBulkCustomEmails: async (recipients, subject, htmlBody) => {
+      sentAlerts.push({ recipients, subject, htmlBody });
+      return { sent: recipients.length, failed: 0 };
+    },
+    persistState: async (state) => {
+      persistedStates.push({
+        consecutiveFailures: state.consecutiveFailures,
+        lastNotificationAt: state.lastNotificationAt,
+        lastError: state.lastError,
+      });
+    },
+    now: () => "2026-09-05T13:00:01.000Z",
+  });
+
+  let state = createReportCleanupState();
+  state = markReportCleanupFailed(state, new Error("database <unavailable> & retry later"));
+  state = markReportCleanupFailed(state, new Error("database <unavailable> & retry later"));
+  state = await notifier(state);
+
+  assert.equal(sentAlerts.length, 1, "the alert should cross the bulk-email seam once");
+  assert.deepEqual(
+    sentAlerts[0].recipients,
+    [
+      { email: "admin@example.test", name: "Vibra admin" },
+      { email: "famax61@gmail.com", name: "Vibra admin" },
+    ],
+    "only unique external admins and allowlisted admin emails should receive the alert",
+  );
+  assert.equal(sentAlerts[0].subject, "[Vibra] Orphaned report cleanup failed 2 times");
+  assert.match(sentAlerts[0].htmlBody, /failed <strong>2 consecutive times<\/strong>/);
+  assert.match(sentAlerts[0].htmlBody, /database &lt;unavailable&gt; &amp; retry later/);
+  assert.equal(state.lastNotificationAt, "2026-09-05T13:00:01.000Z");
+  assert.deepEqual(persistedStates, [{
+    consecutiveFailures: 2,
+    lastNotificationAt: "2026-09-05T13:00:01.000Z",
+    lastError: "database <unavailable> & retry later",
+  }]);
+  console.log("✓ repeated cleanup failures discover admins and send one alert with the streak and escaped last error");
+}
+
+async function testCleanupFailureAlertCooldownAndRecovery() {
+  let now = "2026-09-05T13:00:01.000Z";
+  const sentSubjects: string[] = [];
+  const notifier = createReportCleanupFailureNotifier({
+    getAllUsers: async () => [{ email: "admin@example.test", isAdmin: true }],
+    sendBulkCustomEmails: async (_recipients, subject) => {
+      sentSubjects.push(subject);
+      return { sent: 1, failed: 0 };
+    },
+    persistState: async () => {},
+    now: () => now,
+  });
+
+  let state = createReportCleanupState();
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  state = await notifier(state);
+  state = await notifier(state);
+  assert.equal(sentSubjects.length, 1, "the cooldown should prevent a duplicate alert");
+
+  state = markReportCleanupSucceeded(
+    markReportCleanupStarted(state, "2026-09-05T14:00:00.000Z"),
+    0,
+    "2026-09-05T14:00:01.000Z",
+  );
+  now = "2026-09-06T14:00:01.000Z";
+  state = markReportCleanupFailed(state, new Error("database unavailable again"));
+  state = markReportCleanupFailed(state, new Error("database unavailable again"));
+  state = await notifier(state);
+
+  assert.equal(sentSubjects.length, 2, "a later failure streak after recovery should create a new incident alert");
+  assert.equal(sentSubjects[1], "[Vibra] Orphaned report cleanup failed 2 times");
+  console.log("✓ cleanup alert cooldown suppresses duplicates and recovery permits a new incident alert");
+}
+
 /** Ensure the columns added by the runtime migration in routes.ts exist before
  *  the test tries to read/write the reports table. */
 async function ensureReportColumns() {
@@ -348,6 +446,8 @@ async function main() {
   console.log("\nprune-orphaned-reports integration tests\n");
   await testCleanupStatusAuthorization();
   testCleanupMonitoring();
+  await testCleanupFailureAlertWiring();
+  await testCleanupFailureAlertCooldownAndRecovery();
 
   if (!RUN_DATABASE_INTEGRATION) {
     console.log("Skipping database mutation cases (set RUN_REPORT_CLEANUP_DB_TESTS=true to opt in).\n");
