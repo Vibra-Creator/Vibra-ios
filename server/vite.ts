@@ -5,6 +5,11 @@ import viteConfig from "../vite.config";
 import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
+import { storage } from "./storage";
+import {
+  renderLandingVideoSeoHtml,
+  renderPublicProfileSeoHtml,
+} from "./public-profile-seo";
 
 const viteLogger = createLogger();
 
@@ -59,7 +64,31 @@ export async function setupVite(server: Server, app: Express) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
-      const page = await vite.transformIndexHtml(url, template);
+      let page = await vite.transformIndexHtml(url, template);
+      const requestPath = url.split("?")[0]?.split("#")[0] || "/";
+      const isAuthenticated = Boolean((req as any).user || (req as any).session?.userId);
+      if ((requestPath === "/" || requestPath === "/landing") && !isAuthenticated) {
+        page = renderLandingVideoSeoHtml(
+          page,
+          requestPath === "/landing" ? "/landing" : "/",
+        );
+      } else if (requestPath.startsWith("/p/")) {
+        const profileId = decodeURIComponent(requestPath.slice("/p/".length));
+        if (profileId && !profileId.includes("/")) {
+          const profile = await storage.getProfile(profileId);
+          if (profile) {
+            page = renderPublicProfileSeoHtml(page, {
+              id: profile.id,
+              name: profile.name,
+              age: profile.age,
+              imageUrl: profile.imageUrl,
+              location: profile.location,
+              alienType: profile.alienType,
+              profileVideoUrl: profile.profileVideoUrl,
+            });
+          }
+        }
+      }
       res.status(200).set({
         "Content-Type": "text/html",
         "X-Robots-Tag": "index, follow",

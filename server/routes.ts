@@ -45,6 +45,10 @@ import {
   markColdMessageCleanupSucceeded,
 } from "./cold-message-cleanup";
 import { shouldAutoReplyToDirectMessage } from "./vibrapp-dm-policy";
+import {
+  renderLandingVideoSeoHtml,
+  renderPublicProfileSeoHtml,
+} from "./public-profile-seo";
 
 const OFFENSIVE_WORDS = [
   "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
@@ -5781,6 +5785,62 @@ REGOLE:
     } catch (err) {
       console.error("Badge error:", err);
       res.status(500).send("Error generating badge");
+    }
+  });
+
+  app.get(["/", "/landing"], async (req: any, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+
+    try {
+      const htmlPath = process.env.NODE_ENV === "production"
+        ? path.resolve(process.cwd(), "dist/public/index.html")
+        : path.resolve(process.cwd(), "client/index.html");
+      const template = await fs.promises.readFile(htmlPath, "utf8");
+      const isAuthenticated = Boolean(req.user || req.session?.userId);
+      const canonicalPath = req.path === "/landing" ? "/landing" : "/";
+      const html = isAuthenticated
+        ? template
+        : renderLandingVideoSeoHtml(template, canonicalPath);
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("X-Robots-Tag", "index, follow");
+      res.setHeader(
+        "Cache-Control",
+        isAuthenticated ? "private, no-cache" : "public, max-age=60",
+      );
+      return res.status(200).send(html);
+    } catch (error) {
+      return next(error);
+    }
+  });
+
+  app.get("/p/:profileId", async (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+
+    try {
+      const profile = await storage.getProfile(req.params.profileId);
+      if (!profile) return res.status(404).send("Profilo non trovato");
+
+      const htmlPath = process.env.NODE_ENV === "production"
+        ? path.resolve(process.cwd(), "dist/public/index.html")
+        : path.resolve(process.cwd(), "client/index.html");
+      const template = await fs.promises.readFile(htmlPath, "utf8");
+      const html = renderPublicProfileSeoHtml(template, {
+        id: profile.id,
+        name: profile.name,
+        age: profile.age,
+        imageUrl: profile.imageUrl,
+        location: profile.location,
+        alienType: profile.alienType,
+        profileVideoUrl: profile.profileVideoUrl,
+      });
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("X-Robots-Tag", "index, follow");
+      res.setHeader("Cache-Control", "public, max-age=60");
+      return res.status(200).send(html);
+    } catch (error) {
+      return next(error);
     }
   });
 

@@ -130,6 +130,7 @@ export default function Landing() {
           playsInline
           webkit-playsinline=""
           preload="auto"
+          poster="/images/vibra-landing-video-thumbnail.jpg"
           className={`w-full h-full object-cover ${videoPlaying ? 'opacity-100' : 'opacity-0'}`}
           style={{ transition: 'opacity 0.5s ease-in' }}
           data-testid="video-landing-background"

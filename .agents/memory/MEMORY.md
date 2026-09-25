@@ -6,3 +6,4 @@
 - [Freeze Dating Section](freeze-dating-section.md) — rimuovere temporaneamente la sezione dating dall'UI per superare Apple 4.3(b); da fare tra ~2 giorni, attendere conferma esplicita
 - [iOS launch validation](ios-launch-validation.md) — la conferma su dispositivi iOS e la revisione dei crash log richiedono strumenti Apple esterni a questo workspace
 - [Playwright browser setup](playwright-browser-setup.md) — il setup può fallire sull’installazione delle dipendenze di sistema anche dopo aver installato il browser
+- [Public video SEO](video-indexing.md) — Google needs an absolute thumbnail in initial HTML on routes that visibly contain video; never guess upload dates.
