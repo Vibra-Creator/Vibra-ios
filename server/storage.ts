@@ -7,7 +7,7 @@ import {
   type Room, type RoomMessage, type PrivateRoom, type PrivateRoomRequest, type PrivateRoomMessage,
   type DailyChallenge, type ChallengeSubmission,
   type VirtualGift, type SentGift,
-  type Report, type ReportCleanupAlertState, type UserSuspension, type BannedWord,
+  type Report, type ReportCleanupAlertState, type ColdMessageCleanupStateRecord, type UserSuspension, type BannedWord,
   type ProfileRating,
   type VibingSession,
   type BlockedUser,
@@ -22,7 +22,7 @@ import {
   dailyChallenges, challengeSubmissions,
   virtualGifts, sentGifts,
   reports, userSuspensions, bannedWords,
-  reportCleanupAlertState,
+  reportCleanupAlertState, coldMessageCleanupState,
   profileRatings,
   vibingSessions,
   profileFavorites,
@@ -131,6 +131,15 @@ export interface IStorage {
   saveReportCleanupAlertState(state: {
     consecutiveFailures: number;
     lastNotificationAt: Date | null;
+    lastError: string | null;
+  }): Promise<void>;
+  getColdMessageCleanupState(): Promise<ColdMessageCleanupStateRecord | undefined>;
+  saveColdMessageCleanupState(state: {
+    lastAttemptAt: Date | null;
+    lastSuccessAt: Date | null;
+    status: string;
+    lastDeletedCount: number | null;
+    consecutiveFailures: number;
     lastError: string | null;
   }): Promise<void>;
   
@@ -952,6 +961,47 @@ export class DatabaseStorage implements IStorage {
         set: {
           consecutiveFailures: state.consecutiveFailures,
           lastNotificationAt: state.lastNotificationAt,
+          lastError: state.lastError,
+        },
+      });
+  }
+
+  async getColdMessageCleanupState(): Promise<ColdMessageCleanupStateRecord | undefined> {
+    const [state] = await db
+      .select()
+      .from(coldMessageCleanupState)
+      .where(eq(coldMessageCleanupState.id, "default"))
+      .limit(1);
+    return state;
+  }
+
+  async saveColdMessageCleanupState(state: {
+    lastAttemptAt: Date | null;
+    lastSuccessAt: Date | null;
+    status: string;
+    lastDeletedCount: number | null;
+    consecutiveFailures: number;
+    lastError: string | null;
+  }): Promise<void> {
+    await db
+      .insert(coldMessageCleanupState)
+      .values({
+        id: "default",
+        lastAttemptAt: state.lastAttemptAt,
+        lastSuccessAt: state.lastSuccessAt,
+        status: state.status,
+        lastDeletedCount: state.lastDeletedCount,
+        consecutiveFailures: state.consecutiveFailures,
+        lastError: state.lastError,
+      })
+      .onConflictDoUpdate({
+        target: coldMessageCleanupState.id,
+        set: {
+          lastAttemptAt: state.lastAttemptAt,
+          lastSuccessAt: state.lastSuccessAt,
+          status: state.status,
+          lastDeletedCount: state.lastDeletedCount,
+          consecutiveFailures: state.consecutiveFailures,
           lastError: state.lastError,
         },
       });

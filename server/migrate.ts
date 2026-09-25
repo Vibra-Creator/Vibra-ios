@@ -88,6 +88,20 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
+  // Keep the latest cold-message cleanup result visible across application
+  // restarts so an ongoing failure streak is not hidden by a deployment.
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS cold_message_cleanup_state (
+      id VARCHAR PRIMARY KEY,
+      last_attempt_at TIMESTAMP,
+      last_success_at TIMESTAMP,
+      status TEXT NOT NULL DEFAULT 'never',
+      last_deleted_count INTEGER,
+      consecutive_failures INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT
+    )
+  `);
+
   // Backfill reportedUserId for pre-existing reports whose reported profile still exists
   await db.execute(sql`
     UPDATE reports r

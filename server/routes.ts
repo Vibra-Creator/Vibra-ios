@@ -43,6 +43,8 @@ import {
   markColdMessageCleanupFailed,
   markColdMessageCleanupStarted,
   markColdMessageCleanupSucceeded,
+  restoreColdMessageCleanupState,
+  type ColdMessageCleanupState,
 } from "./cold-message-cleanup";
 import { shouldAutoReplyToDirectMessage } from "./vibrapp-dm-policy";
 import {
@@ -541,6 +543,25 @@ export async function registerRoutes(
     });
   }
 
+  async function persistColdMessageCleanupStatus() {
+    try {
+      await storage.saveColdMessageCleanupState({
+        lastAttemptAt: coldMessageCleanupStatus.lastAttemptAt
+          ? new Date(coldMessageCleanupStatus.lastAttemptAt)
+          : null,
+        lastSuccessAt: coldMessageCleanupStatus.lastSuccessAt
+          ? new Date(coldMessageCleanupStatus.lastSuccessAt)
+          : null,
+        status: coldMessageCleanupStatus.status,
+        lastDeletedCount: coldMessageCleanupStatus.lastDeletedCount,
+        consecutiveFailures: coldMessageCleanupStatus.consecutiveFailures,
+        lastError: coldMessageCleanupStatus.lastError,
+      });
+    } catch (stateError) {
+      console.error("[cold-message-cleanup] status persistence failed:", stateError);
+    }
+  }
+
   const notifyAdminsOfReportCleanupFailure = createReportCleanupFailureNotifier({
     getAllUsers: () => storage.getAllUsers(),
     sendBulkCustomEmails: async (recipients, subject, htmlBody) => {
@@ -679,6 +700,17 @@ ${urlEntries}
         lastError: persistedReportCleanupState.lastError,
       });
     }
+    const persistedColdMessageCleanupState = await storage.getColdMessageCleanupState();
+    if (persistedColdMessageCleanupState) {
+      coldMessageCleanupStatus = restoreColdMessageCleanupState(coldMessageCleanupStatus, {
+        lastAttemptAt: persistedColdMessageCleanupState.lastAttemptAt?.toISOString() ?? null,
+        lastSuccessAt: persistedColdMessageCleanupState.lastSuccessAt?.toISOString() ?? null,
+        status: persistedColdMessageCleanupState.status as ColdMessageCleanupState["status"],
+        lastDeletedCount: persistedColdMessageCleanupState.lastDeletedCount,
+        consecutiveFailures: persistedColdMessageCleanupState.consecutiveFailures,
+        lastError: persistedColdMessageCleanupState.lastError,
+      });
+    }
   } catch (e) {
     console.error("[migrate] migration error:", e);
     throw e;
@@ -747,6 +779,7 @@ ${urlEntries}
   async function pruneOrphanedColdMessages() {
     const attemptAt = new Date().toISOString();
     coldMessageCleanupStatus = markColdMessageCleanupStarted(coldMessageCleanupStatus, attemptAt);
+    await persistColdMessageCleanupStatus();
     try {
       const deleted = await storage.pruneOrphanedColdMessages(COLD_MESSAGE_CLEANUP_TTL_DAYS);
       const completedAt = new Date().toISOString();
@@ -755,12 +788,14 @@ ${urlEntries}
         deleted,
         completedAt,
       );
+      await persistColdMessageCleanupStatus();
       console.log(
         `[cold-message-cleanup] status=success deleted=${deleted} ` +
         `ttlDays=${COLD_MESSAGE_CLEANUP_TTL_DAYS} attemptedAt=${attemptAt} completedAt=${completedAt}`,
       );
     } catch (e) {
       coldMessageCleanupStatus = markColdMessageCleanupFailed(coldMessageCleanupStatus, e);
+      await persistColdMessageCleanupStatus();
       const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(
         `[cold-message-cleanup] status=failure ttlDays=${COLD_MESSAGE_CLEANUP_TTL_DAYS} ` +

@@ -10,6 +10,8 @@ export type ColdMessageCleanupState = {
   lastError: string | null;
 };
 
+export type PersistedColdMessageCleanupState = ColdMessageCleanupState;
+
 export function createColdMessageCleanupState(): ColdMessageCleanupState {
   return {
     lastAttemptAt: null,
@@ -18,6 +20,16 @@ export function createColdMessageCleanupState(): ColdMessageCleanupState {
     lastDeletedCount: null,
     consecutiveFailures: 0,
     lastError: null,
+  };
+}
+
+export function restoreColdMessageCleanupState(
+  state: ColdMessageCleanupState,
+  persisted: PersistedColdMessageCleanupState,
+): ColdMessageCleanupState {
+  return {
+    ...state,
+    ...persisted,
   };
 }
 

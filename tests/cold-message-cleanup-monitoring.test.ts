@@ -6,6 +6,7 @@ import {
   markColdMessageCleanupFailed,
   markColdMessageCleanupStarted,
   markColdMessageCleanupSucceeded,
+  restoreColdMessageCleanupState,
 } from "../server/cold-message-cleanup";
 
 const now = Date.parse("2026-09-05T10:05:00.000Z");
@@ -48,6 +49,46 @@ state = markColdMessageCleanupStarted(state, "2026-09-05T12:00:00.000Z");
 state = markColdMessageCleanupFailed(state, "connection refused");
 assert.equal(state.consecutiveFailures, 2);
 assert.equal(state.lastError, "connection refused");
+
+const restoredSuccessState = restoreColdMessageCleanupState(
+  createColdMessageCleanupState(),
+  {
+    lastAttemptAt: "2026-09-05T09:00:00.000Z",
+    lastSuccessAt: "2026-09-05T09:00:01.000Z",
+    status: "success",
+    lastDeletedCount: 8,
+    consecutiveFailures: 0,
+    lastError: null,
+  },
+);
+assert.deepEqual(
+  restoredSuccessState,
+  {
+    lastAttemptAt: "2026-09-05T09:00:00.000Z",
+    lastSuccessAt: "2026-09-05T09:00:01.000Z",
+    status: "success",
+    lastDeletedCount: 8,
+    consecutiveFailures: 0,
+    lastError: null,
+  },
+  "a successful cleanup state should be restored after a restart",
+);
+
+const restoredFailureState = restoreColdMessageCleanupState(
+  createColdMessageCleanupState(),
+  {
+    lastAttemptAt: "2026-09-05T09:30:00.000Z",
+    lastSuccessAt: "2026-09-05T09:00:01.000Z",
+    status: "failure",
+    lastDeletedCount: 8,
+    consecutiveFailures: 3,
+    lastError: "database unavailable",
+  },
+);
+assert.equal(restoredFailureState.status, "failure");
+assert.equal(restoredFailureState.lastAttemptAt, "2026-09-05T09:30:00.000Z");
+assert.equal(restoredFailureState.consecutiveFailures, 3);
+assert.equal(restoredFailureState.lastError, "database unavailable");
 
 const staleState = markColdMessageCleanupSucceeded(
   markColdMessageCleanupStarted(

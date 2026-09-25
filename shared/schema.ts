@@ -256,6 +256,16 @@ export const reportCleanupAlertState = pgTable("report_cleanup_alert_state", {
   lastError: text("last_error"),
 });
 
+export const coldMessageCleanupState = pgTable("cold_message_cleanup_state", {
+  id: varchar("id").primaryKey(),
+  lastAttemptAt: timestamp("last_attempt_at"),
+  lastSuccessAt: timestamp("last_success_at"),
+  status: text("status").notNull().default("never"),
+  lastDeletedCount: integer("last_deleted_count"),
+  consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+  lastError: text("last_error"),
+});
+
 // Utenti bloccati/sospesi
 export const userSuspensions = pgTable("user_suspensions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -299,6 +309,7 @@ export type SentGift = typeof sentGifts.$inferSelect;
 
 export type Report = typeof reports.$inferSelect;
 export type ReportCleanupAlertState = typeof reportCleanupAlertState.$inferSelect;
+export type ColdMessageCleanupStateRecord = typeof coldMessageCleanupState.$inferSelect;
 export type UserSuspension = typeof userSuspensions.$inferSelect;
 export type BannedWord = typeof bannedWords.$inferSelect;
 
