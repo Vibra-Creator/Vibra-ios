@@ -18,21 +18,20 @@ export function usePushNotifications() {
   const [autoSubscribeAttempted, setAutoSubscribeAttempted] = useState(false);
 
   useEffect(() => {
-    // Guard: check API availability without relying on property access that may throw on iOS 26
+    // Guard both API availability and permission access; either can throw on restricted iOS contexts.
     let supported = false;
+    let currentPermission: NotificationPermission = "default";
     try {
       supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+      if (supported) {
+        currentPermission = Notification.permission;
+      }
     } catch {
       supported = false;
     }
     setIsSupported(supported);
     if (supported) {
-      try {
-        // Notification.permission access can throw on iOS 26 in restricted contexts
-        setPermission(Notification.permission);
-      } catch {
-        setPermission("default");
-      }
+      setPermission(currentPermission);
       checkExistingSubscription().then((hasSubscription) => {
         // Auto-subscribe only if already granted — never call requestPermission() here:
         // iOS 16.4+ (and stricter on iOS 26) requires a direct user-gesture call stack

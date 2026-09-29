@@ -71,13 +71,14 @@ async function prepareAuthenticatedPage(
   options: {
     supported?: boolean;
     permission?: "default" | "denied";
+    permissionThrows?: boolean;
     storageMode?: "write-fails" | "read-and-write-fail";
   } = {},
 ) {
-  const { supported = true, permission = "default", storageMode } = options;
+  const { supported = true, permission = "default", permissionThrows = false, storageMode } = options;
 
   await page.addInitScript(
-    ({ supported, permission, decisionKey }) => {
+    ({ supported, permission, permissionThrows, decisionKey }) => {
       window.localStorage.setItem("vibra-splash-seen", "1");
 
       const storageMode = new URLSearchParams(window.location.search).get("notificationStorage");
@@ -118,7 +119,17 @@ async function prepareAuthenticatedPage(
         configurable: true,
         value: new Proxy(originalNotification, {
           get(target, property, receiver) {
-            if (property === "permission") return permission;
+            if (property === "permission") {
+              const testWindow = window as typeof window & {
+                __notificationPermissionReads?: number;
+              };
+              testWindow.__notificationPermissionReads =
+                (testWindow.__notificationPermissionReads || 0) + 1;
+              if (permissionThrows) {
+                throw new Error("Notification.permission access failed");
+              }
+              return permission;
+            }
             if (property === "requestPermission") {
               return async () => {
                 (window as typeof window & { __notificationPermissionCalls?: number })
@@ -137,7 +148,7 @@ async function prepareAuthenticatedPage(
         delete (window as typeof window & { PushManager?: unknown }).PushManager;
       }
     },
-    { supported, permission, decisionKey: PUSH_DECISION_KEY },
+    { supported, permission, permissionThrows, decisionKey: PUSH_DECISION_KEY },
   );
   await loginAs(request, credentials);
   await injectSessionCookies(page, request);
@@ -157,6 +168,33 @@ test("notification prompt appears only when supported and undecided", async ({ p
   const unsupportedUser = await registerUser(request, "unsupported");
   await prepareAuthenticatedPage(page, request, unsupportedUser, { supported: false });
   await expect(page.getByTestId("notification-banner")).not.toBeVisible();
+});
+
+test("permission access errors keep the authenticated app usable without showing or requesting the prompt", async ({
+  page,
+  request,
+}) => {
+  const user = await registerUser(request, "permission-error");
+  await prepareAuthenticatedPage(page, request, user, { permissionThrows: true });
+
+  await expect(page.getByTestId("vibra-logo-header")).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionReads?: number })
+          .__notificationPermissionReads || 0,
+      ),
+    )
+    .toBeGreaterThan(0);
+  await expect(page.getByTestId("notification-banner")).not.toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionCalls?: number })
+          .__notificationPermissionCalls || 0,
+      ),
+    )
+    .toBe(0);
 });
 
 test("dismissing the notification prompt persists after reload", async ({ page, request }) => {

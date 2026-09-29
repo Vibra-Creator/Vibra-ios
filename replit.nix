@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.systemd
     pkgs.libdrm
     pkgs.mesa
     pkgs.xorg.libXcomposite
