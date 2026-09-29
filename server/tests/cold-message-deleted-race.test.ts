@@ -346,6 +346,40 @@ describe("GET /api/cold-messages/:id sender reachability", () => {
     }
   });
 
+  test("returns the sent message with a null recipient profile after the recipient account is deleted", async () => {
+    const senderUserId = `__test_http_sender_deleted_recipient_${RUN_ID}`;
+    const recipientUserId = `__test_http_recipient_deleted_profile_${RUN_ID}`;
+    const sender = await createTestProfile("http_sender_deleted_recipient");
+    const recipient = await createTestProfile("http_recipient_deleted_profile");
+    await db.update(profiles).set({ userId: senderUserId }).where(eq(profiles.id, sender));
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "recipient account removed");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    await storage.deleteProfile(recipient);
+    assert.equal(await storage.getProfile(recipient), undefined, "recipient profile must be removed");
+    assert.ok(
+      await storage.getColdMessageById(coldMessage.id),
+      "the sender's message must remain available after recipient profile removal",
+    );
+
+    const server = await startRouteTestServer(senderUserId);
+    try {
+      const response = await getColdMessageOverHttp(server, coldMessage.id);
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.id, coldMessage.id);
+      assert.equal(response.body.fromProfileId, sender);
+      assert.equal(response.body.toProfileId, recipient);
+      assert.equal(response.body.content, "recipient account removed");
+      assert.equal(response.body.isSentByMe, true);
+      assert.equal(response.body.otherProfile, null);
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
   test("returns 404 with message_deleted and no message body after deletion", async () => {
     const recipientUserId = `__test_http_recipient_message_deleted_${RUN_ID}`;
     const sender = await createTestProfile("http_sender_message_deleted");

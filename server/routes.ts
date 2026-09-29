@@ -503,6 +503,8 @@ export async function getColdMessageByIdHandler(req: any, res: any) {
     // Restituisce anche il profilo dell'altra persona
     const otherProfileId = isSentByMe ? msg.toProfileId : msg.fromProfileId;
     const otherProfile = await storage.getProfile(otherProfileId);
+    // A sender can still view their sent message after the recipient deletes
+    // their account; keep the detail response valid and represent that profile as null.
     res.json({
       ...msg,
       otherProfile: otherProfile ? { id: otherProfile.id, name: otherProfile.name, age: otherProfile.age, imageUrl: otherProfile.imageUrl } : null,
