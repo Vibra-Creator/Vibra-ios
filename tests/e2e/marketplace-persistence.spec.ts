@@ -153,6 +153,56 @@ test("authenticated listings and public photos survive a reload", async ({ page,
   }
 });
 
+test.describe("missing Marketplace photo", () => {
+  // The app's service worker can bypass Playwright's route interception.
+  test.use({ serviceWorkers: "block" });
+
+  test("a missing public photo shows an accessible fallback without hiding listing details", async ({ page, request }) => {
+    const user = await registerUser(request, "missing-photo");
+    await loginAs(request, user);
+    const images: string[] = [];
+    for (const file of uploadFiles(3)) {
+      const upload = await request.post("/api/hub-posts/upload-image", {
+        multipart: { images: file },
+      });
+      expect(upload.status(), await upload.text()).toBe(200);
+      images.push(...((await upload.json()) as { urls: string[] }).urls);
+    }
+    expect(images).toHaveLength(3);
+    const title = `Missing photo listing ${RUN_ID}`;
+    const description = "Listing details remain available when a photo is gone.";
+    const publish = await request.post("/api/hub-posts", {
+      data: { category: "marketplace", title, description, price: 42, city: "Roma", imageUrls: images },
+    });
+    expect(publish.status(), await publish.text()).toBe(200);
+    const listings = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{ title: string }>;
+    const listing = listings.find((post) => post.title === title);
+    expect(listing).toBeDefined();
+
+    await injectSessionCookies(page, request);
+    await patchEmailVerified(page);
+    await page.route("**/api/hub-posts?category=marketplace", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([listing]) }),
+    );
+    let intercepted = 0;
+    await page.route((url) => url.pathname === images[0], (route) => {
+      intercepted++;
+      return route.fulfill({ status: 404, body: "Not found" });
+    });
+    await page.goto("/marketplace", { waitUntil: "load" });
+    await expect(page.getByText(title, { exact: true })).toBeVisible({ timeout: 20_000 });
+    const card = page.locator("div.rounded-2xl.overflow-hidden").filter({ has: page.getByText(title, { exact: true }) });
+    await expect(card.getByRole("img", { name: `${title}, foto non disponibile 1` })).toBeVisible();
+    expect(intercepted).toBeGreaterThan(0);
+    await expect(card.locator(`img[alt="${title} 1"]`)).toHaveCount(0);
+    await expect(card.locator(`img[alt^="${title}"]`)).toHaveCount(2);
+    await expect(card.getByText(title, { exact: true })).toBeVisible();
+    await expect(card.getByText(description, { exact: true })).toBeVisible();
+    await expect(card.getByText("€42", { exact: true })).toBeVisible();
+    await expect(card.getByText("Roma", { exact: true })).toBeVisible();
+  });
+});
+
 test("deleting a listing removes only its unreferenced stored photos", async ({ request }) => {
   const otherUser = await registerUser(request, "photo-owner");
   await loginAs(request, otherUser);

@@ -16,6 +16,19 @@ const SUB_COLORS: Record<string, string> = {
   "Casa & Arredo": "#10b981", "Sport": "#84cc16", "Libri": "#a855f7", "Altro": "#6b7280",
 };
 
+function ListingPhoto({ src, title, index, unavailable }: { src: string; title: string; index: number; unavailable: string }) {
+  const [failed, setFailed] = useState(false);
+
+  return failed ? (
+    <div role="img" aria-label={`${title}, ${unavailable.toLowerCase()} ${index}`} className="w-24 h-24 rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 bg-white/10 border border-white/15 text-white/70 text-center px-2">
+      <ImagePlus aria-hidden="true" className="w-5 h-5" />
+      <span aria-hidden="true" className="text-[11px] leading-tight">{unavailable}</span>
+    </div>
+  ) : (
+    <img src={src} alt={`${title} ${index}`} onError={() => setFailed(true)} className="w-24 h-24 rounded-xl object-cover shrink-0" />
+  );
+}
+
 export default function MarketplacePage() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -158,7 +171,7 @@ export default function MarketplacePage() {
                  {postImages.length > 0 && (
                    <div className="flex gap-2 overflow-x-auto px-4 pt-4 scrollbar-hide">
                      {postImages.map((image, imageIndex) => (
-                       <img key={`${post.id}-image-${imageIndex}`} src={image} alt={`${post.title} ${imageIndex + 1}`} className="w-24 h-24 rounded-xl object-cover shrink-0" />
+                        <ListingPhoto key={`${post.id}-image-${imageIndex}-${image}`} src={image} title={post.title} index={imageIndex + 1} unavailable={t("market.photoUnavailable")} />
                      ))}
                    </div>
                  )}
