@@ -324,3 +324,17 @@ html, body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+.avatar-ring-overlay::after {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.dark .avatar-ring-overlay::after {
+  border-color: rgba(255, 255, 255, 0.1);
+}
