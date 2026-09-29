@@ -4,6 +4,11 @@ import { Sparkles, X, Send, ExternalLink, ArrowRight, Loader2, Mic, MicOff } fro
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  getSpeechRecognitionConstructor,
+  type SpeechRecognitionEventLike,
+  type SpeechRecognitionLike,
+} from "@/lib/speechRecognition";
 
 const SUGGESTIONS = [
   "Taxi per l'aeroporto",
@@ -26,27 +31,19 @@ interface AIResult {
 
 type VoiceState = "idle" | "listening" | "processing" | "unsupported";
 
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
-
 function useVoiceInput(onResult: (text: string) => void) {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [interim, setInterim] = useState("");
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  const supported = typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const supported = getSpeechRecognitionConstructor() !== null;
 
   const start = useCallback(() => {
-    if (!supported) { setVoiceState("unsupported"); return; }
+    const Recognition = getSpeechRecognitionConstructor();
+    if (!Recognition) { setVoiceState("unsupported"); return; }
 
     try {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const rec = new SR();
+      const rec = new Recognition();
       rec.lang = "it-IT";
       rec.continuous = false;
       rec.interimResults = true;
@@ -54,7 +51,7 @@ function useVoiceInput(onResult: (text: string) => void) {
 
       rec.onstart = () => { setVoiceState("listening"); setInterim(""); };
 
-      rec.onresult = (e: SpeechRecognitionEvent) => {
+      rec.onresult = (e: SpeechRecognitionEventLike) => {
         let interim = "";
         let final = "";
         for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -80,7 +77,7 @@ function useVoiceInput(onResult: (text: string) => void) {
       setVoiceState("unsupported");
       setInterim("");
     }
-  }, [supported, onResult]);
+  }, [onResult]);
 
   const stop = useCallback(() => {
     try {
@@ -107,8 +104,7 @@ export function VibraAI() {
 
   const search = useMutation({
     mutationFn: async (q: string) => {
-      const res = await apiRequest("POST", "/api/ai-search", { query: q });
-      return res.json() as Promise<AIResult>;
+      return await apiRequest("POST", "/api/ai-search", { query: q }) as AIResult;
     },
     onSuccess: (data) => setResult(data),
     onError: () => setResult({

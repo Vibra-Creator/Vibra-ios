@@ -9,7 +9,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useGuestBlocker } from "@/components/GuestBlocker";
 import { useLanguage } from "@/i18n/LanguageContext";
-import type { Room } from "@shared/schema";
+
+interface RoomCardData {
+  id: string;
+  name: string;
+  interest: string;
+  description: string | null;
+  memberCount?: number;
+}
 
 const ROOM_BANNERS: Record<string, string> = {
   "1": "/images/room-banner-1.jpg",
@@ -39,17 +46,17 @@ export default function Rooms() {
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
   const { t } = useLanguage();
 
-  const { data: rooms, isLoading } = useQuery<Room[]>({
+  const { data: rooms, isLoading } = useQuery<RoomCardData[]>({
     queryKey: ["/api/rooms"],
     enabled: !!user && !isGuest,
   });
 
-  const { data: guestRooms, isLoading: guestLoading } = useQuery<Room[]>({
+  const { data: guestRooms, isLoading: guestLoading } = useQuery<RoomCardData[]>({
     queryKey: ["/api/guest/rooms"],
     enabled: isGuest,
   });
 
-  const defaultRooms = [
+  const defaultRooms: RoomCardData[] = [
     { id: "1", name: t("rooms.room1Name"), interest: t("rooms.room1Name"), description: t("rooms.room1Desc"), memberCount: 0 },
     { id: "2", name: t("rooms.room2Name"), interest: t("rooms.room2Name"), description: t("rooms.room2Desc"), memberCount: 0 },
     { id: "5", name: t("rooms.room5Name"), interest: t("rooms.room5Name"), description: t("rooms.room5Desc"), memberCount: 0 },
@@ -65,7 +72,7 @@ export default function Rooms() {
 
   const roomKeyMap = [1, 2, 5, 6, 7, 8];
 
-  const translateRooms = (items: Room[]): Room[] => {
+  const translateRooms = (items: RoomCardData[]): RoomCardData[] => {
     const translationMap: Record<string, { name: string; description: string | null }> = {};
     roomItNames.forEach((itName, i) => {
       const key = roomKeyMap[i];
@@ -174,7 +181,7 @@ export default function Rooms() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-sm" data-testid={`text-room-members-${room.id}`}>
                         {(() => {
-                          const count = (room as any).memberCount ?? 0;
+            const count = room.memberCount ?? 0;
                           if (count === 0) {
                             return (
                               <Badge variant="secondary" className="bg-amber-500/20 text-amber-300 border-amber-500/30" data-testid={`badge-room-empty-${room.id}`}>

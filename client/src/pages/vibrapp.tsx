@@ -29,6 +29,7 @@ interface VibrappMsg {
 
 const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
 const MAX_VIDEO_DURATION = 12;
+const isLegacyIntroFullscreenEnabled = (): boolean => false;
 
 interface DmTarget { id: string; name: string; age: number; imageUrl: string }
 interface DmMessage { id: string; fromProfileId: string; toProfileId: string; content: string; readAt: string | null; createdAt: string; senderName?: string; senderImage?: string | null }
@@ -47,6 +48,7 @@ interface ReceivedColdMsg {
   mediaUrl: string | null;
   mediaType: string | null;
   replied: boolean;
+  replyContent?: string | null;
   privateRoomId: string | null;
   createdAt: string;
   fromProfile: { id: string; name: string; imageUrl: string; age: number };
@@ -1012,7 +1014,7 @@ export default function Vibrapp() {
   // Vibrapp is the main chat interface
   // Private rooms are separate (not used in Vibrapp flow)
   
-  if (false && introTarget && introTarget.id !== profile?.id) {
+  if (isLegacyIntroFullscreenEnabled() && introTarget && introTarget.id !== profile?.id) {
     if (introColdStatus === "replied" && introPrivateRoomId) {
       return null;
     }
