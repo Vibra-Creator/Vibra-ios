@@ -610,6 +610,50 @@ export async function postColdMessageReplyHandler(
   }
 }
 
+export function registerColdMessageListRoutes(app: Express): void {
+  app.get("/api/cold-messages/pending-count", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.json({ count: 0 });
+      const msgs = await storage.getColdMessagesReceived(myProfile.id);
+      const count = msgs.filter(m => !m.replied).length;
+      res.json({ count });
+    } catch (err) {
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.get("/api/cold-messages/sent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const messages = await storage.getSentColdMessages(myProfile.id);
+      res.json(messages);
+    } catch (err) {
+      console.error("[cold-messages sent]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+
+  app.get("/api/cold-messages/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const myProfile = await storage.getProfileByUserId(userId);
+      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
+      const messages = await storage.getColdMessagesReceived(myProfile.id);
+      res.json(messages);
+    } catch (err) {
+      console.error("[cold-messages received]", err);
+      res.status(500).json({ error: "Errore" });
+    }
+  });
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -5436,47 +5480,7 @@ REGOLE:
     }
   });
 
-  app.get("/api/cold-messages/pending-count", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      if (!userId) return res.status(401).json({ error: "Non autenticato" });
-      const myProfile = await storage.getProfileByUserId(userId);
-      if (!myProfile) return res.json({ count: 0 });
-      const msgs = await storage.getColdMessagesReceived(myProfile.id);
-      const count = msgs.filter(m => !m.replied).length;
-      res.json({ count });
-    } catch (err) {
-      res.status(500).json({ error: "Errore" });
-    }
-  });
-
-  app.get("/api/cold-messages/sent", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      if (!userId) return res.status(401).json({ error: "Non autenticato" });
-      const myProfile = await storage.getProfileByUserId(userId);
-      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
-      const messages = await storage.getSentColdMessages(myProfile.id);
-      res.json(messages);
-    } catch (err) {
-      console.error("[cold-messages sent]", err);
-      res.status(500).json({ error: "Errore" });
-    }
-  });
-
-  app.get("/api/cold-messages/received", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      if (!userId) return res.status(401).json({ error: "Non autenticato" });
-      const myProfile = await storage.getProfileByUserId(userId);
-      if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
-      const messages = await storage.getColdMessagesReceived(myProfile.id);
-      res.json(messages);
-    } catch (err) {
-      console.error("[cold-messages received]", err);
-      res.status(500).json({ error: "Errore" });
-    }
-  });
+  registerColdMessageListRoutes(app);
 
   app.get("/api/cold-messages/check/:toProfileId", isAuthenticated, async (req: any, res) => {
     try {

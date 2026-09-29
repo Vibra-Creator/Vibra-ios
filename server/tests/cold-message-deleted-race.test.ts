@@ -23,7 +23,11 @@ import assert from "node:assert/strict";
 import express from "express";
 import { createServer, request as httpRequest, type Server as HttpServer } from "node:http";
 import { db } from "../db.js";
-import { getColdMessageByIdHandler, postColdMessageReplyHandler } from "../routes.js";
+import {
+  getColdMessageByIdHandler,
+  postColdMessageReplyHandler,
+  registerColdMessageListRoutes,
+} from "../routes.js";
 import { DatabaseStorage } from "../storage.js";
 import { profiles, coldMessages, vibrappDms } from "../../shared/schema.js";
 import { and, eq, inArray } from "drizzle-orm";
@@ -64,6 +68,7 @@ async function startRouteTestServer(recipientUserId?: string): Promise<HttpServe
       next();
     });
   }
+  registerColdMessageListRoutes(app);
   app.get("/api/cold-messages/:id", getColdMessageByIdHandler);
   app.post("/api/cold-messages/:id/reply", (req, res) => postColdMessageReplyHandler(req, res));
 
@@ -76,6 +81,10 @@ async function startRouteTestServer(recipientUserId?: string): Promise<HttpServe
 }
 
 async function getColdMessageOverHttp(server: HttpServer, messageId: string): Promise<{ statusCode: number; body: any }> {
+  return getJsonOverHttp(server, `/api/cold-messages/${encodeURIComponent(messageId)}`);
+}
+
+async function getJsonOverHttp(server: HttpServer, routePath: string): Promise<{ statusCode: number; body: any }> {
   const address = server.address();
   if (!address || typeof address === "string") {
     throw new Error("Route test server is not listening");
@@ -86,7 +95,7 @@ async function getColdMessageOverHttp(server: HttpServer, messageId: string): Pr
       {
         hostname: "127.0.0.1",
         port: address.port,
-        path: `/api/cold-messages/${encodeURIComponent(messageId)}`,
+        path: routePath,
         method: "GET",
         headers: { Accept: "application/json" },
       },
@@ -548,6 +557,42 @@ describe("GET /api/cold-messages/:id sender reachability", () => {
       }
     } finally {
       await storage.unblockUser(sender, recipient);
+    }
+  });
+});
+
+describe("GET /api/cold-messages list authentication", () => {
+  test("returns only the unauthenticated response for pending-count, sent, and received", async () => {
+    const sender = await createTestProfile("http_lists_sender_unauthenticated");
+    const recipient = await createTestProfile("http_lists_recipient_unauthenticated");
+    createdProfileIds.push(sender, recipient);
+
+    const privateContent = `private list message ${RUN_ID}`;
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, privateContent);
+    assert.ok(coldMessage, "sendColdMessage must return the private message used by the test");
+
+    const server = await startRouteTestServer();
+    try {
+      for (const routePath of [
+        "/api/cold-messages/pending-count",
+        "/api/cold-messages/sent",
+        "/api/cold-messages/received",
+      ]) {
+        const response = await getJsonOverHttp(server, routePath);
+        assert.equal(response.statusCode, 401, `${routePath} must reject anonymous requests`);
+        assert.deepEqual(
+          response.body,
+          { message: "Unauthorized" },
+          `${routePath} must return only the authentication middleware's unauthenticated contract`,
+        );
+        assert.equal(
+          JSON.stringify(response.body).includes(privateContent),
+          false,
+          `${routePath} must not expose private message contents`,
+        );
+      }
+    } finally {
+      await closeRouteTestServer(server);
     }
   });
 });
