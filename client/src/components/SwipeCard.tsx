@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useLocation } from "wouter";
 import type { Profile, ProfileVideo } from "@shared/schema";
+import { shouldAutoReplyToDirectMessage } from "@shared/vibrapp-dm-policy";
 
 const SIGNAL_OPTIONS = [
   { icon: "🌌", title: "Pensiero Galattico", description: "La tua vibrazione cosmica ha catturato la mia attenzione." },
@@ -620,7 +621,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const vibMediaRecorderRef = useRef<MediaRecorder | null>(null);
     const vibAudioChunksRef = useRef<Blob[]>([]);
     const vibTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const isBotProfile = profile.isBot === true;
+    const isBotProfile = shouldAutoReplyToDirectMessage(profile);
 
     // Scorro sempre in fondo quando arrivano nuovi messaggi
     useEffect(() => {

@@ -56,7 +56,7 @@ import {
   restoreColdMessageCleanupState,
   type ColdMessageCleanupState,
 } from "./cold-message-cleanup";
-import { shouldAutoReplyToDirectMessage } from "./vibrapp-dm-policy";
+import { getLegacyBotReplyState, shouldAutoReplyToDirectMessage } from "@shared/vibrapp-dm-policy";
 import {
   renderLandingVideoSeoHtml,
   renderPublicProfileSeoHtml,
@@ -5490,14 +5490,13 @@ REGOLE:
       if (!myProfile) return res.status(404).json({ error: "Profilo non trovato" });
       const msg = await storage.getColdMessageBetween(myProfile.id, req.params.toProfileId);
       const targetProfile = await storage.getProfile(req.params.toProfileId);
-      const botReplyEligible = shouldAutoReplyToDirectMessage(targetProfile);
+      const legacyReply = getLegacyBotReplyState(targetProfile, msg);
       res.json({
         id: msg?.id ?? null,
         exists: !!msg,
         // This endpoint is polled by the bot-style composer. Do not expose
         // legacy reply_content from a real person's old cold message.
-        replied: botReplyEligible && (msg?.replied ?? false),
-        replyContent: botReplyEligible ? (msg?.replyContent ?? null) : null,
+        ...legacyReply,
         privateRoomId: msg?.privateRoomId ?? null,
         content: msg?.content ?? null,
         mediaUrl: msg?.mediaUrl ?? null,
