@@ -1018,9 +1018,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActiveSuspension(userId: string): Promise<UserSuspension | undefined> {
-    const [suspension] = await db.select().from(userSuspensions)
-      .where(and(eq(userSuspensions.userId, userId), eq(userSuspensions.isActive, true)));
-    return suspension;
+    const suspensions = await db.select().from(userSuspensions)
+      .where(and(eq(userSuspensions.userId, userId), eq(userSuspensions.isActive, true)))
+      .orderBy(desc(userSuspensions.suspendedAt));
+    const now = Date.now();
+    return suspensions.find((suspension) =>
+      suspension.isPermanent === true
+      || !suspension.expiresAt
+      || suspension.expiresAt.getTime() > now,
+    );
   }
 
   async liftSuspension(id: string): Promise<void> {

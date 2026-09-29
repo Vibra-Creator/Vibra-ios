@@ -25,6 +25,7 @@ export default function LocationMap() {
   const myMarkerRef = useRef<L.Marker | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [watchId, setWatchId] = useState<number | null>(null);
+  const [requestingPosition, setRequestingPosition] = useState(false);
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -66,29 +67,52 @@ export default function LocationMap() {
   });
 
   const startSharing = () => {
-    if (!myProfile?.locationSharingEnabled) {
-      toast({ title: t("location.notActive"), description: t("location.activate"), variant: "destructive" });
-      return;
-    }
     if (!navigator.geolocation) {
       toast({ title: t("location.geoNotAvailable"), description: t("location.geoNotSupported"), variant: "destructive" });
       return;
     }
+    if (!myProfile) {
+      toast({ title: t("common.error"), description: t("location.profileUnavailable"), variant: "destructive" });
+      return;
+    }
 
+    setRequestingPosition(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        shareMutation.mutate({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-        const id = navigator.geolocation.watchPosition(
-          (p) => {
-            shareMutation.mutate({ latitude: p.coords.latitude, longitude: p.coords.longitude });
-          },
-          () => {},
-          { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
-        );
-        setWatchId(id);
-        toast({ title: t("location.shared"), description: t("location.sharedDesc") });
+      async (pos) => {
+        try {
+          if (!myProfile.locationSharingEnabled) {
+            await apiRequest("PUT", `/api/profiles/${myProfile.id}`, { locationSharingEnabled: true });
+            queryClient.setQueryData<Profile | null>(["/api/profiles/me"], (current) =>
+              current ? { ...current, locationSharingEnabled: true } : current,
+            );
+          }
+
+          const coordinates = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          await shareMutation.mutateAsync(coordinates);
+
+          const id = navigator.geolocation.watchPosition(
+            (position) => {
+              shareMutation.mutate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+            },
+            () => {
+              toast({ title: t("location.positionError"), description: t("location.allowAccess"), variant: "destructive" });
+            },
+            { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 },
+          );
+          setWatchId(id);
+          toast({ title: t("location.shared"), description: t("location.sharedDesc") });
+        } catch (error) {
+          toast({
+            title: t("location.positionError"),
+            description: error instanceof Error ? error.message : t("location.allowAccess"),
+            variant: "destructive",
+          });
+        } finally {
+          setRequestingPosition(false);
+        }
       },
-      (err) => {
+      () => {
+        setRequestingPosition(false);
         toast({ title: t("location.positionError"), description: t("location.allowAccess"), variant: "destructive" });
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -106,9 +130,10 @@ export default function LocationMap() {
     const defaultLat = locationStatus?.share?.latitude || 41.9028;
     const defaultLng = locationStatus?.share?.longitude || 12.4964;
 
-    leafletMap.current = L.map(mapRef.current, {
+    const map = L.map(mapRef.current, {
       zoomControl: false,
     }).setView([defaultLat, defaultLng], 13);
+    leafletMap.current = map;
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
@@ -117,7 +142,19 @@ export default function LocationMap() {
     }).addTo(leafletMap.current);
 
     L.control.zoom({ position: "bottomright" }).addTo(leafletMap.current);
-  }, [mapRef.current]);
+
+    const resizeMap = () => window.requestAnimationFrame(() => map.invalidateSize());
+    window.addEventListener("resize", resizeMap);
+    window.addEventListener("orientationchange", resizeMap);
+    resizeMap();
+
+    return () => {
+      window.removeEventListener("resize", resizeMap);
+      window.removeEventListener("orientationchange", resizeMap);
+      map.remove();
+      leafletMap.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!leafletMap.current) return;
@@ -249,16 +286,25 @@ export default function LocationMap() {
                 <p className="text-slate-600 text-xs">{t("location.notActiveDesc")}</p>
               </div>
             </div>
+            <Button
+              onClick={startSharing}
+              disabled={requestingPosition || shareMutation.isPending || !myProfile}
+              className="w-full mt-3 bg-gradient-to-r from-secondary to-primary"
+              data-testid="button-enable-location-sharing"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              {requestingPosition || shareMutation.isPending ? t("location.activating") : t("location.enableAndShare")}
+            </Button>
           </Card>
         ) : !isSharing ? (
           <Button
             onClick={startSharing}
-            disabled={shareMutation.isPending}
+            disabled={requestingPosition || shareMutation.isPending}
             className="w-full bg-gradient-to-r from-secondary to-primary py-6 text-base font-semibold"
             data-testid="button-start-sharing"
           >
             <Share2 className="w-5 h-5 mr-2" />
-            {shareMutation.isPending ? t("location.activating") : t("location.sharePosition")}
+            {requestingPosition || shareMutation.isPending ? t("location.activating") : t("location.sharePosition")}
           </Button>
         ) : (
           <div className="space-y-3">

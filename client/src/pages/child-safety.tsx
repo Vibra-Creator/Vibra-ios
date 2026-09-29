@@ -121,7 +121,7 @@ export default function ChildSafety() {
               <ul className="list-disc pl-5 space-y-2 mt-2">
                 <li>EU General Data Protection Regulation (GDPR) – with specific attention to children's data (Art. 8)</li>
                 <li>Italian Legislative Decree 196/2003 (Privacy Code)</li>
-                <li>Google Play Developer Program Policies on Child Safety</li>
+                <li>Applicable app-store child-safety policies</li>
                 <li>Applicable national and international child protection laws</li>
               </ul>
             </section>

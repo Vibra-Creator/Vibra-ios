@@ -74,7 +74,7 @@ export default function Terms() {
                 Per mantenere Vibra uno spazio sicuro e rispettoso, NON è consentito:
               </p>
               <ul className="list-disc pl-5 space-y-2 mt-2">
-                <li>Pubblicare contenuti offensivi, violenti o sessualmente espliciti</li>
+                <li>Pubblicare contenuti offensivi, violenti, sessualmente espliciti o che sfruttano minori</li>
                 <li>Molestare, intimidire o minacciare altri utenti</li>
                 <li>Creare profili falsi o impersonare altre persone</li>
                 <li>Utilizzare l'app per scopi commerciali o spam</li>
@@ -88,24 +88,25 @@ export default function Terms() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">5. Filtro Contenuti e Moderazione</h2>
               <p>
-                Vibra utilizza un sistema automatico di filtro contenuti per i messaggi in chat. 
-                Le parole considerate offensive o inappropriate vengono automaticamente mascherate 
-                prima dell'invio. Questo filtro è attivo su tutti i canali di comunicazione dell'app 
-                (chat private, stanze, messaggi).
+                Vibra applica un filtro automatico ai testi inviati dagli utenti, inclusi profili,
+                messaggi, commenti e post. Le parole presenti nell'elenco di moderazione vengono
+                mascherate prima della pubblicazione. Foto e video possono essere segnalati per una
+                revisione manuale.
               </p>
               <p className="mt-2">
-                La moderazione dei contenuti è effettuata sia automaticamente che manualmente dal team 
-                di amministrazione. Il team si riserva il diritto di rimuovere contenuti e sospendere 
-                account che violano queste regole.
+                La moderazione combina filtri automatici e revisione del team di amministrazione.
+                Vibra può rimuovere contenuti che violano queste regole e sospendere gli account
+                responsabili.
               </p>
             </section>
 
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">6. Sistema di Segnalazione</h2>
               <p>
-                Gli utenti possono segnalare altri utenti o contenuti che ritengono inappropriati.
-                Le segnalazioni possono essere effettuate dalla chat o dal profilo utente, 
-                selezionando una delle seguenti categorie:
+                Gli utenti possono segnalare profili, messaggi o altri contenuti inappropriati
+                dalla chat o dal profilo, scegliendo una categoria e aggiungendo una descrizione.
+                Le segnalazioni vengono inoltrate al team di moderazione, che le esamina e adotta
+                le misure necessarie entro 24 ore dalla ricezione:
               </p>
               <ul className="list-disc pl-5 space-y-1 mt-2">
                 <li>Contenuto inappropriato</li>
@@ -116,17 +117,17 @@ export default function Terms() {
                 <li>Altro</li>
               </ul>
               <p className="mt-2 text-sm">
-                Ogni segnalazione viene esaminata dal team di moderazione. L'abuso del sistema 
-                di segnalazione (segnalazioni false o ripetute) può portare alla sospensione dell'account.
+                L'abuso del sistema di segnalazione (segnalazioni false o ripetute) può portare
+                alla sospensione dell'account. Le segnalazioni possono inoltre essere inviate al
+                team quando blocchi un utente.
               </p>
             </section>
 
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">7. Blocco Utenti e Rimozione Match</h2>
               <p>
-                Puoi bloccare un utente in qualsiasi momento dalla chat. Un utente bloccato 
-                non potrà più inviarti messaggi, visualizzare il tuo profilo nelle card di swipe, 
-                né interagire con te in alcun modo.
+                Puoi bloccare un utente dalla chat o dal suo profilo. Il blocco lo rimuove dai
+                suggerimenti di swipe e invia una segnalazione al team per la revisione.
               </p>
               <p className="mt-2">
                 Puoi anche rimuovere un match (unmatch) dalla chat. Questa azione elimina il match 
@@ -200,7 +201,7 @@ export default function Terms() {
               <p>
                 Vibra offre un servizio gratuito. Funzionalità premium potrebbero essere 
                 disponibili in futuro. Eventuali acquisti saranno soggetti ai termini 
-                dell'App Store o Google Play.
+                dello store da cui è stato effettuato l'acquisto.
               </p>
             </section>
 

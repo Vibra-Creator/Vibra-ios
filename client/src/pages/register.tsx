@@ -139,7 +139,15 @@ export default function Register() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, lastName, gender, age: age ? Number(age) : undefined }),
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          lastName,
+          gender,
+          age: age ? Number(age) : undefined,
+          termsAccepted: acceptTerms,
+        }),
         credentials: "include",
       });
 
@@ -148,6 +156,7 @@ export default function Register() {
         throw new Error(data.message || t("register.createError"));
       }
 
+      const userData = await res.json();
       sessionStorage.removeItem("vibra-guest-mode");
       if (referralCode && referralValid) {
         try {
@@ -399,7 +408,10 @@ export default function Register() {
                   data-testid="checkbox-terms"
                 />
                 <label htmlFor="terms" className="text-sm text-white/60 leading-tight">
-                  {t("register.acceptTerms")}
+                  {t("legal.acceptIntro")}{" "}
+                  <Link href="/terms" className="text-primary hover:underline">{t("login.termsLink")}</Link>{" "}
+                  {t("login.and")}{" "}
+                  <Link href="/privacy" className="text-primary hover:underline">{t("login.privacyLink")}</Link>.
                 </label>
               </div>
 

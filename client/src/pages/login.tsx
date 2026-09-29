@@ -4,6 +4,7 @@ import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
@@ -39,6 +40,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { enterGuestMode } = useGuest();
@@ -48,13 +50,21 @@ export default function Login() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!termsAccepted) {
+      toast({
+        title: t("common.error"),
+        description: t("register.mustAcceptTerms"),
+        variant: "destructive",
+      });
+      return;
+    }
     setIsLoading(true);
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, termsAccepted }),
         credentials: "include",
       });
 
@@ -173,10 +183,25 @@ export default function Login() {
                 </div>
               </div>
 
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="login-terms"
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                  data-testid="checkbox-login-terms"
+                />
+                <label htmlFor="login-terms" className="text-sm text-white/70 leading-tight">
+                  {t("legal.acceptIntro")}{" "}
+                  <Link href="/terms" className="text-primary hover:underline">{t("login.termsLink")}</Link>{" "}
+                  {t("login.and")}{" "}
+                  <Link href="/privacy" className="text-primary hover:underline">{t("login.privacyLink")}</Link>.
+                </label>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full h-16 text-xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-[shimmer_3s_linear_infinite] hover:opacity-90 shadow-lg shadow-primary/30 rounded-xl"
-                disabled={isLoading}
+                disabled={isLoading || !termsAccepted}
                 data-testid="button-login"
               >
                 {isLoading ? t("login.loading") : t("login.submitCta")}

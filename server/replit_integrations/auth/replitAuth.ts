@@ -8,11 +8,32 @@ import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { db } from "../../db";
-import { profiles } from "../../../shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { profiles, userSuspensions } from "../../../shared/schema";
+import { and, eq, sql } from "drizzle-orm";
 import { sendVerificationEmail } from "../../gmail";
+import { filterOffensiveContent } from "../../ugc-moderation";
 
 let _sessionMiddleware: ReturnType<typeof session> | null = null;
+const TERMS_ACCEPTANCE_REQUIRED = "Devi accettare i Termini di Servizio e la Privacy Policy.";
+
+async function hasActiveUserSuspension(userId: string): Promise<boolean> {
+  const suspensions = await db.select({
+    isPermanent: userSuspensions.isPermanent,
+    expiresAt: userSuspensions.expiresAt,
+  })
+    .from(userSuspensions)
+    .where(and(
+      eq(userSuspensions.userId, userId),
+      eq(userSuspensions.isActive, true),
+    ));
+
+  const now = Date.now();
+  return suspensions.some((suspension) =>
+    suspension.isPermanent === true
+    || !suspension.expiresAt
+    || suspension.expiresAt.getTime() > now,
+  );
+}
 
 export function getSession() {
   if (_sessionMiddleware) return _sessionMiddleware;
@@ -46,7 +67,11 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, name, lastName: reqLastName, gender, age } = req.body;
+      const { email, password, name, lastName: reqLastName, gender, age, termsAccepted } = req.body;
+
+      if (termsAccepted !== true) {
+        return res.status(400).json({ message: TERMS_ACCEPTANCE_REQUIRED });
+      }
 
       if (!email || !password || !name) {
         return res.status(400).json({ message: "Email, password e nome sono obbligatori" });
@@ -60,14 +85,17 @@ export async function setupAuth(app: Express) {
       if (existingUser && existingUser.password) {
         return res.status(409).json({ message: "Un account con questa email esiste già" });
       }
+      if (existingUser && await hasActiveUserSuspension(existingUser.id)) {
+        return res.status(403).json({ message: "Questo account è sospeso." });
+      }
 
       if (age !== undefined && (isNaN(Number(age)) || Number(age) < 18 || Number(age) > 120)) {
         return res.status(400).json({ message: "L'età deve essere tra 18 e 120 anni" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
-      const firstName = name.trim();
-      const lastName = reqLastName ? reqLastName.trim() : "";
+      const firstName = filterOffensiveContent(name.trim());
+      const lastName = reqLastName ? filterOffensiveContent(reqLastName.trim()) : "";
 
       // Generate a secure verification token
       const verificationToken = randomBytes(32).toString("hex");
@@ -146,7 +174,11 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, termsAccepted } = req.body;
+
+      if (termsAccepted !== true) {
+        return res.status(400).json({ message: TERMS_ACCEPTANCE_REQUIRED });
+      }
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email e password sono obbligatori" });
@@ -166,6 +198,10 @@ export async function setupAuth(app: Express) {
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
         return res.status(401).json({ message: "Email o password non corretti" });
+      }
+
+      if (await hasActiveUserSuspension(user.id)) {
+        return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
       (req.session as any).userId = user.id;
@@ -215,7 +251,10 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/google", async (req, res) => {
     try {
-      const { credential } = req.body;
+      const { credential, termsAccepted } = req.body;
+      if (termsAccepted !== true) {
+        return res.status(400).json({ message: TERMS_ACCEPTANCE_REQUIRED });
+      }
       if (!credential) {
         return res.status(400).json({ message: "Token mancante" });
       }
@@ -236,8 +275,8 @@ export async function setupAuth(app: Express) {
       }
 
       const email = payload.email.toLowerCase().trim();
-      const firstName = payload.given_name || "";
-      const lastName = payload.family_name || "";
+      const firstName = filterOffensiveContent(payload.given_name || "");
+      const lastName = filterOffensiveContent(payload.family_name || "");
       const profileImageUrl = payload.picture || null;
 
       let user = await authStorage.getUserByEmail(email);
@@ -248,6 +287,10 @@ export async function setupAuth(app: Express) {
           lastName,
           profileImageUrl,
         });
+      }
+
+      if (await hasActiveUserSuspension(user.id)) {
+        return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
       (req.session as any).userId = user.id;
@@ -277,7 +320,10 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/apple", async (req, res) => {
     try {
-      const { id_token, user: appleUser } = req.body;
+      const { id_token, user: appleUser, termsAccepted } = req.body;
+      if (termsAccepted !== true) {
+        return res.status(400).json({ message: TERMS_ACCEPTANCE_REQUIRED });
+      }
       if (!id_token) {
         return res.status(400).json({ message: "Token mancante" });
       }
@@ -312,8 +358,8 @@ export async function setupAuth(app: Express) {
       let lastName = "";
 
       if (appleUser && appleUser.name) {
-        firstName = appleUser.name.firstName || "";
-        lastName = appleUser.name.lastName || "";
+        firstName = filterOffensiveContent(appleUser.name.firstName || "");
+        lastName = filterOffensiveContent(appleUser.name.lastName || "");
       }
 
       let user = await authStorage.getUserByEmail(email);
@@ -323,6 +369,10 @@ export async function setupAuth(app: Express) {
           firstName: firstName || "Utente",
           lastName: lastName || "",
         });
+      }
+
+      if (await hasActiveUserSuspension(user.id)) {
+        return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
       (req.session as any).userId = user.id;
@@ -460,6 +510,21 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const userId = (req.session as any)?.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    if (await hasActiveUserSuspension(userId)) {
+      await new Promise<void>((resolve) => {
+        (req.session as any).destroy(() => resolve());
+      });
+      return res.status(401).json({
+        code: "ACCOUNT_SUSPENDED",
+        message: "Questo account è sospeso.",
+      });
+    }
+  } catch (error) {
+    console.error("[auth] Could not verify account suspension status:", error);
+    return res.status(503).json({ message: "Impossibile verificare lo stato dell'account." });
   }
 
   (req as any).user = { claims: { sub: userId } };

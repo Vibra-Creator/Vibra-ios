@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic, Play } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -257,22 +257,6 @@ export default function Landing() {
                 {t("landing.explore")}
               </Button>
             </div>
-
-            <a
-              href="https://play.google.com/store/apps/details?id=com.vibraalienmatch.twa"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-3 rounded-xl border border-white/20 bg-black/60 px-5 py-3 text-left shadow-lg transition hover:scale-[1.02] hover:border-white/40 hover:bg-black/80"
-              data-testid="link-google-play-hero"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-black">
-                <Play className="h-5 w-5 fill-current" />
-              </div>
-              <span className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-white/60">Disponibile su</span>
-                <span className="text-base font-semibold leading-tight text-white">Google Play</span>
-              </span>
-            </a>
 
             <Link href="/onboarding">
               <Button

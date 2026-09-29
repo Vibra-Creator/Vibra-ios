@@ -98,6 +98,11 @@ export default function Admin() {
 
   const { data: reports } = useQuery<(Report & { coldMessageContent?: string | null })[]>({
     queryKey: ["/api/admin/reports"],
+    refetchInterval: 30_000,
+  });
+  const prioritizedReports = [...(reports ?? [])].sort((a, b) => {
+    const pendingFirst = Number(b.status === "pending") - Number(a.status === "pending");
+    return pendingFirst || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
 
   const {
@@ -437,7 +442,7 @@ export default function Admin() {
   });
 
   const suspendUserMutation = useMutation({
-    mutationFn: async (data: { userId: string; reason: string; isPermanent: boolean }) =>
+    mutationFn: async (data: { userId: string; reason: string; isPermanent: boolean; expiresAt?: string }) =>
       apiRequest("POST", "/api/admin/suspensions", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
@@ -1210,7 +1215,7 @@ export default function Admin() {
                   <div className="text-center py-8 text-muted-foreground">Nessuna segnalazione</div>
                 ) : (
                   <div className="space-y-3">
-                    {reports.map((report) => (
+                    {prioritizedReports.map((report) => (
                       <div key={report.id} className="p-4 rounded-lg bg-card border border-border" data-testid={`report-row-${report.id}`}>
                         <div className="flex items-start justify-between gap-3 flex-wrap">
                           <div className="flex-1 min-w-0">
@@ -1219,6 +1224,19 @@ export default function Admin() {
                                 {report.status === "pending" ? "In attesa" : report.status === "resolved" ? "Risolta" : "Archiviata"}
                               </Badge>
                               <span className="text-xs text-muted-foreground">{new Date(report.createdAt).toLocaleString("it-IT")}</span>
+                              {report.status === "pending" && (
+                                <Badge
+                                  variant={
+                                    Date.now() >= new Date(report.createdAt).getTime() + 24 * 60 * 60 * 1000
+                                      ? "destructive"
+                                      : "outline"
+                                  }
+                                >
+                                  {Date.now() >= new Date(report.createdAt).getTime() + 24 * 60 * 60 * 1000
+                                    ? "SLA 24h superata"
+                                    : "Da esaminare entro 24h"}
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-foreground"><strong>Da:</strong> {getProfileName(report.reporterId)} <strong>Contro:</strong> {getProfileName(report.reportedId)}</p>
                             <p className="text-sm text-foreground mt-1"><strong>Motivo:</strong> {report.reason}</p>
@@ -1232,6 +1250,27 @@ export default function Admin() {
                           </div>
                           {report.status === "pending" && (
                             <div className="flex gap-2">
+                              {profiles?.find((profile) => profile.id === report.reportedId)?.userId && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-destructive"
+                                  disabled={suspendUserMutation.isPending}
+                                  onClick={() => {
+                                    const targetUserId = profiles?.find((profile) => profile.id === report.reportedId)?.userId;
+                                    if (!targetUserId || !window.confirm("Sospendere questo account per 24 ore e disconnetterlo?")) return;
+                                    suspendUserMutation.mutate({
+                                      userId: targetUserId,
+                                      reason: `Revisione segnalazione ${report.id.slice(0, 8)}`,
+                                      isPermanent: false,
+                                      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                    });
+                                  }}
+                                  data-testid={`button-suspend-report-user-${report.id}`}
+                                >
+                                  <Ban className="w-4 h-4 mr-1" /> Sospendi 24h
+                                </Button>
+                              )}
                               <Button size="sm" variant="outline" className="text-green-600" onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })} data-testid={`button-resolve-report-${report.id}`}>
                                 <CheckCircle className="w-4 h-4 mr-1" /> Risolvi
                               </Button>

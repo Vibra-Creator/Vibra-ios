@@ -51,16 +51,7 @@ import {
   renderLandingVideoSeoHtml,
   renderPublicProfileSeoHtml,
 } from "./public-profile-seo";
-
-const OFFENSIVE_WORDS = [
-  "cazzo", "minchia", "stronzo", "stronza", "vaffanculo", "puttana", "troia",
-  "bastardo", "bastarda", "coglione", "cogliona", "merda", "fanculo", "porco",
-  "negro", "negra", "frocio", "finocchio", "ritardato", "ritardata",
-  "mongoloide", "handicappato", "deficiente", "idiota",
-  "ti ammazzo", "ti uccido", "crepa", "muori", "suicidati",
-  "fuck", "shit", "bitch", "asshole", "nigger", "faggot", "retard",
-  "dick pic", "nudes", "sesso orale",
-];
+import { filterOffensiveContent, filterUgcTextPayload, hasUgcTextPayload } from "./ugc-moderation";
 
 const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
@@ -205,15 +196,6 @@ export function createAdminAuthorizationMiddleware(
       return res.status(500).json({ error: "Server error" });
     }
   };
-}
-
-function filterOffensiveContent(text: string): string {
-  let filtered = text;
-  for (const word of OFFENSIVE_WORDS) {
-    const regex = new RegExp(word.replace(/\s+/g, "\\s+"), "gi");
-    filtered = filtered.replace(regex, (match) => "*".repeat(match.length));
-  }
-  return filtered;
 }
 
 const openai = new OpenAI({
@@ -533,6 +515,27 @@ export async function registerRoutes(
 ): Promise<Server> {
   let reportCleanupStatus = createReportCleanupState();
   let coldMessageCleanupStatus = createColdMessageCleanupState();
+  let bannedWordCache: string[] = [];
+  let bannedWordCacheExpiresAt = 0;
+  let bannedWordRefresh: Promise<string[]> | null = null;
+  let disconnectUserSockets = (_profileId: string) => {};
+
+  async function getBannedWordsForFiltering(): Promise<string[]> {
+    if (Date.now() < bannedWordCacheExpiresAt) return bannedWordCache;
+    if (bannedWordRefresh) return bannedWordRefresh;
+
+    bannedWordRefresh = storage.getBannedWords()
+      .then((words) => {
+        bannedWordCache = words.map((entry) => entry.word).filter(Boolean);
+        bannedWordCacheExpiresAt = Date.now() + 60_000;
+        return bannedWordCache;
+      })
+      .finally(() => {
+        bannedWordRefresh = null;
+      });
+
+    return bannedWordRefresh;
+  }
 
   async function persistReportCleanupAlertState() {
     const lastNotificationAt = reportCleanupStatus.lastNotificationAt;
@@ -573,6 +576,35 @@ export async function registerRoutes(
       await persistReportCleanupAlertState();
     },
   });
+
+  async function notifyAdminsOfNewUserReport(reportId: string): Promise<void> {
+    try {
+      const admins = (await storage.getAllUsers())
+        .filter((user) => user.isAdmin && user.email)
+        .map((user) => ({
+          email: user.email!,
+          name: user.firstName || "Admin",
+        }));
+      if (admins.length === 0) {
+        console.error("[ugc-moderation] No admin recipients available for report notification", reportId);
+        return;
+      }
+
+      const { sendBulkCustomEmails } = await import("./gmail");
+      const result = await sendBulkCustomEmails(
+        admins,
+        "Vibra: nuova segnalazione da revisionare",
+        `<p>È arrivata una nuova segnalazione UGC da revisionare.</p>
+         <p>Riferimento: ${reportId}</p>
+         <p>Apri la dashboard admin e verifica la segnalazione entro 24 ore.</p>`,
+      );
+      if (result.failed > 0) {
+        console.error(`[ugc-moderation] Report ${reportId}: ${result.failed} admin notification emails failed`);
+      }
+    } catch (error) {
+      console.error(`[ugc-moderation] Could not notify admins about report ${reportId}:`, error);
+    }
+  }
 
   app.get("/sw.js", (req, res, next) => {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -657,6 +689,26 @@ ${urlEntries}
   await setupAuth(app);
   registerAuthRoutes(app);
   registerObjectStorageRoutes(app);
+
+  app.use("/api", async (req: any, res, next) => {
+    if (!["POST", "PUT", "PATCH"].includes(req.method) || !req.body || typeof req.body !== "object") {
+      return next();
+    }
+    if (!hasUgcTextPayload(req.body)) return next();
+    if (/^\/api\/reports(?:\/|$)/.test(req.originalUrl.split("?")[0])) {
+      return next();
+    }
+
+    try {
+      req.body = filterUgcTextPayload(req.body, await getBannedWordsForFiltering());
+      return next();
+    } catch (error) {
+      console.error("[ugc-moderation] Could not load the banned-word list:", error);
+      return res.status(503).json({
+        error: "Content moderation is temporarily unavailable. Please try again shortly.",
+      });
+    }
+  });
 
   const activityCache = new Map<string, number>();
   app.use(async (req: any, _res, next) => {
@@ -2594,6 +2646,7 @@ ${urlEntries}
       }
 
       const report = await storage.createReport({ reporterId: profile.id, reportedId, reason, description, coldMessageId: coldMessageId || undefined, coldMessageContent });
+      void notifyAdminsOfNewUserReport(report.id);
       res.json(report);
     } catch (error) {
       res.status(500).json({ error: "Failed to create report" });
@@ -2676,6 +2729,8 @@ ${urlEntries}
       const { userId, reason, expiresAt, isPermanent } = req.body;
       if (!userId || !reason) return res.status(400).json({ error: "userId and reason are required" });
       const suspension = await storage.suspendUser({ userId, reason, expiresAt: expiresAt ? new Date(expiresAt) : undefined, isPermanent });
+      const suspendedProfile = await storage.getProfileByUserId(userId);
+      if (suspendedProfile) disconnectUserSockets(suspendedProfile.id);
       res.json(suspension);
     } catch (error) {
       res.status(500).json({ error: "Failed to suspend user" });
@@ -2866,7 +2921,7 @@ ${urlEntries}
         return res.status(403).json({ error: "Not authorized to send messages in this chat" });
       }
       
-      const filteredContent = filterOffensiveContent(content);
+      const filteredContent = filterOffensiveContent(content, await getBannedWordsForFiltering());
       
       const message = await storage.createMessage({
         matchId,
@@ -3882,7 +3937,33 @@ REGOLE:
       if (!blockedId) return res.status(400).json({ error: "blockedId required" });
       if (blockedId === profile.id) return res.status(400).json({ error: "Cannot block yourself" });
 
+      const outgoingBlocks = await storage.getBlockedUsers(profile.id);
+      const wasAlreadyBlocked = outgoingBlocks.some((entry) => entry.blockedId === blockedId);
       const block = await storage.blockUser(profile.id, blockedId);
+      if (!wasAlreadyBlocked) {
+        try {
+          const [existingBlockReport] = await db.select({ id: reports.id })
+            .from(reports)
+            .where(and(
+              eq(reports.reporterId, profile.id),
+              eq(reports.reportedId, blockedId),
+              eq(reports.status, "pending"),
+              gt(reports.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
+            ))
+            .limit(1);
+          if (!existingBlockReport) {
+            const report = await storage.createReport({
+              reporterId: profile.id,
+              reportedId: blockedId,
+              reason: "Blocco utente",
+              description: "Segnalazione automatica: l'utente è stato bloccato e richiede una verifica di moderazione.",
+            });
+            void notifyAdminsOfNewUserReport(report.id);
+          }
+        } catch (reportError) {
+          console.error("[ugc-moderation] User was blocked, but the moderation report could not be created:", reportError);
+        }
+      }
       res.json(block);
     } catch (error) {
       res.status(500).json({ error: "Failed to block user" });
@@ -4350,16 +4431,26 @@ REGOLE:
   const io = new SocketIOServer(httpServer, {
     path: "/vibrapp-socket",
   });
+  disconnectUserSockets = (profileId) => {
+    io.in(`user:${profileId}`).disconnectSockets(true);
+  };
 
   const sessionMiddleware = getSession();
   io.use((socket, next) => {
     const req = socket.request as any;
     const res = { end: () => {} } as any;
-    sessionMiddleware(req, res, () => {
+    sessionMiddleware(req, res, async () => {
       if (!req.session?.userId) {
         return next(new Error("Unauthorized"));
       }
-      next();
+      try {
+        const suspension = await storage.getActiveSuspension(req.session.userId);
+        if (suspension) return next(new Error("Account suspended"));
+        return next();
+      } catch (error) {
+        console.error("[ugc-moderation] Could not verify socket account status:", error);
+        return next(new Error("Unable to verify account status"));
+      }
     });
   });
 
@@ -4424,7 +4515,9 @@ REGOLE:
 
         if (!rawContent && !mediaUrl) return;
 
-        const filteredContent = rawContent ? filterOffensiveContent(rawContent) : "";
+        const filteredContent = rawContent
+          ? filterOffensiveContent(rawContent, await getBannedWordsForFiltering())
+          : "";
 
         let replyToSenderId: string | null = null;
         if (data.replyToId) {
