@@ -68,6 +68,10 @@ export async function runMigrations(): Promise<void> {
   // ── reports table extra columns ───────────────────────────────────────────
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_id VARCHAR`);
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS cold_message_content TEXT`);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_content_type TEXT`);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_content_id VARCHAR`);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_content_snapshot TEXT`);
+  await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS moderation_hidden BOOLEAN NOT NULL DEFAULT FALSE`);
   // reportedUserId: denormalised auth-user id captured at report creation time so
   // the filter survives profile deletion (account re-creation gap fix).
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_user_id VARCHAR`);

@@ -117,7 +117,17 @@ export interface IStorage {
   getProfilePoints(profileId: string): Promise<number>;
   
   // Reports
-  createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string; coldMessageId?: string; coldMessageContent?: string }): Promise<Report>;
+  createReport(data: {
+    reporterId: string;
+    reportedId: string;
+    reason: string;
+    description?: string;
+    coldMessageId?: string;
+    coldMessageContent?: string;
+    reportedContentType?: string;
+    reportedContentId?: string;
+    reportedContentSnapshot?: string;
+  }): Promise<Report>;
   getReports(): Promise<Report[]>;
   updateReportStatus(id: string, status: string): Promise<Report | undefined>;
   /** Removes orphaned report rows that are safe to delete:
@@ -328,12 +338,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProfiles(): Promise<Profile[]> {
-    return db.select().from(profiles).orderBy(profiles.id);
+    return db.select().from(profiles)
+      .where(eq(profiles.moderationHidden, false))
+      .orderBy(profiles.id);
   }
 
   async getProfilesByIds(ids: string[]): Promise<Profile[]> {
     if (!ids.length) return [];
-    return db.select().from(profiles).where(inArray(profiles.id, ids));
+    return db.select().from(profiles).where(
+      and(inArray(profiles.id, ids), eq(profiles.moderationHidden, false)),
+    );
   }
 
   async getSwipedProfileIds(swiperId: string): Promise<string[]> {
@@ -824,7 +838,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Reports
-  async createReport(data: { reporterId: string; reportedId: string; reason: string; description?: string; coldMessageId?: string; coldMessageContent?: string }): Promise<Report> {
+  async createReport(data: {
+    reporterId: string;
+    reportedId: string;
+    reason: string;
+    description?: string;
+    coldMessageId?: string;
+    coldMessageContent?: string;
+    reportedContentType?: string;
+    reportedContentId?: string;
+    reportedContentSnapshot?: string;
+  }): Promise<Report> {
     // Denormalise the underlying auth-user id and email of the reported profile so the
     // filter survives if that profile row is later deleted (account recreation gap).
     // • reportedUserId catches same-user re-registrations (same auth identity, new profile UUID)
@@ -1179,7 +1203,10 @@ export class DatabaseStorage implements IStorage {
 
     const profileIds = nearbySessions.map(s => s.profileId);
     const nearbyProfiles = await db.select().from(profiles)
-      .where(sql`${profiles.id} IN (${sql.join(profileIds.map(id => sql`${id}`), sql`, `)})`);
+      .where(and(
+        eq(profiles.moderationHidden, false),
+        sql`${profiles.id} IN (${sql.join(profileIds.map(id => sql`${id}`), sql`, `)})`,
+      ));
     const profileMap = new Map(nearbyProfiles.map(p => [p.id, p]));
 
     return nearbySessions
@@ -1263,7 +1290,10 @@ export class DatabaseStorage implements IStorage {
 
     const shareProfileIds = activeShares.map(s => s.profileId);
     const shareProfiles = await db.select().from(profiles)
-      .where(sql`${profiles.id} IN (${sql.join(shareProfileIds.map(id => sql`${id}`), sql`, `)})`);
+      .where(and(
+        eq(profiles.moderationHidden, false),
+        sql`${profiles.id} IN (${sql.join(shareProfileIds.map(id => sql`${id}`), sql`, `)})`,
+      ));
 
     const profileMap = new Map(shareProfiles.filter(p => p.locationSharingEnabled).map(p => [p.id, p]));
 
@@ -1663,6 +1693,7 @@ export class DatabaseStorage implements IStorage {
     })
     .from(profileVideos)
     .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
+    .where(eq(profiles.moderationHidden, false))
     .orderBy(desc(profileVideos.createdAt))
     .limit(limit * 3);
 
@@ -1681,6 +1712,11 @@ export class DatabaseStorage implements IStorage {
   // ─── Cosmic Signals ────────────────────────────────────────────────────────
 
   async getProfileSignals(profileId: string, limit = 5): Promise<Pick<CosmicSignal, "id" | "content" | "mediaUrl" | "mediaType" | "createdAt">[]> {
+    const [profile] = await db.select({ id: profiles.id }).from(profiles).where(and(
+      eq(profiles.id, profileId),
+      eq(profiles.moderationHidden, false),
+    )).limit(1);
+    if (!profile) return [];
     const rows = await db
       .select({ id: cosmicSignals.id, content: cosmicSignals.content, mediaUrl: cosmicSignals.mediaUrl, mediaType: cosmicSignals.mediaType, createdAt: cosmicSignals.createdAt })
       .from(cosmicSignals)
@@ -1697,7 +1733,10 @@ export class DatabaseStorage implements IStorage {
     if (!signals.length) return [];
 
     const profileIds = [...new Set(signals.map(s => s.profileId))];
-    const profileRows = await db.select().from(profiles).where(inArray(profiles.id, profileIds));
+    const profileRows = await db.select().from(profiles).where(and(
+      inArray(profiles.id, profileIds),
+      eq(profiles.moderationHidden, false),
+    ));
     const profileMap = new Map(profileRows.map(p => [p.id, p]));
 
     const signalIds = signals.map(s => s.id);
@@ -1749,7 +1788,10 @@ export class DatabaseStorage implements IStorage {
     if (!signals.length) return [];
     const profileIds = [...new Set(signals.map(s => s.fromProfileId))];
     const profileRows = await db.select({ id: profiles.id, name: profiles.name, age: profiles.age, imageUrl: profiles.imageUrl })
-      .from(profiles).where(inArray(profiles.id, profileIds));
+      .from(profiles).where(and(
+        inArray(profiles.id, profileIds),
+        eq(profiles.moderationHidden, false),
+      ));
     const profileMap = new Map(profileRows.map(p => [p.id, p]));
     return signals.map(s => ({
       id: s.id, content: s.content, mediaUrl: s.mediaUrl, mediaType: s.mediaType, createdAt: s.createdAt,
@@ -1778,7 +1820,10 @@ export class DatabaseStorage implements IStorage {
     const comments = await db.select().from(signalComments).where(eq(signalComments.signalId, signalId)).orderBy(signalComments.createdAt);
     if (!comments.length) return [];
     const profileIds = [...new Set(comments.map(c => c.profileId))];
-    const profileRows = await db.select().from(profiles).where(inArray(profiles.id, profileIds));
+    const profileRows = await db.select().from(profiles).where(and(
+      inArray(profiles.id, profileIds),
+      eq(profiles.moderationHidden, false),
+    ));
     const profileMap = new Map(profileRows.map(p => [p.id, p]));
     return comments.map(c => ({ ...c, profile: profileMap.get(c.profileId) as Profile })).filter(c => c.profile);
   }
@@ -1793,7 +1838,10 @@ export class DatabaseStorage implements IStorage {
     const favs = await db.select().from(profileFavorites).where(eq(profileFavorites.profileId, profileId)).orderBy(desc(profileFavorites.createdAt));
     if (!favs.length) return [];
     const profileIds = favs.map(f => f.favoritedProfileId);
-    const profileRows = await db.select().from(profiles).where(inArray(profiles.id, profileIds));
+    const profileRows = await db.select().from(profiles).where(and(
+      inArray(profiles.id, profileIds),
+      eq(profiles.moderationHidden, false),
+    ));
     const profileMap = new Map(profileRows.map(p => [p.id, p]));
     return favs.map(f => ({ ...f, profile: profileMap.get(f.favoritedProfileId) as Profile })).filter(f => f.profile);
   }

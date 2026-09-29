@@ -17,6 +17,7 @@ export const profiles = pgTable("profiles", {
   alienType: text("alien_type").notNull(),
   isBot: boolean("is_bot").default(false),
   isVerified: boolean("is_verified").default(false),
+  moderationHidden: boolean("moderation_hidden").default(false).notNull(),
   
   // Nuovi campi profilo estesi
   birthDate: timestamp("birth_date"),
@@ -86,6 +87,7 @@ export const messages = pgTable("messages", {
 
 export const insertProfileSchema = createInsertSchema(profiles).omit({
   id: true,
+  moderationHidden: true,
 });
 
 export const updateProfileSchema = createInsertSchema(profiles).omit({
@@ -93,6 +95,7 @@ export const updateProfileSchema = createInsertSchema(profiles).omit({
   userId: true,
   isBot: true,
   isVerified: true,
+  moderationHidden: true,
 }).partial();
 
 export const insertSwipeSchema = createInsertSchema(swipes).omit({
@@ -245,6 +248,9 @@ export const reports = pgTable("reports", {
   status: text("status").default("pending"),
   coldMessageId: varchar("cold_message_id"),
   coldMessageContent: text("cold_message_content"),
+  reportedContentType: text("reported_content_type"),
+  reportedContentId: varchar("reported_content_id"),
+  reportedContentSnapshot: text("reported_content_snapshot"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
 });

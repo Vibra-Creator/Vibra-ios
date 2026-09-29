@@ -9,7 +9,13 @@ import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMess
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
-import { getReportSuspensionExpiry, isColdMessageAuthoredByReportedUser } from "./report-moderation";
+import {
+  getReportSuspensionExpiry,
+  isBlogPostAuthoredByReportedUser,
+  isChatMessageAuthoredByReportedUser,
+  isColdMessageAuthoredByReportedUser,
+  isReportContentType,
+} from "./report-moderation";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import multer from "multer";
@@ -56,6 +62,7 @@ import {
   renderPublicProfileSeoHtml,
 } from "./public-profile-seo";
 import { filterOffensiveContent, filterUgcTextPayload, hasUgcTextPayload } from "./ugc-moderation";
+import { createSuspensionWriteGuard } from "./suspension-write-guard";
 
 const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
@@ -782,6 +789,12 @@ ${urlEntries}
 
   await setupAuth(app);
   registerAuthRoutes(app);
+  app.use("/api", createSuspensionWriteGuard({
+    getUser: (userId) => storage.getUser(userId),
+    getActiveSuspension: (userId) => storage.getActiveSuspension(userId),
+    adminEmails: ADMIN_EMAILS,
+    logError: (message, error) => console.error(message, error),
+  }));
   registerObjectStorageRoutes(app);
 
   app.use("/api", async (req: any, res, next) => {
@@ -1317,7 +1330,7 @@ ${urlEntries}
   app.get("/api/profiles/:id", async (req, res) => {
     try {
       const profile = await storage.getProfile(req.params.id);
-      if (!profile) {
+      if (!profile || profile.moderationHidden) {
         return res.status(404).json({ error: "Profile not found" });
       }
       res.json(profile);
@@ -1336,7 +1349,7 @@ ${urlEntries}
       if (!myProfile) return res.status(404).json({ error: "Your profile not found" });
       
       const otherProfile = await storage.getProfile(req.params.id);
-      if (!otherProfile) return res.status(404).json({ error: "Profile not found" });
+      if (!otherProfile || otherProfile.moderationHidden) return res.status(404).json({ error: "Profile not found" });
       
       // Calculate compatibility score (0-100)
       let score = 50; // Base score
@@ -2723,6 +2736,21 @@ ${urlEntries}
       if (!["resolved", "dismissed", "pending"].includes(status)) {
         return res.status(400).json({ error: "Invalid status" });
       }
+      if (status === "resolved") {
+        const [report] = await db
+          .select({
+            reportedContentType: reports.reportedContentType,
+            reportedContentId: reports.reportedContentId,
+            coldMessageId: reports.coldMessageId,
+          })
+          .from(reports)
+          .where(eq(reports.id, req.params.id))
+          .limit(1);
+        if (!report) return res.status(404).json({ error: "Report not found" });
+        if (report.reportedContentId || report.coldMessageId) {
+          return res.status(409).json({ error: "Remove the reported content before resolving this report" });
+        }
+      }
       const report = await storage.updateReportStatus(req.params.id, status);
       res.json(report);
     } catch (error) {
@@ -2742,7 +2770,13 @@ ${urlEntries}
 
         if (!report) return { ok: false as const, error: "not_found" as const };
         if (report.status !== "pending") return { ok: false as const, error: "not_pending" as const };
-        if (!report.coldMessageId) return { ok: false as const, error: "no_reported_message" as const };
+        const contentType = isReportContentType(report.reportedContentType)
+          ? report.reportedContentType
+          : report.coldMessageId && !report.reportedContentType
+            ? "cold_message"
+            : null;
+        const contentId = report.reportedContentId ?? report.coldMessageId;
+        if (!contentType || !contentId) return { ok: false as const, error: "no_reported_content" as const };
 
         let reportedUserId = report.reportedUserId;
         if (!reportedUserId) {
@@ -2753,23 +2787,84 @@ ${urlEntries}
             .limit(1);
           reportedUserId = reportedProfile?.userId ?? null;
         }
-        if (!reportedUserId) return { ok: false as const, error: "reported_account_unavailable" as const };
+        const snapshotAvailable = Boolean(report.reportedContentSnapshot || report.coldMessageContent);
+        let coldMessage:
+          | { id: string; fromProfileId: string; toProfileId: string }
+          | undefined;
+        let chatMessage:
+          | { id: string; matchId: string; senderId: string }
+          | undefined;
+        let blogPost:
+          | { id: string; profileId: string }
+          | undefined;
+        let profileExists = false;
 
-        const [message] = await tx
-          .select({
-            id: coldMessages.id,
-            fromProfileId: coldMessages.fromProfileId,
-            toProfileId: coldMessages.toProfileId,
-          })
-          .from(coldMessages)
-          .where(eq(coldMessages.id, report.coldMessageId))
-          .limit(1);
-
-        if (message && !isColdMessageAuthoredByReportedUser(report, message)) {
-          return { ok: false as const, error: "message_mismatch" as const };
+        if (contentType === "cold_message") {
+          if (report.coldMessageId && report.coldMessageId !== contentId) {
+            return { ok: false as const, error: "content_mismatch" as const };
+          }
+          const [row] = await tx
+            .select({
+              id: coldMessages.id,
+              fromProfileId: coldMessages.fromProfileId,
+              toProfileId: coldMessages.toProfileId,
+            })
+            .from(coldMessages)
+            .where(eq(coldMessages.id, contentId))
+            .limit(1);
+          coldMessage = row;
+          if (coldMessage && !isColdMessageAuthoredByReportedUser(report, coldMessage)) {
+            return { ok: false as const, error: "content_mismatch" as const };
+          }
+        } else if (contentType === "chat_message") {
+          const [row] = await tx
+            .select({
+              id: messages.id,
+              matchId: messages.matchId,
+              senderId: messages.senderId,
+            })
+            .from(messages)
+            .where(eq(messages.id, contentId))
+            .limit(1);
+          chatMessage = row;
+          if (chatMessage) {
+            const [match] = await tx
+              .select({ profile1Id: matches.profile1Id, profile2Id: matches.profile2Id })
+              .from(matches)
+              .where(eq(matches.id, chatMessage.matchId))
+              .limit(1);
+            if (!isChatMessageAuthoredByReportedUser(report, chatMessage, match)) {
+              return { ok: false as const, error: "content_mismatch" as const };
+            }
+          }
+        } else if (contentType === "blog_post") {
+          const [row] = await tx
+            .select({ id: blogPosts.id, profileId: blogPosts.profileId })
+            .from(blogPosts)
+            .where(eq(blogPosts.id, contentId))
+            .limit(1);
+          blogPost = row;
+          if (blogPost && !isBlogPostAuthoredByReportedUser(report, blogPost)) {
+            return { ok: false as const, error: "content_mismatch" as const };
+          }
+        } else if (contentType === "profile") {
+          if (contentId !== report.reportedId) {
+            return { ok: false as const, error: "content_mismatch" as const };
+          }
+          const [row] = await tx
+            .select({ id: profiles.id, userId: profiles.userId })
+            .from(profiles)
+            .where(eq(profiles.id, contentId))
+            .limit(1);
+          profileExists = Boolean(row);
+          if (row && reportedUserId && row.userId && row.userId !== reportedUserId) {
+            return { ok: false as const, error: "content_mismatch" as const };
+          }
         }
-        if (!message && !report.coldMessageContent) {
-          return { ok: false as const, error: "message_evidence_unavailable" as const };
+
+        const linkedContentExists = Boolean(coldMessage || chatMessage || blogPost || profileExists);
+        if (!linkedContentExists && !snapshotAvailable) {
+          return { ok: false as const, error: "content_evidence_unavailable" as const };
         }
 
         // Claim the pending report before taking action. This condition also
@@ -2782,30 +2877,65 @@ ${urlEntries}
         if (!claimedReport) return { ok: false as const, error: "not_pending" as const };
 
         let contentRemoved = false;
-        if (message) {
+        let contentHidden = false;
+        if (coldMessage) {
           const deletedMessages = await tx
             .delete(coldMessages)
             .where(and(
-              eq(coldMessages.id, report.coldMessageId),
+              eq(coldMessages.id, contentId),
               eq(coldMessages.fromProfileId, report.reportedId),
               eq(coldMessages.toProfileId, report.reporterId),
             ))
             .returning({ id: coldMessages.id });
           contentRemoved = deletedMessages.length > 0;
+        } else if (chatMessage) {
+          const deletedMessages = await tx
+            .delete(messages)
+            .where(and(
+              eq(messages.id, contentId),
+              eq(messages.senderId, report.reportedId),
+              eq(messages.matchId, chatMessage.matchId),
+            ))
+            .returning({ id: messages.id });
+          contentRemoved = deletedMessages.length > 0;
+        } else if (blogPost) {
+          const deletedPosts = await tx
+            .delete(blogPosts)
+            .where(and(
+              eq(blogPosts.id, contentId),
+              eq(blogPosts.profileId, report.reportedId),
+            ))
+            .returning({ id: blogPosts.id });
+          contentRemoved = deletedPosts.length > 0;
+        } else if (contentType === "profile" && profileExists) {
+          const hiddenProfiles = await tx
+            .update(profiles)
+            .set({ moderationHidden: true })
+            .where(and(
+              eq(profiles.id, contentId),
+              eq(profiles.moderationHidden, false),
+            ))
+            .returning({ id: profiles.id });
+          contentHidden = hiddenProfiles.length > 0;
         }
 
-        const expiresAt = getReportSuspensionExpiry(now);
-        await tx.insert(userSuspensions).values({
-          userId: reportedUserId,
-          reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
-          expiresAt,
-          isPermanent: false,
-        });
+        let expiresAt: Date | null = null;
+        if (reportedUserId) {
+          expiresAt = getReportSuspensionExpiry(now);
+          await tx.insert(userSuspensions).values({
+            userId: reportedUserId,
+            reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
+            expiresAt,
+            isPermanent: false,
+          });
+        }
 
         return {
           ok: true as const,
           targetProfileId: report.reportedId,
           contentRemoved,
+          contentHidden,
+          authorSuspended: Boolean(reportedUserId),
           expiresAt,
         };
       });
@@ -2814,10 +2944,9 @@ ${urlEntries}
         const responses = {
           not_found: [404, "Report not found"],
           not_pending: [409, "Report has already been handled"],
-          no_reported_message: [409, "This report is not linked to a specific cold message"],
-          reported_account_unavailable: [409, "Reported account cannot be identified for suspension"],
-          message_mismatch: [409, "Reported message does not belong to this report"],
-          message_evidence_unavailable: [409, "Reported message and its evidence are unavailable"],
+          no_reported_content: [409, "This report is not linked to a specific content item"],
+          content_mismatch: [409, "Reported content does not belong to this report"],
+          content_evidence_unavailable: [409, "Reported content and its evidence are unavailable"],
         } as const;
         const [status, error] = responses[result.error];
         return res.status(status).json({ error });
@@ -2825,13 +2954,15 @@ ${urlEntries}
 
       disconnectUserSockets(result.targetProfileId);
       console.warn(
-        `[ugc-moderation] report=${req.params.id} contentRemoved=${result.contentRemoved} ` +
-        "reportedUserSuspendedHours=24",
+        `[ugc-moderation] report=${req.params.id} contentRemoved=${result.contentRemoved} contentHidden=${result.contentHidden} ` +
+        `authorSuspended=${result.authorSuspended} suspensionHours=${result.authorSuspended ? 24 : 0}`,
       );
       return res.json({
         success: true,
         contentRemoved: result.contentRemoved,
-        contentWasAlreadyRemoved: !result.contentRemoved,
+        contentHidden: result.contentHidden,
+        contentWasAlreadyRemoved: !result.contentRemoved && !result.contentHidden,
+        authorSuspended: result.authorSuspended,
         suspensionExpiresAt: result.expiresAt,
       });
     } catch (error) {
@@ -2848,7 +2979,14 @@ ${urlEntries}
       const profile = await storage.getProfileByUserId(userId);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
 
-      const { reportedId, reason, description, coldMessageId } = req.body;
+      const {
+        reportedId,
+        reason,
+        description,
+        coldMessageId,
+        reportedContentType: requestedContentType,
+        reportedContentId: requestedContentId,
+      } = req.body;
       if (typeof reportedId !== "string" || !reportedId || typeof reason !== "string" || !reason.trim()) {
         return res.status(400).json({ error: "reportedId and reason are required" });
       }
@@ -2858,19 +2996,107 @@ ${urlEntries}
       if (coldMessageId !== undefined && typeof coldMessageId !== "string") {
         return res.status(400).json({ error: "coldMessageId must be a string" });
       }
+      if (description !== undefined && typeof description !== "string") {
+        return res.status(400).json({ error: "description must be a string" });
+      }
 
-      // Snapshot the cold message content immediately so it remains visible to
-      // admins even if the message is later deleted (e.g. after report+block).
+      const reportedContentType = requestedContentType ?? (coldMessageId ? "cold_message" : undefined);
+      const reportedContentId = requestedContentId ?? coldMessageId;
+      if (reportedContentType !== undefined && !isReportContentType(reportedContentType)) {
+        return res.status(400).json({ error: "Unsupported reported content type" });
+      }
+      if (
+        (reportedContentType !== undefined && typeof reportedContentId !== "string") ||
+        (reportedContentType === undefined && reportedContentId !== undefined) ||
+        (reportedContentId !== undefined && typeof reportedContentId !== "string")
+      ) {
+        return res.status(400).json({ error: "A supported content type and content ID must be provided together" });
+      }
+      if (
+        coldMessageId &&
+        (reportedContentType !== "cold_message" || reportedContentId !== coldMessageId)
+      ) {
+        return res.status(400).json({ error: "Cold-message report reference does not match" });
+      }
+
       let coldMessageContent: string | undefined;
-      if (coldMessageId) {
+      let reportedContentSnapshot: string | undefined;
+      if (reportedContentType === "profile" && reportedContentId) {
+        if (reportedContentId !== reportedId) {
+          return res.status(400).json({ error: "Reported profile reference does not match the report target" });
+        }
+        const [reportedProfile] = await db
+          .select({
+            id: profiles.id,
+            name: profiles.name,
+            bio: profiles.bio,
+            imageUrl: profiles.imageUrl,
+            photos: profiles.photos,
+            profileVideoUrl: profiles.profileVideoUrl,
+          })
+          .from(profiles)
+          .where(eq(profiles.id, reportedContentId))
+          .limit(1);
+        if (!reportedProfile) return res.status(404).json({ error: "Reported profile not found" });
+        reportedContentSnapshot = JSON.stringify(reportedProfile);
+      } else if (reportedContentType === "chat_message" && reportedContentId) {
+        const [message] = await db
+          .select({
+            id: messages.id,
+            matchId: messages.matchId,
+            senderId: messages.senderId,
+            content: messages.content,
+            createdAt: messages.createdAt,
+          })
+          .from(messages)
+          .where(eq(messages.id, reportedContentId))
+          .limit(1);
+        const [match] = message
+          ? await db
+            .select({ profile1Id: matches.profile1Id, profile2Id: matches.profile2Id })
+            .from(matches)
+            .where(eq(matches.id, message.matchId))
+            .limit(1)
+          : [];
+        if (!message || !isChatMessageAuthoredByReportedUser(
+          { reporterId: profile.id, reportedId },
+          message,
+          match,
+        )) {
+          return res.status(400).json({ error: "Reported chat message does not belong to this report" });
+        }
+        reportedContentSnapshot = JSON.stringify({
+          content: message.content,
+          createdAt: message.createdAt,
+        });
+      } else if (reportedContentType === "blog_post" && reportedContentId) {
+        const [post] = await db
+          .select({
+            id: blogPosts.id,
+            profileId: blogPosts.profileId,
+            title: blogPosts.title,
+            content: blogPosts.content,
+            imageUrl: blogPosts.imageUrl,
+            category: blogPosts.category,
+            createdAt: blogPosts.createdAt,
+          })
+          .from(blogPosts)
+          .where(eq(blogPosts.id, reportedContentId))
+          .limit(1);
+        if (!post || !isBlogPostAuthoredByReportedUser({ reportedId }, post)) {
+          return res.status(400).json({ error: "Reported blog post does not belong to this report" });
+        }
+        reportedContentSnapshot = JSON.stringify(post);
+      } else if (reportedContentType === "cold_message" && reportedContentId) {
         const [cm] = await db
           .select({
+            id: coldMessages.id,
             content: coldMessages.content,
             fromProfileId: coldMessages.fromProfileId,
             toProfileId: coldMessages.toProfileId,
           })
           .from(coldMessages)
-          .where(eq(coldMessages.id, coldMessageId))
+          .where(eq(coldMessages.id, reportedContentId))
           .limit(1);
         if (!cm || !isColdMessageAuthoredByReportedUser(
           { reporterId: profile.id, reportedId },
@@ -2879,9 +3105,20 @@ ${urlEntries}
           return res.status(400).json({ error: "Reported cold message does not belong to this report" });
         }
         coldMessageContent = cm.content;
+        reportedContentSnapshot = JSON.stringify({ content: cm.content });
       }
 
-      const report = await storage.createReport({ reporterId: profile.id, reportedId, reason, description, coldMessageId: coldMessageId || undefined, coldMessageContent });
+      const report = await storage.createReport({
+        reporterId: profile.id,
+        reportedId,
+        reason,
+        description,
+        coldMessageId: reportedContentType === "cold_message" ? reportedContentId : undefined,
+        coldMessageContent,
+        reportedContentType,
+        reportedContentId,
+        reportedContentSnapshot,
+      });
       void notifyAdminsOfNewUserReport(report.id);
       res.json(report);
     } catch (error) {
@@ -5727,6 +5964,10 @@ REGOLE:
 
   app.get("/api/profiles/:profileId/videos", async (req, res) => {
     try {
+      const profile = await storage.getProfile(req.params.profileId);
+      if (!profile || profile.moderationHidden) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
       const videos = await storage.getProfileVideos(req.params.profileId);
       res.json(videos);
     } catch (err) {
@@ -5933,6 +6174,10 @@ REGOLE:
 
   app.get("/api/signals/profile/:profileId", async (req, res) => {
     try {
+      const profile = await storage.getProfile(req.params.profileId);
+      if (!profile || profile.moderationHidden) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
       const signals = await storage.getProfileSignals(req.params.profileId, 5);
       res.json(signals);
     } catch (err) {
@@ -6856,7 +7101,16 @@ REGOLE:
       const category = req.query.category as string | undefined;
       const conditions = [eq(blogPosts.status, "active")];
       if (category && category !== "tutti") conditions.push(eq(blogPosts.category, category));
-      const list = await db.select().from(blogPosts).where(and(...conditions)).orderBy(desc(blogPosts.createdAt)).limit(50);
+      const rows = await db.select({ post: blogPosts })
+        .from(blogPosts)
+        .innerJoin(
+          profiles,
+          and(eq(profiles.id, blogPosts.profileId), eq(profiles.moderationHidden, false)),
+        )
+        .where(and(...conditions))
+        .orderBy(desc(blogPosts.createdAt))
+        .limit(50);
+      const list = rows.map((row) => row.post);
       res.json(list);
     } catch { res.status(500).json({ error: "Errore caricamento articoli" }); }
   });

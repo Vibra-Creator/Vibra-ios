@@ -60,7 +60,7 @@ function ArticleCard({ post, profileId, onLike, onDelete, onReport }: {
   profileId: string | null;
   onLike: (id: string) => void;
   onDelete: (id: string) => void;
-  onReport: (id: string) => void;
+  onReport: (post: BlogPost) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasLiked = profileId ? post.likes?.includes(profileId) : false;
@@ -126,7 +126,7 @@ function ArticleCard({ post, profileId, onLike, onDelete, onReport }: {
 
           {!isOwner && (
             <button
-              onClick={() => onReport(post.id)}
+              onClick={() => onReport(post)}
               className="p-1.5 rounded-full text-white/30 hover:text-amber-400 hover:bg-amber-500/10 transition-all"
               title="Segnala contenuto"
               data-testid={`button-report-${post.id}`}
@@ -194,6 +194,20 @@ export default function Blog() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] }),
   });
 
+  const reportMutation = useMutation({
+    mutationFn: (post: BlogPost) => apiRequest("POST", "/api/reports", {
+      reportedId: post.profileId,
+      reason: "Contenuto del blog segnalato",
+      reportedContentType: "blog_post",
+      reportedContentId: post.id,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/mine"] });
+      toast({ title: "Segnalazione inviata", description: "Il contenuto è stato inviato al team di moderazione." });
+    },
+    onError: () => toast({ title: "Errore", description: "Impossibile inviare la segnalazione.", variant: "destructive" }),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/blog-posts/${id}`, {}),
     onSuccess: () => {
@@ -202,11 +216,12 @@ export default function Blog() {
     },
   });
 
-  const handleReport = (id: string) => {
-    const subject = encodeURIComponent("Segnalazione articolo Blog Vibra");
-    const body = encodeURIComponent(`Segnalo il seguente articolo del Blog Vibra per contenuto inappropriato o illecito.\n\nID articolo: ${id}\n\nMotivo della segnalazione:\n[scrivi qui]`);
-    window.open(`mailto:privacyvibra@gmail.com?subject=${subject}&body=${body}`, "_blank");
-    toast({ title: "Segnalazione aperta", description: "Si aprirà la tua email per inviare la segnalazione a Vibra." });
+  const handleReport = (post: BlogPost) => {
+    if (!user) {
+      toast({ title: "Accedi per segnalare", description: "Devi accedere per inviare una segnalazione." });
+      return;
+    }
+    reportMutation.mutate(post);
   };
 
   const onSubmit = (data: z.infer<typeof formSchema>) => createMutation.mutate(data);

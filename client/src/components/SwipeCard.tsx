@@ -76,7 +76,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
   });
 
   const reportMutation = useMutation({
-    mutationFn: (data: { reportedId: string; reason: string }) =>
+    mutationFn: (data: { reportedId: string; reason: string; reportedContentType: "profile"; reportedContentId: string }) =>
       apiRequest("POST", "/api/reports", data),
     onSuccess: () => {
       toast({ title: t("swipe.reportSent"), description: t("swipe.reportSentDesc") });
@@ -401,7 +401,12 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                         key={reason.key}
                         variant="ghost"
                         className="w-full text-white/80 justify-start"
-                        onClick={() => reportMutation.mutate({ reportedId: profile.id, reason: reason.value })}
+                        onClick={() => reportMutation.mutate({
+                          reportedId: profile.id,
+                          reason: reason.value,
+                          reportedContentType: "profile",
+                          reportedContentId: profile.id,
+                        })}
                         disabled={reportMutation.isPending}
                         data-testid={`button-report-reason-${reason.key}`}
                       >

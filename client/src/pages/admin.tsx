@@ -447,7 +447,9 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
-      toast({ title: "Moderazione completata: contenuto rimosso e autore sospeso per 24 ore" });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+      toast({ title: "Moderazione completata: contenuto rimosso o profilo nascosto, segnalazione chiusa" });
     },
     onError: () => {
       toast({ title: "Impossibile completare la moderazione", variant: "destructive" });
@@ -1260,10 +1262,31 @@ export default function Admin() {
                                 <p className="text-sm text-foreground italic">"{report.coldMessageContent}"</p>
                               </div>
                             )}
+                            {report.reportedContentSnapshot && (
+                              <div className="mt-2 p-2 rounded bg-muted border-l-2 border-red-400" data-testid={`reported-content-evidence-${report.id}`}>
+                                <p className="text-xs text-muted-foreground mb-1 font-medium">
+                                  Contenuto segnalato: {
+                                    report.reportedContentType === "profile" ? "profilo" :
+                                    report.reportedContentType === "chat_message" ? "messaggio chat" :
+                                    report.reportedContentType === "cold_message" ? "messaggio freddo" :
+                                    report.reportedContentType === "blog_post" ? "articolo blog" : "elemento"
+                                  }
+                                </p>
+                                <pre className="text-xs text-foreground whitespace-pre-wrap break-words max-h-48 overflow-auto">
+                                  {(() => {
+                                    try {
+                                      return JSON.stringify(JSON.parse(report.reportedContentSnapshot!), null, 2);
+                                    } catch {
+                                      return report.reportedContentSnapshot;
+                                    }
+                                  })()}
+                                </pre>
+                              </div>
+                            )}
                           </div>
                           {report.status === "pending" && (
                             <div className="flex gap-2">
-                              {report.coldMessageId && (
+                              {((report.reportedContentType && report.reportedContentId) || report.coldMessageId) && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1271,16 +1294,19 @@ export default function Admin() {
                                   disabled={removeAndSuspendReportedUserMutation.isPending}
                                   onClick={() => {
                                     if (!window.confirm(
-                                      "Rimuovere il messaggio segnalato se ancora presente, sospendere l'autore per 24 ore e chiudere la segnalazione?",
+                                      report.reportedContentType === "profile"
+                                        ? "Nascondere il profilo segnalato e chiudere la segnalazione? Il profilo non sarà cancellato. L'autore verrà sospeso per 24 ore se è collegato a un account."
+                                        : "Rimuovere il contenuto segnalato se ancora presente e chiudere la segnalazione? L'autore verrà sospeso per 24 ore se è collegato a un account.",
                                     )) return;
                                     removeAndSuspendReportedUserMutation.mutate(report.id);
                                   }}
                                   data-testid={`button-remove-reported-content-${report.id}`}
                                 >
-                                  <Trash2 className="w-4 h-4 mr-1" /> Rimuovi e sospendi 24h
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  {report.reportedContentType === "profile" ? "Nascondi profilo + sospendi se possibile" : "Rimuovi contenuto + sospendi se possibile"}
                                 </Button>
                               )}
-                              {!report.coldMessageId && profiles?.find((profile) => profile.id === report.reportedId)?.userId && (
+                              {!((report.reportedContentType && report.reportedContentId) || report.coldMessageId) && profiles?.find((profile) => profile.id === report.reportedId)?.userId && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1301,7 +1327,7 @@ export default function Admin() {
                                   <Ban className="w-4 h-4 mr-1" /> Sospendi 24h
                                 </Button>
                               )}
-                              {!report.coldMessageId && (
+                              {!((report.reportedContentType && report.reportedContentId) || report.coldMessageId) && (
                                 <Button size="sm" variant="outline" className="text-green-600" onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })} data-testid={`button-resolve-report-${report.id}`}>
                                   <CheckCircle className="w-4 h-4 mr-1" /> Risolvi
                                 </Button>

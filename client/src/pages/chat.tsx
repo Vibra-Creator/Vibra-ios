@@ -205,11 +205,33 @@ export default function Chat() {
   const reportUser = useMutation({
     mutationFn: async (reason: string) => {
       if (!otherProfile) return;
-      await apiRequest("POST", "/api/reports", { reportedId: otherProfile.id, reason });
+      await apiRequest("POST", "/api/reports", {
+        reportedId: otherProfile.id,
+        reason,
+        reportedContentType: "profile",
+        reportedContentId: otherProfile.id,
+      });
     },
     onSuccess: () => {
       toast({ title: t("chat.reportSent"), description: t("chat.reportSentDesc") });
       setShowReportMenu(false);
+    },
+  });
+
+  const reportChatMessageMutation = useMutation({
+    mutationFn: async (message: { id: string; senderId: string }) =>
+      apiRequest("POST", "/api/reports", {
+        reportedId: message.senderId,
+        reason: "Messaggio inappropriato",
+        reportedContentType: "chat_message",
+        reportedContentId: message.id,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/mine"] });
+      toast({ title: "Messaggio segnalato", description: "La segnalazione è stata inviata al team di moderazione." });
+    },
+    onError: () => {
+      toast({ title: t("common.error"), description: "Impossibile segnalare il messaggio.", variant: "destructive" });
     },
   });
 
@@ -493,6 +515,22 @@ export default function Chat() {
                             )}
                           </div>
                         </div>
+                        {!isMe && (
+                          <button
+                            type="button"
+                            className="mt-1 inline-flex items-center gap-1 text-xs text-white/45 hover:text-red-300 disabled:opacity-50"
+                            disabled={reportChatMessageMutation.isPending}
+                            aria-label="Segnala messaggio"
+                            title="Segnala messaggio"
+                            onClick={() => {
+                              if (!window.confirm("Inviare questo messaggio al team di moderazione?")) return;
+                              reportChatMessageMutation.mutate(message);
+                            }}
+                            data-testid={`button-report-message-${message.id}`}
+                          >
+                            <Flag className="w-3 h-3" /> Segnala
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   );
