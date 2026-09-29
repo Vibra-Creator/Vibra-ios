@@ -4565,6 +4565,13 @@ REGOLE:
         const pushBody = mediaUrl
           ? `${userProfile.name}: ${mediaType === "video" ? "📹 Video" : mediaType === "audio" ? "🎤 Vocale" : "🖼️ Immagine"}`
           : `${userProfile.name}: ${filteredContent.substring(0, 100)}`;
+        const vibrappPushPayload = {
+          title: `🛸 ${userProfile.name}`,
+          body: pushBody.replace(`${userProfile.name}: `, ""),
+          icon: "/icons/icon-192.png",
+          url: "/vibrapp",
+          type: "vibrapp",
+        };
 
         if (data.replyToId && replyToSenderId) {
           io.to(`user:${profileId}`).to(`user:${replyToSenderId}`).emit("vibrapp:new-message", msg);

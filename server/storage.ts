@@ -1291,10 +1291,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVideosForInactiveProfiles(cutoffDate: Date): Promise<ProfileVideo[]> {
-    return db.select()
-    .from(profileVideos)
-    .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
-    .where(lt(profiles.lastActiveAt, cutoffDate));
+    const rows = await db
+      .select({ video: profileVideos })
+      .from(profileVideos)
+      .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
+      .where(lt(profiles.lastActiveAt, cutoffDate));
+    return rows.map(({ video }) => video);
   }
 
   async sendColdMessage(fromProfileId: string, toProfileId: string, content: string, mediaUrl?: string, mediaType?: string): Promise<{ status: "sent" | "already_exists" | "already_replied"; coldMessage?: ColdMessage }> {
