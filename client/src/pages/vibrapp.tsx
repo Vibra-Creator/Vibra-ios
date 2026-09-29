@@ -96,7 +96,6 @@ export default function Vibrapp() {
   const [introText, setIntroText] = useState("");
   const [introColdStatus, setIntroColdStatus] = useState<"idle" | "already_exists" | "sent" | "replied">("idle");
   const [introCheckDone, setIntroCheckDone] = useState(false);
-  const [introPrivateRoomId, setIntroPrivateRoomId] = useState<string | null>(null);
   const [introSentContent, setIntroSentContent] = useState<string | null>(null);
   const [introSentAt, setIntroSentAt] = useState<string | null>(null);
   const [selectedColdMsg, setSelectedColdMsg] = useState<ReceivedColdMsg | null>(null);
@@ -420,7 +419,6 @@ export default function Vibrapp() {
             setIntroTarget(target);
             if (data.replied) {
               setIntroColdStatus("replied");
-              setIntroPrivateRoomId(data.privateRoomId ?? null);
             } else {
               setIntroColdStatus(data.isSentByMe ? "already_exists" : "idle");
             }
@@ -440,7 +438,6 @@ export default function Vibrapp() {
       .then((data: { exists: boolean; replied: boolean; privateRoomId: string | null; content: string | null; createdAt: string | null }) => {
         if (data.exists) {
           setIntroColdStatus(data.replied ? "replied" : "already_exists");
-          if (data.replied && data.privateRoomId) setIntroPrivateRoomId(data.privateRoomId);
           if (data.content) setIntroSentContent(data.content);
           if (data.createdAt) setIntroSentAt(data.createdAt);
           setShowIntroCompose(false);
@@ -1021,10 +1018,6 @@ export default function Vibrapp() {
   // Private rooms are separate (not used in Vibrapp flow)
   
   if (isLegacyIntroFullscreenEnabled() && introTarget && introTarget.id !== profile?.id) {
-    if (introColdStatus === "replied" && introPrivateRoomId) {
-      return null;
-    }
-
     const clearIntro = () => {
       sessionStorage.removeItem("vibrapp_intro_target");
       setLocation("/vibrapp");
@@ -1191,7 +1184,7 @@ export default function Vibrapp() {
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 h-8 shrink-0"
                 onClick={() => openDmPanel(introTarget)}
-                data-testid="button-go-private-room"
+                data-testid="button-go-vibrapp-dm"
               >
                 💬 Vibrapp
               </Button>
