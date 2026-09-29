@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
 import { getProfileVideoCleanupCutoff, removeInactiveProfileVideos } from "./profile-video-cleanup";
+import { registerAdminBotImageFixRoute } from "./admin-bot-image-fix";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
@@ -5843,7 +5844,7 @@ REGOLE:
   });
 
   // Admin fix route for bot image extensions
-  app.get("/api/admin/fix-bot-images", isAuthenticated, isAdmin, async (_req: any, res: any) => {
+  registerAdminBotImageFixRoute(app, isAuthenticated, isAdmin, async (_req: any, res: any) => {
     try {
       // Fix all bot images from .png to .webp (and .jpg to .webp)
       await db
