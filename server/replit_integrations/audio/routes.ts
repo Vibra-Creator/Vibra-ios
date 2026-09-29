@@ -1,5 +1,6 @@
 import express, { type Express, type Request, type Response } from "express";
 import { chatStorage } from "../chat/storage";
+import { parsePositiveIntegerRouteParam } from "../routeParams";
 import { openai, speechToText, ensureCompatibleFormat } from "./client";
 
 // Body parser with 50MB limit for audio payloads
@@ -20,7 +21,8 @@ export function registerAudioRoutes(app: Express): void {
   // Get single conversation with messages
   app.get("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parsePositiveIntegerRouteParam(req.params.id, res, "conversation ID");
+      if (id === undefined) return;
       const conversation = await chatStorage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
@@ -48,7 +50,8 @@ export function registerAudioRoutes(app: Express): void {
   // Delete conversation
   app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parsePositiveIntegerRouteParam(req.params.id, res, "conversation ID");
+      if (id === undefined) return;
       await chatStorage.deleteConversation(id);
       res.status(204).send();
     } catch (error) {
@@ -62,7 +65,8 @@ export function registerAudioRoutes(app: Express): void {
   // Uses gpt-4o-mini-transcribe for STT, gpt-audio for voice response
   app.post("/api/conversations/:id/messages", audioBodyParser, async (req: Request, res: Response) => {
     try {
-      const conversationId = parseInt(req.params.id);
+      const conversationId = parsePositiveIntegerRouteParam(req.params.id, res, "conversation ID");
+      if (conversationId === undefined) return;
       const { audio, voice = "alloy" } = req.body;
 
       if (!audio) {

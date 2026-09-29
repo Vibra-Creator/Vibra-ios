@@ -1526,7 +1526,7 @@ ${urlEntries}
       }
 
       await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: userProfile.userId,
+        owner: userProfile.userId ?? userId,
         visibility: "public",
       });
 
@@ -1620,7 +1620,7 @@ ${urlEntries}
       }
 
       await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: userProfile.userId,
+        owner: userProfile.userId ?? userId,
         visibility: "public",
       });
 
@@ -2958,7 +2958,7 @@ ${urlEntries}
       });
 
       const otherProfile = await storage.getProfile(otherProfileId);
-      if (shouldAutoReplyToDirectMessage(otherProfile)) {
+      if (otherProfile && shouldAutoReplyToDirectMessage(otherProfile)) {
         // Delay realistico basato su lastActiveAt del bot
         const { readDelayMs } = getBotDelay(otherProfile);
         (async () => {
@@ -5841,14 +5841,8 @@ REGOLE:
   });
 
   // Admin fix route for bot image extensions
-  app.get("/api/admin/fix-bot-images", async (req, res) => {
+  app.get("/api/admin/fix-bot-images", isAuthenticated, isAdmin, async (_req: any, res: any) => {
     try {
-      // Check if user is admin
-      const userId = req.session?.userId || req.user?.claims?.sub;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const user = await storage.getProfileByUserId(userId);
-      if (!user?.isAdmin) return res.status(403).json({ error: "Admin only" });
-
       // Fix all bot images from .png to .webp (and .jpg to .webp)
       await db
         .update(profiles)
@@ -6685,7 +6679,7 @@ REGOLE:
     try {
       const profile = await storage.getProfileByUserId(req.user.id);
       if (!profile) return res.status(403).json({ error: "Non autorizzato" });
-      const body = { ...req.body, profileId: profile.id, profileName: profile.name || "Anonimo", profileImageUrl: profile.primaryPhoto || "" };
+      const body = { ...req.body, profileId: profile.id, profileName: profile.name || "Anonimo", profileImageUrl: profile.imageUrl || "" };
       const parsed = insertBlogPostSchema.parse(body);
       const [post] = await db.insert(blogPosts).values(parsed).returning();
       res.json(post);
@@ -6738,7 +6732,7 @@ REGOLE:
     try {
       const profile = await storage.getProfileByUserId(req.user.id);
       if (!profile) return res.status(403).json({ error: "Non autorizzato" });
-      const body = { ...req.body, profileId: profile.id, profileName: profile.name || "Anonimo", profileImageUrl: profile.primaryPhoto || "" };
+      const body = { ...req.body, profileId: profile.id, profileName: profile.name || "Anonimo", profileImageUrl: profile.imageUrl || "" };
       const parsed = insertEventSchema.parse(body);
       const [event] = await db.insert(events).values(parsed).returning();
       res.json(event);

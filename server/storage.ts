@@ -6,6 +6,7 @@ import {
   type Message, type InsertMessage,
   type Room, type RoomMessage, type PrivateRoom, type PrivateRoomRequest, type PrivateRoomMessage,
   type DailyChallenge, type ChallengeSubmission,
+  type Story, type StoryBriciola, type VaultConfession, type UserQuest, type VibraLegacy, type ConsentRequest,
   type VirtualGift, type SentGift,
   type Report, type ReportCleanupAlertState, type ColdMessageCleanupStateRecord, type UserSuspension, type BannedWord,
   type ProfileRating,

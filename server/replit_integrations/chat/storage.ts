@@ -1,5 +1,5 @@
 import { db } from "../../db";
-import { conversations, messages } from "@shared/schema";
+import { conversations, messages as conversationMessages } from "@shared/models/chat";
 import { eq, desc } from "drizzle-orm";
 
 export interface IChatStorage {
@@ -7,8 +7,8 @@ export interface IChatStorage {
   getAllConversations(): Promise<(typeof conversations.$inferSelect)[]>;
   createConversation(title: string): Promise<typeof conversations.$inferSelect>;
   deleteConversation(id: number): Promise<void>;
-  getMessagesByConversation(conversationId: number): Promise<(typeof messages.$inferSelect)[]>;
-  createMessage(conversationId: number, role: string, content: string): Promise<typeof messages.$inferSelect>;
+  getMessagesByConversation(conversationId: number): Promise<(typeof conversationMessages.$inferSelect)[]>;
+  createMessage(conversationId: number, role: string, content: string): Promise<typeof conversationMessages.$inferSelect>;
 }
 
 export const chatStorage: IChatStorage = {
@@ -27,16 +27,18 @@ export const chatStorage: IChatStorage = {
   },
 
   async deleteConversation(id: number) {
-    await db.delete(messages).where(eq(messages.conversationId, id));
+    await db.delete(conversationMessages).where(eq(conversationMessages.conversationId, id));
     await db.delete(conversations).where(eq(conversations.id, id));
   },
 
   async getMessagesByConversation(conversationId: number) {
-    return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+    return db.select().from(conversationMessages)
+      .where(eq(conversationMessages.conversationId, conversationId))
+      .orderBy(conversationMessages.createdAt);
   },
 
   async createMessage(conversationId: number, role: string, content: string) {
-    const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
+    const [message] = await db.insert(conversationMessages).values({ conversationId, role, content }).returning();
     return message;
   },
 };
