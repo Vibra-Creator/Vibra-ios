@@ -3,6 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
+import { getProfileVideoCleanupCutoff, removeInactiveProfileVideos } from "./profile-video-cleanup";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
@@ -5581,14 +5582,15 @@ REGOLE:
   // Cleanup job: elimina video di profili inattivi da 30+ giorni
   async function cleanInactiveProfileVideos() {
     try {
-      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const cutoff = getProfileVideoCleanupCutoff();
       const staleVideos = await storage.getVideosForInactiveProfiles(cutoff);
       if (staleVideos.length === 0) return;
       console.log(`[profile-videos] cleanup: rimozione ${staleVideos.length} video inattivi`);
-      for (const video of staleVideos) {
-        try { await objectStorageService.deleteObject(video.videoUrl); } catch {}
-        await storage.deleteProfileVideo(video.id);
-      }
+      await removeInactiveProfileVideos(
+        staleVideos,
+        (videoUrl) => objectStorageService.deleteObject(videoUrl),
+        (videoId) => storage.deleteProfileVideo(videoId),
+      );
     } catch (err) {
       console.error("[profile-videos] cleanup error:", err);
     }
