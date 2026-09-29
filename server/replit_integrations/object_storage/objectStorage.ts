@@ -154,6 +154,13 @@ export class ObjectStorageService {
     });
   }
 
+  async getMarketplaceImageUploadURL(): Promise<string> {
+    const { bucketName, objectName } = parseObjectPath(
+      `${this.getPrivateObjectDir().replace(/\/+$/, "")}/marketplace/${randomUUID()}`
+    );
+    return signObjectURL({ bucketName, objectName, method: "PUT", ttlSec: 900 });
+  }
+
   // Gets the object entity file from the object path.
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {
@@ -236,6 +243,20 @@ export class ObjectStorageService {
       objectFile,
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
+  }
+
+  // Only listing uploads may be removed here; never accept arbitrary bucket paths.
+  async deleteListingImage(objectPath: string, ownerId: string): Promise<void> {
+    // Legacy /uploads paths have no reliable purpose marker and may be profile photos.
+    if (!/^\/objects\/marketplace\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(objectPath)) return;
+    const directory = this.getPrivateObjectDir().replace(/\/+$/, "");
+    const { bucketName, objectName } = parseObjectPath(`${directory}/${objectPath.slice("/objects/".length)}`);
+    const file = objectStorageClient.bucket(bucketName).file(objectName);
+    const [exists] = await file.exists();
+    if (!exists) return;
+    const policy = await getObjectAclPolicy(file);
+    if (policy?.owner !== ownerId) return;
+    await file.delete({ ignoreNotFound: true });
   }
 
   async deleteObject(objectPath: string): Promise<boolean> {

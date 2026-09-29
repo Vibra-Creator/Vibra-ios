@@ -8,3 +8,4 @@
 - [Playwright browser setup](playwright-browser-setup.md) — il setup può fallire sull’installazione delle dipendenze di sistema anche dopo aver installato il browser
 - [Public video SEO](video-indexing.md) — Google needs an absolute thumbnail in initial HTML on routes that visibly contain video; never guess upload dates.
 - [Frontend release gate](frontend-release-gate.md) — keep the client type check blocking builds while server type debt is addressed separately.
+- [Marketplace image ownership](marketplace-image-ownership.md) — delete only purpose-scoped uploads with matching ownership; legacy generic uploads cannot safely be attributed.

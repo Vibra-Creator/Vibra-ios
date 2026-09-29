@@ -19,7 +19,7 @@ async function registerUser(request: APIRequestContext, label: string): Promise<
     name: `Marketplace_${label}_${RUN_ID}`,
   };
   const response = await request.post("/api/auth/register", {
-    data: { ...credentials, age: 25 },
+    data: { ...credentials, age: 25, termsAccepted: true },
   });
   if (!response.ok()) {
     throw new Error(`Register ${label}: ${response.status()} – ${await response.text()}`);
@@ -29,7 +29,7 @@ async function registerUser(request: APIRequestContext, label: string): Promise<
 
 async function loginAs(request: APIRequestContext, credentials: Credentials): Promise<string> {
   const response = await request.post("/api/auth/login", {
-    data: { email: credentials.email, password: credentials.password },
+    data: { email: credentials.email, password: credentials.password, termsAccepted: true },
   });
   if (!response.ok()) {
     throw new Error(`Login ${credentials.email}: ${response.status()} – ${await response.text()}`);
@@ -151,6 +151,58 @@ test("authenticated listings and public photos survive a reload", async ({ page,
     expect(publicResponse.headers.get("content-type")).toContain("image/png");
     expect((await publicResponse.arrayBuffer()).byteLength).toBeGreaterThan(0);
   }
+});
+
+test("deleting a listing removes only its unreferenced stored photos", async ({ request }) => {
+  const otherUser = await registerUser(request, "photo-owner");
+  await loginAs(request, otherUser);
+  const profileUpload = await request.post("/api/profiles/upload-photo", {
+    multipart: { photo: { name: "profile.png", mimeType: "image/png", buffer: TEST_IMAGE } },
+  });
+  expect(profileUpload.status(), await profileUpload.text()).toBe(200);
+  const otherUserPhoto = ((await profileUpload.json()) as { url: string }).url;
+  const otherMarketplaceUpload = await request.post("/api/hub-posts/upload-image", {
+    multipart: { images: { name: "other-marketplace.png", mimeType: "image/png", buffer: TEST_IMAGE } },
+  });
+  expect(otherMarketplaceUpload.status(), await otherMarketplaceUpload.text()).toBe(200);
+  const otherMarketplacePhoto = ((await otherMarketplaceUpload.json()) as { urls: string[] }).urls[0];
+
+  const user = await registerUser(request, "deletion");
+  await loginAs(request, user);
+
+  const images: string[] = [];
+  for (let index = 0; index < 5; index++) {
+    const upload = await request.post("/api/hub-posts/upload-image", {
+      multipart: { images: { name: `deletion-${index}.png`, mimeType: "image/png", buffer: TEST_IMAGE } },
+    });
+    expect(upload.status(), await upload.text()).toBe(200);
+    images.push(...((await upload.json()) as { urls: string[] }).urls);
+  }
+
+  async function createListing(title: string, imageUrls: string[]): Promise<string> {
+    const response = await request.post("/api/hub-posts", {
+      data: { category: "marketplace", title, description: "Listing deletion test", imageUrls },
+    });
+    expect(response.status(), await response.text()).toBe(200);
+    return ((await response.json()) as { id: string }).id;
+  }
+
+  const first = await createListing(`First deletion ${RUN_ID}`, [...images.slice(0, 3), otherUserPhoto, otherMarketplacePhoto]);
+  const second = await createListing(`Second deletion ${RUN_ID}`, [images[2], ...images.slice(3)]);
+  for (const image of images) expect((await request.get(image)).status()).toBe(200);
+
+  expect((await request.delete(`/api/hub-posts/${first}`)).status()).toBe(200);
+  for (const image of images.slice(0, 2)) expect((await request.get(image)).status()).toBe(404);
+  for (const image of images.slice(2)) expect((await request.get(image)).status()).toBe(200);
+  expect((await request.get(otherUserPhoto)).status()).toBe(200);
+  expect((await request.get(otherMarketplacePhoto)).status()).toBe(200);
+  const remaining = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{ id: string }>;
+  expect(remaining.some((post) => post.id === second)).toBe(true);
+
+  expect((await request.delete(`/api/hub-posts/${second}`)).status()).toBe(200);
+  for (const image of images.slice(2)) expect((await request.get(image)).status()).toBe(404);
+  expect((await request.get(otherUserPhoto)).status()).toBe(200);
+  expect((await request.get(otherMarketplacePhoto)).status()).toBe(200);
 });
 
 test("upload and publication errors are surfaced in the Marketplace UI", async ({ page, request }) => {

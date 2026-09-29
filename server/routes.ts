@@ -6582,7 +6582,7 @@ REGOLE:
 
       const urls: string[] = [];
       for (const file of files) {
-        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        const uploadURL = await objectStorageService.getMarketplaceImageUploadURL();
         const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
         const putResponse = await fetch(uploadURL, {
           method: "PUT",
@@ -6662,7 +6662,29 @@ REGOLE:
       const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, req.params.id));
       if (!post) return res.status(404).json({ error: "Post non trovato" });
       if (post.profileId !== profile.id && !req.user.isAdmin) return res.status(403).json({ error: "Non autorizzato" });
-      await db.delete(hubPosts).where(eq(hubPosts.id, req.params.id));
+      const [deleted] = await db.delete(hubPosts).where(eq(hubPosts.id, req.params.id)).returning();
+      if (!deleted) return res.status(404).json({ error: "Post non trovato" });
+      if (deleted.category === "marketplace") {
+        const owner = await storage.getProfile(deleted.profileId).catch((error) => {
+          console.error("Marketplace image cleanup owner lookup failed:", { postId: deleted.id }, error);
+          return null;
+        });
+        const images = new Set([...(deleted.imageUrls || []), deleted.imageUrl].filter((url): url is string => typeof url === "string" && url.length > 0));
+        for (const image of Array.from(images)) {
+          // A saved URL can be reused by another listing. Never remove a shared object.
+          try {
+            const [reference] = await db.select({ id: hubPosts.id }).from(hubPosts)
+              .where(sql`${hubPosts.imageUrl} = ${image} OR ${image} = ANY(${hubPosts.imageUrls}) OR ${hubPosts.profileImageUrl} = ${image}`)
+              .limit(1);
+            const [profileReference] = reference ? [null] : await db.select({ id: profiles.id }).from(profiles)
+              .where(sql`${profiles.imageUrl} = ${image} OR ${image} = ANY(COALESCE(${profiles.photos}, ARRAY[]::text[])) OR ${profiles.profileVideoUrl} = ${image}`)
+              .limit(1);
+            if (!reference && !profileReference && owner?.userId) await objectStorageService.deleteListingImage(image, owner.userId);
+          } catch (error) {
+            console.error("Marketplace image cleanup failed:", { postId: deleted.id, image }, error);
+          }
+        }
+      }
       res.json({ ok: true });
     } catch { res.status(500).json({ error: "Errore eliminazione post" }); }
   });
