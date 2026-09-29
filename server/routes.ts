@@ -5587,11 +5587,16 @@ REGOLE:
       const staleVideos = await storage.getVideosForInactiveProfiles(cutoff);
       if (staleVideos.length === 0) return;
       console.log(`[profile-videos] cleanup: rimozione ${staleVideos.length} video inattivi`);
-      await removeInactiveProfileVideos(
+      const cleanupResult = await removeInactiveProfileVideos(
         staleVideos,
         (videoUrl) => objectStorageService.deleteObject(videoUrl),
         (videoId) => storage.deleteProfileVideo(videoId),
       );
+      if (cleanupResult.skippedMissingUrlCount > 0) {
+        console.warn(
+          `[profile-videos] cleanup preserved ${cleanupResult.skippedMissingUrlCount} inactive video(s) with a missing URL`,
+        );
+      }
     } catch (err) {
       console.error("[profile-videos] cleanup error:", err);
     }

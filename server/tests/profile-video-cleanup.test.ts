@@ -37,6 +37,34 @@ test("profile video cleanup cutoff is 30 days", () => {
   );
 });
 
+test("missing video URLs are preserved while other inactive videos are cleaned", async () => {
+  const video = (
+    id: string,
+    videoUrl: unknown,
+  ): Parameters<typeof removeInactiveProfileVideos>[0][number] =>
+    ({ id, videoUrl }) as Parameters<typeof removeInactiveProfileVideos>[0][number];
+  const deletedObjectUrls: string[] = [];
+  const deletedVideoIds: string[] = [];
+
+  const result = await removeInactiveProfileVideos(
+    [
+      video("missing-url", undefined),
+      video("blank-url", "  "),
+      video("valid-url", "/objects/profile-videos/valid.mp4"),
+    ],
+    async (videoUrl) => {
+      deletedObjectUrls.push(videoUrl);
+    },
+    async (videoId) => {
+      deletedVideoIds.push(videoId);
+    },
+  );
+
+  assert.deepEqual(result, { deletedCount: 1, skippedMissingUrlCount: 2 });
+  assert.deepEqual(deletedObjectUrls, ["/objects/profile-videos/valid.mp4"]);
+  assert.deepEqual(deletedVideoIds, ["valid-url"]);
+});
+
 test(
   "cleanup selects and removes only videos belonging to inactive profiles",
   { skip: !RUN_DATABASE_INTEGRATION },
