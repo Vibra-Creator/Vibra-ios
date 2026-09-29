@@ -7,3 +7,4 @@
 - [iOS launch validation](ios-launch-validation.md) — la conferma su dispositivi iOS e la revisione dei crash log richiedono strumenti Apple esterni a questo workspace
 - [Playwright browser setup](playwright-browser-setup.md) — il setup può fallire sull’installazione delle dipendenze di sistema anche dopo aver installato il browser
 - [Public video SEO](video-indexing.md) — Google needs an absolute thumbnail in initial HTML on routes that visibly contain video; never guess upload dates.
+- [Frontend release gate](frontend-release-gate.md) — keep the client type check blocking builds while server type debt is addressed separately.
