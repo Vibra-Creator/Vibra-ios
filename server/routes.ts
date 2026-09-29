@@ -515,6 +515,94 @@ export async function getColdMessageByIdHandler(req: any, res: any) {
   }
 }
 
+type ColdMessageReplyNotifier = (
+  dmMsg: {
+    id: string;
+    fromProfileId: string;
+    toProfileId: string;
+    content: string;
+    readAt: Date | null;
+    createdAt: Date;
+    senderName: string;
+    senderImage: string | null;
+  },
+  recipientProfileId: string,
+  senderName: string,
+) => void;
+
+export async function postColdMessageReplyHandler(
+  req: any,
+  res: any,
+  notifyReply?: ColdMessageReplyNotifier,
+) {
+  try {
+    const userId = req.user?.claims?.sub || req.session?.userId;
+    if (!userId) return res.status(401).json({ error: "Non autenticato" });
+    const myProfile = await storage.getProfileByUserId(userId);
+    if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: "Messaggio mancante" });
+    const msg = await storage.getColdMessageById(req.params.id);
+    if (!msg) return res.status(404).json({ error: "Messaggio non trovato" });
+    if (msg.toProfileId !== myProfile.id) return res.status(403).json({ error: "Non autorizzato" });
+    if (msg.replied) return res.status(400).json({ error: "Già risposto" });
+    // The sender may have deleted their account or blocked the recipient
+    // after the reply panel was opened. Re-check reachability immediately
+    // before creating the Vibrapp DM.
+    const senderProfile = await storage.getProfile(msg.fromProfileId);
+    if (!senderProfile) {
+      return res.status(403).json({
+        error: "Questo messaggio non è più disponibile: il mittente ha eliminato il proprio account",
+        reason: "sender_deleted",
+      });
+    }
+    const senderBlockedRecipient = await storage.isBlocked(msg.fromProfileId, myProfile.id);
+    if (senderBlockedRecipient) {
+      return res.status(403).json({
+        error: "Questo messaggio non è più disponibile: il mittente ti ha bloccato",
+        reason: "sender_blocked",
+      });
+    }
+
+    let vibrappDm: any;
+    try {
+      ({ vibrappDm } = await storage.replyColdMessage(req.params.id, content.trim().substring(0, 500)));
+    } catch (err: any) {
+      // Keep the HTTP contract stable if either reachability check changes
+      // between the route validation and the storage operation.
+      if (err?.code === "sender_deleted") {
+        return res.status(403).json({
+          error: "Questo messaggio non è più disponibile: il mittente ha eliminato il proprio account",
+          reason: "sender_deleted",
+        });
+      }
+      if (err?.code === "sender_blocked") {
+        return res.status(403).json({
+          error: "Questo messaggio non è più disponibile: il mittente ti ha bloccato",
+          reason: "sender_blocked",
+        });
+      }
+      throw err;
+    }
+
+    const dmMsg = {
+      id: vibrappDm.id,
+      fromProfileId: vibrappDm.fromProfileId,
+      toProfileId: vibrappDm.toProfileId,
+      content: vibrappDm.content,
+      readAt: vibrappDm.readAt,
+      createdAt: vibrappDm.createdAt,
+      senderName: myProfile.name,
+      senderImage: myProfile.imageUrl,
+    };
+    notifyReply?.(dmMsg, msg.fromProfileId, myProfile.name);
+    return res.json({ dm: dmMsg, privateRoomId: null });
+  } catch (err) {
+    console.error("[cold-messages reply]", err);
+    return res.status(500).json({ error: "Errore" });
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -5183,82 +5271,19 @@ REGOLE:
   // Recupera cold message per ID (usato dal deeplink da notifica push e dalla ri-validazione on-close)
   app.get("/api/cold-messages/:id", isAuthenticated, getColdMessageByIdHandler);
 
-  app.post("/api/cold-messages/:id/reply", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub || req.session?.userId;
-      if (!userId) return res.status(401).json({ error: "Non autenticato" });
-      const myProfile = await storage.getProfileByUserId(userId);
-      if (!myProfile) return res.status(400).json({ error: "Profilo non trovato" });
-      const { content } = req.body;
-      if (!content?.trim()) return res.status(400).json({ error: "Messaggio mancante" });
-      const msg = await storage.getColdMessageById(req.params.id);
-      if (!msg) return res.status(404).json({ error: "Messaggio non trovato" });
-      if (msg.toProfileId !== myProfile.id) return res.status(403).json({ error: "Non autorizzato" });
-      if (msg.replied) return res.status(400).json({ error: "Già risposto" });
-      // The sender may have deleted their account or blocked the recipient
-      // after the reply panel was opened. Re-check reachability immediately
-      // before creating the Vibrapp DM.
-      const senderProfile = await storage.getProfile(msg.fromProfileId);
-      if (!senderProfile) {
-        return res.status(403).json({
-          error: "Questo messaggio non è più disponibile: il mittente ha eliminato il proprio account",
-          reason: "sender_deleted",
-        });
-      }
-      const senderBlockedRecipient = await storage.isBlocked(msg.fromProfileId, myProfile.id);
-      if (senderBlockedRecipient) {
-        return res.status(403).json({
-          error: "Questo messaggio non è più disponibile: il mittente ti ha bloccato",
-          reason: "sender_blocked",
-        });
-      }
-
-      let vibrappDm: any;
-      try {
-        ({ vibrappDm } = await storage.replyColdMessage(req.params.id, content.trim().substring(0, 500)));
-      } catch (err: any) {
-        // Keep the HTTP contract stable if either reachability check changes
-        // between the route validation and the storage operation.
-        if (err?.code === "sender_deleted") {
-          return res.status(403).json({
-            error: "Questo messaggio non è più disponibile: il mittente ha eliminato il proprio account",
-            reason: "sender_deleted",
-          });
-        }
-        if (err?.code === "sender_blocked") {
-          return res.status(403).json({
-            error: "Questo messaggio non è più disponibile: il mittente ti ha bloccato",
-            reason: "sender_blocked",
-          });
-        }
-        throw err;
-      }
-
-      const dmMsg = {
-        id: vibrappDm.id,
-        fromProfileId: vibrappDm.fromProfileId,
-        toProfileId: vibrappDm.toProfileId,
-        content: vibrappDm.content,
-        readAt: vibrappDm.readAt,
-        createdAt: vibrappDm.createdAt,
-        senderName: myProfile.name,
-        senderImage: myProfile.imageUrl,
-      };
-      io.to(`user:${msg.fromProfileId}`).emit("vibrapp:dm-message", dmMsg);
-      io.to(`user:${myProfile.id}`).emit("vibrapp:dm-sent", dmMsg);
-      sendPushToProfile(msg.fromProfileId, {
-        title: `🛸 ${myProfile.name} ha risposto!`,
+  app.post("/api/cold-messages/:id/reply", isAuthenticated, (req: any, res) =>
+    postColdMessageReplyHandler(req, res, (dmMsg, recipientProfileId, senderName) => {
+      io.to(`user:${recipientProfileId}`).emit("vibrapp:dm-message", dmMsg);
+      io.to(`user:${dmMsg.fromProfileId}`).emit("vibrapp:dm-sent", dmMsg);
+      sendPushToProfile(recipientProfileId, {
+        title: `🛸 ${senderName} ha risposto!`,
         body: "Ha risposto su Vibrapp 💬",
         icon: "/icons/icon-192.png",
-        url: `/vibrapp?dm=${myProfile.id}`,
+        url: `/vibrapp?dm=${dmMsg.fromProfileId}`,
         type: "vibrapp-dm",
       });
-      res.json({ dm: dmMsg, privateRoomId: null });
-    } catch (err) {
-      console.error("[cold-messages reply]", err);
-      res.status(500).json({ error: "Errore" });
-    }
-  });
+    }),
+  );
 
   // DELETE a received cold message (recipient only)
   app.delete("/api/cold-messages/:id", isAuthenticated, async (req: any, res) => {

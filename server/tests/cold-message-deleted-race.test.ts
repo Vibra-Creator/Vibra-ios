@@ -23,10 +23,10 @@ import assert from "node:assert/strict";
 import express from "express";
 import { createServer, request as httpRequest, type Server as HttpServer } from "node:http";
 import { db } from "../db.js";
-import { getColdMessageByIdHandler } from "../routes.js";
+import { getColdMessageByIdHandler, postColdMessageReplyHandler } from "../routes.js";
 import { DatabaseStorage } from "../storage.js";
-import { profiles, coldMessages } from "../../shared/schema.js";
-import { eq, inArray } from "drizzle-orm";
+import { profiles, coldMessages, vibrappDms } from "../../shared/schema.js";
+import { and, eq, inArray } from "drizzle-orm";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -57,6 +57,7 @@ async function createTestProfile(label: string): Promise<string> {
 
 async function startRouteTestServer(recipientUserId?: string): Promise<HttpServer> {
   const app = express();
+  app.use(express.json());
   if (recipientUserId) {
     app.use((req: any, _res, next) => {
       req.user = { claims: { sub: recipientUserId } };
@@ -64,6 +65,7 @@ async function startRouteTestServer(recipientUserId?: string): Promise<HttpServe
     });
   }
   app.get("/api/cold-messages/:id", getColdMessageByIdHandler);
+  app.post("/api/cold-messages/:id/reply", (req, res) => postColdMessageReplyHandler(req, res));
 
   const server = createServer(app);
   await new Promise<void>((resolve, reject) => {
@@ -108,6 +110,53 @@ async function getColdMessageOverHttp(server: HttpServer, messageId: string): Pr
     );
     request.on("error", reject);
     request.end();
+  });
+}
+
+async function postColdMessageReplyOverHttp(
+  server: HttpServer,
+  messageId: string,
+  content: string,
+): Promise<{ statusCode: number; body: any }> {
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Route test server is not listening");
+  }
+
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ content });
+    const request = httpRequest(
+      {
+        hostname: "127.0.0.1",
+        port: address.port,
+        path: `/api/cold-messages/${encodeURIComponent(messageId)}/reply`,
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (response) => {
+        let rawBody = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          rawBody += chunk;
+        });
+        response.on("end", () => {
+          try {
+            resolve({
+              statusCode: response.statusCode ?? 0,
+              body: JSON.parse(rawBody),
+            });
+          } catch (error) {
+            reject(error);
+          }
+        });
+      },
+    );
+    request.on("error", reject);
+    request.end(body);
   });
 }
 
@@ -499,6 +548,41 @@ describe("GET /api/cold-messages/:id sender reachability", () => {
       }
     } finally {
       await storage.unblockUser(sender, recipient);
+    }
+  });
+});
+
+describe("POST /api/cold-messages/:id/reply authentication", () => {
+  test("returns 401 without an authenticated user and does not persist or expose a reply", async () => {
+    const sender = await createTestProfile("http_reply_sender_unauthenticated");
+    const recipient = await createTestProfile("http_reply_recipient_unauthenticated");
+    createdProfileIds.push(sender, recipient);
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "private message content");
+    assert.ok(coldMessage, "sendColdMessage must return the new message");
+
+    const attemptedReply = `unauthenticated reply ${RUN_ID}`;
+    const server = await startRouteTestServer();
+    try {
+      const response = await postColdMessageReplyOverHttp(server, coldMessage.id, attemptedReply);
+      assert.equal(response.statusCode, 401);
+      assert.deepEqual(response.body, { error: "Non autenticato" });
+
+      const unchangedMessage = await storage.getColdMessageById(coldMessage.id);
+      assert.equal(unchangedMessage?.replied, false);
+      assert.equal(unchangedMessage?.replyContent, null);
+
+      const persistedReplies = await db
+        .select()
+        .from(vibrappDms)
+        .where(and(
+          eq(vibrappDms.fromProfileId, recipient),
+          eq(vibrappDms.toProfileId, sender),
+          eq(vibrappDms.content, attemptedReply),
+        ));
+      assert.equal(persistedReplies.length, 0, "an unauthenticated reply must not be persisted");
+    } finally {
+      await closeRouteTestServer(server);
     }
   });
 });
