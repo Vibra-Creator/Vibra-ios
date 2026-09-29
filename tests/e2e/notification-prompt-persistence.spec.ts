@@ -16,7 +16,7 @@ async function registerUser(request: APIRequestContext, label: string): Promise<
     name: `Notifications_${label}_${RUN_ID}`,
   };
   const response = await request.post("/api/auth/register", {
-    data: { ...credentials, age: 25 },
+    data: { ...credentials, age: 25, termsAccepted: true },
   });
   if (!response.ok()) {
     throw new Error(`Register ${label}: ${response.status()} – ${await response.text()}`);
@@ -25,7 +25,9 @@ async function registerUser(request: APIRequestContext, label: string): Promise<
 }
 
 async function loginAs(request: APIRequestContext, credentials: Credentials) {
-  const response = await request.post("/api/auth/login", { data: credentials });
+  const response = await request.post("/api/auth/login", {
+    data: { ...credentials, termsAccepted: true },
+  });
   if (!response.ok()) {
     throw new Error(`Login ${credentials.email}: ${response.status()} – ${await response.text()}`);
   }
@@ -66,13 +68,50 @@ async function prepareAuthenticatedPage(
   page: Page,
   request: APIRequestContext,
   credentials: Credentials,
-  options: { supported?: boolean; permission?: "default" | "denied" } = {},
+  options: {
+    supported?: boolean;
+    permission?: "default" | "denied";
+    storageMode?: "write-fails" | "read-and-write-fail";
+  } = {},
 ) {
-  const { supported = true, permission = "default" } = options;
+  const { supported = true, permission = "default", storageMode } = options;
 
   await page.addInitScript(
-    ({ supported, permission }) => {
+    ({ supported, permission, decisionKey }) => {
       window.localStorage.setItem("vibra-splash-seen", "1");
+
+      const storageMode = new URLSearchParams(window.location.search).get("notificationStorage");
+      const storagePrototype = Storage.prototype;
+      const originalGetItem = storagePrototype.getItem;
+      const originalSetItem = storagePrototype.setItem;
+      const storageFailures = { reads: 0, writes: 0 };
+      (window as typeof window & {
+        __notificationStorageFailures?: typeof storageFailures;
+      }).__notificationStorageFailures = storageFailures;
+
+      Object.defineProperty(storagePrototype, "getItem", {
+        configurable: true,
+        value: function (key: string) {
+          if (key === decisionKey && storageMode === "read-and-write-fail") {
+            storageFailures.reads += 1;
+            throw new Error("Notification decision storage read failed");
+          }
+          return Reflect.apply(originalGetItem, this, [key]);
+        },
+      });
+      Object.defineProperty(storagePrototype, "setItem", {
+        configurable: true,
+        value: function (key: string, value: string) {
+          if (
+            key === decisionKey &&
+            (storageMode === "write-fails" || storageMode === "read-and-write-fail")
+          ) {
+            storageFailures.writes += 1;
+            throw new Error("Notification decision storage write failed");
+          }
+          return Reflect.apply(originalSetItem, this, [key, value]);
+        },
+      });
 
       const originalNotification = window.Notification;
       Object.defineProperty(window, "Notification", {
@@ -98,12 +137,13 @@ async function prepareAuthenticatedPage(
         delete (window as typeof window & { PushManager?: unknown }).PushManager;
       }
     },
-    { supported, permission },
+    { supported, permission, decisionKey: PUSH_DECISION_KEY },
   );
   await loginAs(request, credentials);
   await injectSessionCookies(page, request);
   await patchEmailVerified(page);
-  await page.goto("/", { waitUntil: "load" });
+  const path = storageMode ? `/?notificationStorage=${storageMode}` : "/";
+  await page.goto(path, { waitUntil: "load" });
 }
 
 test("notification prompt appears only when supported and undecided", async ({ page, request }) => {
@@ -134,6 +174,38 @@ test("dismissing the notification prompt persists after reload", async ({ page, 
 
   await page.reload({ waitUntil: "load" });
   await expect(page.getByTestId("notification-banner")).not.toBeVisible();
+});
+
+test("notification choice stays hidden when decision storage throws", async ({ page, request }) => {
+  const user = await registerUser(request, "storage-unavailable");
+  await prepareAuthenticatedPage(page, request, user, { storageMode: "write-fails" });
+
+  const banner = page.getByTestId("notification-banner");
+  await expect(banner).toBeVisible({ timeout: 10_000 });
+  await page.getByTestId("button-dismiss-notifications-banner").click();
+  await expect(banner).not.toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as typeof window & {
+        __notificationStorageFailures?: { reads: number; writes: number };
+      }).__notificationStorageFailures?.writes || 0),
+    )
+    .toBe(1);
+
+  await page.evaluate(() => {
+    history.replaceState(null, "", "/?notificationStorage=read-and-write-fail");
+  });
+  await page.reload({ waitUntil: "load" });
+
+  await expect(page.getByTestId("vibra-logo-header")).toBeVisible();
+  await expect(banner).not.toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as typeof window & {
+        __notificationStorageFailures?: { reads: number; writes: number };
+      }).__notificationStorageFailures?.reads || 0),
+    )
+    .toBeGreaterThan(0);
 });
 
 test("allow requests permission from the button and stays hidden when declined", async ({ page, request }) => {
