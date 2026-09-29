@@ -5,10 +5,11 @@ import https from "https";
 import { storage } from "./storage";
 import { getProfileVideoCleanupCutoff, removeInactiveProfileVideos } from "./profile-video-cleanup";
 import { registerAdminBotImageFixRoute } from "./admin-bot-image-fix";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages, userSuspensions } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
 import { z } from "zod";
+import { getReportSuspensionExpiry, isColdMessageAuthoredByReportedUser } from "./report-moderation";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import multer from "multer";
@@ -2639,6 +2640,116 @@ ${urlEntries}
     }
   });
 
+  app.post("/api/admin/reports/:id/remove-and-suspend", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const now = new Date();
+      const result = await db.transaction(async (tx) => {
+        const [report] = await tx
+          .select()
+          .from(reports)
+          .where(eq(reports.id, req.params.id))
+          .limit(1);
+
+        if (!report) return { ok: false as const, error: "not_found" as const };
+        if (report.status !== "pending") return { ok: false as const, error: "not_pending" as const };
+        if (!report.coldMessageId) return { ok: false as const, error: "no_reported_message" as const };
+
+        let reportedUserId = report.reportedUserId;
+        if (!reportedUserId) {
+          const [reportedProfile] = await tx
+            .select({ userId: profiles.userId })
+            .from(profiles)
+            .where(eq(profiles.id, report.reportedId))
+            .limit(1);
+          reportedUserId = reportedProfile?.userId ?? null;
+        }
+        if (!reportedUserId) return { ok: false as const, error: "reported_account_unavailable" as const };
+
+        const [message] = await tx
+          .select({
+            id: coldMessages.id,
+            fromProfileId: coldMessages.fromProfileId,
+            toProfileId: coldMessages.toProfileId,
+          })
+          .from(coldMessages)
+          .where(eq(coldMessages.id, report.coldMessageId))
+          .limit(1);
+
+        if (message && !isColdMessageAuthoredByReportedUser(report, message)) {
+          return { ok: false as const, error: "message_mismatch" as const };
+        }
+        if (!message && !report.coldMessageContent) {
+          return { ok: false as const, error: "message_evidence_unavailable" as const };
+        }
+
+        // Claim the pending report before taking action. This condition also
+        // prevents two moderators from applying the same action concurrently.
+        const [claimedReport] = await tx
+          .update(reports)
+          .set({ status: "resolved", resolvedAt: now })
+          .where(and(eq(reports.id, report.id), eq(reports.status, "pending")))
+          .returning({ id: reports.id });
+        if (!claimedReport) return { ok: false as const, error: "not_pending" as const };
+
+        let contentRemoved = false;
+        if (message) {
+          const deletedMessages = await tx
+            .delete(coldMessages)
+            .where(and(
+              eq(coldMessages.id, report.coldMessageId),
+              eq(coldMessages.fromProfileId, report.reportedId),
+              eq(coldMessages.toProfileId, report.reporterId),
+            ))
+            .returning({ id: coldMessages.id });
+          contentRemoved = deletedMessages.length > 0;
+        }
+
+        const expiresAt = getReportSuspensionExpiry(now);
+        await tx.insert(userSuspensions).values({
+          userId: reportedUserId,
+          reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
+          expiresAt,
+          isPermanent: false,
+        });
+
+        return {
+          ok: true as const,
+          targetProfileId: report.reportedId,
+          contentRemoved,
+          expiresAt,
+        };
+      });
+
+      if (!result.ok) {
+        const responses = {
+          not_found: [404, "Report not found"],
+          not_pending: [409, "Report has already been handled"],
+          no_reported_message: [409, "This report is not linked to a specific cold message"],
+          reported_account_unavailable: [409, "Reported account cannot be identified for suspension"],
+          message_mismatch: [409, "Reported message does not belong to this report"],
+          message_evidence_unavailable: [409, "Reported message and its evidence are unavailable"],
+        } as const;
+        const [status, error] = responses[result.error];
+        return res.status(status).json({ error });
+      }
+
+      disconnectUserSockets(result.targetProfileId);
+      console.warn(
+        `[ugc-moderation] report=${req.params.id} contentRemoved=${result.contentRemoved} ` +
+        "reportedUserSuspendedHours=24",
+      );
+      return res.json({
+        success: true,
+        contentRemoved: result.contentRemoved,
+        contentWasAlreadyRemoved: !result.contentRemoved,
+        suspensionExpiresAt: result.expiresAt,
+      });
+    } catch (error) {
+      console.error("[ugc-moderation] remove-and-suspend action failed:", error);
+      return res.status(500).json({ error: "Failed to moderate reported content" });
+    }
+  });
+
   // User report from any authenticated user
   app.post("/api/reports", isAuthenticated, async (req: any, res) => {
     try {
@@ -2648,18 +2759,36 @@ ${urlEntries}
       if (!profile) return res.status(404).json({ error: "Profile not found" });
 
       const { reportedId, reason, description, coldMessageId } = req.body;
-      if (!reportedId || !reason) return res.status(400).json({ error: "reportedId and reason are required" });
+      if (typeof reportedId !== "string" || !reportedId || typeof reason !== "string" || !reason.trim()) {
+        return res.status(400).json({ error: "reportedId and reason are required" });
+      }
+      if (reportedId === profile.id) {
+        return res.status(400).json({ error: "You cannot report your own profile" });
+      }
+      if (coldMessageId !== undefined && typeof coldMessageId !== "string") {
+        return res.status(400).json({ error: "coldMessageId must be a string" });
+      }
 
       // Snapshot the cold message content immediately so it remains visible to
       // admins even if the message is later deleted (e.g. after report+block).
       let coldMessageContent: string | undefined;
       if (coldMessageId) {
-        try {
-          const [cm] = await db.select().from(coldMessages).where(
-            and(eq(coldMessages.id, coldMessageId), or(eq(coldMessages.toProfileId, profile.id), eq(coldMessages.fromProfileId, profile.id)))
-          );
-          if (cm) coldMessageContent = cm.content;
-        } catch { /* non-critical */ }
+        const [cm] = await db
+          .select({
+            content: coldMessages.content,
+            fromProfileId: coldMessages.fromProfileId,
+            toProfileId: coldMessages.toProfileId,
+          })
+          .from(coldMessages)
+          .where(eq(coldMessages.id, coldMessageId))
+          .limit(1);
+        if (!cm || !isColdMessageAuthoredByReportedUser(
+          { reporterId: profile.id, reportedId },
+          cm,
+        )) {
+          return res.status(400).json({ error: "Reported cold message does not belong to this report" });
+        }
+        coldMessageContent = cm.content;
       }
 
       const report = await storage.createReport({ reporterId: profile.id, reportedId, reason, description, coldMessageId: coldMessageId || undefined, coldMessageContent });

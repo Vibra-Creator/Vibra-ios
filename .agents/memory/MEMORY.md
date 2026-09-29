@@ -9,3 +9,4 @@
 - [Public video SEO](video-indexing.md) — Google needs an absolute thumbnail in initial HTML on routes that visibly contain video; never guess upload dates.
 - [Frontend release gate](frontend-release-gate.md) — keep the client type check blocking builds while server type debt is addressed separately.
 - [Marketplace image ownership](marketplace-image-ownership.md) — delete only purpose-scoped uploads with matching ownership; legacy generic uploads cannot safely be attributed.
+- [UGC report moderation](ugc-report-moderation.md) — remove only explicitly linked, author-verified content; keep the report snapshot as evidence.

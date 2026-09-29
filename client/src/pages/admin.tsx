@@ -441,6 +441,19 @@ export default function Admin() {
     },
   });
 
+  const removeAndSuspendReportedUserMutation = useMutation({
+    mutationFn: async (reportId: string) =>
+      apiRequest("POST", `/api/admin/reports/${reportId}/remove-and-suspend`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
+      toast({ title: "Moderazione completata: contenuto rimosso e autore sospeso per 24 ore" });
+    },
+    onError: () => {
+      toast({ title: "Impossibile completare la moderazione", variant: "destructive" });
+    },
+  });
+
   const suspendUserMutation = useMutation({
     mutationFn: async (data: { userId: string; reason: string; isPermanent: boolean; expiresAt?: string }) =>
       apiRequest("POST", "/api/admin/suspensions", data),
@@ -1250,7 +1263,24 @@ export default function Admin() {
                           </div>
                           {report.status === "pending" && (
                             <div className="flex gap-2">
-                              {profiles?.find((profile) => profile.id === report.reportedId)?.userId && (
+                              {report.coldMessageId && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-destructive"
+                                  disabled={removeAndSuspendReportedUserMutation.isPending}
+                                  onClick={() => {
+                                    if (!window.confirm(
+                                      "Rimuovere il messaggio segnalato se ancora presente, sospendere l'autore per 24 ore e chiudere la segnalazione?",
+                                    )) return;
+                                    removeAndSuspendReportedUserMutation.mutate(report.id);
+                                  }}
+                                  data-testid={`button-remove-reported-content-${report.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" /> Rimuovi e sospendi 24h
+                                </Button>
+                              )}
+                              {!report.coldMessageId && profiles?.find((profile) => profile.id === report.reportedId)?.userId && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1271,9 +1301,11 @@ export default function Admin() {
                                   <Ban className="w-4 h-4 mr-1" /> Sospendi 24h
                                 </Button>
                               )}
-                              <Button size="sm" variant="outline" className="text-green-600" onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })} data-testid={`button-resolve-report-${report.id}`}>
-                                <CheckCircle className="w-4 h-4 mr-1" /> Risolvi
-                              </Button>
+                              {!report.coldMessageId && (
+                                <Button size="sm" variant="outline" className="text-green-600" onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })} data-testid={`button-resolve-report-${report.id}`}>
+                                  <CheckCircle className="w-4 h-4 mr-1" /> Risolvi
+                                </Button>
+                              )}
                               <Button size="sm" variant="outline" className="text-muted-foreground" onClick={() => updateReportMutation.mutate({ id: report.id, status: "dismissed" })} data-testid={`button-dismiss-report-${report.id}`}>
                                 <XCircle className="w-4 h-4 mr-1" /> Archivia
                               </Button>
