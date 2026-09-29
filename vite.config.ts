@@ -30,6 +30,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.replaceAll("\\", "/").includes("/client/src/i18n/translations.ts")) {
+            return "translations";
+          }
+        },
+      },
+    },
   },
   server: {
     fs: {
