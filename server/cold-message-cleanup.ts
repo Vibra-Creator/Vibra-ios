@@ -88,11 +88,26 @@ export function getColdMessageCleanupHealth(
 
 export function buildColdMessageCleanupStatusResponse(
   state: ColdMessageCleanupState,
+  orphanedColdMessagesOlderThanTtl: number,
   now = Date.now(),
 ) {
   return {
     ...state,
     ttlDays: COLD_MESSAGE_CLEANUP_TTL_DAYS,
+    orphanedColdMessagesOlderThanTtl,
     ...getColdMessageCleanupHealth(state, now),
+  };
+}
+
+export function buildColdMessageCleanupStatusFailure(
+  state: ColdMessageCleanupState,
+  now = Date.now(),
+) {
+  return {
+    ...state,
+    ttlDays: COLD_MESSAGE_CLEANUP_TTL_DAYS,
+    orphanedColdMessagesOlderThanTtl: null,
+    ...getColdMessageCleanupHealth(state, now),
+    error: "Unable to read orphaned cold-message backlog",
   };
 }

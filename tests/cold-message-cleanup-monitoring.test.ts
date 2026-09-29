@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  buildColdMessageCleanupStatusFailure,
   buildColdMessageCleanupStatusResponse,
   createColdMessageCleanupState,
   getColdMessageCleanupHealth,
@@ -22,14 +23,20 @@ state = markColdMessageCleanupSucceeded(
 );
 
 assert.deepEqual(
-  buildColdMessageCleanupStatusResponse(state, now),
+  buildColdMessageCleanupStatusResponse(state, 0, now),
   {
     ...state,
     ttlDays: 90,
+    orphanedColdMessagesOlderThanTtl: 0,
     schedulerStale: false,
     healthy: true,
   },
-  "a successful cleanup should expose its deletion count and healthy state",
+  "a successful cleanup should expose a zero backlog and healthy state",
+);
+assert.equal(
+  buildColdMessageCleanupStatusResponse(state, 7, now).orphanedColdMessagesOlderThanTtl,
+  7,
+  "a nonzero orphaned backlog should be included in the status response",
 );
 
 state = markColdMessageCleanupStarted(state, "2026-09-05T11:00:00.000Z");
@@ -40,7 +47,7 @@ assert.equal(state.lastError, "database unavailable");
 assert.equal(state.lastDeletedCount, 3);
 assert.equal(state.consecutiveFailures, 1);
 assert.equal(
-  buildColdMessageCleanupStatusResponse(state, now).healthy,
+  buildColdMessageCleanupStatusResponse(state, 2, now).healthy,
   false,
   "a failed cleanup should be reported as unhealthy",
 );
@@ -49,6 +56,16 @@ state = markColdMessageCleanupStarted(state, "2026-09-05T12:00:00.000Z");
 state = markColdMessageCleanupFailed(state, "connection refused");
 assert.equal(state.consecutiveFailures, 2);
 assert.equal(state.lastError, "connection refused");
+
+const backlogQueryFailure = buildColdMessageCleanupStatusFailure(state, now);
+assert.equal(backlogQueryFailure.orphanedColdMessagesOlderThanTtl, null);
+assert.equal(backlogQueryFailure.error, "Unable to read orphaned cold-message backlog");
+assert.equal(backlogQueryFailure.status, "failure");
+assert.equal(backlogQueryFailure.lastAttemptAt, "2026-09-05T12:00:00.000Z");
+assert.equal(backlogQueryFailure.lastDeletedCount, 3);
+assert.equal(backlogQueryFailure.consecutiveFailures, 2);
+assert.equal(backlogQueryFailure.lastError, "connection refused");
+assert.equal(backlogQueryFailure.healthy, false);
 
 const restoredSuccessState = restoreColdMessageCleanupState(
   createColdMessageCleanupState(),
@@ -103,4 +120,4 @@ assert.deepEqual(getColdMessageCleanupHealth(staleState, now), {
   healthy: false,
 });
 
-console.log("✓ cold-message cleanup monitoring reports success, deletions, failures, and failure streaks");
+console.log("✓ cold-message cleanup monitoring reports backlog counts, failures, and scheduler health");

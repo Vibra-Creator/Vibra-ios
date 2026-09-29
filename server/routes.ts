@@ -38,6 +38,7 @@ import {
 } from "./report-cleanup";
 import {
   COLD_MESSAGE_CLEANUP_TTL_DAYS,
+  buildColdMessageCleanupStatusFailure,
   buildColdMessageCleanupStatusResponse,
   createColdMessageCleanupState,
   markColdMessageCleanupFailed,
@@ -1981,13 +1982,27 @@ ${urlEntries}
     }
   });
 
-  app.get("/api/admin/cold-message-cleanup/status", isAuthenticated, isAdmin, (_req: any, res) => {
-    res.json(
-      buildColdMessageCleanupStatusResponse(
-        coldMessageCleanupStatus,
-        Date.now(),
-      ),
-    );
+  app.get("/api/admin/cold-message-cleanup/status", isAuthenticated, isAdmin, async (_req: any, res) => {
+    try {
+      const orphanedColdMessagesOlderThanTtl = await storage.countOrphanedColdMessages(
+        COLD_MESSAGE_CLEANUP_TTL_DAYS,
+      );
+      res.json(
+        buildColdMessageCleanupStatusResponse(
+          coldMessageCleanupStatus,
+          orphanedColdMessagesOlderThanTtl,
+          Date.now(),
+        ),
+      );
+    } catch (error) {
+      console.error("[cold-message-cleanup] status-check-failure:", error);
+      res.status(503).json(
+        buildColdMessageCleanupStatusFailure(
+          coldMessageCleanupStatus,
+          Date.now(),
+        ),
+      );
+    }
   });
 
   app.get("/api/referral/my-code", isAuthenticated, async (req: any, res) => {

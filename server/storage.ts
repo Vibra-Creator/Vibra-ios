@@ -222,6 +222,8 @@ export interface IStorage {
   // Cold Messages
   /** Removes cold messages addressed to deleted profiles once they are older than the TTL. */
   pruneOrphanedColdMessages(olderThanDays: number): Promise<number>;
+  /** Counts cold messages addressed to deleted profiles once they are older than the TTL. */
+  countOrphanedColdMessages(olderThanDays: number): Promise<number>;
   deleteColdMessage(messageId: string, toProfileId: string): Promise<void>;
   /** Returns true if recipientProfileId has ever reported the sender — checked
    *  both by direct profile UUID and by the sender's underlying auth userId so
@@ -1509,6 +1511,25 @@ export class DatabaseStorage implements IStorage {
         )
     `);
     return (result as any).rowCount ?? 0;
+  }
+
+  async countOrphanedColdMessages(olderThanDays: number): Promise<number> {
+    const result = await db.execute(sql`
+      SELECT COUNT(*)::int AS count
+      FROM cold_messages
+      WHERE created_at < NOW() - make_interval(days => ${olderThanDays})
+        AND NOT EXISTS (
+          SELECT 1 FROM profiles
+          WHERE profiles.id = cold_messages.to_profile_id
+        )
+    `);
+    const rows = (result as unknown as { rows?: Array<{ count: number | string }> }).rows;
+    const rawCount = rows?.[0]?.count;
+    const count = Number(rawCount);
+    if (rawCount === undefined || !Number.isInteger(count) || count < 0) {
+      throw new Error("Unable to read orphaned cold-message backlog count");
+    }
+    return count;
   }
 
   async isSenderReportedByRecipient(senderProfileId: string, recipientProfileId: string): Promise<boolean> {
