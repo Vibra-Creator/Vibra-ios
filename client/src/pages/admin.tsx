@@ -1269,6 +1269,8 @@ export default function Admin() {
                                     report.reportedContentType === "profile" ? "profilo" :
                                     report.reportedContentType === "chat_message" ? "messaggio chat" :
                                     report.reportedContentType === "cold_message" ? "messaggio freddo" :
+                                    report.reportedContentType === "room_message" ? "messaggio stanza pubblica" :
+                                    report.reportedContentType === "private_room_message" ? "messaggio stanza privata" :
                                     report.reportedContentType === "blog_post" ? "articolo blog" : "elemento"
                                   }
                                 </p>

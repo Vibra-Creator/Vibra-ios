@@ -83,6 +83,10 @@ export default function Terms() {
                 <li>Inviare messaggi con linguaggio offensivo o inappropriato</li>
                 <li>Utilizzare le Stanze (pubbliche o private) per promuovere contenuti illeciti</li>
               </ul>
+              <p className="mt-3 font-medium">
+                Vibra applica una politica di tolleranza zero verso contenuti offensivi o inappropriati e comportamenti abusivi.
+                I contenuti che violano queste regole possono essere rimossi e gli account responsabili sospesi o chiusi.
+              </p>
             </section>
 
             <section>
@@ -103,8 +107,8 @@ export default function Terms() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">6. Sistema di Segnalazione</h2>
               <p>
-                Gli utenti possono segnalare profili, messaggi o altri contenuti inappropriati
-                dalla chat o dal profilo, scegliendo una categoria e aggiungendo una descrizione.
+                Gli utenti possono segnalare profili e singoli messaggi inappropriati dalla chat,
+                dalle stanze pubbliche o dalle stanze private tramite l'azione Segnala.
                 Le segnalazioni vengono inoltrate al team di moderazione, che le esamina e adotta
                 le misure necessarie entro 24 ore dalla ricezione:
               </p>

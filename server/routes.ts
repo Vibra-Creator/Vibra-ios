@@ -14,6 +14,7 @@ import {
   isBlogPostAuthoredByReportedUser,
   isChatMessageAuthoredByReportedUser,
   isColdMessageAuthoredByReportedUser,
+  isRoomMessageAuthoredByReportedUser,
   isReportContentType,
 } from "./report-moderation";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
@@ -2838,6 +2839,12 @@ ${urlEntries}
         let chatMessage:
           | { id: string; matchId: string; senderId: string }
           | undefined;
+        let roomMessage:
+          | { id: string; roomId: string; senderId: string }
+          | undefined;
+        let privateRoomMessage:
+          | { id: string; roomId: string; senderId: string }
+          | undefined;
         let blogPost:
           | { id: string; profileId: string }
           | undefined;
@@ -2881,6 +2888,34 @@ ${urlEntries}
               return { ok: false as const, error: "content_mismatch" as const };
             }
           }
+        } else if (contentType === "room_message") {
+          const [row] = await tx
+            .select({
+              id: roomMessages.id,
+              roomId: roomMessages.roomId,
+              senderId: roomMessages.senderId,
+            })
+            .from(roomMessages)
+            .where(eq(roomMessages.id, contentId))
+            .limit(1);
+          roomMessage = row;
+          if (roomMessage && !isRoomMessageAuthoredByReportedUser(report, roomMessage)) {
+            return { ok: false as const, error: "content_mismatch" as const };
+          }
+        } else if (contentType === "private_room_message") {
+          const [row] = await tx
+            .select({
+              id: privateRoomMessages.id,
+              roomId: privateRoomMessages.roomId,
+              senderId: privateRoomMessages.senderId,
+            })
+            .from(privateRoomMessages)
+            .where(eq(privateRoomMessages.id, contentId))
+            .limit(1);
+          privateRoomMessage = row;
+          if (privateRoomMessage && !isRoomMessageAuthoredByReportedUser(report, privateRoomMessage)) {
+            return { ok: false as const, error: "content_mismatch" as const };
+          }
         } else if (contentType === "blog_post") {
           const [row] = await tx
             .select({ id: blogPosts.id, profileId: blogPosts.profileId })
@@ -2906,7 +2941,9 @@ ${urlEntries}
           }
         }
 
-        const linkedContentExists = Boolean(coldMessage || chatMessage || blogPost || profileExists);
+        const linkedContentExists = Boolean(
+          coldMessage || chatMessage || roomMessage || privateRoomMessage || blogPost || profileExists,
+        );
         if (!linkedContentExists && !snapshotAvailable) {
           return { ok: false as const, error: "content_evidence_unavailable" as const };
         }
@@ -2941,6 +2978,26 @@ ${urlEntries}
               eq(messages.matchId, chatMessage.matchId),
             ))
             .returning({ id: messages.id });
+          contentRemoved = deletedMessages.length > 0;
+        } else if (roomMessage) {
+          const deletedMessages = await tx
+            .delete(roomMessages)
+            .where(and(
+              eq(roomMessages.id, contentId),
+              eq(roomMessages.roomId, roomMessage.roomId),
+              eq(roomMessages.senderId, report.reportedId),
+            ))
+            .returning({ id: roomMessages.id });
+          contentRemoved = deletedMessages.length > 0;
+        } else if (privateRoomMessage) {
+          const deletedMessages = await tx
+            .delete(privateRoomMessages)
+            .where(and(
+              eq(privateRoomMessages.id, contentId),
+              eq(privateRoomMessages.roomId, privateRoomMessage.roomId),
+              eq(privateRoomMessages.senderId, report.reportedId),
+            ))
+            .returning({ id: privateRoomMessages.id });
           contentRemoved = deletedMessages.length > 0;
         } else if (blogPost) {
           const deletedPosts = await tx
@@ -3113,6 +3170,41 @@ ${urlEntries}
           content: message.content,
           createdAt: message.createdAt,
         });
+      } else if (reportedContentType === "room_message" && reportedContentId) {
+        const [message] = await db
+          .select({
+            id: roomMessages.id,
+            roomId: roomMessages.roomId,
+            senderId: roomMessages.senderId,
+            content: roomMessages.content,
+            createdAt: roomMessages.createdAt,
+          })
+          .from(roomMessages)
+          .where(eq(roomMessages.id, reportedContentId))
+          .limit(1);
+        if (!message || !isRoomMessageAuthoredByReportedUser({ reportedId }, message)) {
+          return res.status(400).json({ error: "Reported room message does not belong to this report" });
+        }
+        reportedContentSnapshot = JSON.stringify(message);
+      } else if (reportedContentType === "private_room_message" && reportedContentId) {
+        const [message] = await db
+          .select({
+            id: privateRoomMessages.id,
+            roomId: privateRoomMessages.roomId,
+            senderId: privateRoomMessages.senderId,
+            content: privateRoomMessages.content,
+            createdAt: privateRoomMessages.createdAt,
+          })
+          .from(privateRoomMessages)
+          .where(eq(privateRoomMessages.id, reportedContentId))
+          .limit(1);
+        if (!message || !isRoomMessageAuthoredByReportedUser({ reportedId }, message)) {
+          return res.status(400).json({ error: "Reported private-room message does not belong to this report" });
+        }
+        if (!await storage.isPrivateRoomMember(message.roomId, profile.id)) {
+          return res.status(403).json({ error: "You must be a member of this private room to report its messages" });
+        }
+        reportedContentSnapshot = JSON.stringify(message);
       } else if (reportedContentType === "blog_post" && reportedContentId) {
         const [post] = await db
           .select({

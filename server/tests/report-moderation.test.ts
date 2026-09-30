@@ -7,6 +7,7 @@ import {
   isBlogPostAuthoredByReportedUser,
   isChatMessageAuthoredByReportedUser,
   isColdMessageAuthoredByReportedUser,
+  isRoomMessageAuthoredByReportedUser,
   isReportContentType,
   REPORT_SUSPENSION_DURATION_MS,
 } from "../report-moderation.js";
@@ -72,11 +73,19 @@ test("blog-post reports must target a post authored by the reported profile", ()
   assert.equal(isBlogPostAuthoredByReportedUser(report, { profileId: "unrelated-profile" }), false);
 });
 
+test("room-message reports must target a message authored by the reported profile", () => {
+  const report = { reportedId: "reported-profile" };
+  assert.equal(isRoomMessageAuthoredByReportedUser(report, { senderId: "reported-profile" }), true);
+  assert.equal(isRoomMessageAuthoredByReportedUser(report, { senderId: "unrelated-profile" }), false);
+});
+
 test("only supported user-content types can be linked to a moderation report", () => {
   assert.equal(isReportContentType("profile"), true);
   assert.equal(isReportContentType("chat_message"), true);
   assert.equal(isReportContentType("cold_message"), true);
   assert.equal(isReportContentType("blog_post"), true);
+  assert.equal(isReportContentType("room_message"), true);
+  assert.equal(isReportContentType("private_room_message"), true);
   assert.equal(isReportContentType("user_id"), false);
   assert.equal(isReportContentType(null), false);
 });

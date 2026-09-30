@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Users, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, Users, Trash2, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -115,6 +115,21 @@ export default function RoomDetail() {
     onError: (_, msgId) => {
       setDeletingIds(prev => { const s = new Set(prev); s.delete(msgId); return s; });
       toast({ title: "Errore", description: "Impossibile cancellare il messaggio", variant: "destructive" });
+    },
+  });
+
+  const reportMessage = useMutation({
+    mutationFn: (msg: RoomMessage) => apiRequest("POST", "/api/reports", {
+      reportedId: msg.senderId,
+      reason: "Contenuto inappropriato",
+      reportedContentType: "room_message",
+      reportedContentId: msg.id,
+    }),
+    onSuccess: () => {
+      toast({ title: "Segnalazione inviata", description: "Il team di moderazione la esaminerà entro 24 ore." });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile inviare la segnalazione", variant: "destructive" });
     },
   });
 
@@ -300,6 +315,20 @@ export default function RoomDetail() {
                         {formatTime(msg.createdAt)}
                       </span>
                     </div>
+                    {!isMe && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 mt-1 text-white/60 hover:text-white"
+                        onClick={() => reportMessage.mutate(msg)}
+                        disabled={reportMessage.isPending}
+                        aria-label={`Segnala il messaggio di ${msg.senderName || "questo utente"}`}
+                        data-testid={`button-report-room-message-${msg.id}`}
+                      >
+                        <Flag className="w-3 h-3 mr-1" />
+                        Segnala
+                      </Button>
+                    )}
                   </div>
                 </motion.div>
               );

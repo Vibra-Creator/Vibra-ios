@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, Users, Crown, Check, X, Clock, Lock, UserPlus } from "lucide-react";
+import { ArrowLeft, Send, Users, Crown, Check, X, Clock, Lock, UserPlus, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +119,21 @@ export default function PrivateRoomDetail() {
       );
       setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
       queryClient.invalidateQueries({ queryKey: ["/api/private-rooms", roomId, "messages"] });
+    },
+  });
+
+  const reportMessage = useMutation({
+    mutationFn: (msg: PrivateRoomMessage) => apiRequest("POST", "/api/reports", {
+      reportedId: msg.senderId,
+      reason: "Contenuto inappropriato",
+      reportedContentType: "private_room_message",
+      reportedContentId: msg.id,
+    }),
+    onSuccess: () => {
+      toast({ title: "Segnalazione inviata", description: "Il team di moderazione la esaminerà entro 24 ore." });
+    },
+    onError: () => {
+      toast({ title: "Errore", description: "Impossibile inviare la segnalazione", variant: "destructive" });
     },
   });
 
@@ -271,6 +286,20 @@ export default function PrivateRoomDetail() {
                         {formatTime(msg.createdAt)}
                       </span>
                     </div>
+                    {!isMe && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 mt-1 text-white/60 hover:text-white"
+                        onClick={() => reportMessage.mutate(msg)}
+                        disabled={reportMessage.isPending}
+                        aria-label={`Segnala il messaggio di ${msg.senderName || "questo utente"}`}
+                        data-testid={`button-report-private-room-message-${msg.id}`}
+                      >
+                        <Flag className="w-3 h-3 mr-1" />
+                        Segnala
+                      </Button>
+                    )}
                   </div>
                 </motion.div>
               );

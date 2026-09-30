@@ -1,6 +1,13 @@
 export const REPORT_SUSPENSION_DURATION_MS = 24 * 60 * 60 * 1000;
 
-export const REPORT_CONTENT_TYPES = ["profile", "chat_message", "cold_message", "blog_post"] as const;
+export const REPORT_CONTENT_TYPES = [
+  "profile",
+  "chat_message",
+  "cold_message",
+  "blog_post",
+  "room_message",
+  "private_room_message",
+] as const;
 export type ReportContentType = typeof REPORT_CONTENT_TYPES[number];
 
 export function getReportSuspensionExpiry(now: Date = new Date()): Date {
@@ -38,4 +45,11 @@ export function isBlogPostAuthoredByReportedUser(
   post: { profileId: string },
 ): boolean {
   return post.profileId === report.reportedId;
+}
+
+export function isRoomMessageAuthoredByReportedUser(
+  report: { reportedId: string },
+  message: { senderId: string },
+): boolean {
+  return message.senderId === report.reportedId;
 }
