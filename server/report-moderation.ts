@@ -7,6 +7,11 @@ export const REPORT_CONTENT_TYPES = [
   "blog_post",
   "room_message",
   "private_room_message",
+  "profile_photo",
+  "profile_video",
+  "profile_main_video",
+  "cosmic_signal",
+  "signal_comment",
 ] as const;
 export type ReportContentType = typeof REPORT_CONTENT_TYPES[number];
 
@@ -52,4 +57,41 @@ export function isRoomMessageAuthoredByReportedUser(
   message: { senderId: string },
 ): boolean {
   return message.senderId === report.reportedId;
+}
+
+export function isProfilePhotoOwnedByReportedProfile(
+  report: { reportedId: string },
+  profile: { id: string; imageUrl?: string | null; photos?: string[] | null },
+  photoUrl: string,
+): boolean {
+  return profile.id === report.reportedId &&
+    (profile.imageUrl === photoUrl || (profile.photos ?? []).includes(photoUrl));
+}
+
+export function isProfileVideoAuthoredByReportedUser(
+  report: { reportedId: string },
+  video: { profileId: string },
+): boolean {
+  return video.profileId === report.reportedId;
+}
+
+export function isCosmicSignalAuthoredByReportedUser(
+  report: { reportedId: string },
+  signal: { profileId: string },
+): boolean {
+  return signal.profileId === report.reportedId;
+}
+
+export function isSignalCommentAuthoredByReportedUser(
+  report: { reportedId: string },
+  comment: { profileId: string },
+): boolean {
+  return comment.profileId === report.reportedId;
+}
+
+export function isCosmicSignalVisibleToReporter(
+  reporterId: string,
+  signal: { toProfileId?: string | null },
+): boolean {
+  return signal.toProfileId == null || signal.toProfileId === reporterId;
 }

@@ -49,6 +49,11 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
   const { toast } = useToast();
   const { t } = useLanguage();
   const [showReportMenu, setShowReportMenu] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{
+    type: "profile" | "profile_photo" | "profile_video" | "profile_main_video";
+    id: string;
+    label: string;
+  } | null>(null);
   const [viewingPhotoIndex, setViewingPhotoIndex] = useState<number | null>(null);
 
   const { data: profileVideos = [] } = useQuery<ProfileVideo[]>({
@@ -77,11 +82,17 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
   });
 
   const reportMutation = useMutation({
-    mutationFn: (data: { reportedId: string; reason: string; reportedContentType: "profile"; reportedContentId: string }) =>
+    mutationFn: (data: {
+      reportedId: string;
+      reason: string;
+      reportedContentType: "profile" | "profile_photo" | "profile_video" | "profile_main_video";
+      reportedContentId: string;
+    }) =>
       apiRequest("POST", "/api/reports", data),
     onSuccess: () => {
       toast({ title: t("swipe.reportSent"), description: t("swipe.reportSentDesc") });
       setShowReportMenu(false);
+      setReportTarget(null);
     },
     onError: () => {
       toast({ title: t("common.error"), description: t("swipe.reportError"), variant: "destructive" });
@@ -95,6 +106,11 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
     { key: "swipe.spam", value: t("swipe.spam") },
     { key: "swipe.other", value: t("swipe.other") },
   ];
+
+  const chooseReportTarget = (target: NonNullable<typeof reportTarget>) => {
+    setReportTarget(target);
+    setShowReportMenu(true);
+  };
 
   if (!isOpen) return null;
 
@@ -294,6 +310,18 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            chooseReportTarget({ type: "profile_photo", id: photo, label: `la foto ${idx + 1}` });
+                          }}
+                          className="absolute right-1 top-1 rounded-full bg-black/70 p-1.5 text-white/80 hover:text-red-300"
+                          aria-label={`Segnala foto ${idx + 1}`}
+                          data-testid={`button-report-profile-photo-${idx}`}
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -331,6 +359,18 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                             obs.observe(el);
                           }}
                         />
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            chooseReportTarget({ type: "profile_video", id: video.id, label: `il video ${idx + 1}` });
+                          }}
+                          className="absolute right-2 top-2 rounded-full bg-black/70 p-2 text-white/80 hover:text-red-300"
+                          aria-label={`Segnala video ${idx + 1}`}
+                          data-testid={`button-report-profile-video-${video.id}`}
+                        >
+                          <Flag className="w-4 h-4" />
+                        </button>
                         {/* Location overlay */}
                         {(video as any).location && (
                           <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 rounded-full px-2 py-0.5 pointer-events-none">
@@ -385,18 +425,47 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
 
               <div className="pt-3 border-t border-white/10">
                 {!showReportMenu ? (
-                  <Button
-                    variant="ghost"
-                    className="w-full text-white/50 hover:text-red-400"
-                    onClick={() => setShowReportMenu(true)}
-                    data-testid={`button-report-${profile.id}`}
-                  >
-                    <Flag className="w-4 h-4 mr-2" />
-                    {t("swipe.reportProfile")}
-                  </Button>
+                  <div className="space-y-1">
+                    <Button
+                      variant="ghost"
+                      className="w-full text-white/50 hover:text-red-400"
+                      onClick={() => {
+                        setReportTarget(null);
+                        setShowReportMenu(true);
+                      }}
+                      data-testid={`button-report-${profile.id}`}
+                    >
+                      <Flag className="w-4 h-4 mr-2" />
+                      {t("swipe.reportProfile")}
+                    </Button>
+                    {profile.imageUrl && (
+                      <Button
+                        variant="ghost"
+                        className="w-full text-white/50 hover:text-red-400"
+                        onClick={() => chooseReportTarget({ type: "profile_photo", id: profile.imageUrl, label: "la foto profilo" })}
+                        data-testid={`button-report-profile-primary-photo-${profile.id}`}
+                      >
+                        <Flag className="w-4 h-4 mr-2" />
+                        Segnala la foto profilo
+                      </Button>
+                    )}
+                    {profile.profileVideoUrl && (
+                      <Button
+                        variant="ghost"
+                        className="w-full text-white/50 hover:text-red-400"
+                        onClick={() => chooseReportTarget({ type: "profile_main_video", id: profile.id, label: "il video profilo" })}
+                        data-testid={`button-report-profile-main-video-${profile.id}`}
+                      >
+                        <Flag className="w-4 h-4 mr-2" />
+                        Segnala il video profilo
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-sm text-white/60 text-center">{t("swipe.selectReason")}</p>
+                    <p className="text-sm text-white/60 text-center">
+                      {reportTarget ? `Segnala ${reportTarget.label}` : t("swipe.selectReason")}
+                    </p>
                     {reportReasons.map((reason) => (
                       <Button
                         key={reason.key}
@@ -405,8 +474,8 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                         onClick={() => reportMutation.mutate({
                           reportedId: profile.id,
                           reason: reason.value,
-                          reportedContentType: "profile",
-                          reportedContentId: profile.id,
+                          reportedContentType: reportTarget?.type ?? "profile",
+                          reportedContentId: reportTarget?.id ?? profile.id,
                         })}
                         disabled={reportMutation.isPending}
                         data-testid={`button-report-reason-${reason.key}`}
@@ -417,7 +486,10 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                     <Button
                       variant="ghost"
                       className="w-full text-white/40"
-                      onClick={() => setShowReportMenu(false)}
+                      onClick={() => {
+                        setShowReportMenu(false);
+                        setReportTarget(null);
+                      }}
                       data-testid="button-cancel-report"
                     >
                       {t("swipe.cancel")}

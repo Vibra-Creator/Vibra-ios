@@ -17,6 +17,11 @@ import {
   isRoomMessageAuthoredByReportedUser,
   isReportContentType,
 } from "./report-moderation";
+import { captureDetailedReportContentSnapshot } from "./report-content-evidence";
+import {
+  isDetailedReportContentType,
+  moderateDetailedReportInTransaction,
+} from "./report-moderation-actions";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import multer from "multer";
@@ -2781,6 +2786,8 @@ ${urlEntries}
       if (!["resolved", "dismissed", "pending"].includes(status)) {
         return res.status(400).json({ error: "Invalid status" });
       }
+      const moderatorUserId = req.user?.claims?.sub || req.session?.userId;
+      if (!moderatorUserId) return res.status(401).json({ error: "Unauthorized" });
       if (status === "resolved") {
         const [report] = await db
           .select({
@@ -2796,15 +2803,86 @@ ${urlEntries}
           return res.status(409).json({ error: "Remove the reported content before resolving this report" });
         }
       }
-      const report = await storage.updateReportStatus(req.params.id, status);
+      const report = await storage.updateReportStatus(req.params.id, status, moderatorUserId);
       res.json(report);
     } catch (error) {
       res.status(500).json({ error: "Failed to update report" });
     }
   });
 
+  app.post("/api/admin/reports/:id/suspend-user", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const moderatorUserId = req.user?.claims?.sub || req.session?.userId;
+      if (!moderatorUserId) return res.status(401).json({ error: "Unauthorized" });
+      const now = new Date();
+      const result = await db.transaction(async (tx) => {
+        const [report] = await tx
+          .select()
+          .from(reports)
+          .where(eq(reports.id, req.params.id))
+          .limit(1);
+        if (!report) return { ok: false as const, error: "not_found" as const };
+        if (report.status !== "pending") return { ok: false as const, error: "not_pending" as const };
+        if (report.reportedContentId || report.coldMessageId) {
+          return { ok: false as const, error: "content_linked" as const };
+        }
+
+        let reportedUserId = report.reportedUserId;
+        if (!reportedUserId) {
+          const [reportedProfile] = await tx
+            .select({ userId: profiles.userId })
+            .from(profiles)
+            .where(eq(profiles.id, report.reportedId))
+            .limit(1);
+          reportedUserId = reportedProfile?.userId ?? null;
+        }
+        if (!reportedUserId) return { ok: false as const, error: "no_account" as const };
+
+        const [claimedReport] = await tx
+          .update(reports)
+          .set({
+            status: "resolved",
+            resolvedAt: now,
+            moderationAction: "author_suspended",
+            moderatedBy: moderatorUserId,
+            moderatedAt: now,
+          })
+          .where(and(eq(reports.id, report.id), eq(reports.status, "pending")))
+          .returning({ id: reports.id });
+        if (!claimedReport) return { ok: false as const, error: "not_pending" as const };
+
+        const expiresAt = getReportSuspensionExpiry(now);
+        await tx.insert(userSuspensions).values({
+          userId: reportedUserId,
+          reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
+          expiresAt,
+          isPermanent: false,
+        });
+        return { ok: true as const, targetProfileId: report.reportedId, expiresAt };
+      });
+
+      if (!result.ok) {
+        const responseMap = {
+          not_found: [404, "Report not found"],
+          not_pending: [409, "Report has already been handled"],
+          content_linked: [409, "Remove the linked content through the report action"],
+          no_account: [409, "The reported profile has no linked account to suspend"],
+        } as const;
+        const [status, error] = responseMap[result.error];
+        return res.status(status).json({ error });
+      }
+      disconnectUserSockets(result.targetProfileId);
+      return res.json({ success: true, authorSuspended: true, suspensionExpiresAt: result.expiresAt });
+    } catch (error) {
+      console.error("[ugc-moderation] report suspension failed:", error);
+      return res.status(500).json({ error: "Failed to suspend reported user" });
+    }
+  });
+
   app.post("/api/admin/reports/:id/remove-and-suspend", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
+      const moderatorUserId = req.user?.claims?.sub || req.session?.userId;
+      if (!moderatorUserId) return res.status(401).json({ error: "Unauthorized" });
       const now = new Date();
       const result = await db.transaction(async (tx) => {
         const [report] = await tx
@@ -2822,6 +2900,9 @@ ${urlEntries}
             : null;
         const contentId = report.reportedContentId ?? report.coldMessageId;
         if (!contentType || !contentId) return { ok: false as const, error: "no_reported_content" as const };
+        if (isDetailedReportContentType(contentType)) {
+          return moderateDetailedReportInTransaction(tx, report, moderatorUserId, now);
+        }
 
         let reportedUserId = report.reportedUserId;
         if (!reportedUserId) {
@@ -2952,7 +3033,12 @@ ${urlEntries}
         // prevents two moderators from applying the same action concurrently.
         const [claimedReport] = await tx
           .update(reports)
-          .set({ status: "resolved", resolvedAt: now })
+          .set({
+            status: "resolved",
+            resolvedAt: now,
+            moderatedBy: moderatorUserId,
+            moderatedAt: now,
+          })
           .where(and(eq(reports.id, report.id), eq(reports.status, "pending")))
           .returning({ id: reports.id });
         if (!claimedReport) return { ok: false as const, error: "not_pending" as const };
@@ -3019,6 +3105,16 @@ ${urlEntries}
             .returning({ id: profiles.id });
           contentHidden = hiddenProfiles.length > 0;
         }
+
+        await tx.update(reports)
+          .set({
+            moderationAction: `${contentRemoved
+              ? `${contentType}_removed`
+              : contentHidden
+                ? "profile_hidden"
+                : "content_already_removed"}${reportedUserId ? "_and_suspended" : ""}`,
+          })
+          .where(eq(reports.id, report.id));
 
         let expiresAt: Date | null = null;
         if (reportedUserId) {
@@ -3242,6 +3338,20 @@ ${urlEntries}
         }
         coldMessageContent = cm.content;
         reportedContentSnapshot = JSON.stringify({ content: cm.content });
+      } else if (
+        reportedContentType &&
+        reportedContentId &&
+        isDetailedReportContentType(reportedContentType)
+      ) {
+        reportedContentSnapshot = await captureDetailedReportContentSnapshot({
+          reporterId: profile.id,
+          reportedId,
+          contentType: reportedContentType,
+          contentId: reportedContentId,
+        }) ?? undefined;
+        if (!reportedContentSnapshot) {
+          return res.status(400).json({ error: "Reported content does not belong to this report" });
+        }
       }
 
       const report = await storage.createReport({

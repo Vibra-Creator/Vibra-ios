@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -72,6 +72,7 @@ function ArticleCard({ post, profileId, onLike, onDelete, onReport }: {
   return (
     <article
       className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all"
+      id={`blog-post-${post.id}`}
       data-testid={`blog-post-${post.id}`}
     >
       {post.imageUrl && (
@@ -171,6 +172,16 @@ export default function Blog() {
       return r.json();
     },
   });
+
+  useEffect(() => {
+    if (!posts.length || !window.location.hash) return;
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!id.startsWith("blog-post-")) return;
+    const timeout = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+    return () => window.clearTimeout(timeout);
+  }, [posts]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

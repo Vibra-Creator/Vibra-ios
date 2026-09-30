@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil, LogIn } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil, LogIn, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -54,6 +54,60 @@ interface ReportCleanupStatus {
   schedulerStale: boolean;
   healthy: boolean;
   error?: string;
+}
+
+function getReportSnapshot(snapshot: string | null | undefined): Record<string, any> | null {
+  if (!snapshot) return null;
+  try {
+    const parsed = JSON.parse(snapshot);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function getReportedContentHref(report: Report): string | null {
+  const contentId = report.reportedContentId;
+  if (!contentId) return report.coldMessageId ? "/vibrapp" : null;
+  if (report.reportedContentType === "blog_post") return `/blog#blog-post-${encodeURIComponent(contentId)}`;
+  if (report.reportedContentType === "cosmic_signal") return `/signals#signal-card-${encodeURIComponent(contentId)}`;
+  if (report.reportedContentType === "signal_comment") {
+    const parentId = getReportSnapshot(report.reportedContentSnapshot)?.signalId;
+    return `/signals#signal-card-${encodeURIComponent(typeof parentId === "string" ? parentId : contentId)}`;
+  }
+  if (["profile", "profile_photo", "profile_video", "profile_main_video"].includes(report.reportedContentType ?? "")) {
+    return `/p/${encodeURIComponent(report.reportedId)}#profile-media`;
+  }
+  return null;
+}
+
+function getModerationActionLabel(action: string | null | undefined): string {
+  if (!action) return "";
+  if (action.endsWith("_and_suspended")) {
+    return `${getModerationActionLabel(action.slice(0, -"_and_suspended".length))} · Account sospeso 24 ore`;
+  }
+  if (action === "author_suspended") return "Account sospeso 24 ore";
+  if (action === "dismissed") return "Segnalazione archiviata";
+  if (action === "resolved") return "Segnalazione risolta";
+  if (action === "profile_hidden") return "Profilo nascosto";
+  if (action === "content_already_removed") return "Contenuto già rimosso";
+  if (action.endsWith("_removed")) {
+    const type = action.slice(0, -"_removed".length);
+    const labels: Record<string, string> = {
+      profile_photo: "Foto rimossa",
+      profile_video: "Video profilo rimosso",
+      profile_main_video: "Video profilo rimosso",
+      cosmic_signal: "Post rimosso",
+      signal_comment: "Commento rimosso",
+      blog_post: "Articolo rimosso",
+      room_message: "Messaggio stanza rimosso",
+      private_room_message: "Messaggio stanza privata rimosso",
+      chat_message: "Messaggio chat rimosso",
+      cold_message: "Messaggio freddo rimosso",
+    };
+    return labels[type] ?? "Contenuto rimosso";
+  }
+  return action;
 }
 
 export default function Admin() {
@@ -449,10 +503,28 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/signals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/private-rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cold-messages"] });
       toast({ title: "Moderazione completata: contenuto rimosso o profilo nascosto, segnalazione chiusa" });
     },
     onError: () => {
       toast({ title: "Impossibile completare la moderazione", variant: "destructive" });
+    },
+  });
+
+  const suspendReportedUserMutation = useMutation({
+    mutationFn: async (reportId: string) =>
+      apiRequest("POST", `/api/admin/reports/${reportId}/suspend-user`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
+      toast({ title: "Account sospeso per 24 ore e segnalazione risolta" });
+    },
+    onError: () => {
+      toast({ title: "Impossibile sospendere l'account dalla segnalazione", variant: "destructive" });
     },
   });
 
@@ -1239,6 +1311,11 @@ export default function Admin() {
                                 {report.status === "pending" ? "In attesa" : report.status === "resolved" ? "Risolta" : "Archiviata"}
                               </Badge>
                               <span className="text-xs text-muted-foreground">{new Date(report.createdAt).toLocaleString("it-IT")}</span>
+                              {report.moderationAction && (
+                                <Badge variant="outline" data-testid={`report-action-${report.id}`}>
+                                  {getModerationActionLabel(report.moderationAction)}
+                                </Badge>
+                              )}
                               {report.status === "pending" && (
                                 <Badge
                                   variant={
@@ -1256,6 +1333,12 @@ export default function Admin() {
                             <p className="text-sm text-foreground"><strong>Da:</strong> {getProfileName(report.reporterId)} <strong>Contro:</strong> {getProfileName(report.reportedId)}</p>
                             <p className="text-sm text-foreground mt-1"><strong>Motivo:</strong> {report.reason}</p>
                             {report.description && <p className="text-sm text-muted-foreground mt-1">{report.description}</p>}
+                            {(report.moderatedAt || report.resolvedAt) && (
+                              <p className="text-xs text-muted-foreground mt-1" data-testid={`report-moderation-audit-${report.id}`}>
+                                <strong>Moderata:</strong> {new Date(report.moderatedAt ?? report.resolvedAt!).toLocaleString("it-IT")}
+                                {report.moderatedBy && <span> · Moderatore {report.moderatedBy.slice(0, 8)}</span>}
+                              </p>
+                            )}
                             {report.coldMessageContent && (
                               <div className="mt-2 p-2 rounded bg-muted border-l-2 border-orange-400">
                                 <p className="text-xs text-muted-foreground mb-1 font-medium">Messaggio freddo che ha scatenato la segnalazione:</p>
@@ -1271,9 +1354,52 @@ export default function Admin() {
                                     report.reportedContentType === "cold_message" ? "messaggio freddo" :
                                     report.reportedContentType === "room_message" ? "messaggio stanza pubblica" :
                                     report.reportedContentType === "private_room_message" ? "messaggio stanza privata" :
-                                    report.reportedContentType === "blog_post" ? "articolo blog" : "elemento"
+                                    report.reportedContentType === "blog_post" ? "articolo blog" :
+                                    report.reportedContentType === "profile_photo" ? "foto profilo" :
+                                    report.reportedContentType === "profile_video" || report.reportedContentType === "profile_main_video" ? "video profilo" :
+                                    report.reportedContentType === "cosmic_signal" ? "post o media social" :
+                                    report.reportedContentType === "signal_comment" ? "commento" : "elemento"
                                   }
                                 </p>
+                                {getReportedContentHref(report) && (
+                                  <a
+                                    href={getReportedContentHref(report)!}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mb-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                                    data-testid={`link-open-reported-content-${report.id}`}
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" /> Apri contenuto
+                                  </a>
+                                )}
+                                {report.reportedContentType === "profile_photo" && getReportSnapshot(report.reportedContentSnapshot)?.photoUrl && (
+                                  <img
+                                    src={getReportSnapshot(report.reportedContentSnapshot)!.photoUrl}
+                                    alt="Foto segnalata"
+                                    className="mb-2 max-h-56 max-w-full rounded-lg object-contain"
+                                    data-testid={`reported-photo-preview-${report.id}`}
+                                  />
+                                )}
+                                {report.reportedContentType === "profile_video" && report.reportedContentId && (
+                                  <video
+                                    src={`/api/video-stream/${encodeURIComponent(report.reportedContentId)}`}
+                                    controls
+                                    playsInline
+                                    className="mb-2 max-h-64 max-w-full rounded-lg bg-black"
+                                    data-testid={`reported-video-preview-${report.id}`}
+                                  />
+                                )}
+                                {report.reportedContentType === "cosmic_signal" && (() => {
+                                  const evidence = getReportSnapshot(report.reportedContentSnapshot);
+                                  if (typeof evidence?.mediaUrl !== "string") return null;
+                                  if (evidence.mediaType === "image") {
+                                    return <img src={evidence.mediaUrl} alt="Media del post segnalato" className="mb-2 max-h-56 max-w-full rounded-lg object-contain" />;
+                                  }
+                                  if (evidence.mediaType === "video") {
+                                    return <video src={evidence.mediaUrl} controls playsInline className="mb-2 max-h-64 max-w-full rounded-lg bg-black" />;
+                                  }
+                                  return null;
+                                })()}
                                 <pre className="text-xs text-foreground whitespace-pre-wrap break-words max-h-48 overflow-auto">
                                   {(() => {
                                     try {
@@ -1313,16 +1439,10 @@ export default function Admin() {
                                   size="sm"
                                   variant="outline"
                                   className="text-destructive"
-                                  disabled={suspendUserMutation.isPending}
+                                  disabled={suspendReportedUserMutation.isPending}
                                   onClick={() => {
-                                    const targetUserId = profiles?.find((profile) => profile.id === report.reportedId)?.userId;
-                                    if (!targetUserId || !window.confirm("Sospendere questo account per 24 ore e disconnetterlo?")) return;
-                                    suspendUserMutation.mutate({
-                                      userId: targetUserId,
-                                      reason: `Revisione segnalazione ${report.id.slice(0, 8)}`,
-                                      isPermanent: false,
-                                      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                                    });
+                                    if (!window.confirm("Sospendere questo account per 24 ore e risolvere la segnalazione?")) return;
+                                    suspendReportedUserMutation.mutate(report.id);
                                   }}
                                   data-testid={`button-suspend-report-user-${report.id}`}
                                 >

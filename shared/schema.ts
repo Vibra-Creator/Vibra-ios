@@ -251,6 +251,9 @@ export const reports = pgTable("reports", {
   reportedContentType: text("reported_content_type"),
   reportedContentId: varchar("reported_content_id"),
   reportedContentSnapshot: text("reported_content_snapshot"),
+  moderationAction: text("moderation_action"),
+  moderatedBy: varchar("moderated_by"),
+  moderatedAt: timestamp("moderated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
 });
@@ -323,7 +326,15 @@ export type ProfileRating = typeof profileRatings.$inferSelect;
 export const insertProfileRatingSchema = createInsertSchema(profileRatings).omit({ id: true, createdAt: true, repliedAt: true, ratedReply: true, matchCreated: true });
 export type InsertProfileRating = z.infer<typeof insertProfileRatingSchema>;
 
-export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, resolvedAt: true, status: true });
+export const insertReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  createdAt: true,
+  resolvedAt: true,
+  status: true,
+  moderationAction: true,
+  moderatedBy: true,
+  moderatedAt: true,
+});
 export type InsertReport = z.infer<typeof insertReportSchema>;
 
 export const insertRoomSchema = createInsertSchema(rooms).omit({ id: true, createdAt: true });

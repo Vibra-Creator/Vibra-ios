@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, Trash2, X, Send, Camera, Radio } from "lucide-react";
+import { Heart, MessageCircle, Trash2, X, Send, Camera, Radio, Flag } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -91,6 +91,16 @@ function CommentsModal({ signal, myProfileId, onClose }: { signal: Signal; myPro
     },
     onError: () => toast({ title: "Errore", description: "Trasmissione interrotta", variant: "destructive" }),
   });
+  const reportComment = useMutation({
+    mutationFn: (comment: SignalCommentItem) => apiRequest("POST", "/api/reports", {
+      reportedId: comment.profileId,
+      reason: "Contenuto inappropriato",
+      reportedContentType: "signal_comment",
+      reportedContentId: comment.id,
+    }),
+    onSuccess: () => toast({ title: "Segnalazione inviata", description: "Il team di moderazione la esaminerà entro 24 ore." }),
+    onError: () => toast({ title: "Errore", description: "Impossibile inviare la segnalazione", variant: "destructive" }),
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
@@ -115,12 +125,23 @@ function CommentsModal({ signal, myProfileId, onClose }: { signal: Signal; myPro
             <p className="text-white/40 text-sm text-center py-6">Nessuna risonanza ancora. Sii il primo a vibrare!</p>
           )}
           {comments.map(c => (
-            <div key={c.id} className="flex items-start gap-2" data-testid={`comment-item-${c.id}`}>
+            <div key={c.id} id={`signal-comment-${c.id}`} className="flex items-start gap-2" data-testid={`comment-item-${c.id}`}>
               <img src={c.profile.imageUrl} alt={c.profile.name} className="w-8 h-8 rounded-full object-cover shrink-0" loading="lazy" />
               <div className="flex-1 bg-white/5 rounded-xl px-3 py-2">
                 <span className="text-xs text-purple-300 font-semibold mr-2">{c.profile.name}</span>
                 <span className="text-white/80 text-sm">{c.content}</span>
               </div>
+              {c.profileId !== myProfileId && (
+                <button
+                  onClick={() => reportComment.mutate(c)}
+                  disabled={reportComment.isPending}
+                  className="text-white/30 hover:text-red-400 p-1"
+                  aria-label="Segnala commento"
+                  data-testid={`button-report-comment-${c.id}`}
+                >
+                  <Flag className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -183,6 +204,16 @@ function SignalCard({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/signals"] }),
     onError: () => toast({ title: "Errore", description: "Impossibile rimuovere il segnale", variant: "destructive" }),
   });
+  const reportMut = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/reports", {
+      reportedId: signal.profileId,
+      reason: "Contenuto inappropriato",
+      reportedContentType: "cosmic_signal",
+      reportedContentId: signal.id,
+    }),
+    onSuccess: () => toast({ title: "Segnalazione inviata", description: "Il team di moderazione la esaminerà entro 24 ore." }),
+    onError: () => toast({ title: "Errore", description: "Impossibile inviare la segnalazione", variant: "destructive" }),
+  });
 
   const isOwn = signal.profileId === myProfileId;
 
@@ -197,6 +228,7 @@ function SignalCard({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 space-y-2"
+        id={`signal-card-${signal.id}`}
         data-testid={`signal-card-${signal.id}`}
       >
         <div className="flex items-center justify-between">
@@ -225,6 +257,17 @@ function SignalCard({
                 data-testid={`button-delete-signal-${signal.id}`}
               >
                 <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            {!isOwn && (
+              <button
+                onClick={() => reportMut.mutate()}
+                disabled={reportMut.isPending}
+                className="text-white/30 hover:text-red-400 transition-colors"
+                aria-label="Segnala contenuto"
+                data-testid={`button-report-signal-${signal.id}`}
+              >
+                <Flag className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -538,6 +581,16 @@ export default function Signals() {
     refetchInterval: 30000,
   });
   const signals = Array.isArray(signalsRaw) ? signalsRaw : [];
+
+  useEffect(() => {
+    if (!signals.length || !window.location.hash) return;
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!id.startsWith("signal-card-")) return;
+    const timeout = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+    return () => window.clearTimeout(timeout);
+  }, [signals]);
 
   const handleProfileClick = (profileId: string) => setViewProfileId(profileId);
 

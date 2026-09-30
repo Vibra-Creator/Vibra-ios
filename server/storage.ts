@@ -129,7 +129,7 @@ export interface IStorage {
     reportedContentSnapshot?: string;
   }): Promise<Report>;
   getReports(): Promise<Report[]>;
-  updateReportStatus(id: string, status: string): Promise<Report | undefined>;
+  updateReportStatus(id: string, status: string, moderatedBy?: string): Promise<Report | undefined>;
   /** Removes orphaned report rows that are safe to delete:
    *  - the reportedId profile no longer exists, AND
    *  - the reportedUserId has no active profiles (so the userId linkage is no longer needed), AND
@@ -883,9 +883,16 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(reports).orderBy(desc(reports.createdAt));
   }
 
-  async updateReportStatus(id: string, status: string): Promise<Report | undefined> {
+  async updateReportStatus(id: string, status: string, moderatedBy?: string): Promise<Report | undefined> {
+    const moderatedAt = status !== "pending" ? new Date() : null;
     const [report] = await db.update(reports)
-      .set({ status, resolvedAt: status !== "pending" ? new Date() : null })
+      .set({
+        status,
+        resolvedAt: moderatedAt,
+        moderationAction: status === "pending" ? null : status,
+        moderatedBy: status === "pending" ? null : moderatedBy ?? null,
+        moderatedAt,
+      })
       .where(eq(reports.id, id))
       .returning();
     return report;

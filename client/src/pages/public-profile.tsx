@@ -63,6 +63,14 @@ export default function PublicProfile() {
     setNameMeta("twitter:image", profile.imageUrl);
   }, [profile]);
 
+  useEffect(() => {
+    if (!profile || window.location.hash !== "#profile-media") return;
+    const timeout = window.setTimeout(() => {
+      document.getElementById("profile-media")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(timeout);
+  }, [profile]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a0118" }}>
@@ -106,7 +114,7 @@ export default function PublicProfile() {
         ))}
       </div>
 
-      <div className="relative z-10 max-w-lg mx-auto pb-32">
+      <div className="relative z-10 max-w-lg mx-auto pb-32" id="profile-media">
         {/* Hero image */}
         <div className="relative">
           <div className="aspect-[3/4] overflow-hidden">
