@@ -5,11 +5,12 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "npm run check:client && tsx script/build.ts",
+    "build": "npm run check:client && npm run check:server && tsx script/build.ts",
     "build:ios-safe-web": "npm run build && node scripts/create-ios-safe-web-bundle.mjs",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "check:client": "tsc --project tsconfig.client.json --noEmit",
+    "check:server": "tsc --project tsconfig.server.json --noEmit",
     "db:push": "drizzle-kit push",
     "test:e2e": "playwright test",
     "test:e2e:setup": "bash scripts/setup-playwright.sh"
