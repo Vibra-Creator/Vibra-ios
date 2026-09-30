@@ -393,6 +393,44 @@ async function testCleanupFailureAlertRetriesAfterZeroDeliveries() {
   console.log("✓ cleanup alert retries after zero successful email deliveries without starting the cooldown");
 }
 
+async function testCleanupFailureAlertKeepsCooldownWhenPersistenceFails() {
+  let now = "2026-09-05T13:00:01.000Z";
+  let sentAlerts = 0;
+  let persistenceAttempts = 0;
+  const notifier = createReportCleanupFailureNotifier({
+    getAllUsers: async () => [{ email: "admin@example.test", isAdmin: true }],
+    sendBulkCustomEmails: async () => {
+      sentAlerts += 1;
+      return { sent: 1, failed: 0 };
+    },
+    persistState: async () => {
+      persistenceAttempts += 1;
+      throw new Error("alert state storage unavailable");
+    },
+    now: () => now,
+  });
+
+  let state = createReportCleanupState();
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  state = await notifier(state);
+
+  assert.equal(sentAlerts, 1, "the bulk sender should report a successful alert delivery");
+  assert.equal(persistenceAttempts, 1, "the notifier should attempt to persist the sent timestamp");
+  assert.equal(
+    state.lastNotificationAt,
+    "2026-09-05T13:00:01.000Z",
+    "a persistence failure must not discard the successful delivery's in-memory timestamp",
+  );
+
+  now = "2026-09-05T14:00:01.000Z";
+  state = await notifier(state);
+
+  assert.equal(sentAlerts, 1, "the retained timestamp should prevent another alert during cooldown");
+  assert.equal(persistenceAttempts, 1, "a cooldown invocation should not retry persistence");
+  console.log("✓ cleanup alert cooldown remains active when sent-state persistence fails");
+}
+
 async function testCleanupFailureAlertCooldownAndRecovery() {
   let now = "2026-09-05T13:00:01.000Z";
   const sentSubjects: string[] = [];
@@ -489,6 +527,7 @@ async function main() {
   testCleanupMonitoring();
   await testCleanupFailureAlertWiring();
   await testCleanupFailureAlertRetriesAfterZeroDeliveries();
+  await testCleanupFailureAlertKeepsCooldownWhenPersistenceFails();
   await testCleanupFailureAlertCooldownAndRecovery();
 
   if (!RUN_DATABASE_INTEGRATION) {
