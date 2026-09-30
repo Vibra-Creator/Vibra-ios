@@ -352,6 +352,47 @@ async function testCleanupFailureAlertWiring() {
   console.log("✓ repeated cleanup failures discover admins and send one alert with the streak and escaped last error");
 }
 
+async function testCleanupFailureAlertRetriesAfterZeroDeliveries() {
+  const attemptedSubjects: string[] = [];
+  const persistedTimestamps: Array<string | null> = [];
+  let deliveryAttempt = 0;
+  const notifier = createReportCleanupFailureNotifier({
+    getAllUsers: async () => [{ email: "admin@example.test", isAdmin: true }],
+    sendBulkCustomEmails: async (_recipients, subject) => {
+      attemptedSubjects.push(subject);
+      deliveryAttempt += 1;
+      return deliveryAttempt === 1
+        ? { sent: 0, failed: 1 }
+        : { sent: 1, failed: 0 };
+    },
+    persistState: async (state) => {
+      persistedTimestamps.push(state.lastNotificationAt);
+    },
+    now: () => "2026-09-05T13:00:01.000Z",
+  });
+
+  let state = createReportCleanupState();
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  state = markReportCleanupFailed(state, new Error("database unavailable"));
+  state = await notifier(state);
+
+  assert.equal(attemptedSubjects.length, 1, "the failed delivery should use the bulk-email seam");
+  assert.equal(state.lastNotificationAt, null, "zero successful deliveries must not start the cooldown");
+  assert.deepEqual(persistedTimestamps, [], "a failed delivery must not persist a notification timestamp");
+
+  state = markReportCleanupFailed(state, new Error("database still unavailable"));
+  state = await notifier(state);
+
+  assert.equal(attemptedSubjects.length, 2, "a later eligible failure should retry through the bulk-email seam");
+  assert.equal(
+    state.lastNotificationAt,
+    "2026-09-05T13:00:01.000Z",
+    "only the successful retry should record the notification timestamp",
+  );
+  assert.deepEqual(persistedTimestamps, ["2026-09-05T13:00:01.000Z"]);
+  console.log("✓ cleanup alert retries after zero successful email deliveries without starting the cooldown");
+}
+
 async function testCleanupFailureAlertCooldownAndRecovery() {
   let now = "2026-09-05T13:00:01.000Z";
   const sentSubjects: string[] = [];
@@ -447,6 +488,7 @@ async function main() {
   await testCleanupStatusAuthorization();
   testCleanupMonitoring();
   await testCleanupFailureAlertWiring();
+  await testCleanupFailureAlertRetriesAfterZeroDeliveries();
   await testCleanupFailureAlertCooldownAndRecovery();
 
   if (!RUN_DATABASE_INTEGRATION) {
