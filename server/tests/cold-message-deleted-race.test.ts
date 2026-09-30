@@ -65,6 +65,7 @@ async function startRouteTestServer(recipientUserId?: string): Promise<HttpServe
   if (recipientUserId) {
     app.use((req: any, _res, next) => {
       req.user = { claims: { sub: recipientUserId } };
+      req.session = { userId: recipientUserId };
       next();
     });
   }
@@ -593,6 +594,47 @@ describe("GET /api/cold-messages list authentication", () => {
       }
     } finally {
       await closeRouteTestServer(server);
+    }
+  });
+
+  test("authenticated users only see cold-message lists belonging to their own profile", async () => {
+    const sender = await createTestProfile("http_lists_private_sender");
+    const recipient = await createTestProfile("http_lists_private_recipient");
+    const otherSender = await createTestProfile("http_lists_private_other_sender");
+    const senderUserId = `__test_cold_lists_sender_${RUN_ID}`;
+    const recipientUserId = `__test_cold_lists_recipient_${RUN_ID}`;
+    createdProfileIds.push(sender, recipient, otherSender);
+
+    await db.update(profiles).set({ userId: senderUserId }).where(eq(profiles.id, sender));
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+
+    const senderMessageContent = `sender-only cold list ${RUN_ID}`;
+    const receivedMessageContent = `recipient-only cold list ${RUN_ID}`;
+    const senderMessage = await storage.sendColdMessage(sender, recipient, senderMessageContent);
+    const receivedMessage = await storage.sendColdMessage(otherSender, sender, receivedMessageContent);
+    assert.ok(senderMessage.coldMessage);
+    assert.ok(receivedMessage.coldMessage);
+
+    const senderServer = await startRouteTestServer(senderUserId);
+    const recipientServer = await startRouteTestServer(recipientUserId);
+    try {
+      const senderSent = await getJsonOverHttp(senderServer, "/api/cold-messages/sent");
+      const senderReceived = await getJsonOverHttp(senderServer, "/api/cold-messages/received");
+      const recipientSent = await getJsonOverHttp(recipientServer, "/api/cold-messages/sent");
+      const recipientReceived = await getJsonOverHttp(recipientServer, "/api/cold-messages/received");
+
+      assert.equal(senderSent.statusCode, 200);
+      assert.deepEqual(senderSent.body.map((message: { content: string }) => message.content), [senderMessageContent]);
+      assert.equal(senderReceived.statusCode, 200);
+      assert.deepEqual(senderReceived.body.map((message: { content: string }) => message.content), [receivedMessageContent]);
+
+      assert.equal(recipientSent.statusCode, 200);
+      assert.deepEqual(recipientSent.body, []);
+      assert.equal(recipientReceived.statusCode, 200);
+      assert.deepEqual(recipientReceived.body.map((message: { content: string }) => message.content), [senderMessageContent]);
+    } finally {
+      await closeRouteTestServer(senderServer);
+      await closeRouteTestServer(recipientServer);
     }
   });
 });

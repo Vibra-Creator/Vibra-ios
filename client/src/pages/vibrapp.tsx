@@ -110,6 +110,11 @@ export default function Vibrapp() {
   const [loadingSenderProfile, setLoadingSenderProfile] = useState(false);
   const [senderProfileToast, setSenderProfileToast] = useState<string | null>(null);
   const senderProfileToastTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const showSenderProfileToast = useCallback((message: string) => {
+    if (senderProfileToastTimerRef.current) clearTimeout(senderProfileToastTimerRef.current);
+    setSenderProfileToast(message);
+    senderProfileToastTimerRef.current = setTimeout(() => setSenderProfileToast(null), 3500);
+  }, []);
   const introMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const introAudioChunksRef = useRef<Blob[]>([]);
   const introRecordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -234,8 +239,7 @@ export default function Vibrapp() {
       if (/"reason"\s*:\s*"(sender_deleted|sender_blocked)"/.test(errorMessage)) {
         setSelectedColdMsg(null);
         setReplyText("");
-        setSenderProfileToast("Questo messaggio non è più disponibile");
-        setTimeout(() => setSenderProfileToast(null), 3500);
+        showSenderProfileToast("Questo messaggio non è più disponibile");
         refetchColdMsgs();
         queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
         return;
@@ -261,8 +265,8 @@ export default function Vibrapp() {
       try {
         const errData = await res.json();
         if (errData?.reason === "sender_deleted" || errData?.reason === "sender_blocked" || errData?.reason === "message_deleted") {
-          setSenderProfileToast("Questo messaggio non è più disponibile");
-          setTimeout(() => setSenderProfileToast(null), 3500);
+          setSelectedColdMsg(null);
+          showSenderProfileToast("Questo messaggio non è più disponibile");
           return;
         }
       } catch { /* ignore parse errors */ }
@@ -278,8 +282,8 @@ export default function Vibrapp() {
     }
     const data = await res.json();
     if (!data?.otherProfile) {
-      setSenderProfileToast("Questo messaggio non è più disponibile");
-      setTimeout(() => setSenderProfileToast(null), 3500);
+      setSelectedColdMsg(null);
+      showSenderProfileToast("Questo messaggio non è più disponibile");
       return;
     }
     setSelectedColdMsg({
@@ -296,7 +300,7 @@ export default function Vibrapp() {
     setColdMsgBlockConfirm(false);
     setColdMsgReportConfirm(false);
     setReportReason("");
-  }, []);
+  }, [showSenderProfileToast]);
 
   const [coldMsgDeleteConfirm, setColdMsgDeleteConfirm] = useState(false);
   const [coldMsgBlockConfirm, setColdMsgBlockConfirm] = useState(false);
@@ -394,42 +398,46 @@ export default function Vibrapp() {
     }
     
     if (coldMessageId) {
-      const raw = sessionStorage.getItem(`vibrapp_intro_${coldMessageId}`);
-      if (raw) {
-        try {
-          const target = JSON.parse(raw) as IntroTarget;
-          setIntroTarget(target);
-          setIntroColdStatus("idle");
-          setIntroCheckDone(false);
-        } catch {}
-      } else {
-        // Sessione nuova (es. tap su notifica push): recupera il cold message dall'API
-        fetch(`/api/cold-messages/${coldMessageId}`, { credentials: "include" })
-          .then(r => r.ok ? r.json() : null)
-          .then((data: any) => {
-            if (!data || !data.otherProfile) return;
-            const target: IntroTarget = {
-              id: data.otherProfile.id,
-              name: data.otherProfile.name,
-              age: data.otherProfile.age,
-              imageUrl: data.otherProfile.imageUrl || "",
-            };
-            // Salva in sessionStorage per uso futuro
-            sessionStorage.setItem(`vibrapp_intro_${coldMessageId}`, JSON.stringify(target));
-            setIntroTarget(target);
-            if (data.replied) {
-              setIntroColdStatus("replied");
-            } else {
-              setIntroColdStatus(data.isSentByMe ? "already_exists" : "idle");
-            }
-            if (data.content) setIntroSentContent(data.content);
-            if (data.createdAt) setIntroSentAt(data.createdAt);
+      // Always validate the exact message ID: a cached profile alone cannot tell
+      // whether the message was deleted after a notification or prior visit.
+      fetch(`/api/cold-messages/${coldMessageId}`, { credentials: "include" })
+        .then(async (res) => {
+          if (res.ok) return res.json();
+          const error = await res.json().catch(() => null);
+          if (error?.reason === "message_deleted") {
+            setIntroTarget(null);
             setIntroCheckDone(true);
-          })
-          .catch(() => {});
-      }
+            showSenderProfileToast("Questo messaggio non è più disponibile");
+          }
+          return null;
+        })
+        .then((data: any) => {
+          if (!data) return;
+          if (!data.otherProfile) {
+            setIntroTarget(null);
+            setIntroCheckDone(true);
+            showSenderProfileToast("Questo messaggio non è più disponibile");
+            return;
+          }
+          const target: IntroTarget = {
+            id: data.otherProfile.id,
+            name: data.otherProfile.name,
+            age: data.otherProfile.age,
+            imageUrl: data.otherProfile.imageUrl || "",
+          };
+          setIntroTarget(target);
+          if (data.replied) {
+            setIntroColdStatus("replied");
+          } else {
+            setIntroColdStatus(data.isSentByMe ? "already_exists" : "idle");
+          }
+          if (data.content) setIntroSentContent(data.content);
+          if (data.createdAt) setIntroSentAt(data.createdAt);
+          setIntroCheckDone(true);
+        })
+        .catch(() => {});
     }
-  }, [searchString]);
+  }, [searchString, showSenderProfileToast]);
 
   useEffect(() => {
     if (!introTarget || !profile) return;
