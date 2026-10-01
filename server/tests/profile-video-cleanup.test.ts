@@ -109,22 +109,26 @@ test(
         },
       ]);
 
-      await db.insert(profileVideos).values([
-        {
-          id: inactiveVideoId,
-          profileId: inactiveProfileId,
-          videoUrl: inactiveVideoUrl,
-        },
-        {
-          id: activeVideoId,
-          profileId: activeProfileId,
-          videoUrl: activeVideoUrl,
-        },
-      ]);
+      const [inactiveVideo, activeVideo] = await db
+        .insert(profileVideos)
+        .values([
+          {
+            id: inactiveVideoId,
+            profileId: inactiveProfileId,
+            videoUrl: inactiveVideoUrl,
+          },
+          {
+            id: activeVideoId,
+            profileId: activeProfileId,
+            videoUrl: activeVideoUrl,
+          },
+        ])
+        .returning();
+      assert.ok(inactiveVideo);
+      assert.ok(activeVideo);
 
       const candidates = await storage.getVideosForInactiveProfiles(cutoff);
-      assert.deepEqual(candidates.map((video) => video.id), [inactiveVideoId]);
-      assert.equal(candidates[0]?.videoUrl, inactiveVideoUrl);
+      assert.deepEqual(candidates, [inactiveVideo]);
 
       const deletedObjectUrls: string[] = [];
       await removeInactiveProfileVideos(
@@ -137,13 +141,10 @@ test(
 
       assert.deepEqual(deletedObjectUrls, [inactiveVideoUrl]);
       const remainingVideos = await db
-        .select({ id: profileVideos.id })
+        .select()
         .from(profileVideos)
         .where(inArray(profileVideos.id, [inactiveVideoId, activeVideoId]));
-      assert.deepEqual(
-        remainingVideos.map((video) => video.id),
-        [activeVideoId],
-      );
+      assert.deepEqual(remainingVideos, [activeVideo]);
     } finally {
       await db
         .delete(profileVideos)
