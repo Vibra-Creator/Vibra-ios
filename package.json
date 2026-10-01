@@ -11,6 +11,7 @@
     "check": "tsc",
     "check:client": "tsc --project tsconfig.client.json --noEmit",
     "check:server": "tsc --project tsconfig.server.json --noEmit",
+    "test:client-release-gate": "node scripts/test-client-release-gate.mjs",
     "db:push": "drizzle-kit push",
     "test:e2e": "playwright test",
     "test:e2e:setup": "bash scripts/setup-playwright.sh"
