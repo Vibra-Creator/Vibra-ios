@@ -4,7 +4,8 @@ import path from "node:path";
 const publicDir = path.resolve("dist/public");
 const iosWebDir = path.resolve("dist/ios-web");
 const playStoreAssetName = /(?:google[\s._-]*play|play[\s._-]*store)/i;
-const forbiddenReference = /(?:google[\s._-]*play|play\.google\.com|play[\s._-]*store)/i;
+const googleSiteVerificationAssetName = /^google[a-f0-9]{16,}\.html$/i;
+const forbiddenReference = /(?:google[\s._-]*play|play\.google\.com|play[\s._-]*store|google-site-verification)/i;
 const textExtensions = new Set([
   ".css",
   ".html",
@@ -32,6 +33,10 @@ async function scanDirectory(directory) {
       violations.push(`${relativePath}: Play Store-specific asset name`);
       continue;
     }
+    if (googleSiteVerificationAssetName.test(path.basename(relativePath))) {
+      violations.push(`${relativePath}: non-user-facing Google site-verification asset`);
+      continue;
+    }
 
     if (!textExtensions.has(path.extname(entry.name).toLowerCase())) continue;
     const content = await readFile(entryPath, "utf8");
@@ -52,7 +57,10 @@ await rm(iosWebDir, { recursive: true, force: true });
 await mkdir(iosWebDir, { recursive: true });
 await cp(publicDir, iosWebDir, {
   recursive: true,
-  filter: (sourcePath) => !playStoreAssetName.test(path.basename(sourcePath)),
+  filter: (sourcePath) => (
+    !playStoreAssetName.test(path.basename(sourcePath)) &&
+    !googleSiteVerificationAssetName.test(path.basename(sourcePath))
+  ),
 });
 
 await scanDirectory(iosWebDir);
