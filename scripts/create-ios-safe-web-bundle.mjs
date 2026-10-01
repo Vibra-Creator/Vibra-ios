@@ -1,10 +1,11 @@
-import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const publicDir = path.resolve("dist/public");
 const iosWebDir = path.resolve("dist/ios-web");
 const playStoreAssetName = /(?:google[\s._-]*play|play[\s._-]*store)/i;
 const googleSiteVerificationAssetName = /^google[a-f0-9]{16,}\.html$/i;
+const googleSiteVerificationMetaTag = /<meta\b(?=[^>]*\bname\s*=\s*["']google-site-verification["'])[^>]*\/?>/gi;
 const forbiddenReference = /(?:google[\s._-]*play|play\.google\.com|play[\s._-]*store|google-site-verification)/i;
 const textExtensions = new Set([
   ".css",
@@ -63,11 +64,15 @@ await cp(publicDir, iosWebDir, {
   ),
 });
 
+const iosIndexPath = path.join(iosWebDir, "index.html");
+const iosIndex = await readFile(iosIndexPath, "utf8");
+await writeFile(iosIndexPath, iosIndex.replace(googleSiteVerificationMetaTag, ""));
+
 await scanDirectory(iosWebDir);
 
 if (violations.length > 0) {
   await rm(iosWebDir, { recursive: true, force: true });
-  console.error("iOS web bundle rejected; Google Play references remain:");
+  console.error("iOS web bundle rejected; forbidden platform references remain:");
   for (const violation of violations) console.error(`- ${violation}`);
   process.exit(1);
 }
