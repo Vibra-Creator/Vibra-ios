@@ -150,3 +150,17 @@ mtime_ms = 1790935617071
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/3b54de04-3084-47cc-93c5-50a776230376/1d4890c5-fe7e-4c75-b9fb-dfbd5d6cf2ae"
 storage_version_token = "1790935641076094"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "iLMzsaW8eh4IYNuOKvtHj"
+uri = "file://deliverables/Vibra_AppStorePreview_3_886x1920_30fps.mp4"
+type = "video"
+title = "Anteprima App Store Vibra 3 — 886×1920"
+description = "MP4 H.264 portrait, 886×1920, 30 fps, 24,33 secondi e 3,3 MB. La clip era già a schermo intero; ridimensionata senza tagliare l’interfaccia. Traccia AAC mantenuta."
+logical_id = "568d0fe9-02c2-4ded-9844-669d20957ac2"
+content_hash = "sha256:2bcd2c74404559e09bcaa626dcc61dd86f7988864f2d9a1bdac3c706f0842bd9"
+size = 3303015
+mtime_ms = 1790936734592
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/568d0fe9-02c2-4ded-9844-669d20957ac2/19be314c-7089-44ec-adce-d03365f07b31"
+storage_version_token = "1790936748723179"
+content_type = "video/mp4"
