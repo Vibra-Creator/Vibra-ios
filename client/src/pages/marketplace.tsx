@@ -16,18 +16,83 @@ const SUB_COLORS: Record<string, string> = {
   "Casa & Arredo": "#10b981", "Sport": "#84cc16", "Libri": "#a855f7", "Altro": "#6b7280",
 };
 
-function ListingPhoto({ src, title, index, unavailable }: { src: string; title: string; index: number; unavailable: string }) {
+function ListingPhoto({
+  src,
+  title,
+  index,
+  unavailable,
+  replaceLabel,
+  removeLabel,
+  isOwner,
+  isUpdating,
+  onReplace,
+  onRemove,
+}: {
+  src: string;
+  title: string;
+  index: number;
+  unavailable: string;
+  replaceLabel: string;
+  removeLabel: string;
+  isOwner: boolean;
+  isUpdating: boolean;
+  onReplace: (file: File) => void;
+  onRemove: () => void;
+}) {
   const [failed, setFailed] = useState(false);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
 
   return failed ? (
-    <div role="img" aria-label={`${title}, ${unavailable.toLowerCase()} ${index}`} className="w-24 h-24 rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 bg-white/10 border border-white/15 text-white/70 text-center px-2">
-      <ImagePlus aria-hidden="true" className="w-5 h-5" />
-      <span aria-hidden="true" className="text-[11px] leading-tight">{unavailable}</span>
+    <div className="w-24 h-24 rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 bg-white/10 border border-white/15 text-white/70 text-center px-1 py-1">
+      <div role="img" aria-label={`${title}, ${unavailable.toLowerCase()} ${index}`} className="min-h-0 flex-1 flex flex-col items-center justify-center gap-1">
+        <ImagePlus aria-hidden="true" className="w-5 h-5 shrink-0" />
+        <span aria-hidden="true" className="text-[10px] leading-tight">{unavailable}</span>
+      </div>
+      {isOwner && (
+        <div className="flex items-center gap-2">
+          <input
+            ref={replaceInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            data-testid={`marketplace-replace-photo-${index}`}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) onReplace(file);
+            }}
+          />
+          <button
+            type="button"
+            aria-label={`${replaceLabel} ${index}`}
+            title={`${replaceLabel} ${index}`}
+            disabled={isUpdating}
+            onClick={() => replaceInputRef.current?.click()}
+            className="rounded bg-white/10 p-1 text-white hover:bg-white/20 disabled:opacity-50"
+          >
+            {isUpdating ? <Loader2 aria-hidden="true" className="w-3 h-3 animate-spin" /> : <ImagePlus aria-hidden="true" className="w-3 h-3" />}
+          </button>
+          <button
+            type="button"
+            aria-label={`${removeLabel} ${index}`}
+            title={`${removeLabel} ${index}`}
+            disabled={isUpdating}
+            onClick={onRemove}
+            className="rounded bg-white/10 p-1 text-white hover:bg-white/20 disabled:opacity-50"
+          >
+            <Trash2 aria-hidden="true" className="w-3 h-3" />
+          </button>
+        </div>
+      )}
     </div>
   ) : (
     <img src={src} alt={`${title} ${index}`} onError={() => setFailed(true)} className="w-24 h-24 rounded-xl object-cover shrink-0" />
   );
 }
+
+type MissingPhotoUpdate =
+  | { postId: string; imageUrl: string; action: "remove" }
+  | { postId: string; imageUrl: string; action: "replace"; file: File };
 
 export default function MarketplacePage() {
   const { t } = useLanguage();
@@ -118,6 +183,49 @@ export default function MarketplacePage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/hub-posts"] }),
   });
 
+  const updateMissingPhoto = useMutation({
+    mutationFn: async (update: MissingPhotoUpdate) => {
+      let replacementImageUrl: string | undefined;
+      if (update.action === "replace") {
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        if (!allowedTypes.includes(update.file.type)) {
+          throw new Error(t("market.invalidImageDesc"));
+        }
+        if (update.file.size > 5 * 1024 * 1024) {
+          throw new Error(t("market.imageTooLargeDesc"));
+        }
+
+        const body = new FormData();
+        body.append("images", update.file);
+        const uploadResponse = await fetch("/api/hub-posts/upload-image", {
+          method: "POST",
+          body,
+          credentials: "include",
+        });
+        const uploadData = await uploadResponse.json().catch(() => ({}));
+        if (!uploadResponse.ok || typeof uploadData.urls?.[0] !== "string") {
+          throw new Error(uploadData.error || t("market.uploadError"));
+        }
+        replacementImageUrl = uploadData.urls[0];
+      }
+
+      return apiRequest("PATCH", `/api/hub-posts/${update.postId}/photos`, {
+        action: update.action,
+        imageUrl: update.imageUrl,
+        ...(replacementImageUrl ? { replacementImageUrl } : {}),
+      });
+    },
+    onSuccess: (_result, update) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/hub-posts"] });
+      toast({
+        title: update.action === "replace" ? t("market.photoReplaced") : t("market.photoRemoved"),
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: t("common.error"), description: error.message || t("market.photoUpdateError"), variant: "destructive" });
+    },
+  });
+
   return (
     <div className="flex-1 overflow-y-auto pb-24" style={{ background: "transparent" }}>
       <div className="px-4 pt-4 max-w-lg mx-auto">
@@ -171,7 +279,19 @@ export default function MarketplacePage() {
                  {postImages.length > 0 && (
                    <div className="flex gap-2 overflow-x-auto px-4 pt-4 scrollbar-hide">
                      {postImages.map((image, imageIndex) => (
-                        <ListingPhoto key={`${post.id}-image-${imageIndex}-${image}`} src={image} title={post.title} index={imageIndex + 1} unavailable={t("market.photoUnavailable")} />
+                         <ListingPhoto
+                           key={`${post.id}-image-${imageIndex}-${image}`}
+                           src={image}
+                           title={post.title}
+                           index={imageIndex + 1}
+                           unavailable={t("market.photoUnavailable")}
+                           replaceLabel={t("market.replacePhoto")}
+                           removeLabel={t("market.removePhoto")}
+                           isOwner={Boolean(myProfile && post.profileId === myProfile.id)}
+                           isUpdating={updateMissingPhoto.isPending && updateMissingPhoto.variables?.postId === post.id && updateMissingPhoto.variables.imageUrl === image}
+                           onReplace={(file) => updateMissingPhoto.mutate({ postId: post.id, imageUrl: image, action: "replace", file })}
+                           onRemove={() => updateMissingPhoto.mutate({ postId: post.id, imageUrl: image, action: "remove" })}
+                         />
                      ))}
                    </div>
                  )}

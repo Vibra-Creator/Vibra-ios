@@ -201,6 +201,87 @@ test.describe("missing Marketplace photo", () => {
     await expect(card.getByText("€42", { exact: true })).toBeVisible();
     await expect(card.getByText("Roma", { exact: true })).toBeVisible();
   });
+
+  test("owners can replace and remove missing photos without recreating the listing", async ({ page, request, browser }) => {
+    const seller = await registerUser(request, "photo-repair-owner");
+    const sellerProfileId = await loginAs(request, seller);
+    const images: string[] = [];
+    for (const file of uploadFiles(3)) {
+      const upload = await request.post("/api/hub-posts/upload-image", { multipart: { images: file } });
+      expect(upload.status(), await upload.text()).toBe(200);
+      images.push(...((await upload.json()) as { urls: string[] }).urls);
+    }
+
+    const title = `Photo repair listing ${RUN_ID}`;
+    const description = "The listing should keep all details when a missing photo changes.";
+    const publish = await request.post("/api/hub-posts", {
+      data: {
+        category: "marketplace",
+        title,
+        description,
+        price: 57,
+        city: "Milano",
+        imageUrls: images,
+      },
+    });
+    expect(publish.status(), await publish.text()).toBe(200);
+    const original = (await publish.json()) as { id: string; title: string; description: string; price: number; city: string };
+
+    const outsiderContext = await browser.newContext();
+    try {
+      const outsiderRequest = outsiderContext.request;
+      const outsider = await registerUser(outsiderRequest, "photo-repair-outsider");
+      await loginAs(outsiderRequest, outsider);
+      const forbiddenEdit = await outsiderRequest.patch(`/api/hub-posts/${original.id}/photos`, {
+        data: { action: "remove", imageUrl: images[0] },
+      });
+      expect(forbiddenEdit.status()).toBe(403);
+    } finally {
+      await outsiderContext.close();
+    }
+
+    await injectSessionCookies(page, request);
+    await patchEmailVerified(page);
+    await page.route((url) => url.pathname === images[0] || url.pathname === images[1], (route) =>
+      route.fulfill({ status: 404, body: "Not found" }),
+    );
+    await page.goto("/marketplace", { waitUntil: "load" });
+    const card = page.locator("div.rounded-2xl.overflow-hidden").filter({ has: page.getByText(title, { exact: true }) });
+    await expect(card.getByRole("button", { name: "Sostituisci foto 1" })).toBeVisible();
+    await expect(card.getByRole("button", { name: "Rimuovi foto 2" })).toBeVisible();
+
+    await card.getByRole("button", { name: "Sostituisci foto 1" }).click();
+    await page.getByTestId("marketplace-replace-photo-1").setInputFiles(uploadFiles(1));
+    await expect(page.getByText("Foto sostituita", { exact: true })).toBeVisible();
+
+    await card.getByRole("button", { name: "Rimuovi foto 2" }).click();
+    await expect(page.getByText("Foto rimossa", { exact: true })).toBeVisible();
+
+    const refreshedPosts = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{
+      id: string;
+      title: string;
+      description: string;
+      price: number;
+      city: string;
+      profileId: string;
+      imageUrls: string[];
+    }>;
+    const updated = refreshedPosts.find((post) => post.id === original.id);
+    expect(updated).toBeDefined();
+    expect(updated).toMatchObject({
+      id: original.id,
+      title: original.title,
+      description: original.description,
+      price: original.price,
+      city: original.city,
+      profileId: sellerProfileId,
+    });
+    expect(updated?.imageUrls).toHaveLength(2);
+    expect(updated?.imageUrls[0]).not.toBe(images[0]);
+    expect(updated?.imageUrls[1]).toBe(images[2]);
+    await expect(card.getByText(title, { exact: true })).toBeVisible();
+    await expect(card.locator(`img[alt^="${title}"]`)).toHaveCount(2);
+  });
 });
 
 test("deleting a listing removes only its unreferenced stored photos", async ({ request }) => {

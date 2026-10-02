@@ -35,6 +35,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 const execFileAsync = promisify(execFile);
 import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
+import { ObjectPermission } from "./replit_integrations/object_storage/objectAcl";
 import OpenAI from "openai";
 import { createBackup, getBackupList, startAutoBackup } from "./backup";
 import { runMigrations } from "./migrate";
@@ -7243,6 +7244,72 @@ REGOLE:
       const [post] = await db.insert(hubPosts).values(parsed.data).returning();
       res.json(post);
     } catch { res.status(500).json({ error: "Errore creazione post" }); }
+  });
+
+  app.patch("/api/hub-posts/:id/photos", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+
+      const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, req.params.id));
+      if (!post) return res.status(404).json({ error: "Post non trovato" });
+      if (post.category !== "marketplace") return res.status(404).json({ error: "Post Marketplace non trovato" });
+      if (post.profileId !== profile.id) return res.status(403).json({ error: "Non autorizzato" });
+
+      const { action, imageUrl } = req.body || {};
+      if (!["replace", "remove"].includes(action) || typeof imageUrl !== "string" || !imageUrl.trim()) {
+        return res.status(400).json({ error: "Modifica foto non valida" });
+      }
+
+      const imageUrls = Array.isArray(post.imageUrls) && post.imageUrls.length > 0
+        ? [...post.imageUrls]
+        : (post.imageUrl ? [post.imageUrl] : []);
+      const imageIndex = imageUrls.indexOf(imageUrl);
+      if (imageIndex < 0) return res.status(409).json({ error: "La foto dell'annuncio è già stata modificata" });
+
+      if (action === "remove") {
+        imageUrls.splice(imageIndex, 1);
+      } else {
+        const { replacementImageUrl } = req.body;
+        if (typeof replacementImageUrl !== "string" || !/^\/objects\/marketplace\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(replacementImageUrl)) {
+          return res.status(400).json({ error: "La nuova foto non è valida" });
+        }
+        if (imageUrls.includes(replacementImageUrl)) {
+          return res.status(400).json({ error: "La nuova foto è già presente nell'annuncio" });
+        }
+
+        try {
+          const replacementFile = await objectStorageService.getObjectEntityFile(replacementImageUrl);
+          const isOwnedUpload = await objectStorageService.canAccessObjectEntity({
+            userId,
+            objectFile: replacementFile,
+            requestedPermission: ObjectPermission.WRITE,
+          });
+          if (!isOwnedUpload) return res.status(403).json({ error: "La nuova foto non appartiene al tuo account" });
+        } catch {
+          return res.status(400).json({ error: "La nuova foto non è disponibile" });
+        }
+        imageUrls[imageIndex] = replacementImageUrl;
+      }
+
+      const updateConditions = [
+        eq(hubPosts.id, post.id),
+        eq(hubPosts.profileId, profile.id),
+        sql`${hubPosts.imageUrls} = ARRAY[${sql.join(post.imageUrls.map((url) => sql`${url}`), sql`, `)}]::text[]`,
+        post.imageUrl === null ? sql`${hubPosts.imageUrl} IS NULL` : eq(hubPosts.imageUrl, post.imageUrl),
+      ];
+      const [updated] = await db.update(hubPosts)
+        .set({ imageUrls, imageUrl: imageUrls[0] || null })
+        .where(and(...updateConditions))
+        .returning();
+      if (!updated) return res.status(409).json({ error: "Le foto dell'annuncio sono cambiate. Ricarica la pagina." });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating Marketplace photo:", error);
+      res.status(500).json({ error: "Errore aggiornamento foto" });
+    }
   });
 
   app.patch("/api/hub-posts/:id/status", isAuthenticated, async (req: any, res) => {
