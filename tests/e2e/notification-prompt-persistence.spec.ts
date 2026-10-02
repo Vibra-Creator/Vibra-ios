@@ -203,6 +203,44 @@ test("notification prompt appears only when supported and undecided", async ({ p
   await expect(page.getByTestId("notification-banner")).not.toBeVisible();
 });
 
+test("a denied notification permission hides the prompt without requesting again", async ({ page, request }) => {
+  const user = await registerUser(request, "permission-denied");
+  await prepareAuthenticatedPage(page, request, user, { permission: "denied" });
+
+  await expect(page.getByTestId("hub-card-dating")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("notification-banner")).not.toBeVisible();
+  await expect(page.evaluate(() => Notification.permission)).resolves.toBe("denied");
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionReads?: number })
+          .__notificationPermissionReads || 0,
+      ),
+    )
+    .toBeGreaterThan(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionCalls?: number })
+          .__notificationPermissionCalls || 0,
+      ),
+    )
+    .toBe(0);
+
+  await page.getByTestId("hub-card-dating").click();
+  await expect(page).toHaveURL(/\/dating$/);
+  await expect(page.getByTestId("vibra-logo-header")).toBeVisible();
+  await expect(page.getByTestId("notification-banner")).not.toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionCalls?: number })
+          .__notificationPermissionCalls || 0,
+      ),
+    )
+    .toBe(0);
+});
+
 test("permission access errors keep the authenticated app usable without showing or requesting the prompt", async ({
   page,
   request,
