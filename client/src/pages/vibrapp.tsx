@@ -98,6 +98,7 @@ export default function Vibrapp() {
   const [introCheckDone, setIntroCheckDone] = useState(false);
   const [introSentContent, setIntroSentContent] = useState<string | null>(null);
   const [introSentAt, setIntroSentAt] = useState<string | null>(null);
+  const [introColdMessageId, setIntroColdMessageId] = useState<string | null>(null);
   const [selectedColdMsg, setSelectedColdMsg] = useState<ReceivedColdMsg | null>(null);
   const [replyText, setReplyText] = useState("");
   const [introIsRecording, setIntroIsRecording] = useState(false);
@@ -107,6 +108,7 @@ export default function Vibrapp() {
   const [introIsUploading, setIntroIsUploading] = useState(false);
   const [viewedSenderProfile, setViewedSenderProfile] = useState<any | null>(null);
   const [returnToColdMsg, setReturnToColdMsg] = useState<ReceivedColdMsg | null>(null);
+  const [returnToSentColdMessageId, setReturnToSentColdMessageId] = useState<string | null>(null);
   const [loadingSenderProfile, setLoadingSenderProfile] = useState(false);
   const [senderProfileToast, setSenderProfileToast] = useState<string | null>(null);
   const senderProfileToastTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -398,6 +400,7 @@ export default function Vibrapp() {
     }
     
     if (coldMessageId) {
+      setIntroColdMessageId(coldMessageId);
       // Always validate the exact message ID: a cached profile alone cannot tell
       // whether the message was deleted after a notification or prior visit.
       fetch(`/api/cold-messages/${coldMessageId}`, { credentials: "include" })
@@ -406,6 +409,9 @@ export default function Vibrapp() {
           const error = await res.json().catch(() => null);
           if (error?.reason === "message_deleted") {
             setIntroTarget(null);
+            setIntroSentContent(null);
+            setIntroSentAt(null);
+            setIntroColdMessageId(null);
             setIntroCheckDone(true);
             showSenderProfileToast("Questo messaggio non è più disponibile");
           }
@@ -415,6 +421,9 @@ export default function Vibrapp() {
           if (!data) return;
           if (!data.otherProfile) {
             setIntroTarget(null);
+            setIntroSentContent(null);
+            setIntroSentAt(null);
+            setIntroColdMessageId(null);
             setIntroCheckDone(true);
             showSenderProfileToast("Questo messaggio non è più disponibile");
             return;
@@ -436,6 +445,8 @@ export default function Vibrapp() {
           setIntroCheckDone(true);
         })
         .catch(() => {});
+    } else {
+      setIntroColdMessageId(null);
     }
   }, [searchString, showSenderProfileToast]);
 
@@ -1166,7 +1177,37 @@ export default function Vibrapp() {
       {introTarget && introTarget.id !== profile?.id && (
         <div className="bg-[#0d1f1a] border-b border-emerald-900/30 px-4 py-2.5 shrink-0" data-testid="intro-target-banner">
           <div className="flex items-center gap-3">
-            <img src={introTarget.imageUrl} alt={introTarget.name} className="w-9 h-9 rounded-full object-cover border-2 border-emerald-500/50" />
+            {introColdMessageId ? (
+              <button
+                type="button"
+                className="shrink-0 focus:outline-none"
+                disabled={loadingSenderProfile}
+                onClick={async () => {
+                  if (loadingSenderProfile) return;
+                  setLoadingSenderProfile(true);
+                  try {
+                    const res = await fetch(`/api/profiles/${introTarget.id}`, { credentials: "include" });
+                    if (!res.ok) {
+                      showSenderProfileToast("Impossibile caricare il profilo. Riprova.");
+                      return;
+                    }
+                    const recipientProfile = await res.json();
+                    setReturnToSentColdMessageId(introColdMessageId);
+                    setViewedSenderProfile(recipientProfile);
+                  } catch {
+                    showSenderProfileToast("Impossibile caricare il profilo. Riprova.");
+                  } finally {
+                    setLoadingSenderProfile(false);
+                  }
+                }}
+                data-testid="button-view-intro-target-profile"
+                aria-label={`Vedi il profilo di ${introTarget.name}`}
+              >
+                <img src={introTarget.imageUrl} alt={introTarget.name} className="w-9 h-9 rounded-full object-cover border-2 border-emerald-500/50" />
+              </button>
+            ) : (
+              <img src={introTarget.imageUrl} alt={introTarget.name} className="w-9 h-9 rounded-full object-cover border-2 border-emerald-500/50" />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-semibold leading-tight truncate">{introTarget.name}, {introTarget.age}</p>
               <p className="text-white/50 text-[11px]">
@@ -2116,6 +2157,23 @@ export default function Vibrapp() {
               } catch {
                 // Network error: restore the panel rather than losing the user's context
                 setSelectedColdMsg(returnToColdMsg);
+              }
+            } else if (returnToSentColdMessageId) {
+              const msgId = returnToSentColdMessageId;
+              setReturnToSentColdMessageId(null);
+              try {
+                const res = await fetch(`/api/cold-messages/${msgId}`, { credentials: "include" });
+                if (!res.ok) {
+                  setIntroTarget(null);
+                  setIntroSentContent(null);
+                  setIntroSentAt(null);
+                  setIntroColdMessageId(null);
+                  sessionStorage.removeItem("vibrapp_intro_target");
+                  void refetchSentColdMsgs();
+                  showSenderProfileToast("Questo messaggio non è più disponibile");
+                }
+              } catch {
+                // Keep the sent-message context if revalidation fails transiently.
               }
             }
           }}

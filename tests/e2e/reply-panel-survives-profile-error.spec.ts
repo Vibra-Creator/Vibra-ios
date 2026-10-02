@@ -16,23 +16,29 @@
  *     authenticate successfully.
  */
 
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect, request as playwrightRequest, type APIRequestContext } from "@playwright/test";
 
 const RUN_ID = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+let registeredUserCount = 0;
 
 interface Credentials { email: string; password: string; name: string; }
 
 async function registerUser(request: APIRequestContext, label: string): Promise<Credentials> {
-  const email = `test_${label}_${RUN_ID}@vibra-e2e.invalid`;
+  const uniqueId = `${RUN_ID}_${++registeredUserCount}`;
+  const email = `test_${label}_${uniqueId}@vibra-e2e.invalid`;
   const password = "Vibra_E2ePass1!";
-  const name = `TestUser_${label}_${RUN_ID}`;
-  const res = await request.post("/api/auth/register", { data: { email, password, name, age: 25 } });
+  const name = `TestUser_${label}_${uniqueId}`;
+  const res = await request.post("/api/auth/register", {
+    data: { email, password, name, age: 25, termsAccepted: true },
+  });
   if (!res.ok()) throw new Error(`Register ${label}: ${res.status()} – ${await res.text()}`);
   return { email, password, name };
 }
 
 async function loginAs(req: APIRequestContext, creds: Credentials): Promise<string> {
-  const lr = await req.post("/api/auth/login", { data: { email: creds.email, password: creds.password } });
+  const lr = await req.post("/api/auth/login", {
+    data: { email: creds.email, password: creds.password, termsAccepted: true },
+  });
   if (!lr.ok()) throw new Error(`Login ${creds.email}: ${lr.status()} – ${await lr.text()}`);
   const pr = await req.get("/api/profiles/me");
   if (!pr.ok()) throw new Error(`profiles/me: ${pr.status()} – ${await pr.text()}`);
@@ -336,4 +342,118 @@ test("double-tap on sender avatar shows only one toast and it auto-dismisses aft
 
   // ── 11. Reply panel must still be intact after the toast fades ────────────
   await expect(replyPanel).toBeVisible();
+});
+
+test("sender sees an unavailable notice when the recipient deletes a message while their profile is open", async ({
+  page,
+  request,
+}, testInfo) => {
+  const recipient = await registerUser(request, "recipient_delete_race");
+  const sender = await registerUser(request, "sender_delete_race");
+  const recipientProfileId = await loginAs(request, recipient);
+  const senderProfileId = await loginAs(request, sender);
+  const messageContent = `E2E deleted while profile is open ${RUN_ID}`;
+  const sendResponse = await request.post("/api/cold-messages", {
+    data: { toProfileId: recipientProfileId, content: messageContent },
+  });
+  if (!sendResponse.ok()) {
+    throw new Error(`Send cold msg: ${sendResponse.status()} – ${await sendResponse.text()}`);
+  }
+
+  const baseURL = String(testInfo.project.use.baseURL ?? "http://localhost:5000");
+  const recipientSession = await playwrightRequest.newContext({ baseURL });
+  try {
+    const sessionRecipientId = await loginAs(recipientSession, recipient);
+    if (sessionRecipientId !== recipientProfileId) {
+      throw new Error("Recipient session resolved to a different profile");
+    }
+    const inboxResponse = await recipientSession.get("/api/cold-messages/received");
+    if (!inboxResponse.ok()) {
+      throw new Error(`Recipient inbox: ${inboxResponse.status()} – ${await inboxResponse.text()}`);
+    }
+    const inbox = (await inboxResponse.json()) as Array<{ id: string; fromProfileId: string }>;
+    const coldMessage = inbox.find((message) => message.fromProfileId === senderProfileId);
+    if (!coldMessage) throw new Error("Cold message not in recipient's inbox – setup failed");
+
+    // The sender opens the sent message from its notification deep link.
+    await loginAs(request, sender);
+    const state = await request.storageState();
+    const baseUrl = new URL(baseURL);
+    await page.context().addCookies(
+      state.cookies.map((cookie) => ({
+        name: cookie.name,
+        value: cookie.value,
+        domain: baseUrl.hostname,
+        path: cookie.path || "/",
+        httpOnly: cookie.httpOnly ?? true,
+        secure: baseUrl.protocol === "https:",
+        sameSite: "Lax" as const,
+      })),
+    );
+
+    await page.route("**/api/auth/user", async (route) => {
+      const response = await route.fetch();
+      if (response.ok()) {
+        const body = (await response.json()) as Record<string, unknown>;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ ...body, emailVerified: true }),
+        });
+      } else {
+        await route.fulfill({ response });
+      }
+    });
+
+    const messageResponse = page.waitForResponse((response) =>
+      response.request().method() === "GET" &&
+      response.url().includes(`/api/cold-messages/${coldMessage.id}`),
+    );
+    await page.goto(`/vibrapp?coldMessageId=${encodeURIComponent(coldMessage.id)}`, {
+      waitUntil: "load",
+    });
+    const openedMessageResponse = await messageResponse;
+    expect(openedMessageResponse.status()).toBe(200);
+    expect(await openedMessageResponse.json()).toMatchObject({
+      id: coldMessage.id,
+      content: messageContent,
+      isSentByMe: true,
+    });
+
+    const targetBanner = page.locator('[data-testid="intro-target-banner"]');
+    await expect(targetBanner).toBeVisible({ timeout: 10_000 });
+    const sentMessageBubble = page.locator(
+      `[data-testid="sent-intro-bubble-${coldMessage.id}"]`,
+    );
+    await expect(sentMessageBubble).toBeVisible();
+    await page.locator('[data-testid="button-view-intro-target-profile"]').click();
+    const profileModal = page.locator('[data-testid="profile-detail-modal"]');
+    await expect(profileModal).toBeVisible();
+
+    // The recipient deletes the message in their independent authenticated session.
+    const deleteResponse = await recipientSession.delete(
+      `/api/cold-messages/${coldMessage.id}`,
+    );
+    if (!deleteResponse.ok()) {
+      throw new Error(`Delete cold msg: ${deleteResponse.status()} – ${await deleteResponse.text()}`);
+    }
+
+    const revalidation = page.waitForResponse((response) =>
+      response.request().method() === "GET" &&
+      response.url().includes(`/api/cold-messages/${coldMessage.id}`),
+    );
+    await page.locator('[data-testid="button-modal-close"]').click();
+    const revalidationResponse = await revalidation;
+    expect(revalidationResponse.status()).toBe(404);
+    expect(await revalidationResponse.json()).toMatchObject({ reason: "message_deleted" });
+
+    await expect(page.locator('[data-testid="sender-profile-toast"]')).toContainText(
+      "Questo messaggio non è più disponibile",
+    );
+    await expect(targetBanner).not.toBeVisible();
+    await expect(sentMessageBubble).not.toBeVisible();
+    await expect(page.getByText(messageContent, { exact: true })).toHaveCount(0);
+  } finally {
+    await recipientSession.dispose();
+  }
 });
