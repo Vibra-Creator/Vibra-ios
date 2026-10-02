@@ -42,8 +42,9 @@ import {
   type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray, lt, ne, gt } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, lt, ne, gt, lte, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { USER_REPORT_NOTIFICATION_CLAIM_LEASE_MS } from "./user-report-notifications";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -129,6 +130,9 @@ export interface IStorage {
     reportedContentSnapshot?: string;
   }): Promise<Report>;
   getReports(): Promise<Report[]>;
+  claimPendingReportNotifications(options?: { reportId?: string; now?: Date; limit?: number }): Promise<Report[]>;
+  markReportNotificationSent(reportId: string, sentAt: Date): Promise<void>;
+  scheduleReportNotificationRetry(reportId: string, nextAttemptAt: Date, error: string): Promise<void>;
   updateReportStatus(id: string, status: string, moderatedBy?: string): Promise<Report | undefined>;
   /** Removes orphaned report rows that are safe to delete:
    *  - the reportedId profile no longer exists, AND
@@ -883,6 +887,85 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(reports).orderBy(desc(reports.createdAt));
   }
 
+  async claimPendingReportNotifications(options: {
+    reportId?: string;
+    now?: Date;
+    limit?: number;
+  } = {}): Promise<Report[]> {
+    const now = options.now ?? new Date();
+    const leaseExpiresAt = new Date(now.getTime() + USER_REPORT_NOTIFICATION_CLAIM_LEASE_MS);
+    const dueStatus = or(
+      and(
+        eq(reports.notificationStatus, "pending"),
+        lte(reports.notificationNextAttemptAt, now),
+      ),
+      and(
+        eq(reports.notificationStatus, "sending"),
+        lte(reports.notificationNextAttemptAt, now),
+      ),
+    );
+    const conditions = [
+      eq(reports.status, "pending"),
+      dueStatus,
+      ...(options.reportId ? [eq(reports.id, options.reportId)] : []),
+    ];
+
+    return db.transaction(async (tx) => {
+      const dueReports = await tx
+        .select({ id: reports.id })
+        .from(reports)
+        .where(and(...conditions))
+        .orderBy(asc(reports.createdAt))
+        .limit(options.limit ?? 20)
+        .for("update", { skipLocked: true });
+      if (dueReports.length === 0) return [];
+
+      return tx
+        .update(reports)
+        .set({
+          notificationStatus: "sending",
+          notificationAttempts: sql`${reports.notificationAttempts} + 1`,
+          notificationLastAttemptAt: now,
+          notificationNextAttemptAt: leaseExpiresAt,
+        })
+        .where(inArray(reports.id, dueReports.map((report) => report.id)))
+        .returning();
+    });
+  }
+
+  async markReportNotificationSent(reportId: string, sentAt: Date): Promise<void> {
+    await db.update(reports)
+      .set({
+        notificationStatus: "sent",
+        notificationSentAt: sentAt,
+        notificationNextAttemptAt: sentAt,
+        notificationLastError: null,
+      })
+      .where(and(
+        eq(reports.id, reportId),
+        eq(reports.status, "pending"),
+        eq(reports.notificationStatus, "sending"),
+      ));
+  }
+
+  async scheduleReportNotificationRetry(
+    reportId: string,
+    nextAttemptAt: Date,
+    error: string,
+  ): Promise<void> {
+    await db.update(reports)
+      .set({
+        notificationStatus: "pending",
+        notificationNextAttemptAt: nextAttemptAt,
+        notificationLastError: error.slice(0, 1000),
+      })
+      .where(and(
+        eq(reports.id, reportId),
+        eq(reports.status, "pending"),
+        eq(reports.notificationStatus, "sending"),
+      ));
+  }
+
   async updateReportStatus(id: string, status: string, moderatedBy?: string): Promise<Report | undefined> {
     const moderatedAt = status !== "pending" ? new Date() : null;
     const [report] = await db.update(reports)
@@ -892,6 +975,12 @@ export class DatabaseStorage implements IStorage {
         moderationAction: status === "pending" ? null : status,
         moderatedBy: status === "pending" ? null : moderatedBy ?? null,
         moderatedAt,
+        notificationStatus: status === "pending" ? "pending" : "cancelled",
+        notificationAttempts: status === "pending" ? 0 : undefined,
+        notificationNextAttemptAt: status === "pending" ? new Date() : undefined,
+        notificationLastAttemptAt: status === "pending" ? null : undefined,
+        notificationSentAt: status === "pending" ? null : undefined,
+        notificationLastError: status === "pending" ? null : undefined,
       })
       .where(eq(reports.id, id))
       .returning();

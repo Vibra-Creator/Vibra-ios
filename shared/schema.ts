@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, doublePrecision, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -254,9 +254,17 @@ export const reports = pgTable("reports", {
   moderationAction: text("moderation_action"),
   moderatedBy: varchar("moderated_by"),
   moderatedAt: timestamp("moderated_at"),
+  notificationStatus: text("notification_status").notNull().default("pending"),
+  notificationAttempts: integer("notification_attempts").notNull().default(0),
+  notificationNextAttemptAt: timestamp("notification_next_attempt_at").notNull().defaultNow(),
+  notificationLastAttemptAt: timestamp("notification_last_attempt_at"),
+  notificationSentAt: timestamp("notification_sent_at"),
+  notificationLastError: text("notification_last_error"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
-});
+}, (table) => [
+  index("reports_notification_queue_idx").on(table.notificationStatus, table.notificationNextAttemptAt),
+]);
 
 export const reportCleanupAlertState = pgTable("report_cleanup_alert_state", {
   id: varchar("id").primaryKey(),

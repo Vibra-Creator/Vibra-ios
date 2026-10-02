@@ -73,6 +73,7 @@ import {
 } from "./public-profile-seo";
 import { filterOffensiveContent, filterUgcTextPayload, hasUgcTextPayload } from "./ugc-moderation";
 import { createSuspensionWriteGuard } from "./suspension-write-guard";
+import { createUserReportNotificationProcessor } from "./user-report-notifications";
 
 const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
@@ -732,34 +733,22 @@ export async function registerRoutes(
     },
   });
 
-  async function notifyAdminsOfNewUserReport(reportId: string): Promise<void> {
-    try {
-      const admins = (await storage.getAllUsers())
-        .filter((user) => user.isAdmin && user.email)
-        .map((user) => ({
-          email: user.email!,
-          name: user.firstName || "Admin",
-        }));
-      if (admins.length === 0) {
-        console.error("[ugc-moderation] No admin recipients available for report notification", reportId);
-        return;
-      }
-
+  const notifyAdminsOfNewUserReport = createUserReportNotificationProcessor({
+    claimPendingReports: (options) => storage.claimPendingReportNotifications(options),
+    getAdminRecipients: async () => (await storage.getAllUsers())
+      .filter((user) => user.isAdmin && user.email)
+      .map((user) => ({
+        email: user.email!,
+        name: user.firstName || "Admin",
+      })),
+    sendBulkEmail: async (recipients, subject, htmlBody) => {
       const { sendBulkCustomEmails } = await import("./gmail");
-      const result = await sendBulkCustomEmails(
-        admins,
-        "Vibra: nuova segnalazione da revisionare",
-        `<p>È arrivata una nuova segnalazione UGC da revisionare.</p>
-         <p>Riferimento: ${reportId}</p>
-         <p>Apri la dashboard admin e verifica la segnalazione entro 24 ore.</p>`,
-      );
-      if (result.failed > 0) {
-        console.error(`[ugc-moderation] Report ${reportId}: ${result.failed} admin notification emails failed`);
-      }
-    } catch (error) {
-      console.error(`[ugc-moderation] Could not notify admins about report ${reportId}:`, error);
-    }
-  }
+      return sendBulkCustomEmails(recipients, subject, htmlBody);
+    },
+    markSent: (reportId, sentAt) => storage.markReportNotificationSent(reportId, sentAt),
+    scheduleRetry: (reportId, nextAttemptAt, error) =>
+      storage.scheduleReportNotificationRetry(reportId, nextAttemptAt, error),
+  });
 
   app.get("/sw.js", (req, res, next) => {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -928,6 +917,8 @@ ${urlEntries}
     console.error("[migrate] migration error:", e);
     throw e;
   }
+  void notifyAdminsOfNewUserReport();
+  setInterval(() => void notifyAdminsOfNewUserReport(), 60 * 1000);
 
   async function cleanOldVibrappMessages() {
     try {

@@ -83,6 +83,52 @@ export async function runMigrations(): Promise<void> {
   // email (even under a new auth provider / userId) can still be matched.
   await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reported_email TEXT`);
 
+  // Persist the admin-email outbox on the report row itself. Existing reports
+  // predate delivery tracking and must not all be emailed again on deployment.
+  await db.execute(sql`
+    ALTER TABLE reports
+    ADD COLUMN IF NOT EXISTS notification_status TEXT NOT NULL DEFAULT 'not_required'
+  `);
+  await db.execute(sql`
+    ALTER TABLE reports
+    ADD COLUMN IF NOT EXISTS notification_attempts INTEGER NOT NULL DEFAULT 0
+  `);
+  await db.execute(sql`
+    ALTER TABLE reports
+    ADD COLUMN IF NOT EXISTS notification_next_attempt_at TIMESTAMP NOT NULL DEFAULT NOW()
+  `);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS notification_last_attempt_at TIMESTAMP`);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS notification_sent_at TIMESTAMP`);
+  await db.execute(sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS notification_last_error TEXT`);
+  await db.execute(sql`
+    UPDATE reports
+    SET notification_status = 'not_required'
+    WHERE notification_status IS NULL
+  `);
+  await db.execute(sql`
+    UPDATE reports
+    SET notification_attempts = 0
+    WHERE notification_attempts IS NULL
+  `);
+  await db.execute(sql`
+    UPDATE reports
+    SET notification_next_attempt_at = NOW()
+    WHERE notification_next_attempt_at IS NULL
+  `);
+  await db.execute(sql`
+    ALTER TABLE reports
+    ALTER COLUMN notification_status SET DEFAULT 'pending',
+    ALTER COLUMN notification_status SET NOT NULL,
+    ALTER COLUMN notification_attempts SET DEFAULT 0,
+    ALTER COLUMN notification_attempts SET NOT NULL,
+    ALTER COLUMN notification_next_attempt_at SET DEFAULT NOW(),
+    ALTER COLUMN notification_next_attempt_at SET NOT NULL
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS reports_notification_queue_idx
+    ON reports (notification_status, notification_next_attempt_at)
+  `);
+
   // ── report cleanup alert state ────────────────────────────────────────────
   // Keep the failure streak and successful notification timestamp across
   // application restarts so an ongoing incident remains rate-limited.

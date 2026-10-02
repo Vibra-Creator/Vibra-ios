@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil, LogIn, ExternalLink } from "lucide-react";
@@ -64,6 +64,16 @@ function getReportSnapshot(snapshot: string | null | undefined): Record<string, 
   } catch {
     return null;
   }
+}
+
+function formatReportElapsedTime(milliseconds: number): string {
+  const totalMinutes = Math.max(0, Math.floor(milliseconds / 60_000));
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}g ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
 function getReportedContentHref(report: Report): string | null {
@@ -133,7 +143,13 @@ export default function Admin() {
   const [profileSearch, setProfileSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [hideBotsFilter, setHideBotsFilter] = useState(true);
+  const [reportClockNow, setReportClockNow] = useState(Date.now());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => setReportClockNow(Date.now()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isBot = (u: User) => u.id?.startsWith("bot-user-") || u.email === "nome@vibra.app";
 
@@ -1310,24 +1326,49 @@ export default function Admin() {
                               <Badge variant={report.status === "pending" ? "destructive" : "secondary"}>
                                 {report.status === "pending" ? "In attesa" : report.status === "resolved" ? "Risolta" : "Archiviata"}
                               </Badge>
-                              <span className="text-xs text-muted-foreground">{new Date(report.createdAt).toLocaleString("it-IT")}</span>
+                              <span className="text-xs text-muted-foreground" data-testid={`report-age-${report.id}`}>
+                                Età: {formatReportElapsedTime(reportClockNow - new Date(report.createdAt).getTime())}
+                              </span>
                               {report.moderationAction && (
                                 <Badge variant="outline" data-testid={`report-action-${report.id}`}>
                                   {getModerationActionLabel(report.moderationAction)}
                                 </Badge>
                               )}
                               {report.status === "pending" && (
-                                <Badge
-                                  variant={
-                                    Date.now() >= new Date(report.createdAt).getTime() + 24 * 60 * 60 * 1000
-                                      ? "destructive"
-                                      : "outline"
-                                  }
-                                >
-                                  {Date.now() >= new Date(report.createdAt).getTime() + 24 * 60 * 60 * 1000
-                                    ? "SLA 24h superata"
-                                    : "Da esaminare entro 24h"}
-                                </Badge>
+                                (() => {
+                                  const slaDeadline = new Date(new Date(report.createdAt).getTime() + 24 * 60 * 60 * 1000);
+                                  const overdueByMs = reportClockNow - slaDeadline.getTime();
+                                  const overdue = overdueByMs >= 0;
+                                  return (
+                                    <>
+                                      <Badge
+                                        variant={overdue ? "destructive" : "outline"}
+                                        data-testid={`report-sla-${report.id}`}
+                                      >
+                                        {overdue
+                                          ? `SLA superata da ${formatReportElapsedTime(overdueByMs)}`
+                                          : `Scade tra ${formatReportElapsedTime(-overdueByMs)}`}
+                                      </Badge>
+                                      <span className="text-xs text-muted-foreground">
+                                        Scadenza: {slaDeadline.toLocaleString("it-IT")}
+                                      </span>
+                                      <Badge
+                                        variant={report.notificationStatus === "sent" ? "secondary" : "outline"}
+                                        data-testid={`report-notification-${report.id}`}
+                                      >
+                                        {report.notificationStatus === "sent"
+                                          ? "Email admin inviata"
+                                          : report.notificationStatus === "sending"
+                                            ? "Email admin in invio"
+                                            : report.notificationStatus === "not_required"
+                                              ? "Email non tracciata (segnalazione precedente)"
+                                              : report.notificationStatus === "cancelled"
+                                                ? "Email admin sospesa"
+                                                : `Email admin in coda${report.notificationAttempts > 0 ? ` · tentativi ${report.notificationAttempts}` : ""}`}
+                                      </Badge>
+                                    </>
+                                  );
+                                })()
                               )}
                             </div>
                             <p className="text-sm text-foreground"><strong>Da:</strong> {getProfileName(report.reporterId)} <strong>Contro:</strong> {getProfileName(report.reportedId)}</p>
