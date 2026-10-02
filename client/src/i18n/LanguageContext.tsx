@@ -15,14 +15,22 @@ const LanguageContext = createContext<LanguageContextType>({
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
-    const saved = localStorage.getItem("vibra-lang");
-    if (saved && (saved === "it" || saved === "en" || saved === "es")) return saved;
+    try {
+      const saved = localStorage.getItem("vibra-lang");
+      if (saved && (saved === "it" || saved === "en" || saved === "es")) return saved;
+    } catch {
+      // Keep the app usable when browser storage is blocked.
+    }
     return "it";
   });
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang);
-    localStorage.setItem("vibra-lang", newLang);
+    try {
+      localStorage.setItem("vibra-lang", newLang);
+    } catch {
+      // The selected language remains active for this session.
+    }
   }, []);
 
   const t = useCallback((key: string): string => {

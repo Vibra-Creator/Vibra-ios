@@ -73,12 +73,19 @@ async function prepareAuthenticatedPage(
     permission?: "default" | "denied";
     permissionThrows?: boolean;
     storageMode?: "write-fails" | "read-and-write-fail";
+    storageAccessThrows?: boolean;
   } = {},
 ) {
-  const { supported = true, permission = "default", permissionThrows = false, storageMode } = options;
+  const {
+    supported = true,
+    permission = "default",
+    permissionThrows = false,
+    storageMode,
+    storageAccessThrows = false,
+  } = options;
 
   await page.addInitScript(
-    ({ supported, permission, permissionThrows, decisionKey }) => {
+    ({ supported, permission, permissionThrows, decisionKey, storageAccessThrows }) => {
       window.localStorage.setItem("vibra-splash-seen", "1");
 
       const storageMode = new URLSearchParams(window.location.search).get("notificationStorage");
@@ -147,8 +154,22 @@ async function prepareAuthenticatedPage(
       if (!supported) {
         delete (window as typeof window & { PushManager?: unknown }).PushManager;
       }
+
+      if (storageAccessThrows) {
+        Object.defineProperty(window, "localStorage", {
+          configurable: true,
+          get() {
+            const testWindow = window as typeof window & {
+              __localStorageAccessFailures?: number;
+            };
+            testWindow.__localStorageAccessFailures =
+              (testWindow.__localStorageAccessFailures || 0) + 1;
+            throw new Error("Access to window.localStorage is blocked");
+          },
+        });
+      }
     },
-    { supported, permission, permissionThrows, decisionKey: PUSH_DECISION_KEY },
+    { supported, permission, permissionThrows, decisionKey: PUSH_DECISION_KEY, storageAccessThrows },
   );
   await loginAs(request, credentials);
   await injectSessionCookies(page, request);
@@ -242,6 +263,39 @@ test("notification choice stays hidden when decision storage throws", async ({ p
       page.evaluate(() => (window as typeof window & {
         __notificationStorageFailures?: { reads: number; writes: number };
       }).__notificationStorageFailures?.reads || 0),
+    )
+    .toBeGreaterThan(0);
+});
+
+test("blocked localStorage access keeps the authenticated app usable without showing the prompt", async ({
+  page,
+  request,
+}) => {
+  const user = await registerUser(request, "storage-access-blocked");
+  await prepareAuthenticatedPage(page, request, user, { storageAccessThrows: true });
+
+  const banner = page.getByTestId("notification-banner");
+  await expect(page.getByTestId("vibra-logo-header")).toBeVisible({ timeout: 10_000 });
+  await expect(banner).not.toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __localStorageAccessFailures?: number })
+          .__localStorageAccessFailures || 0,
+      ),
+    )
+    .toBeGreaterThan(0);
+
+  await page.reload({ waitUntil: "load" });
+
+  await expect(page.getByTestId("vibra-logo-header")).toBeVisible();
+  await expect(banner).not.toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __localStorageAccessFailures?: number })
+          .__localStorageAccessFailures || 0,
+      ),
     )
     .toBeGreaterThan(0);
 });

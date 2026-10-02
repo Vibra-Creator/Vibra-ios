@@ -29,14 +29,22 @@ export function ViewportSelector({ children }: { children: ReactNode }) {
   const viewModes = useViewModes();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 1024) {
-      return (localStorage.getItem("vibra-view-mode") as ViewMode) || "mobile";
+      try {
+        return (localStorage.getItem("vibra-view-mode") as ViewMode) || "mobile";
+      } catch {
+        return "mobile";
+      }
     }
     return "desktop";
   });
 
   useEffect(() => {
     if (isDesktop) {
-      localStorage.setItem("vibra-view-mode", viewMode);
+      try {
+        localStorage.setItem("vibra-view-mode", viewMode);
+      } catch {
+        // The selected view mode remains active for this session.
+      }
     }
   }, [viewMode, isDesktop]);
 
