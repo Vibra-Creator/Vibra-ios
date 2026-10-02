@@ -8,3 +8,9 @@ Moderation must act only on content explicitly linked to a report, with the repo
 **Why:** Generic profile and chat-user reports do not identify one exact item. Guessing what to delete can remove unrelated content or suspend the wrong account, while deleting the report destroys useful review evidence.
 
 **How to apply:** When adding reportable content types, store an explicit typed content ID and snapshot; validate the reporter, target, and author at submission and revalidate before deletion. Keep deletion and enforcement transactional. Do not substitute whole-profile deletion or arbitrary IDs for an exact content link.
+
+Keep report submission and moderation route registrations independently mountable so database-backed HTTP tests can exercise the production handlers without starting unrelated application jobs.
+
+**Why:** The full server route bootstrap also runs migrations and schedules background cleanup work; isolated registration keeps HTTP regression tests focused and avoids those startup side effects.
+
+**How to apply:** Wire production routes and route-level tests through the same registration functions, supplying the real authentication and admin middleware in production.
