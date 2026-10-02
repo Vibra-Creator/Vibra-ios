@@ -672,4 +672,43 @@ describe("POST /api/cold-messages/:id/reply authentication", () => {
       await closeRouteTestServer(server);
     }
   });
+
+  test("returns 403 for an unrelated authenticated user without persisting a reply", async () => {
+    const sender = await createTestProfile("http_reply_sender_unrelated");
+    const recipient = await createTestProfile("http_reply_recipient_unrelated");
+    const unrelated = await createTestProfile("http_reply_unrelated_user");
+    const recipientUserId = `__test_cold_reply_recipient_${RUN_ID}`;
+    const unrelatedUserId = `__test_cold_reply_unrelated_${RUN_ID}`;
+    createdProfileIds.push(sender, recipient, unrelated);
+
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    await db.update(profiles).set({ userId: unrelatedUserId }).where(eq(profiles.id, unrelated));
+
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "private message for recipient");
+    assert.ok(coldMessage, "sendColdMessage must return the private message used by the test");
+
+    const attemptedReply = `unrelated user's reply ${RUN_ID}`;
+    const server = await startRouteTestServer(unrelatedUserId);
+    try {
+      const response = await postColdMessageReplyOverHttp(server, coldMessage.id, attemptedReply);
+      assert.equal(response.statusCode, 403);
+      assert.deepEqual(response.body, { error: "Non autorizzato" });
+
+      const unchangedMessage = await storage.getColdMessageById(coldMessage.id);
+      assert.equal(unchangedMessage?.replied, false);
+      assert.equal(unchangedMessage?.replyContent, null);
+
+      const persistedReplies = await db
+        .select()
+        .from(vibrappDms)
+        .where(and(
+          eq(vibrappDms.fromProfileId, unrelated),
+          eq(vibrappDms.toProfileId, sender),
+          eq(vibrappDms.content, attemptedReply),
+        ));
+      assert.equal(persistedReplies.length, 0, "an unrelated user's reply must not be persisted");
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
 });
