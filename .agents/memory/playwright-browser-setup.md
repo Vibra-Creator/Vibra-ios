@@ -14,3 +14,9 @@ For UI tests that simulate missing public objects, block the service worker in t
 **Why:** A real 404 test initially kept receiving 200 through the service worker; later, the page loaded after the default assertion timeout and accumulated test listings made unscoped text checks ambiguous.
 
 **How to apply:** Isolate the fixture response where appropriate, verify the object request was intercepted, then assert within the target listing after it appears.
+
+In headless Chromium, Playwright pages in isolated browser contexts may all report `document.visibilityState === "visible"` even after another page is brought to the front. A synthetic notification-click event may also navigate its client successfully while rejecting `client.focus()` because the event is not a trusted user gesture.
+
+**Why:** Headless browser focus does not always model real tab visibility or native notification gestures, so tests can fail despite the visibility and navigation handlers running.
+
+**How to apply:** To test visibility signaling, override `document.visibilityState` and dispatch `visibilitychange`; for synthetic notification clicks, assert the resulting URL/navigation separately from the final focus call.

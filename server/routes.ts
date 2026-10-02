@@ -68,6 +68,7 @@ import {
   type ColdMessageCleanupState,
 } from "./cold-message-cleanup";
 import { getLegacyBotReplyState, shouldAutoReplyToDirectMessage } from "@shared/vibrapp-dm-policy";
+import { sendVibrappDmPushIfBackground, type VibrappDmPushPayload } from "./vibrapp-dm-push";
 import {
   renderLandingVideoSeoHtml,
   renderPublicProfileSeoHtml,
@@ -5188,6 +5189,13 @@ REGOLE:
   const vibrappForegroundUsers = new Map<string, Set<string>>();
   const vibrappUserProfiles = new Map<string, { name: string; image: string | null }>();
   const vibrappTypingUsers = new Map<string, { name: string; timeout: NodeJS.Timeout }>();
+  const sendVibrappDmPush = (recipientProfileId: string, payload: VibrappDmPushPayload) =>
+    sendVibrappDmPushIfBackground(
+      recipientProfileId,
+      payload,
+      (id) => (vibrappForegroundUsers.get(id)?.size ?? 0) > 0,
+      sendPushToProfile,
+    );
 
   const MAX_MSG_LENGTH = 2000;
   const ALLOWED_REACTIONS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
@@ -5433,16 +5441,13 @@ REGOLE:
         io.to(`user:${profileId}`).emit("vibrapp:dm-sent", dmMsg);
         io.to(`user:${data.toProfileId}`).emit("vibrapp:dm-message", dmMsg);
 
-        const isForeground = (vibrappForegroundUsers.get(data.toProfileId)?.size ?? 0) > 0;
-        if (!isForeground) {
-          sendPushToProfile(data.toProfileId, {
-            title: `💬 ${userProfile.name}`,
-            body: content.substring(0, 100),
-            icon: "/icons/icon-192.png",
-            url: `/vibrapp?dm=${profileId}`,
-            type: "vibrapp-dm",
-          });
-        }
+        void sendVibrappDmPush(data.toProfileId, {
+          title: `💬 ${userProfile.name}`,
+          body: content.substring(0, 100),
+          icon: "/icons/icon-192.png",
+          url: `/vibrapp?dm=${profileId}`,
+          type: "vibrapp-dm",
+        });
 
         // ── Bot auto-reply per DM diretti ────────────────────────────────
         if (shouldAutoReplyToDirectMessage(dmTarget)) {
@@ -5728,7 +5733,7 @@ REGOLE:
     postColdMessageReplyHandler(req, res, (dmMsg, recipientProfileId, senderName) => {
       io.to(`user:${recipientProfileId}`).emit("vibrapp:dm-message", dmMsg);
       io.to(`user:${dmMsg.fromProfileId}`).emit("vibrapp:dm-sent", dmMsg);
-      sendPushToProfile(recipientProfileId, {
+      void sendVibrappDmPush(recipientProfileId, {
         title: `🛸 ${senderName} ha risposto!`,
         body: "Ha risposto su Vibrapp 💬",
         icon: "/icons/icon-192.png",
@@ -5860,16 +5865,13 @@ REGOLE:
       io.to(`user:${myProfile.id}`).emit("vibrapp:dm-sent", dmMsg);
       io.to(`user:${toProfileId}`).emit("vibrapp:dm-message", dmMsg);
 
-      const isForeground = (vibrappForegroundUsers.get(toProfileId)?.size ?? 0) > 0;
-      if (!isForeground) {
-        sendPushToProfile(toProfileId, {
-          title: `💬 ${myProfile.name}`,
-          body: trimmed.substring(0, 100),
-          icon: "/icons/icon-192.png",
-          url: `/vibrapp?dm=${myProfile.id}`,
-          type: "vibrapp-dm",
-        });
-      }
+      void sendVibrappDmPush(toProfileId, {
+        title: `💬 ${myProfile.name}`,
+        body: trimmed.substring(0, 100),
+        icon: "/icons/icon-192.png",
+        url: `/vibrapp?dm=${myProfile.id}`,
+        type: "vibrapp-dm",
+      });
 
       res.json(dmMsg);
     } catch (err) {
