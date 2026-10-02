@@ -122,3 +122,17 @@ mtime_ms = 1790933828075
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/966181cf-885f-497c-8f45-c670c5797892/e2a181b0-f26f-445c-96b3-1be531f9ba24"
 storage_version_token = "1790933955596769"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "fJTNmhhSbBBUvOnvmsgnM"
+uri = "file://deliverables/Vibra_AppStorePreview_NoFrame.mp4"
+type = "video"
+title = "Anteprima App Store Vibra — senza cornice"
+description = "Clip MP4 portrait di 30 secondi, 886×1920, H.264 a 30 fps. Ritagliate le bande nere e la filigrana esterna; audio originale rimosso perché silenzioso."
+logical_id = "a14daa49-0624-401d-9b18-66146a6ddc2d"
+content_hash = "sha256:5934b750464f1208e104b9dc02322736579826fd57b4e6f9f2957756457d6732"
+size = 5470382
+mtime_ms = 1790935041179
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/a14daa49-0624-401d-9b18-66146a6ddc2d/9ebfccb9-5b9b-45b2-a388-da840042b63b"
+storage_version_token = "1790935063927209"
+content_type = "video/mp4"
