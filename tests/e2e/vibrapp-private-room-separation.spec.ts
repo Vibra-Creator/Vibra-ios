@@ -95,13 +95,14 @@ test("presentation replies stay in Vibrapp and private rooms remain in their own
   await injectSessionCookies(page, request);
   await allowUnverifiedTestAccount(page);
 
-  const inboxLoaded = page.waitForResponse((response) =>
-    response.url().includes("/api/cold-messages/received"),
-  );
-  await page.goto("/vibrapp", { waitUntil: "load" });
-  await inboxLoaded;
-
-  await page.locator(`[data-testid="intro-bubble-${intro.id}"]`).click();
+  // The notification opens in a fresh browser context with no app state or
+  // prior inbox navigation; only the authenticated session cookie is present.
+  await page.goto(`/vibrapp?coldMessageId=${encodeURIComponent(intro.id)}`, { waitUntil: "load" });
+  const replyPanel = page.locator('[data-testid="coldmsg-reply-panel"]');
+  await expect(replyPanel).toBeVisible();
+  await expect(replyPanel).toContainText(sender.name);
+  await expect(replyPanel).toContainText(`Intro ${RUN_ID}`);
+  await expect(page.locator('[data-testid="input-cold-reply"]')).toBeVisible();
   await page.locator('[data-testid="input-cold-reply"]').fill(`Risposta Vibrapp ${RUN_ID}`);
 
   const replyResponsePromise = page.waitForResponse((response) =>

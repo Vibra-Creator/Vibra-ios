@@ -400,6 +400,9 @@ export default function Vibrapp() {
     }
     
     if (coldMessageId) {
+      setIntroCheckDone(false);
+      setIntroTarget(null);
+      setSelectedColdMsg(null);
       setIntroColdMessageId(coldMessageId);
       // Always validate the exact message ID: a cached profile alone cannot tell
       // whether the message was deleted after a notification or prior visit.
@@ -434,6 +437,32 @@ export default function Vibrapp() {
             age: data.otherProfile.age,
             imageUrl: data.otherProfile.imageUrl || "",
           };
+
+          if (!data.isSentByMe && !data.replied) {
+            setIntroColdMessageId(null);
+            setIntroSentContent(null);
+            setIntroSentAt(null);
+            setSelectedColdMsg({
+              id: data.id || coldMessageId,
+              fromProfileId: data.fromProfileId,
+              content: data.content || "",
+              mediaUrl: data.mediaUrl || null,
+              mediaType: data.mediaType || null,
+              replied: Boolean(data.replied),
+              replyContent: data.replyContent || null,
+              privateRoomId: data.privateRoomId || null,
+              createdAt: data.createdAt,
+              fromProfile: target,
+            });
+            setReplyText("");
+            setColdMsgDeleteConfirm(false);
+            setColdMsgBlockConfirm(false);
+            setColdMsgReportConfirm(false);
+            setReportReason("");
+            setIntroCheckDone(true);
+            return;
+          }
+
           setIntroTarget(target);
           if (data.replied) {
             setIntroColdStatus("replied");
