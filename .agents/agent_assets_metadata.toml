@@ -84,7 +84,7 @@ content_type = "image/svg+xml"
 [[outputs]]
 id = "MnMetVff6Lg60Lg4RTNL9"
 uri = "file://marketing/vibra-google-play-banner.html"
-type = "text"
+type = "html"
 title = "Scarica il banner HTML cliccabile Vibra"
 description = "File HTML autonomo con il logo incorporato: tutto il banner è cliccabile e porta alla pagina ufficiale Vibra su Google Play."
 logical_id = "51b57450-6f00-4526-abd7-8c6bef13bd5c"
@@ -108,3 +108,17 @@ mtime_ms = 1788358551629
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/8e1e47a9-5086-485d-a72c-fefe6c2c9d00/2bbb6e2d-8185-433c-a6ba-fb8e33e5a445"
 storage_version_token = "1788359405190850"
 content_type = "image/png"
+
+[[outputs]]
+id = "L88ZYuBA1M1Gdyx-DS1SU"
+uri = "file://deliverables/Vibra_iOS_Review_Fixes.zip"
+type = "unspecified"
+title = "Vibra — progetto iOS aggiornato"
+description = "Progetto Xcode completo con i testi privacy aggiornati e note per i punti App Review da completare fuori dall’IPA."
+logical_id = "966181cf-885f-497c-8f45-c670c5797892"
+content_hash = "sha256:7bc4ba26bf92c6c57479bd2f23e29e2e4f0d81638b5b4c86470f64a79ef806b1"
+size = 2366968
+mtime_ms = 1790933828075
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/966181cf-885f-497c-8f45-c670c5797892/e2a181b0-f26f-445c-96b3-1be531f9ba24"
+storage_version_token = "1790933955596769"
+content_type = "application/octet-stream"
