@@ -72,6 +72,7 @@ async function prepareAuthenticatedPage(
     supported?: boolean;
     permission?: "default" | "denied";
     permissionThrows?: boolean;
+    permissionRequestThrows?: boolean;
     storageMode?: "write-fails" | "read-and-write-fail";
     storageAccessThrows?: boolean;
   } = {},
@@ -80,12 +81,13 @@ async function prepareAuthenticatedPage(
     supported = true,
     permission = "default",
     permissionThrows = false,
+    permissionRequestThrows = false,
     storageMode,
     storageAccessThrows = false,
   } = options;
 
   await page.addInitScript(
-    ({ supported, permission, permissionThrows, decisionKey, storageAccessThrows }) => {
+    ({ supported, permission, permissionThrows, permissionRequestThrows, decisionKey, storageAccessThrows }) => {
       window.localStorage.setItem("vibra-splash-seen", "1");
 
       const storageMode = new URLSearchParams(window.location.search).get("notificationStorage");
@@ -138,12 +140,15 @@ async function prepareAuthenticatedPage(
               return permission;
             }
             if (property === "requestPermission") {
-              return async () => {
+              return () => {
                 (window as typeof window & { __notificationPermissionCalls?: number })
                   .__notificationPermissionCalls =
                   ((window as typeof window & { __notificationPermissionCalls?: number })
                     .__notificationPermissionCalls || 0) + 1;
-                return "denied";
+                if (permissionRequestThrows) {
+                  throw new Error("Notification.requestPermission failed");
+                }
+                return Promise.resolve("denied");
               };
             }
             return Reflect.get(target, property, receiver);
@@ -169,7 +174,14 @@ async function prepareAuthenticatedPage(
         });
       }
     },
-    { supported, permission, permissionThrows, decisionKey: PUSH_DECISION_KEY, storageAccessThrows },
+    {
+      supported,
+      permission,
+      permissionThrows,
+      permissionRequestThrows,
+      decisionKey: PUSH_DECISION_KEY,
+      storageAccessThrows,
+    },
   );
   await loginAs(request, credentials);
   await injectSessionCookies(page, request);
@@ -298,6 +310,34 @@ test("blocked localStorage access keeps the authenticated app usable without sho
       ),
     )
     .toBeGreaterThan(0);
+});
+
+test("requestPermission errors leave the authenticated app usable and settle the prompt", async ({ page, request }) => {
+  const user = await registerUser(request, "request-permission-error");
+  await prepareAuthenticatedPage(page, request, user, { permissionRequestThrows: true });
+
+  const uncaughtErrors: string[] = [];
+  page.on("pageerror", (error) => uncaughtErrors.push(error.message));
+
+  const banner = page.getByTestId("notification-banner");
+  await expect(banner).toBeVisible({ timeout: 10_000 });
+  await page.getByTestId("button-enable-notifications-banner").click();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionCalls?: number })
+          .__notificationPermissionCalls || 0,
+      ),
+    )
+    .toBe(1);
+  await expect(banner).not.toBeVisible();
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), PUSH_DECISION_KEY))
+    .toBe("true");
+  await expect(page.getByTestId("vibra-logo-header")).toBeVisible();
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(uncaughtErrors).toEqual([]);
 });
 
 test("allow requests permission from the button and stays hidden when declined", async ({ page, request }) => {
