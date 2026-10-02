@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { updateProfileSchema } from "../../shared/schema.js";
 import { createSuspensionWriteGuard } from "../suspension-write-guard.js";
 import {
+  createBlockedProfileReportData,
   getReportSuspensionExpiry,
   isBlogPostAuthoredByReportedUser,
   isChatMessageAuthoredByReportedUser,
@@ -11,6 +12,31 @@ import {
   isReportContentType,
   REPORT_SUSPENSION_DURATION_MS,
 } from "../report-moderation.js";
+
+test("blocking a user creates an actionable profile report with a review snapshot", () => {
+  const report = createBlockedProfileReportData("reporter-profile", {
+    id: "reported-profile",
+    name: "Reported profile",
+    bio: "Profile bio",
+    imageUrl: "/reported-avatar.png",
+    photos: ["/reported-photo.png"],
+    profileVideoUrl: null,
+  });
+
+  assert.equal(report.reporterId, "reporter-profile");
+  assert.equal(report.reportedId, "reported-profile");
+  assert.equal(report.reportedContentType, "profile");
+  assert.equal(report.reportedContentId, "reported-profile");
+  assert.equal(report.reason, "Blocco utente");
+  assert.deepEqual(JSON.parse(report.reportedContentSnapshot), {
+    id: "reported-profile",
+    name: "Reported profile",
+    bio: "Profile bio",
+    imageUrl: "/reported-avatar.png",
+    photos: ["/reported-photo.png"],
+    profileVideoUrl: null,
+  });
+});
 
 test("reported cold message must be sent by the reported profile to the reporter", () => {
   const report = { reporterId: "reporter-profile", reportedId: "reported-profile" };

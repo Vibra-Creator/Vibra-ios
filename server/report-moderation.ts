@@ -15,6 +15,39 @@ export const REPORT_CONTENT_TYPES = [
 ] as const;
 export type ReportContentType = typeof REPORT_CONTENT_TYPES[number];
 
+export interface BlockedProfileReportTarget {
+  id: string;
+  name: string;
+  bio: string;
+  imageUrl: string;
+  photos: string[] | null;
+  profileVideoUrl: string | null;
+}
+
+export function createBlockedProfileReportData(
+  reporterId: string,
+  profile: BlockedProfileReportTarget,
+) {
+  const profileEvidence = {
+    id: profile.id,
+    name: profile.name,
+    bio: profile.bio,
+    imageUrl: profile.imageUrl,
+    photos: profile.photos,
+    profileVideoUrl: profile.profileVideoUrl,
+  };
+
+  return {
+    reporterId,
+    reportedId: profile.id,
+    reason: "Blocco utente",
+    description: "Segnalazione automatica: l'utente è stato bloccato e richiede una verifica di moderazione.",
+    reportedContentType: "profile" as const,
+    reportedContentId: profile.id,
+    reportedContentSnapshot: JSON.stringify(profileEvidence),
+  };
+}
+
 export function getReportSuspensionExpiry(now: Date = new Date()): Date {
   return new Date(now.getTime() + REPORT_SUSPENSION_DURATION_MS);
 }

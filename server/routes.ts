@@ -10,9 +10,10 @@ import {
 } from "./admin-bot-image-fix";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages, userSuspensions } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, ne, sql, lt, gt, desc, asc } from "drizzle-orm";
+import { eq, or, and, ne, sql, lt, gt, desc, asc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import {
+  createBlockedProfileReportData,
   getReportSuspensionExpiry,
   isBlogPostAuthoredByReportedUser,
   isChatMessageAuthoredByReportedUser,
@@ -4656,6 +4657,20 @@ REGOLE:
       if (!blockedId) return res.status(400).json({ error: "blockedId required" });
       if (blockedId === profile.id) return res.status(400).json({ error: "Cannot block yourself" });
 
+      const [blockedProfile] = await db
+        .select({
+          id: profiles.id,
+          name: profiles.name,
+          bio: profiles.bio,
+          imageUrl: profiles.imageUrl,
+          photos: profiles.photos,
+          profileVideoUrl: profiles.profileVideoUrl,
+        })
+        .from(profiles)
+        .where(eq(profiles.id, blockedId))
+        .limit(1);
+      if (!blockedProfile) return res.status(404).json({ error: "Profile to block not found" });
+
       const outgoingBlocks = await storage.getBlockedUsers(profile.id);
       const wasAlreadyBlocked = outgoingBlocks.some((entry) => entry.blockedId === blockedId);
       const block = await storage.blockUser(profile.id, blockedId);
@@ -4668,15 +4683,11 @@ REGOLE:
               eq(reports.reportedId, blockedId),
               eq(reports.status, "pending"),
               gt(reports.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
+              or(isNotNull(reports.reportedContentId), isNotNull(reports.coldMessageId)),
             ))
             .limit(1);
           if (!existingBlockReport) {
-            const report = await storage.createReport({
-              reporterId: profile.id,
-              reportedId: blockedId,
-              reason: "Blocco utente",
-              description: "Segnalazione automatica: l'utente è stato bloccato e richiede una verifica di moderazione.",
-            });
+            const report = await storage.createReport(createBlockedProfileReportData(profile.id, blockedProfile));
             void notifyAdminsOfNewUserReport(report.id);
           }
         } catch (reportError) {
