@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
+import { ObjectStorageService } from "../../server/replit_integrations/object_storage/objectStorage";
 
 const RUN_ID = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const TEST_IMAGE = Buffer.from(
@@ -151,6 +152,46 @@ test("authenticated listings and public photos survive a reload", async ({ page,
     expect(publicResponse.headers.get("content-type")).toContain("image/png");
     expect((await publicResponse.arrayBuffer()).byteLength).toBeGreaterThan(0);
   }
+});
+
+test("publication asks sellers to reload a Marketplace photo that disappeared after upload", async ({ page, request }) => {
+  const user = await registerUser(request, "vanished-photo");
+  await loginAs(request, user);
+  await injectSessionCookies(page, request);
+  await patchEmailVerified(page);
+  await page.goto("/marketplace", { waitUntil: "load" });
+  await page.getByTestId("marketplace-fab").click();
+
+  const title = `Vanished photo listing ${RUN_ID}`;
+  await page.getByPlaceholder(/Titolo/).fill(title);
+  await page.getByPlaceholder(/Descrizione/).fill("A missing upload must stop publication.");
+  const uploadResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/hub-posts/upload-image") && response.request().method() === "POST",
+  );
+  await page.locator('input[type="file"]').setInputFiles(uploadFiles(3));
+  const uploaded = await uploadResponse;
+  expect(uploaded.status(), await uploaded.text()).toBe(200);
+  const { urls } = (await uploaded.json()) as { urls: string[] };
+  expect(urls).toHaveLength(3);
+  await expect(page.getByText("Foto caricate", { exact: true })).toBeVisible();
+
+  const disappearedFile = await new ObjectStorageService().getObjectEntityFile(urls[0]);
+  await disappearedFile.delete();
+
+  const publishResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/hub-posts") && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Pubblica", exact: true }).click();
+  const publish = await publishResponse;
+  expect(publish.status()).toBe(400);
+  expect((await publish.json()).error).toContain("Ricarica le foto mancanti");
+  await expect(page.getByText(/Ricarica le foto mancanti/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pubblica", exact: true })).toBeVisible();
+
+  const listings = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{ title: string }>;
+  expect(listings.some((listing) => listing.title === title)).toBe(false);
 });
 
 test.describe("missing Marketplace photo", () => {
@@ -318,7 +359,21 @@ test("deleting a listing removes only its unreferenced stored photos", async ({ 
     return ((await response.json()) as { id: string }).id;
   }
 
-  const first = await createListing(`First deletion ${RUN_ID}`, [...images.slice(0, 3), otherUserPhoto, otherMarketplacePhoto]);
+  for (const foreignPhoto of [otherUserPhoto, otherMarketplacePhoto]) {
+    const rejected = await request.post("/api/hub-posts", {
+      data: {
+        category: "marketplace",
+        title: `Rejected foreign photo ${RUN_ID}`,
+        description: "Photos owned by another account or legacy uploads cannot be attached.",
+        imageUrls: [...images.slice(0, 2), foreignPhoto],
+      },
+    });
+    expect(rejected.status()).toBe(400);
+    expect((await rejected.json()).error).toContain("Ricarica le foto mancanti");
+    expect((await request.get(foreignPhoto)).status()).toBe(200);
+  }
+
+  const first = await createListing(`First deletion ${RUN_ID}`, images.slice(0, 3));
   const second = await createListing(`Second deletion ${RUN_ID}`, [images[2], ...images.slice(3)]);
   for (const image of images) expect((await request.get(image)).status()).toBe(200);
 

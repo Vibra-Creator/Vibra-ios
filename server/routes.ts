@@ -34,7 +34,7 @@ import { randomUUID } from "crypto";
 import { execFile } from "child_process";
 import { promisify } from "util";
 const execFileAsync = promisify(execFile);
-import { registerObjectStorageRoutes, ObjectStorageService, objectStorageClient } from "./replit_integrations/object_storage";
+import { registerObjectStorageRoutes, ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./replit_integrations/object_storage";
 import { ObjectPermission } from "./replit_integrations/object_storage/objectAcl";
 import OpenAI from "openai";
 import { createBackup, getBackupList, startAutoBackup } from "./backup";
@@ -7231,6 +7231,35 @@ REGOLE:
       }
       if (imageUrls.length > 6) {
         return res.status(400).json({ error: "Puoi caricare al massimo 6 foto per annuncio." });
+      }
+      if (req.body.category === "marketplace") {
+        const unavailablePhotosError = "Una o più foto non sono più disponibili o non appartengono al tuo account. Ricarica le foto mancanti e riprova.";
+        const marketplaceUploadPath = /^\/objects\/marketplace\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        for (const imageUrl of imageUrls) {
+          // New Marketplace listings may only attach purpose-scoped Marketplace uploads.
+          // Generic legacy object URLs have no reliable ownership or purpose provenance.
+          if (!marketplaceUploadPath.test(imageUrl)) {
+            return res.status(400).json({ error: unavailablePhotosError });
+          }
+
+          try {
+            const objectFile = await objectStorageService.getObjectEntityFile(imageUrl);
+            const isOwnedUpload = await objectStorageService.canAccessObjectEntity({
+              userId,
+              objectFile,
+              requestedPermission: ObjectPermission.WRITE,
+            });
+            if (!isOwnedUpload) {
+              return res.status(400).json({ error: unavailablePhotosError });
+            }
+          } catch (error) {
+            if (error instanceof ObjectNotFoundError) {
+              return res.status(400).json({ error: unavailablePhotosError });
+            }
+            console.error("Error verifying Marketplace photo before publication:", error);
+            return res.status(503).json({ error: "Non è stato possibile verificare le foto. Riprova tra poco." });
+          }
+        }
       }
       const parsed = insertHubPostSchema.safeParse({
         ...req.body,
