@@ -1,12 +1,15 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  forbiddenReference,
+  getAssetNameViolation,
+  googleSiteVerificationMetaTag,
+  playStoreAssetName,
+  googleSiteVerificationAssetName,
+} from "./ios-store-policy.mjs";
 
 const publicDir = path.resolve("dist/public");
 const iosWebDir = path.resolve("dist/ios-web");
-const playStoreAssetName = /(?:google[\s._-]*play|play[\s._-]*store)/i;
-const googleSiteVerificationAssetName = /^google[a-f0-9]{16,}\.html$/i;
-const googleSiteVerificationMetaTag = /<meta\b(?=[^>]*\bname\s*=\s*["']google-site-verification["'])[^>]*\/?>/gi;
-const forbiddenReference = /(?:google[\s._-]*play|play\.google\.com|play[\s._-]*store|google-site-verification)/i;
 const textExtensions = new Set([
   ".css",
   ".html",
@@ -30,12 +33,9 @@ async function scanDirectory(directory) {
     }
 
     const relativePath = path.relative(iosWebDir, entryPath);
-    if (playStoreAssetName.test(relativePath)) {
-      violations.push(`${relativePath}: Play Store-specific asset name`);
-      continue;
-    }
-    if (googleSiteVerificationAssetName.test(path.basename(relativePath))) {
-      violations.push(`${relativePath}: non-user-facing Google site-verification asset`);
+    const nameViolation = getAssetNameViolation(relativePath);
+    if (nameViolation) {
+      violations.push(`${relativePath}: ${nameViolation}`);
       continue;
     }
 

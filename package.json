@@ -11,7 +11,10 @@
     "check": "tsc",
     "check:client": "tsc --project tsconfig.client.json --noEmit",
     "check:server": "tsc --project tsconfig.server.json --noEmit",
+    "check:ios-artifact": "node scripts/check-ios-store-artifact.mjs",
+    "check:ios-metadata": "node scripts/check-ios-app-store-metadata.mjs",
     "test:client-release-gate": "node scripts/test-client-release-gate.mjs",
+    "test:ios-release-checks": "node scripts/test-ios-store-release-checks.mjs",
     "db:push": "drizzle-kit push",
     "test:e2e": "playwright test",
     "test:e2e:setup": "bash scripts/setup-playwright.sh"
