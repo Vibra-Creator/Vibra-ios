@@ -30,7 +30,7 @@ import {
 } from "../routes.js";
 import { DatabaseStorage } from "../storage.js";
 import { profiles, coldMessages, vibrappDms } from "../../shared/schema.js";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -188,6 +188,12 @@ after(async () => {
   await db
     .delete(coldMessages)
     .where(inArray(coldMessages.toProfileId, createdProfileIds));
+  await db
+    .delete(vibrappDms)
+    .where(or(
+      inArray(vibrappDms.fromProfileId, createdProfileIds),
+      inArray(vibrappDms.toProfileId, createdProfileIds),
+    ));
   await db
     .delete(profiles)
     .where(inArray(profiles.id, createdProfileIds));
@@ -640,6 +646,58 @@ describe("GET /api/cold-messages list authentication", () => {
 });
 
 describe("POST /api/cold-messages/:id/reply authentication", () => {
+  test("concurrent replies persist one DM conversation and return one success plus already-replied", async () => {
+    const sender = await createTestProfile("http_reply_race_sender");
+    const recipient = await createTestProfile("http_reply_race_recipient");
+    const recipientUserId = `__test_cold_reply_race_${RUN_ID}`;
+    createdProfileIds.push(sender, recipient);
+
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "original cold message");
+    assert.ok(coldMessage, "sendColdMessage must return the message used by the concurrent requests");
+
+    const replyContent = `one concurrent reply ${RUN_ID}`;
+    const server = await startRouteTestServer(recipientUserId);
+    try {
+      const responses = await Promise.all([
+        postColdMessageReplyOverHttp(server, coldMessage.id, replyContent),
+        postColdMessageReplyOverHttp(server, coldMessage.id, replyContent),
+      ]);
+
+      assert.deepEqual(
+        responses.map((response) => response.statusCode).sort(),
+        [200, 409],
+        "exactly one request succeeds while the other gets an already-replied response",
+      );
+      const alreadyReplied = responses.find((response) => response.statusCode === 409);
+      assert.deepEqual(alreadyReplied?.body, {
+        error: "Già risposto",
+        reason: "already_replied",
+      });
+
+      const persistedMessage = await storage.getColdMessageById(coldMessage.id);
+      assert.equal(persistedMessage?.replied, true);
+      assert.equal(persistedMessage?.replyContent, replyContent);
+
+      const conversationMessages = await db.select().from(vibrappDms)
+        .where(and(
+          eq(vibrappDms.fromProfileId, sender),
+          eq(vibrappDms.toProfileId, recipient),
+        ));
+      const replies = await db.select().from(vibrappDms)
+        .where(and(
+          eq(vibrappDms.fromProfileId, recipient),
+          eq(vibrappDms.toProfileId, sender),
+        ));
+      assert.equal(conversationMessages.length, 1, "the original cold message should be added to the DM conversation once");
+      assert.equal(conversationMessages[0].content, "original cold message");
+      assert.equal(replies.length, 1, "only one reply DM should be persisted");
+      assert.equal(replies[0].content, replyContent);
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
   test("returns 401 without an authenticated user and does not persist or expose a reply", async () => {
     const sender = await createTestProfile("http_reply_sender_unauthenticated");
     const recipient = await createTestProfile("http_reply_recipient_unauthenticated");

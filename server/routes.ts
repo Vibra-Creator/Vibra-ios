@@ -563,7 +563,9 @@ export async function postColdMessageReplyHandler(
     const msg = await storage.getColdMessageById(req.params.id);
     if (!msg) return res.status(404).json({ error: "Messaggio non trovato" });
     if (msg.toProfileId !== myProfile.id) return res.status(403).json({ error: "Non autorizzato" });
-    if (msg.replied) return res.status(400).json({ error: "Già risposto" });
+    if (msg.replied) {
+      return res.status(409).json({ error: "Già risposto", reason: "already_replied" });
+    }
     // The sender may have deleted their account or blocked the recipient
     // after the reply panel was opened. Re-check reachability immediately
     // before creating the Vibrapp DM.
@@ -599,6 +601,9 @@ export async function postColdMessageReplyHandler(
           error: "Questo messaggio non è più disponibile: il mittente ti ha bloccato",
           reason: "sender_blocked",
         });
+      }
+      if (err?.code === "already_replied") {
+        return res.status(409).json({ error: "Già risposto", reason: "already_replied" });
       }
       throw err;
     }

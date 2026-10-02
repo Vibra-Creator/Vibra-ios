@@ -1547,41 +1547,59 @@ export class DatabaseStorage implements IStorage {
   }
 
   async replyColdMessage(messageId: string, replyContent: string): Promise<{ vibrappDm: VibrappDm }> {
-    const [msg] = await db.select().from(coldMessages).where(eq(coldMessages.id, messageId)).limit(1);
-    if (!msg) throw new Error("Cold message not found");
+    return db.transaction(async (tx) => {
+      // Claim the reply atomically. Concurrent updates wait on the same row,
+      // and only the request that changes replied=false to true may create DMs.
+      const [msg] = await tx.update(coldMessages)
+        .set({ replied: true, replyContent, privateRoomId: null })
+        .where(and(eq(coldMessages.id, messageId), eq(coldMessages.replied, false)))
+        .returning();
 
-    const fromProfile = await db.select().from(profiles).where(eq(profiles.id, msg.fromProfileId)).limit(1);
-    const toProfile = await db.select().from(profiles).where(eq(profiles.id, msg.toProfileId)).limit(1);
-    if (!fromProfile[0]) {
-      throw Object.assign(new Error("Sender profile not found"), { code: "sender_deleted" });
-    }
-    if (!toProfile[0]) throw new Error("Recipient profile not found");
-    if (await this.isBlocked(msg.fromProfileId, msg.toProfileId)) {
-      throw Object.assign(new Error("Sender has blocked the recipient"), { code: "sender_blocked" });
-    }
+      if (!msg) {
+        const [existing] = await tx.select({ id: coldMessages.id })
+          .from(coldMessages)
+          .where(eq(coldMessages.id, messageId))
+          .limit(1);
+        if (!existing) throw new Error("Cold message not found");
+        throw Object.assign(new Error("Cold message already replied"), { code: "already_replied" });
+      }
 
-    // A cold message is only the introduction/notification layer. Once the
-    // recipient answers, both messages belong to the WhatsApp-style Vibrapp
-    // DM thread, never to a private room.
-    if (msg.content?.trim()) {
-      await db.insert(vibrappDms).values({
-        fromProfileId: fromProfile[0].id,
-        toProfileId: toProfile[0].id,
-        content: msg.content,
-      });
-    }
+      const [fromProfile] = await tx.select().from(profiles).where(eq(profiles.id, msg.fromProfileId)).limit(1);
+      const [toProfile] = await tx.select().from(profiles).where(eq(profiles.id, msg.toProfileId)).limit(1);
+      if (!fromProfile) {
+        throw Object.assign(new Error("Sender profile not found"), { code: "sender_deleted" });
+      }
+      if (!toProfile) throw new Error("Recipient profile not found");
 
-    const [replyDm] = await db.insert(vibrappDms).values({
-      fromProfileId: toProfile[0].id,
-      toProfileId: fromProfile[0].id,
-      content: replyContent,
-    }).returning();
+      const [block] = await tx.select({ id: blockedUsers.id })
+        .from(blockedUsers)
+        .where(and(
+          eq(blockedUsers.blockerId, msg.fromProfileId),
+          eq(blockedUsers.blockedId, msg.toProfileId),
+        ))
+        .limit(1);
+      if (block) {
+        throw Object.assign(new Error("Sender has blocked the recipient"), { code: "sender_blocked" });
+      }
 
-    await db.update(coldMessages)
-      .set({ replied: true, replyContent, privateRoomId: null })
-      .where(eq(coldMessages.id, messageId));
+      // A cold message is only the introduction/notification layer. Once the
+      // recipient answers, both messages belong to the Vibrapp DM thread.
+      if (msg.content?.trim()) {
+        await tx.insert(vibrappDms).values({
+          fromProfileId: fromProfile.id,
+          toProfileId: toProfile.id,
+          content: msg.content,
+        });
+      }
 
-    return { vibrappDm: replyDm };
+      const [replyDm] = await tx.insert(vibrappDms).values({
+        fromProfileId: toProfile.id,
+        toProfileId: fromProfile.id,
+        content: replyContent,
+      }).returning();
+
+      return { vibrappDm: replyDm };
+    });
   }
 
   async getSentColdMessages(fromProfileId: string): Promise<Array<{
