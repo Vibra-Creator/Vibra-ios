@@ -104,6 +104,16 @@ export interface IStorage {
   createChallengeSubmission(submission: { challengeId: string; profileId: string; imageUrl: string }): Promise<ChallengeSubmission>;
   getChallengeSubmissions(profileId: string): Promise<ChallengeSubmission[]>;
   getAllChallengeSubmissions(): Promise<ChallengeSubmission[]>;
+  getApprovedChallengeGallery(): Promise<Array<{
+    id: string;
+    challengeId: string;
+    challengeTitle: string;
+    profileId: string;
+    profileName: string;
+    profileImageUrl: string;
+    imageUrl: string;
+    createdAt: Date;
+  }>>;
   updateChallengeSubmissionStatus(id: string, status: string): Promise<ChallengeSubmission | undefined>;
   deleteChallengeSubmission(id: string): Promise<void>;
   
@@ -756,6 +766,39 @@ export class DatabaseStorage implements IStorage {
 
   async getAllChallengeSubmissions(): Promise<ChallengeSubmission[]> {
     return db.select().from(challengeSubmissions).orderBy(desc(challengeSubmissions.createdAt));
+  }
+
+  async getApprovedChallengeGallery(): Promise<Array<{
+    id: string;
+    challengeId: string;
+    challengeTitle: string;
+    profileId: string;
+    profileName: string;
+    profileImageUrl: string;
+    imageUrl: string;
+    createdAt: Date;
+  }>> {
+    return db.select({
+      id: challengeSubmissions.id,
+      challengeId: challengeSubmissions.challengeId,
+      challengeTitle: dailyChallenges.title,
+      profileId: challengeSubmissions.profileId,
+      profileName: profiles.name,
+      profileImageUrl: profiles.imageUrl,
+      imageUrl: challengeSubmissions.imageUrl,
+      createdAt: challengeSubmissions.createdAt,
+    })
+      .from(challengeSubmissions)
+      .innerJoin(dailyChallenges, eq(challengeSubmissions.challengeId, dailyChallenges.id))
+      .innerJoin(profiles, eq(challengeSubmissions.profileId, profiles.id))
+      .where(and(
+        eq(challengeSubmissions.status, "approved"),
+        eq(dailyChallenges.isActive, true),
+        eq(profiles.moderationHidden, false),
+        sql`(${dailyChallenges.expiresAt} IS NULL OR ${dailyChallenges.expiresAt} > NOW())`,
+      ))
+      .orderBy(desc(challengeSubmissions.createdAt))
+      .limit(60);
   }
 
   async deleteChallengeSubmission(id: string): Promise<void> {

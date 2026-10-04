@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { ReportContentButton } from "@/components/ReportContentButton";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Story, StoryBriciola } from "@shared/schema";
 
@@ -108,6 +109,15 @@ function StoryDetail({ id }: { id: string }) {
   const [showForm, setShowForm] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const { data: myProfile } = useQuery<{ id: string } | null>({
+    queryKey: ["/api/profiles/me"],
+    queryFn: async () => {
+      const response = await fetch("/api/profiles/me", { credentials: "include" });
+      return response.ok ? response.json() : null;
+    },
+    retry: false,
+  });
+
   const { data, isLoading, refetch } = useQuery<{ story: Story; briciole: BriolaFull[] }>({
     queryKey: ["/api/stories", id],
     queryFn: () => fetch(`/api/stories/${id}`, { credentials: "include" }).then(r => r.json()),
@@ -178,7 +188,7 @@ function StoryDetail({ id }: { id: string }) {
             </div>
             <div className="relative pl-5 border-l-2 border-violet-500/40 space-y-4">
               {selected.map((b, i) => (
-                <motion.div key={b.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                <motion.div id={`story-briciola-${b.id}`} key={b.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
                   className="relative">
                   <div className="absolute -left-[25px] top-3 w-4 h-4 rounded-full bg-violet-500 border-2 border-[#0a0118]" />
                   <div className="bg-violet-500/15 border border-violet-500/30 rounded-xl p-4">
@@ -189,6 +199,13 @@ function StoryDetail({ id }: { id: string }) {
                       </Avatar>
                       <span className="text-violet-300 text-xs font-medium">{b.profileName}</span>
                       <Badge className="ml-auto bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs">⭐ Selezionata</Badge>
+                      <ReportContentButton
+                        reportedId={b.profileId}
+                        contentType="story_briciola"
+                        contentId={b.id}
+                        currentProfileId={myProfile?.id}
+                        className="h-7 px-2 text-white/50 hover:text-red-300"
+                      />
                     </div>
                     <p className="text-white/90 text-sm leading-relaxed">{b.content}</p>
                     {b.mediaUrl && <img src={b.mediaUrl} alt="" className="mt-2 rounded-lg max-h-40 object-cover w-full" />}
@@ -210,7 +227,7 @@ function StoryDetail({ id }: { id: string }) {
               {others.map((b, i) => {
                 const myVote = b.myVote;
                 return (
-                  <motion.div key={b.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                  <motion.div id={`story-briciola-${b.id}`} key={b.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                     className="bg-white/5 border border-white/10 rounded-xl p-4" data-testid={`card-briciola-${b.id}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <Avatar className="w-7 h-7">
@@ -236,6 +253,13 @@ function StoryDetail({ id }: { id: string }) {
                         data-testid={`button-vote-down-${b.id}`}>
                         <ThumbsDown className="w-3.5 h-3.5" />
                       </Button>
+                      <ReportContentButton
+                        reportedId={b.profileId}
+                        contentType="story_briciola"
+                        contentId={b.id}
+                        currentProfileId={myProfile?.id}
+                        className="ml-auto h-8 px-2 text-white/50 hover:text-red-300"
+                      />
                     </div>
                   </motion.div>
                 );

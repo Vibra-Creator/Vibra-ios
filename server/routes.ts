@@ -3337,6 +3337,15 @@ ${urlEntries}
     }
   });
 
+  app.get("/api/challenges/gallery", async (_req, res) => {
+    try {
+      res.json(await storage.getApprovedChallengeGallery());
+    } catch (error) {
+      console.error("Error fetching approved challenge gallery:", error);
+      res.status(500).json({ error: "Failed to fetch challenge gallery" });
+    }
+  });
+
   // Daily Challenges API
   app.get("/api/challenges", isAuthenticated, async (req, res) => {
     try {

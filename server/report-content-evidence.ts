@@ -1,5 +1,16 @@
 import { eq } from "drizzle-orm";
-import { cosmicSignals, profileVideos, profiles, signalComments } from "@shared/schema";
+import {
+  challengeSubmissions,
+  cosmicSignals,
+  dailyChallenges,
+  events,
+  hubPosts,
+  profileVideos,
+  profiles,
+  signalComments,
+  stories,
+  storyBriciole,
+} from "@shared/schema";
 import { db } from "./db";
 import {
   isCosmicSignalAuthoredByReportedUser,
@@ -14,7 +25,11 @@ export type DetailedReportContentType =
   | "profile_video"
   | "profile_main_video"
   | "cosmic_signal"
-  | "signal_comment";
+  | "signal_comment"
+  | "hub_post"
+  | "event"
+  | "story_briciola"
+  | "challenge_submission";
 
 export async function captureDetailedReportContentSnapshot(input: {
   reporterId: string;
@@ -102,6 +117,49 @@ export async function captureDetailedReportContentSnapshot(input: {
       return null;
     }
     return JSON.stringify(signal);
+  }
+
+  if (contentType === "hub_post") {
+    const [post] = await db.select().from(hubPosts)
+      .where(eq(hubPosts.id, contentId))
+      .limit(1);
+    if (!post || post.profileId !== reportedId || post.status !== "active") return null;
+    return JSON.stringify(post);
+  }
+
+  if (contentType === "event") {
+    const [event] = await db.select().from(events)
+      .where(eq(events.id, contentId))
+      .limit(1);
+    if (!event || event.profileId !== reportedId || event.status !== "active") return null;
+    return JSON.stringify(event);
+  }
+
+  if (contentType === "story_briciola") {
+    const [briciola] = await db.select().from(storyBriciole)
+      .where(eq(storyBriciole.id, contentId))
+      .limit(1);
+    if (!briciola || briciola.profileId !== reportedId) return null;
+    const [story] = await db.select({
+      id: stories.id,
+      theme: stories.theme,
+      status: stories.status,
+    }).from(stories).where(eq(stories.id, briciola.storyId)).limit(1);
+    if (!story) return null;
+    return JSON.stringify({ ...briciola, story });
+  }
+
+  if (contentType === "challenge_submission") {
+    const [submission] = await db.select().from(challengeSubmissions)
+      .where(eq(challengeSubmissions.id, contentId))
+      .limit(1);
+    if (!submission || submission.profileId !== reportedId || submission.status !== "approved") return null;
+    const [challenge] = await db.select({
+      id: dailyChallenges.id,
+      title: dailyChallenges.title,
+    }).from(dailyChallenges).where(eq(dailyChallenges.id, submission.challengeId)).limit(1);
+    if (!challenge) return null;
+    return JSON.stringify({ ...submission, challenge });
   }
 
   const [comment] = await db

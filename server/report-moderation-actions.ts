@@ -1,11 +1,16 @@
 import { and, eq, sql } from "drizzle-orm";
 import {
   cosmicSignals,
+  challengeSubmissions,
+  events,
+  hubPosts,
   profileVideos,
   profiles,
   reports,
   signalComments,
   signalLikes,
+  storyBriciole,
+  storyVotes,
   userSuspensions,
   type Report,
 } from "@shared/schema";
@@ -44,6 +49,10 @@ const DETAILED_REPORT_TYPES = new Set<ReportContentType>([
   "profile_main_video",
   "cosmic_signal",
   "signal_comment",
+  "hub_post",
+  "event",
+  "story_briciola",
+  "challenge_submission",
 ]);
 
 export function isDetailedReportContentType(value: unknown): value is
@@ -51,7 +60,11 @@ export function isDetailedReportContentType(value: unknown): value is
   | "profile_video"
   | "profile_main_video"
   | "cosmic_signal"
-  | "signal_comment" {
+  | "signal_comment"
+  | "hub_post"
+  | "event"
+  | "story_briciola"
+  | "challenge_submission" {
   return typeof value === "string" && DETAILED_REPORT_TYPES.has(value as ReportContentType);
 }
 
@@ -70,6 +83,7 @@ export async function moderateDetailedReportInTransaction(
 
   const snapshotAvailable = Boolean(report.reportedContentSnapshot);
   let itemExists = false;
+  let storyBriciolaId: string | undefined;
 
   if (contentType === "profile_photo") {
     const [profile] = await tx
@@ -130,7 +144,7 @@ export async function moderateDetailedReportInTransaction(
       return { ok: false, error: "content_mismatch" };
     }
     itemExists = Boolean(signal);
-  } else {
+  } else if (contentType === "signal_comment") {
     const [comment] = await tx
       .select({
         id: signalComments.id,
@@ -143,6 +157,31 @@ export async function moderateDetailedReportInTransaction(
       return { ok: false, error: "content_mismatch" };
     }
     itemExists = Boolean(comment);
+  } else if (contentType === "hub_post") {
+    const [post] = await tx.select({ id: hubPosts.id, profileId: hubPosts.profileId })
+      .from(hubPosts).where(eq(hubPosts.id, contentId)).limit(1);
+    if (post && post.profileId !== report.reportedId) return { ok: false, error: "content_mismatch" };
+    itemExists = Boolean(post);
+  } else if (contentType === "event") {
+    const [event] = await tx.select({ id: events.id, profileId: events.profileId })
+      .from(events).where(eq(events.id, contentId)).limit(1);
+    if (event && event.profileId !== report.reportedId) return { ok: false, error: "content_mismatch" };
+    itemExists = Boolean(event);
+  } else if (contentType === "story_briciola") {
+    const [briciola] = await tx.select({
+      id: storyBriciole.id,
+      profileId: storyBriciole.profileId,
+    }).from(storyBriciole).where(eq(storyBriciole.id, contentId)).limit(1);
+    if (briciola && briciola.profileId !== report.reportedId) return { ok: false, error: "content_mismatch" };
+    itemExists = Boolean(briciola);
+    storyBriciolaId = briciola?.id;
+  } else {
+    const [submission] = await tx.select({
+      id: challengeSubmissions.id,
+      profileId: challengeSubmissions.profileId,
+    }).from(challengeSubmissions).where(eq(challengeSubmissions.id, contentId)).limit(1);
+    if (submission && submission.profileId !== report.reportedId) return { ok: false, error: "content_mismatch" };
+    itemExists = Boolean(submission);
   }
 
   if (!itemExists && !snapshotAvailable) {
@@ -230,6 +269,31 @@ export async function moderateDetailedReportInTransaction(
         eq(signalComments.profileId, report.reportedId),
       ))
       .returning({ id: signalComments.id });
+    contentRemoved = deleted.length > 0;
+  } else if (itemExists && contentType === "hub_post") {
+    const deleted = await tx.delete(hubPosts).where(and(
+      eq(hubPosts.id, contentId),
+      eq(hubPosts.profileId, report.reportedId),
+    )).returning({ id: hubPosts.id });
+    contentRemoved = deleted.length > 0;
+  } else if (itemExists && contentType === "event") {
+    const deleted = await tx.delete(events).where(and(
+      eq(events.id, contentId),
+      eq(events.profileId, report.reportedId),
+    )).returning({ id: events.id });
+    contentRemoved = deleted.length > 0;
+  } else if (itemExists && contentType === "story_briciola" && storyBriciolaId) {
+    await tx.delete(storyVotes).where(eq(storyVotes.briolaId, storyBriciolaId));
+    const deleted = await tx.delete(storyBriciole).where(and(
+      eq(storyBriciole.id, contentId),
+      eq(storyBriciole.profileId, report.reportedId),
+    )).returning({ id: storyBriciole.id });
+    contentRemoved = deleted.length > 0;
+  } else if (itemExists && contentType === "challenge_submission") {
+    const deleted = await tx.delete(challengeSubmissions).where(and(
+      eq(challengeSubmissions.id, contentId),
+      eq(challengeSubmissions.profileId, report.reportedId),
+    )).returning({ id: challengeSubmissions.id });
     contentRemoved = deleted.length > 0;
   }
 

@@ -85,6 +85,26 @@ function getReportedContentHref(report: Report): string | null {
     const parentId = getReportSnapshot(report.reportedContentSnapshot)?.signalId;
     return `/signals#signal-card-${encodeURIComponent(typeof parentId === "string" ? parentId : contentId)}`;
   }
+  if (report.reportedContentType === "hub_post") {
+    const category = getReportSnapshot(report.reportedContentSnapshot)?.category;
+    const route = category === "marketplace" ? "/marketplace"
+      : category === "casa" ? "/casa"
+        : category === "lavoro" ? "/lavoro"
+          : "/cosa-fare";
+    return `${route}#hub-post-${encodeURIComponent(contentId)}`;
+  }
+  if (report.reportedContentType === "event") {
+    return `/cosa-fare#community-event-${encodeURIComponent(contentId)}`;
+  }
+  if (report.reportedContentType === "story_briciola") {
+    const storyId = getReportSnapshot(report.reportedContentSnapshot)?.storyId;
+    return typeof storyId === "string"
+      ? `/story/${encodeURIComponent(storyId)}#story-briciola-${encodeURIComponent(contentId)}`
+      : null;
+  }
+  if (report.reportedContentType === "challenge_submission") {
+    return `/challenges#challenge-submission-${encodeURIComponent(contentId)}`;
+  }
   if (["profile", "profile_photo", "profile_video", "profile_main_video"].includes(report.reportedContentType ?? "")) {
     return `/p/${encodeURIComponent(report.reportedId)}#profile-media`;
   }
@@ -109,6 +129,10 @@ function getModerationActionLabel(action: string | null | undefined): string {
       profile_main_video: "Video profilo rimosso",
       cosmic_signal: "Post rimosso",
       signal_comment: "Commento rimosso",
+      hub_post: "Annuncio rimosso",
+      event: "Evento rimosso",
+      story_briciola: "Contributo VibraStory rimosso",
+      challenge_submission: "Foto della sfida rimossa",
       blog_post: "Articolo rimosso",
       room_message: "Messaggio stanza rimosso",
       private_room_message: "Messaggio stanza privata rimosso",
@@ -1399,7 +1423,11 @@ export default function Admin() {
                                     report.reportedContentType === "profile_photo" ? "foto profilo" :
                                     report.reportedContentType === "profile_video" || report.reportedContentType === "profile_main_video" ? "video profilo" :
                                     report.reportedContentType === "cosmic_signal" ? "post o media social" :
-                                    report.reportedContentType === "signal_comment" ? "commento" : "elemento"
+                                    report.reportedContentType === "signal_comment" ? "commento" :
+                                    report.reportedContentType === "hub_post" ? "annuncio Hub" :
+                                    report.reportedContentType === "event" ? "evento community" :
+                                    report.reportedContentType === "story_briciola" ? "contributo VibraStory" :
+                                    report.reportedContentType === "challenge_submission" ? "foto di una sfida" : "elemento"
                                   }
                                 </p>
                                 {getReportedContentHref(report) && (
@@ -1440,6 +1468,24 @@ export default function Admin() {
                                     return <video src={evidence.mediaUrl} controls playsInline className="mb-2 max-h-64 max-w-full rounded-lg bg-black" />;
                                   }
                                   return null;
+                                })()}
+                                {report.reportedContentType && [
+                                  "hub_post",
+                                  "event",
+                                  "story_briciola",
+                                  "challenge_submission",
+                                ].includes(report.reportedContentType) && (() => {
+                                  const evidence = getReportSnapshot(report.reportedContentSnapshot);
+                                  const imageUrl = report.reportedContentType === "hub_post"
+                                    ? (typeof evidence?.imageUrl === "string" ? evidence.imageUrl : evidence?.imageUrls?.[0])
+                                    : report.reportedContentType === "event"
+                                      ? evidence?.imageUrl
+                                      : report.reportedContentType === "story_briciola"
+                                        ? evidence?.mediaUrl
+                                        : evidence?.imageUrl;
+                                  return typeof imageUrl === "string" && imageUrl
+                                    ? <img src={imageUrl} alt="Immagine del contenuto segnalato" className="mb-2 max-h-56 max-w-full rounded-lg object-contain" />
+                                    : null;
                                 })()}
                                 <pre className="text-xs text-foreground whitespace-pre-wrap break-words max-h-48 overflow-auto">
                                   {(() => {

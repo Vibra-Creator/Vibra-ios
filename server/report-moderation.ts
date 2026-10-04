@@ -12,6 +12,10 @@ export const REPORT_CONTENT_TYPES = [
   "profile_main_video",
   "cosmic_signal",
   "signal_comment",
+  "hub_post",
+  "event",
+  "story_briciola",
+  "challenge_submission",
 ] as const;
 export type ReportContentType = typeof REPORT_CONTENT_TYPES[number];
 

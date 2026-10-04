@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { ReportContentButton } from "@/components/ReportContentButton";
 import type { HubPost } from "@shared/schema";
 
 const SUBCATEGORIES = ["Elettronica","Abbigliamento","Auto & Moto","Casa & Arredo","Sport","Libri","Altro"] as const;
@@ -273,7 +274,7 @@ export default function MarketplacePage() {
              {posts.map((post, i) => {
                const postImages = post.imageUrls?.length ? post.imageUrls : (post.imageUrl ? [post.imageUrl] : []);
                return (
-               <motion.div key={post.id} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay: i*0.04 }}
+               <motion.div id={`hub-post-${post.id}`} key={post.id} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay: i*0.04 }}
                  className="rounded-2xl overflow-hidden"
                  style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)" }}>
                  {postImages.length > 0 && (
@@ -328,6 +329,13 @@ export default function MarketplacePage() {
                             <button onClick={() => deletePost.mutate(post.id)} className="p-1.5 rounded-lg" style={{ background:"rgba(239,68,68,0.12)" }}><Trash2 className="w-3.5 h-3.5 text-red-400"/></button>
                           </>
                         )}
+                        <ReportContentButton
+                          reportedId={post.profileId}
+                          contentType="hub_post"
+                          contentId={post.id}
+                          currentProfileId={myProfile?.id}
+                          className="h-7 px-2 text-white/50 hover:text-red-300"
+                        />
                       </div>
                     </div>
                   </div>

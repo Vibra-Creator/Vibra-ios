@@ -4,12 +4,19 @@ import express, { type RequestHandler } from "express";
 import { createServer, request as httpRequest, type Server as HttpServer } from "node:http";
 import { eq, inArray } from "drizzle-orm";
 import {
+  challengeSubmissions,
+  dailyChallenges,
+  events,
+  hubPosts,
   privateRoomMessages,
   privateRoomRequests,
   privateRooms,
   profiles,
   reports,
   roomMessages,
+  stories,
+  storyBriciole,
+  storyVotes,
   userSuspensions,
 } from "../../shared/schema.js";
 import { db } from "../db.js";
@@ -28,6 +35,13 @@ const createdRoomMessageIds: string[] = [];
 const createdPrivateRoomMessageIds: string[] = [];
 const createdPrivateRoomIds: string[] = [];
 const createdPrivateRoomRequestIds: string[] = [];
+const createdHubPostIds: string[] = [];
+const createdEventIds: string[] = [];
+const createdStoryIds: string[] = [];
+const createdBriciolaIds: string[] = [];
+const createdStoryVoteIds: string[] = [];
+const createdChallengeIds: string[] = [];
+const createdChallengeSubmissionIds: string[] = [];
 let server: HttpServer;
 
 const testAuthentication: RequestHandler = (req: any, res, next) => {
@@ -138,6 +152,27 @@ after(async () => {
   if (createdPrivateRoomIds.length) {
     await db.delete(privateRooms).where(inArray(privateRooms.id, createdPrivateRoomIds));
   }
+  if (createdStoryVoteIds.length) {
+    await db.delete(storyVotes).where(inArray(storyVotes.id, createdStoryVoteIds));
+  }
+  if (createdBriciolaIds.length) {
+    await db.delete(storyBriciole).where(inArray(storyBriciole.id, createdBriciolaIds));
+  }
+  if (createdStoryIds.length) {
+    await db.delete(stories).where(inArray(stories.id, createdStoryIds));
+  }
+  if (createdChallengeSubmissionIds.length) {
+    await db.delete(challengeSubmissions).where(inArray(challengeSubmissions.id, createdChallengeSubmissionIds));
+  }
+  if (createdChallengeIds.length) {
+    await db.delete(dailyChallenges).where(inArray(dailyChallenges.id, createdChallengeIds));
+  }
+  if (createdHubPostIds.length) {
+    await db.delete(hubPosts).where(inArray(hubPosts.id, createdHubPostIds));
+  }
+  if (createdEventIds.length) {
+    await db.delete(events).where(inArray(events.id, createdEventIds));
+  }
   if (createdProfileIds.length) {
     await db.delete(profiles).where(inArray(profiles.id, createdProfileIds));
   }
@@ -186,6 +221,103 @@ test("room-message reports require authentication and the reported author; evide
   assert.equal(snapshot.content, message.content);
   assert.notEqual(snapshot.roomId, payload.roomId);
   assert.notEqual(snapshot.content, "forged snapshot");
+});
+
+test("remaining public-feed report types capture server evidence and reject forged authors", async () => {
+  const reporter = await createProfile("remaining-feed-reporter");
+  const author = await createProfile("remaining-feed-author");
+  const wrongAuthor = await createProfile("remaining-feed-wrong-author");
+
+  const [post] = await db.insert(hubPosts).values({
+    id: `route-test-post-${runId}`,
+    profileId: author.id,
+    profileName: "Feed author",
+    profileImageUrl: "/images/test.png",
+    category: "casa",
+    title: `Listing ${runId}`,
+    description: "Exact listing report test",
+  }).returning({ id: hubPosts.id });
+  createdHubPostIds.push(post.id);
+  const [event] = await db.insert(events).values({
+    id: `route-test-event-${runId}`,
+    profileId: author.id,
+    profileName: "Feed author",
+    profileImageUrl: "/images/test.png",
+    city: "Roma",
+    eventType: "community",
+    title: `Event ${runId}`,
+    description: "Exact event report test",
+    eventDate: "2099-01-01",
+  }).returning({ id: events.id });
+  createdEventIds.push(event.id);
+  const [story] = await db.insert(stories).values({
+    id: `route-test-story-${runId}`,
+    theme: `Story ${runId}`,
+  }).returning({ id: stories.id });
+  createdStoryIds.push(story.id);
+  const [briciola] = await db.insert(storyBriciole).values({
+    id: `route-test-briciola-${runId}`,
+    storyId: story.id,
+    profileId: author.id,
+    content: "Exact story contribution report test",
+  }).returning({ id: storyBriciole.id });
+  createdBriciolaIds.push(briciola.id);
+  const [vote] = await db.insert(storyVotes).values({
+    id: `route-test-vote-${runId}`,
+    briolaId: briciola.id,
+    profileId: reporter.id,
+    voteType: "up",
+  }).returning({ id: storyVotes.id });
+  createdStoryVoteIds.push(vote.id);
+  const [challenge] = await db.insert(dailyChallenges).values({
+    id: `route-test-challenge-${runId}`,
+    title: `Challenge ${runId}`,
+    description: "Approved challenge photo",
+    isActive: true,
+    expiresAt: new Date("2099-01-01T00:00:00Z"),
+  }).returning({ id: dailyChallenges.id });
+  createdChallengeIds.push(challenge.id);
+  const [submission] = await db.insert(challengeSubmissions).values({
+    id: `route-test-submission-${runId}`,
+    challengeId: challenge.id,
+    profileId: author.id,
+    imageUrl: `https://example.test/route-challenge-${runId}.jpg`,
+    status: "approved",
+  }).returning({ id: challengeSubmissions.id });
+  createdChallengeSubmissionIds.push(submission.id);
+
+  const targets = [
+    { contentType: "hub_post", contentId: post.id },
+    { contentType: "event", contentId: event.id },
+    { contentType: "story_briciola", contentId: briciola.id },
+    { contentType: "challenge_submission", contentId: submission.id },
+  ];
+  for (const target of targets) {
+    const forged = await requestJson("/api/reports", "POST", {
+      reportedId: wrongAuthor.id,
+      reason: "Ownership validation",
+      reportedContentType: target.contentType,
+      reportedContentId: target.contentId,
+      reportedContentSnapshot: "forged evidence must be ignored",
+    }, { "x-test-user": reporter.userId });
+    if (forged.body?.id) createdReportIds.push(forged.body.id);
+    assert.equal(forged.statusCode, 400, `${target.contentType} must reject a report naming the wrong author`);
+
+    const valid = await requestJson("/api/reports", "POST", {
+      reportedId: author.id,
+      reason: "Exact feed item validation",
+      reportedContentType: target.contentType,
+      reportedContentId: target.contentId,
+      reportedContentSnapshot: "forged evidence must be ignored",
+    }, { "x-test-user": reporter.userId });
+    assert.equal(valid.statusCode, 200, `${target.contentType} should accept a valid exact item`);
+    createdReportIds.push(valid.body.id);
+    assert.equal(valid.body.reportedContentType, target.contentType);
+    assert.equal(valid.body.reportedContentId, target.contentId);
+    const snapshot = JSON.parse(valid.body.reportedContentSnapshot);
+    assert.equal(snapshot.profileId, author.id, "the server snapshot must identify the actual author");
+    assert.notEqual(valid.body.reportedContentSnapshot, "forged evidence must be ignored");
+  }
 });
 
 test("private-room reports require current membership and still ignore client room IDs and snapshots", async () => {

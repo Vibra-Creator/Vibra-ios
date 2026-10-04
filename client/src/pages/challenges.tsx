@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { ReportContentButton } from "@/components/ReportContentButton";
 import type { DailyChallenge, ChallengeSubmission, Profile } from "@shared/schema";
 
 type LeaderboardEntry = {
@@ -21,6 +22,17 @@ type LeaderboardEntry = {
   imageUrl: string;
   totalPoints: number;
   submissionCount: number;
+};
+
+type ChallengeGalleryEntry = {
+  id: string;
+  challengeId: string;
+  challengeTitle: string;
+  profileId: string;
+  profileName: string;
+  profileImageUrl: string;
+  imageUrl: string;
+  createdAt: string | Date;
 };
 
 function ChallengeSkeleton() {
@@ -126,6 +138,10 @@ export default function Challenges() {
 
   const { data: leaderboard } = useQuery<LeaderboardEntry[]>({
     queryKey: ["/api/challenges/leaderboard"],
+  });
+
+  const { data: communitySubmissions = [], isError: communitySubmissionsError } = useQuery<ChallengeGalleryEntry[]>({
+    queryKey: ["/api/challenges/gallery"],
   });
 
   const submitMutation = useMutation({
@@ -608,6 +624,55 @@ export default function Challenges() {
             );
           })}
         </div>
+      )}
+
+      {communitySubmissionsError && (
+        <p role="status" className="mt-6 text-center text-sm text-red-300">
+          Impossibile caricare le foto approvate della community.
+        </p>
+      )}
+      {communitySubmissions.length > 0 && (
+        <section className="mt-8" aria-labelledby="challenge-community-heading">
+          <h2 id="challenge-community-heading" className="mb-3 text-lg font-bold text-white">
+            Foto approvate della community
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {communitySubmissions.map((submission) => (
+              <article
+                id={`challenge-submission-${submission.id}`}
+                key={submission.id}
+                className="overflow-hidden rounded-xl border border-white/10 bg-white/10"
+                data-testid={`challenge-submission-${submission.id}`}
+              >
+                <img
+                  src={submission.imageUrl}
+                  alt={`Foto per ${submission.challengeTitle}`}
+                  className="aspect-square w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="p-2">
+                  <p className="truncate text-xs font-semibold text-white">{submission.challengeTitle}</p>
+                  <div className="mt-1 flex items-center justify-between gap-1">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={submission.profileImageUrl} alt="" />
+                        <AvatarFallback>{submission.profileName[0]}</AvatarFallback>
+                      </Avatar>
+                      <span className="truncate text-[11px] text-white/60">{submission.profileName}</span>
+                    </div>
+                    <ReportContentButton
+                      reportedId={submission.profileId}
+                      contentType="challenge_submission"
+                      contentId={submission.id}
+                      currentProfileId={myProfile?.id}
+                      className="h-7 shrink-0 px-1.5 text-white/50 hover:text-red-300"
+                    />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
       </div>
       <GuestBlockerModal />

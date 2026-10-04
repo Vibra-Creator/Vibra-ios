@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MapPin, Euro, Search, ExternalLink } from "lucide-react";
-import type { HubPost } from "@shared/schema";
+import { ReportContentButton } from "@/components/ReportContentButton";
+import type { EventItem, HubPost } from "@shared/schema";
 
 const CITIES = [
   "Ovunque",
@@ -153,6 +154,26 @@ export default function CosaFarePage() {
   const [selectedBudget, setSelectedBudget] = useState(-1);
   const [searched, setSearched] = useState(false);
 
+  const { data: myProfile } = useQuery<{ id: string } | null>({
+    queryKey: ["/api/profiles/me"],
+    queryFn: async () => {
+      const response = await fetch("/api/profiles/me", { credentials: "include" });
+      return response.ok ? response.json() : null;
+    },
+    retry: false,
+  });
+
+  const { data: communityEvents = [], isError: communityEventsError } = useQuery<EventItem[]>({
+    queryKey: ["/api/events", selectedCity],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedCity !== "Ovunque") params.set("city", selectedCity);
+      const response = await fetch(`/api/events?${params}`, { credentials: "include" });
+      if (!response.ok) throw new Error("Impossibile caricare gli eventi");
+      return response.json();
+    },
+  });
+
   const { data: posts = [], isFetching, refetch } = useQuery<HubPost[]>({
     queryKey: ["/api/cosa-fare", selectedCity, selectedBudget],
     queryFn: async () => {
@@ -192,6 +213,44 @@ export default function CosaFarePage() {
             <p className="text-white/40 text-xs">Scegli città e budget, trova la tua serata</p>
           </div>
         </div>
+
+        {communityEventsError && (
+          <p role="status" className="mb-4 text-xs text-red-300">Impossibile caricare gli eventi della community.</p>
+        )}
+        {communityEvents.length > 0 && (
+          <section className="mb-5" aria-labelledby="community-events-heading">
+            <div className="mb-2">
+              <h2 id="community-events-heading" className="text-white font-semibold text-sm">Eventi della community</h2>
+              <p className="text-white/40 text-xs">Eventi pubblicati dagli utenti Vibra</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {communityEvents.map((event) => (
+                <article
+                  id={`community-event-${event.id}`}
+                  key={event.id}
+                  className="rounded-xl p-3"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}
+                  data-testid={`community-event-${event.id}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-white font-semibold text-sm">{event.title}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{event.eventDate}{event.eventTime ? ` · ${event.eventTime}` : ""} · {event.city}</p>
+                    </div>
+                    <ReportContentButton
+                      reportedId={event.profileId}
+                      contentType="event"
+                      contentId={event.id}
+                      currentProfileId={myProfile?.id}
+                      className="h-7 px-2 text-white/50 hover:text-red-300"
+                    />
+                  </div>
+                  <p className="text-white/60 text-xs mt-2 line-clamp-3">{event.description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* City selector */}
         <div className="mb-4">
@@ -374,6 +433,7 @@ export default function CosaFarePage() {
                   const cat = CATEGORIES.find((c) => c.key === post.category);
                   return (
                     <motion.div
+                      id={`hub-post-${post.id}`}
                       key={post.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -408,6 +468,15 @@ export default function CosaFarePage() {
                           <span className="text-white/30 text-xs">{post.city}</span>
                         </div>
                       )}
+                      <div className="mt-2 flex justify-end">
+                        <ReportContentButton
+                          reportedId={post.profileId}
+                          contentType="hub_post"
+                          contentId={post.id}
+                          currentProfileId={myProfile?.id}
+                          className="h-7 px-2 text-white/50 hover:text-red-300"
+                        />
+                      </div>
                     </motion.div>
                   );
                 })}

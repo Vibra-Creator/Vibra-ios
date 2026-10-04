@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, MapPin, Phone, Trash2, ExternalLink, Home } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { ReportContentButton } from "@/components/ReportContentButton";
 import type { HubPost } from "@shared/schema";
 
 const SUBCATEGORIES = ["Cerco stanza","Offro stanza","Cerco coinquilino","Subaffitto","Affitto breve","Altro"] as const;
@@ -99,7 +100,7 @@ export default function CasaPage() {
         ) : (
           <div className="space-y-3">
             {posts.map((post, i) => (
-              <motion.div key={post.id} initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ delay:i*0.04 }}
+              <motion.div id={`hub-post-${post.id}`} key={post.id} initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ delay:i*0.04 }}
                 className="rounded-2xl p-4"
                 style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)" }}>
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -129,6 +130,13 @@ export default function CasaPage() {
                       <Phone className="w-3 h-3"/>{t("casa.contact")}
                     </a>
                   )}
+                  <ReportContentButton
+                    reportedId={post.profileId}
+                    contentType="hub_post"
+                    contentId={post.id}
+                    currentProfileId={myProfile?.id}
+                    className="h-7 px-2 text-white/50 hover:text-red-300"
+                  />
                 </div>
               </motion.div>
             ))}

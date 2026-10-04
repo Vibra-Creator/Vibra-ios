@@ -9,3 +9,4 @@
 - [Frontend release gate](frontend-release-gate.md) — keep the client type check blocking builds while server type debt is addressed separately.
 - [Marketplace image ownership](marketplace-image-ownership.md) — delete only purpose-scoped uploads with matching ownership; legacy generic uploads cannot safely be attributed.
 - [UGC report moderation](ugc-report-moderation.md) — remove only explicitly linked, author-verified content; keep the report snapshot as evidence.
+- [Database fixture IDs](database-fixture-ids.md) — integration-test inserts should set IDs explicitly when a migrated table may lack the schema's server-side default.
