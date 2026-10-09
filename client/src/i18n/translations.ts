@@ -974,7 +974,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "market.empty": "Nessun annuncio. Sii il primo!",
     "market.create": "Pubblica annuncio",
     "market.newPost": "Nuovo annuncio",
+    "market.editPost": "Modifica annuncio",
     "market.publish": "Pubblica",
+    "market.saveChanges": "Salva modifiche",
     "market.contact": "Contatta",
     "market.form.title": "Titolo (es. iPhone 14 Pro 256GB)",
     "market.form.desc": "Descrizione, condizioni, info...",
@@ -1003,6 +1005,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "market.publishSuccess": "Annuncio pubblicato",
     "market.publishSuccessDesc": "Il tuo annuncio è ora visibile a tutti.",
     "market.publishError": "Impossibile pubblicare l'annuncio. Riprova.",
+    "market.updateSuccess": "Annuncio aggiornato",
+    "market.updateError": "Impossibile aggiornare l'annuncio. Riprova.",
     "market.messageSeller": "Scrivi in Vibrapp",
 
     // Mobilità
@@ -2079,7 +2083,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "market.empty": "No listings yet. Be the first!",
     "market.create": "Post listing",
     "market.newPost": "New listing",
+    "market.editPost": "Edit listing",
     "market.publish": "Publish",
+    "market.saveChanges": "Save changes",
     "market.contact": "Contact",
     "market.form.title": "Title (e.g. iPhone 14 Pro 256GB)",
     "market.form.desc": "Description, condition, info...",
@@ -2108,6 +2114,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "market.publishSuccess": "Listing published",
     "market.publishSuccessDesc": "Your listing is now visible to everyone.",
     "market.publishError": "Unable to publish the listing. Try again.",
+    "market.updateSuccess": "Listing updated",
+    "market.updateError": "Unable to update the listing. Try again.",
     "market.messageSeller": "Message on Vibrapp",
 
     // Mobility
@@ -3183,7 +3191,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     "market.empty": "Sin anuncios. ¡Sé el primero!",
     "market.create": "Publicar anuncio",
     "market.newPost": "Nuevo anuncio",
+    "market.editPost": "Editar anuncio",
     "market.publish": "Publicar",
+    "market.saveChanges": "Guardar cambios",
     "market.contact": "Contactar",
     "market.form.title": "Título (ej. iPhone 14 Pro 256GB)",
     "market.form.desc": "Descripción, estado, info...",
@@ -3212,6 +3222,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     "market.publishSuccess": "Anuncio publicado",
     "market.publishSuccessDesc": "Tu anuncio ya es visible para todos.",
     "market.publishError": "No se pudo publicar el anuncio. Inténtalo de nuevo.",
+    "market.updateSuccess": "Anuncio actualizado",
+    "market.updateError": "No se pudo actualizar el anuncio. Inténtalo de nuevo.",
     "market.messageSeller": "Escribir en Vibrapp",
 
     // Movilidad

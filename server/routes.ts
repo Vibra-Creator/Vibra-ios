@@ -6728,6 +6728,44 @@ REGOLE:
     } catch { res.status(500).json({ error: "Errore creazione post" }); }
   });
 
+  app.patch("/api/hub-posts/:id/details", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Non autenticato" });
+      const profile = await storage.getProfileByUserId(userId);
+      if (!profile) return res.status(403).json({ error: "Non autorizzato" });
+
+      const [post] = await db.select().from(hubPosts).where(eq(hubPosts.id, req.params.id));
+      if (!post || post.category !== "marketplace") return res.status(404).json({ error: "Annuncio Marketplace non trovato" });
+      if (post.profileId !== profile.id) return res.status(403).json({ error: "Non autorizzato" });
+
+      const detailsSchema = z.object({
+        title: z.string().trim().min(1).max(200),
+        description: z.string().trim().min(1).max(5000),
+        price: z.number().int().nonnegative().nullable(),
+        subcategory: z.string().trim().min(1).max(100),
+        city: z.string().trim().max(120).nullable(),
+        contactInfo: z.string().trim().max(200).nullable(),
+      }).strict();
+      const parsed = detailsSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+      const [updated] = await db.update(hubPosts)
+        .set(parsed.data)
+        .where(and(
+          eq(hubPosts.id, post.id),
+          eq(hubPosts.profileId, profile.id),
+          eq(hubPosts.category, "marketplace"),
+        ))
+        .returning();
+      if (!updated) return res.status(409).json({ error: "L'annuncio è cambiato. Ricarica la pagina e riprova." });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating Marketplace details:", error);
+      res.status(500).json({ error: "Errore aggiornamento annuncio" });
+    }
+  });
+
   app.patch("/api/hub-posts/:id/photos", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.session?.userId;

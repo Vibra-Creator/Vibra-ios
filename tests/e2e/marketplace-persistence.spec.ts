@@ -325,6 +325,108 @@ test.describe("missing Marketplace photo", () => {
   });
 });
 
+test("owners can edit Marketplace details without changing the listing ID or photos", async ({ page, request, browser }) => {
+  const seller = await registerUser(request, "details-edit-owner");
+  const sellerProfileId = await loginAs(request, seller);
+  const images: string[] = [];
+  for (const file of uploadFiles(3)) {
+    const upload = await request.post("/api/hub-posts/upload-image", { multipart: { images: file } });
+    expect(upload.status(), await upload.text()).toBe(200);
+    images.push(...((await upload.json()) as { urls: string[] }).urls);
+  }
+
+  const title = `Editable listing ${RUN_ID}`;
+  const publish = await request.post("/api/hub-posts", {
+    data: {
+      category: "marketplace",
+      subcategory: "Elettronica",
+      title,
+      description: "Original listing details.",
+      price: 50,
+      city: "Roma",
+      contactInfo: "111111",
+      imageUrls: images,
+    },
+  });
+  expect(publish.status(), await publish.text()).toBe(200);
+  const original = (await publish.json()) as {
+    id: string;
+    imageUrl: string;
+    imageUrls: string[];
+  };
+
+  const outsiderContext = await browser.newContext();
+  try {
+    const outsiderRequest = outsiderContext.request;
+    const outsider = await registerUser(outsiderRequest, "details-edit-outsider");
+    await loginAs(outsiderRequest, outsider);
+    const forbiddenEdit = await outsiderRequest.patch(`/api/hub-posts/${original.id}/details`, {
+      data: {
+        title: "Unauthorized title",
+        description: "Unauthorized description.",
+        price: 99,
+        subcategory: "Libri",
+        city: "Milano",
+        contactInfo: "999999",
+      },
+    });
+    expect(forbiddenEdit.status()).toBe(403);
+  } finally {
+    await outsiderContext.close();
+  }
+
+  await injectSessionCookies(page, request);
+  await patchEmailVerified(page);
+  await page.goto("/marketplace", { waitUntil: "load" });
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await page.getByTestId(`marketplace-edit-post-${original.id}`).click();
+  await expect(page.getByRole("heading", { name: "Modifica annuncio" })).toBeVisible();
+  await expect(page.getByText(/Foto dell'oggetto/)).toHaveCount(0);
+
+  const updatedTitle = `Corrected listing ${RUN_ID}`;
+  await page.getByPlaceholder(/Titolo/).fill(updatedTitle);
+  await page.getByPlaceholder(/Descrizione/).fill("Corrected listing details.");
+  await page.getByPlaceholder(/Prezzo/).fill("89");
+  await page.getByRole("combobox").selectOption("Libri");
+  await page.getByPlaceholder("Città").fill("Torino");
+  await page.getByPlaceholder(/Telefono/).fill("222222");
+
+  const updateResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith(`/api/hub-posts/${original.id}/details`) && response.request().method() === "PATCH",
+  );
+  await page.getByRole("button", { name: "Salva modifiche", exact: true }).click();
+  const updateResponse = await updateResponsePromise;
+  expect(updateResponse.status(), await updateResponse.text()).toBe(200);
+  await expect(page.getByText(updatedTitle, { exact: true })).toBeVisible();
+  await expect(page.locator(`img[alt^="${updatedTitle}"]`)).toHaveCount(3);
+
+  const refreshedPosts = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{
+    id: string;
+    profileId: string;
+    title: string;
+    description: string;
+    price: number | null;
+    subcategory: string;
+    city: string | null;
+    contactInfo: string | null;
+    imageUrl: string | null;
+    imageUrls: string[];
+  }>;
+  const updated = refreshedPosts.find((post) => post.id === original.id);
+  expect(updated).toMatchObject({
+    id: original.id,
+    profileId: sellerProfileId,
+    title: updatedTitle,
+    description: "Corrected listing details.",
+    price: 89,
+    subcategory: "Libri",
+    city: "Torino",
+    contactInfo: "222222",
+    imageUrl: original.imageUrl,
+    imageUrls: original.imageUrls,
+  });
+});
+
 test("deleting a listing removes only its unreferenced stored photos", async ({ request }) => {
   const otherUser = await registerUser(request, "photo-owner");
   await loginAs(request, otherUser);

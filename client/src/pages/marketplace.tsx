@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, MapPin, Phone, Trash2, CheckCircle, ShoppingBag, AlertTriangle, ImagePlus, Loader2, MessageCircle } from "lucide-react";
+import { Plus, X, MapPin, Phone, Trash2, CheckCircle, ShoppingBag, AlertTriangle, ImagePlus, Loader2, MessageCircle, Pencil } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -101,6 +101,7 @@ export default function MarketplacePage() {
   const { toast } = useToast();
   const [filter, setFilter] = useState<string>("tutti");
   const [showForm, setShowForm] = useState(false);
+  const [editingPost, setEditingPost] = useState<HubPost | null>(null);
   const [form, setForm] = useState({ title:"", description:"", price:"", subcategory:"Elettronica", city:"", contactInfo:"", imageUrls: [] as string[] });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +130,46 @@ export default function MarketplacePage() {
       toast({ title: t("common.error"), description: error.message || t("market.publishError"), variant: "destructive" });
     },
   });
+
+  const updatePost = useMutation({
+    mutationFn: async ({ postId, details }: {
+      postId: string;
+      details: Pick<typeof form, "title" | "description" | "price" | "subcategory" | "city" | "contactInfo">;
+    }) => apiRequest("PATCH", `/api/hub-posts/${postId}/details`, {
+      ...details,
+      price: details.price.trim() ? Number(details.price) : null,
+      city: details.city.trim() || null,
+      contactInfo: details.contactInfo.trim() || null,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/hub-posts"] });
+      setShowForm(false);
+      setEditingPost(null);
+      toast({ title: t("market.updateSuccess") });
+    },
+    onError: (error: Error) => {
+      toast({ title: t("common.error"), description: error.message || t("market.updateError"), variant: "destructive" });
+    },
+  });
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingPost(null);
+  };
+
+  const openEditForm = (post: HubPost) => {
+    setForm({
+      title: post.title,
+      description: post.description,
+      price: post.price == null ? "" : String(post.price),
+      subcategory: post.subcategory || SUBCATEGORIES[0],
+      city: post.city || "",
+      contactInfo: post.contactInfo || "",
+      imageUrls: [],
+    });
+    setEditingPost(post);
+    setShowForm(true);
+  };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -267,7 +308,17 @@ export default function MarketplacePage() {
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="text-center py-16">
             <span className="text-5xl">🛒</span>
             <p className="text-white/40 mt-3 text-sm">{t("market.empty")}</p>
-            <button onClick={() => setShowForm(true)} className="mt-4 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background:"linear-gradient(135deg,#f97316,#ea580c)" }}>{t("market.create")}</button>
+            <button
+              onClick={() => {
+                setForm({ title:"", description:"", price:"", subcategory:"Elettronica", city:"", contactInfo:"", imageUrls: [] });
+                setEditingPost(null);
+                setShowForm(true);
+              }}
+              className="mt-4 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+              style={{ background:"linear-gradient(135deg,#f97316,#ea580c)" }}
+            >
+              {t("market.create")}
+            </button>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
@@ -325,6 +376,17 @@ export default function MarketplacePage() {
                          )}
                         {myProfile && post.profileId === myProfile.id && (
                           <>
+                             <button
+                               type="button"
+                               data-testid={`marketplace-edit-post-${post.id}`}
+                               onClick={() => openEditForm(post)}
+                               className="p-1.5 rounded-lg text-orange-300"
+                               style={{ background:"rgba(249,115,22,0.12)" }}
+                               title={t("market.editPost")}
+                               aria-label={`${t("market.editPost")}: ${post.title}`}
+                             >
+                               <Pencil aria-hidden="true" className="w-3.5 h-3.5"/>
+                             </button>
                             <button onClick={() => markSold.mutate(post.id)} className="p-1.5 rounded-lg" style={{ background:"rgba(251,191,36,0.12)" }} title="Segna come venduto"><CheckCircle className="w-3.5 h-3.5 text-yellow-400"/></button>
                             <button onClick={() => deletePost.mutate(post.id)} className="p-1.5 rounded-lg" style={{ background:"rgba(239,68,68,0.12)" }}><Trash2 className="w-3.5 h-3.5 text-red-400"/></button>
                           </>
@@ -348,7 +410,11 @@ export default function MarketplacePage() {
       </div>
 
       {/* FAB */}
-      <motion.button data-testid="marketplace-fab" onClick={() => setShowForm(true)}
+      <motion.button data-testid="marketplace-fab" onClick={() => {
+        setForm({ title:"", description:"", price:"", subcategory:"Elettronica", city:"", contactInfo:"", imageUrls: [] });
+        setEditingPost(null);
+        setShowForm(true);
+      }}
         className="fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
         style={{ background:"linear-gradient(135deg,#f97316,#ea580c)" }}
         whileHover={{ scale:1.1 }} whileTap={{ scale:0.95 }}>
@@ -359,28 +425,28 @@ export default function MarketplacePage() {
       <AnimatePresence>
         {showForm && (
           <>
-            <motion.div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setShowForm(false)}/>
+            <motion.div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={closeForm}/>
             <motion.div className="fixed inset-x-4 bottom-4 z-50 rounded-3xl overflow-y-auto max-h-[85vh]"
               style={{ background:"linear-gradient(135deg,#0f0a1e,#1a0a2e)" }}
               initial={{ opacity:0, y:40 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:40 }}
               transition={{ type:"spring", damping:25, stiffness:300 }}>
               <div className="p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-bold text-lg" style={{ fontFamily:"Space Grotesk,sans-serif" }}>{t("market.newPost")}</h3>
-                  <button onClick={() => setShowForm(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><X className="w-4 h-4 text-white"/></button>
+                  <h3 className="text-white font-bold text-lg" style={{ fontFamily:"Space Grotesk,sans-serif" }}>{editingPost ? t("market.editPost") : t("market.newPost")}</h3>
+                  <button onClick={closeForm} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><X className="w-4 h-4 text-white"/></button>
                 </div>
                 <div className="space-y-3">
                   <input value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} placeholder={t("market.form.title")} className="w-full bg-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none placeholder-white/30" style={{ fontFamily:"Space Grotesk,sans-serif" }}/>
                   <textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} placeholder={t("market.form.desc")} rows={3} className="w-full bg-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none placeholder-white/30 resize-none" style={{ fontFamily:"Space Grotesk,sans-serif" }}/>
                   <div className="grid grid-cols-2 gap-3">
-                    <input value={form.price} onChange={e => setForm(f=>({...f,price:e.target.value}))} placeholder={t("market.form.price")} type="number" className="bg-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none placeholder-white/30" style={{ fontFamily:"Space Grotesk,sans-serif" }}/>
+                    <input value={form.price} onChange={e => setForm(f=>({...f,price:e.target.value}))} placeholder={t("market.form.price")} type="number" min="0" step="1" className="bg-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none placeholder-white/30" style={{ fontFamily:"Space Grotesk,sans-serif" }}/>
                     <input value={form.city} onChange={e => setForm(f=>({...f,city:e.target.value}))} placeholder={t("market.form.city")} className="bg-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none placeholder-white/30" style={{ fontFamily:"Space Grotesk,sans-serif" }}/>
                   </div>
                   <select value={form.subcategory} onChange={e => setForm(f=>({...f,subcategory:e.target.value}))} className="w-full bg-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none" style={{ fontFamily:"Space Grotesk,sans-serif" }}>
                     {SUBCATEGORIES.map(s => <option key={s} value={s} style={{ background:"#1a0a2e" }}>{s}</option>)}
                   </select>
                   <input value={form.contactInfo} onChange={e => setForm(f=>({...f,contactInfo:e.target.value}))} placeholder={t("market.form.contact")} className="w-full bg-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none placeholder-white/30" style={{ fontFamily:"Space Grotesk,sans-serif" }}/>
-                   <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    {!editingPost && <div className="rounded-xl border border-white/10 bg-white/5 p-3">
                      <div className="flex items-center justify-between gap-3 mb-2">
                        <div>
                          <p className="text-white text-sm font-semibold flex items-center gap-2">
@@ -424,11 +490,25 @@ export default function MarketplacePage() {
                          ))}
                        </div>
                      )}
-                   </div>
-                   <button onClick={() => createPost.mutate()} disabled={!form.title || !form.description || form.imageUrls.length < 3 || createPost.isPending || isUploadingImage}
+                    </div>}
+                    <button
+                     onClick={() => editingPost
+                       ? updatePost.mutate({
+                           postId: editingPost.id,
+                           details: {
+                             title: form.title,
+                             description: form.description,
+                             price: form.price,
+                             subcategory: form.subcategory,
+                             city: form.city,
+                             contactInfo: form.contactInfo,
+                           },
+                         })
+                       : createPost.mutate()}
+                     disabled={!form.title.trim() || !form.description.trim() || (editingPost ? updatePost.isPending : form.imageUrls.length < 3 || createPost.isPending || isUploadingImage)}
                     className="w-full py-3 rounded-xl font-bold text-white disabled:opacity-40"
                     style={{ background:"linear-gradient(135deg,#f97316,#ea580c)", fontFamily:"Space Grotesk,sans-serif" }}>
-                    {createPost.isPending ? "..." : t("market.publish")}
+                     {(editingPost ? updatePost.isPending : createPost.isPending) ? "..." : editingPost ? t("market.saveChanges") : t("market.publish")}
                   </button>
                 </div>
               </div>
