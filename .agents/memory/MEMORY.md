@@ -10,3 +10,4 @@
 - [Marketplace image ownership](marketplace-image-ownership.md) — delete only purpose-scoped uploads with matching ownership; legacy generic uploads cannot safely be attributed.
 - [UGC report moderation](ugc-report-moderation.md) — remove only explicitly linked, author-verified content; keep the report snapshot as evidence.
 - [Database fixture IDs](database-fixture-ids.md) — integration-test inserts should set IDs explicitly when a migrated table may lack the schema's server-side default.
+- [Play Store product evolution](play-store-product-evolution.md) — Vibra was listed while positioned as a dating app and has since changed substantially; verify the live package and listing separately.
