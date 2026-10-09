@@ -8,17 +8,15 @@ import {
   createAdminBotImageFixHandler,
   registerAdminBotImageFixRoute,
 } from "./admin-bot-image-fix";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages, userSuspensions } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
-import {
-  createBlockedProfileReportData,
-  getReportSuspensionExpiry,
-} from "./report-moderation";
+import { createBlockedProfileReportData } from "./report-moderation";
 import {
   registerReportRemovalRoute,
   registerReportSubmissionRoute,
+  registerReportSuspensionRoute,
 } from "./report-routes";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -2806,75 +2804,7 @@ ${urlEntries}
     }
   });
 
-  app.post("/api/admin/reports/:id/suspend-user", isAuthenticated, isAdmin, async (req: any, res) => {
-    try {
-      const moderatorUserId = req.user?.claims?.sub || req.session?.userId;
-      if (!moderatorUserId) return res.status(401).json({ error: "Unauthorized" });
-      const now = new Date();
-      const result = await db.transaction(async (tx) => {
-        const [report] = await tx
-          .select()
-          .from(reports)
-          .where(eq(reports.id, req.params.id))
-          .limit(1);
-        if (!report) return { ok: false as const, error: "not_found" as const };
-        if (report.status !== "pending") return { ok: false as const, error: "not_pending" as const };
-        if (report.reportedContentId || report.coldMessageId) {
-          return { ok: false as const, error: "content_linked" as const };
-        }
-
-        let reportedUserId = report.reportedUserId;
-        if (!reportedUserId) {
-          const [reportedProfile] = await tx
-            .select({ userId: profiles.userId })
-            .from(profiles)
-            .where(eq(profiles.id, report.reportedId))
-            .limit(1);
-          reportedUserId = reportedProfile?.userId ?? null;
-        }
-        if (!reportedUserId) return { ok: false as const, error: "no_account" as const };
-
-        const [claimedReport] = await tx
-          .update(reports)
-          .set({
-            status: "resolved",
-            resolvedAt: now,
-            moderationAction: "author_suspended",
-            moderatedBy: moderatorUserId,
-            moderatedAt: now,
-          })
-          .where(and(eq(reports.id, report.id), eq(reports.status, "pending")))
-          .returning({ id: reports.id });
-        if (!claimedReport) return { ok: false as const, error: "not_pending" as const };
-
-        const expiresAt = getReportSuspensionExpiry(now);
-        await tx.insert(userSuspensions).values({
-          userId: reportedUserId,
-          reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
-          expiresAt,
-          isPermanent: false,
-        });
-        return { ok: true as const, targetProfileId: report.reportedId, expiresAt };
-      });
-
-      if (!result.ok) {
-        const responseMap = {
-          not_found: [404, "Report not found"],
-          not_pending: [409, "Report has already been handled"],
-          content_linked: [409, "Remove the linked content through the report action"],
-          no_account: [409, "The reported profile has no linked account to suspend"],
-        } as const;
-        const [status, error] = responseMap[result.error];
-        return res.status(status).json({ error });
-      }
-      disconnectUserSockets(result.targetProfileId);
-      return res.json({ success: true, authorSuspended: true, suspensionExpiresAt: result.expiresAt });
-    } catch (error) {
-      console.error("[ugc-moderation] report suspension failed:", error);
-      return res.status(500).json({ error: "Failed to suspend reported user" });
-    }
-  });
-
+  registerReportSuspensionRoute(app, isAuthenticated, isAdmin, disconnectUserSockets);
   registerReportRemovalRoute(app, isAuthenticated, isAdmin, disconnectUserSockets);
 
   registerReportSubmissionRoute(app, isAuthenticated, notifyAdminsOfNewUserReport);

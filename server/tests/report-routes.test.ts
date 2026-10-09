@@ -25,6 +25,7 @@ import { createAdminAuthorizationMiddleware } from "../routes.js";
 import {
   registerReportRemovalRoute,
   registerReportSubmissionRoute,
+  registerReportSuspensionRoute,
 } from "../report-routes.js";
 
 const runId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -121,6 +122,7 @@ before(async () => {
   app.use(express.json());
   registerReportSubmissionRoute(app, testAuthentication, () => {});
   registerReportRemovalRoute(app, testAuthentication, testAdminAuthorization, () => {});
+  registerReportSuspensionRoute(app, testAuthentication, testAdminAuthorization, () => {});
   server = createServer(app);
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
@@ -404,6 +406,25 @@ test("admin moderation removes only the linked room message and retains its snap
     { "x-test-user": reporter.userId },
   );
   assert.equal(regularUserAction.statusCode, 403);
+  const [unchangedReport] = await db.select().from(reports)
+    .where(eq(reports.id, reportResponse.body.id))
+    .limit(1);
+  assert.equal(unchangedReport.status, "pending");
+  assert.equal(unchangedReport.moderatedBy, null);
+  const [stillPresentMessage] = await db.select().from(roomMessages)
+    .where(eq(roomMessages.id, reportedMessage.id))
+    .limit(1);
+  assert.ok(stillPresentMessage);
+  assert.equal((await db.select().from(userSuspensions)
+    .where(eq(userSuspensions.userId, author.userId))).length, 0);
+
+  const missingReport = await requestJson(
+    "/api/admin/reports/missing-report-id/remove-and-suspend",
+    "POST",
+    {},
+    { "x-test-user": "test-moderator" },
+  );
+  assert.equal(missingReport.statusCode, 404);
 
   const requestStartedAt = Date.now();
   const moderation = await requestJson(
@@ -432,12 +453,27 @@ test("admin moderation removes only the linked room message and retains its snap
   assert.equal(reviewedReport.status, "resolved");
   assert.ok(reviewedReport.reportedContentSnapshot);
   assert.equal(reviewedReport.moderationAction, "room_message_removed_and_suspended");
+  assert.equal(reviewedReport.moderatedBy, "test-moderator");
+  assert.ok(reviewedReport.moderatedAt instanceof Date);
+  assert.ok(reviewedReport.moderatedAt.getTime() >= requestStartedAt);
+  assert.ok(reviewedReport.moderatedAt.getTime() <= requestFinishedAt);
+  assert.equal(reviewedReport.resolvedAt?.getTime(), reviewedReport.moderatedAt.getTime());
   const [suspension] = await db.select().from(userSuspensions)
     .where(eq(userSuspensions.userId, author.userId))
     .limit(1);
   assert.ok(suspension);
   assert.equal(suspension.isPermanent, false);
   assert.equal(suspension.expiresAt?.getTime(), expiresAt);
+
+  const repeatedAction = await requestJson(
+    `/api/admin/reports/${encodeURIComponent(reportResponse.body.id)}/remove-and-suspend`,
+    "POST",
+    {},
+    { "x-test-user": "test-moderator" },
+  );
+  assert.equal(repeatedAction.statusCode, 409);
+  assert.equal((await db.select().from(userSuspensions)
+    .where(eq(userSuspensions.userId, author.userId))).length, 1);
 });
 
 test("moderation rejects a report linked to a room message by another profile", async () => {
@@ -470,6 +506,13 @@ test("moderation rejects a report linked to a room message by another profile", 
     { "x-test-user": "test-moderator" },
   );
   assert.equal(moderation.statusCode, 409);
+  const suspension = await requestJson(
+    `/api/admin/reports/${encodeURIComponent(report.id)}/suspend-user`,
+    "POST",
+    {},
+    { "x-test-user": "test-moderator" },
+  );
+  assert.equal(suspension.statusCode, 409);
   const [remainingMessage] = await db.select().from(roomMessages)
     .where(eq(roomMessages.id, message.id))
     .limit(1);
@@ -481,6 +524,68 @@ test("moderation rejects a report linked to a room message by another profile", 
   const suspensions = await db.select().from(userSuspensions)
     .where(inArray(userSuspensions.userId, [actualAuthor.userId, wrongTarget.userId]));
   assert.equal(suspensions.length, 0);
+});
+
+test("only admins can suspend an author from a pending profile report, once", async () => {
+  const reporter = await createProfile("suspension-reporter");
+  const author = await createProfile("suspension-author");
+  const reportResponse = await requestJson("/api/reports", "POST", {
+    reportedId: author.id,
+    reason: "Segnalazione del profilo",
+  }, { "x-test-user": reporter.userId });
+  assert.equal(reportResponse.statusCode, 200);
+  createdReportIds.push(reportResponse.body.id);
+
+  const regularUserAction = await requestJson(
+    `/api/admin/reports/${encodeURIComponent(reportResponse.body.id)}/suspend-user`,
+    "POST",
+    {},
+    { "x-test-user": reporter.userId },
+  );
+  assert.equal(regularUserAction.statusCode, 403);
+  assert.equal((await db.select().from(reports)
+    .where(eq(reports.id, reportResponse.body.id)).limit(1))[0].status, "pending");
+  assert.equal((await db.select().from(userSuspensions)
+    .where(eq(userSuspensions.userId, author.userId))).length, 0);
+
+  const missingReport = await requestJson(
+    "/api/admin/reports/missing-suspension-report-id/suspend-user",
+    "POST",
+    {},
+    { "x-test-user": "test-moderator" },
+  );
+  assert.equal(missingReport.statusCode, 404);
+
+  const startedAt = Date.now();
+  const action = await requestJson(
+    `/api/admin/reports/${encodeURIComponent(reportResponse.body.id)}/suspend-user`,
+    "POST",
+    {},
+    { "x-test-user": "test-moderator" },
+  );
+  const finishedAt = Date.now();
+  assert.equal(action.statusCode, 200);
+  assert.equal(action.body.authorSuspended, true);
+
+  const [reviewedReport] = await db.select().from(reports)
+    .where(eq(reports.id, reportResponse.body.id)).limit(1);
+  assert.equal(reviewedReport.status, "resolved");
+  assert.equal(reviewedReport.moderationAction, "author_suspended");
+  assert.equal(reviewedReport.moderatedBy, "test-moderator");
+  assert.ok(reviewedReport.moderatedAt instanceof Date);
+  assert.ok(reviewedReport.moderatedAt.getTime() >= startedAt);
+  assert.ok(reviewedReport.moderatedAt.getTime() <= finishedAt);
+  assert.equal(reviewedReport.resolvedAt?.getTime(), reviewedReport.moderatedAt.getTime());
+
+  const repeatedAction = await requestJson(
+    `/api/admin/reports/${encodeURIComponent(reportResponse.body.id)}/suspend-user`,
+    "POST",
+    {},
+    { "x-test-user": "test-moderator" },
+  );
+  assert.equal(repeatedAction.statusCode, 409);
+  assert.equal((await db.select().from(userSuspensions)
+    .where(eq(userSuspensions.userId, author.userId))).length, 1);
 });
 
 test("moderation still resolves a report whose exact room message was deleted earlier", async () => {
