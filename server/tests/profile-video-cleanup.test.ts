@@ -71,17 +71,20 @@ test(
   async () => {
     const runId = randomUUID();
     const inactiveProfileId = randomUUID();
+    const cutoffProfileId = randomUUID();
     const activeProfileId = randomUUID();
     const noActivityProfileId = randomUUID();
     const inactiveVideoId = randomUUID();
+    const cutoffVideoId = randomUUID();
     const activeVideoId = randomUUID();
     const noActivityVideoId = randomUUID();
     const inactiveVideoUrl = `test://profile-video-cleanup/${runId}/inactive.mp4`;
+    const cutoffVideoUrl = `test://profile-video-cleanup/${runId}/cutoff.mp4`;
     const activeVideoUrl = `test://profile-video-cleanup/${runId}/active.mp4`;
     const noActivityVideoUrl = `test://profile-video-cleanup/${runId}/no-activity.mp4`;
 
-    const cutoff = new Date(Date.now() - 10 * MINUTE_MS);
-    const inactiveLastActiveAt = new Date(cutoff.getTime() - MINUTE_MS);
+    const cutoff = getProfileVideoCleanupCutoff();
+    const inactiveLastActiveAt = new Date(cutoff.getTime() - 1);
     const activeLastActiveAt = new Date(cutoff.getTime() + MINUTE_MS);
 
     try {
@@ -97,6 +100,18 @@ test(
           alienType: "test",
           isBot: false,
           lastActiveAt: inactiveLastActiveAt,
+        },
+        {
+          id: cutoffProfileId,
+          name: `__video_cleanup_${runId}_cutoff`,
+          age: 25,
+          bio: "",
+          imageUrl: "/images/test.png",
+          location: "",
+          interests: [],
+          alienType: "test",
+          isBot: false,
+          lastActiveAt: cutoff,
         },
         {
           id: activeProfileId,
@@ -133,6 +148,11 @@ test(
             videoUrl: inactiveVideoUrl,
           },
           {
+            id: cutoffVideoId,
+            profileId: cutoffProfileId,
+            videoUrl: cutoffVideoUrl,
+          },
+          {
             id: activeVideoId,
             profileId: activeProfileId,
             videoUrl: activeVideoUrl,
@@ -167,18 +187,20 @@ test(
         .from(profileVideos)
         .where(inArray(profileVideos.id, [
           inactiveVideoId,
+          cutoffVideoId,
           activeVideoId,
           noActivityVideoId,
         ]));
       assert.deepEqual(
         remainingVideos.map((video) => video.id).sort(),
-        [activeVideoId, noActivityVideoId].sort(),
+        [cutoffVideoId, activeVideoId, noActivityVideoId].sort(),
       );
     } finally {
       await db
         .delete(profileVideos)
         .where(inArray(profileVideos.id, [
           inactiveVideoId,
+          cutoffVideoId,
           activeVideoId,
           noActivityVideoId,
         ]));
@@ -186,6 +208,7 @@ test(
         .delete(profiles)
         .where(inArray(profiles.id, [
           inactiveProfileId,
+          cutoffProfileId,
           activeProfileId,
           noActivityProfileId,
         ]));
