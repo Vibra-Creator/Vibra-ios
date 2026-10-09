@@ -72,10 +72,13 @@ test(
     const runId = randomUUID();
     const inactiveProfileId = randomUUID();
     const activeProfileId = randomUUID();
+    const noActivityProfileId = randomUUID();
     const inactiveVideoId = randomUUID();
     const activeVideoId = randomUUID();
+    const noActivityVideoId = randomUUID();
     const inactiveVideoUrl = `test://profile-video-cleanup/${runId}/inactive.mp4`;
     const activeVideoUrl = `test://profile-video-cleanup/${runId}/active.mp4`;
+    const noActivityVideoUrl = `test://profile-video-cleanup/${runId}/no-activity.mp4`;
 
     const cutoff = new Date(Date.now() - 10 * MINUTE_MS);
     const inactiveLastActiveAt = new Date(cutoff.getTime() - MINUTE_MS);
@@ -107,9 +110,21 @@ test(
           isBot: false,
           lastActiveAt: activeLastActiveAt,
         },
+        {
+          id: noActivityProfileId,
+          name: `__video_cleanup_${runId}_no_activity`,
+          age: 25,
+          bio: "",
+          imageUrl: "/images/test.png",
+          location: "",
+          interests: [],
+          alienType: "test",
+          isBot: false,
+          lastActiveAt: null,
+        },
       ]);
 
-      const [inactiveVideo, activeVideo] = await db
+      const [inactiveVideo, activeVideo, noActivityVideo] = await db
         .insert(profileVideos)
         .values([
           {
@@ -122,10 +137,16 @@ test(
             profileId: activeProfileId,
             videoUrl: activeVideoUrl,
           },
+          {
+            id: noActivityVideoId,
+            profileId: noActivityProfileId,
+            videoUrl: noActivityVideoUrl,
+          },
         ])
         .returning();
       assert.ok(inactiveVideo);
       assert.ok(activeVideo);
+      assert.ok(noActivityVideo);
 
       const candidates = await storage.getVideosForInactiveProfiles(cutoff);
       assert.deepEqual(candidates, [inactiveVideo]);
@@ -140,18 +161,34 @@ test(
       );
 
       assert.deepEqual(deletedObjectUrls, [inactiveVideoUrl]);
+      assert.equal(deletedObjectUrls.includes(noActivityVideoUrl), false);
       const remainingVideos = await db
         .select()
         .from(profileVideos)
-        .where(inArray(profileVideos.id, [inactiveVideoId, activeVideoId]));
-      assert.deepEqual(remainingVideos, [activeVideo]);
+        .where(inArray(profileVideos.id, [
+          inactiveVideoId,
+          activeVideoId,
+          noActivityVideoId,
+        ]));
+      assert.deepEqual(
+        remainingVideos.map((video) => video.id).sort(),
+        [activeVideoId, noActivityVideoId].sort(),
+      );
     } finally {
       await db
         .delete(profileVideos)
-        .where(inArray(profileVideos.id, [inactiveVideoId, activeVideoId]));
+        .where(inArray(profileVideos.id, [
+          inactiveVideoId,
+          activeVideoId,
+          noActivityVideoId,
+        ]));
       await db
         .delete(profiles)
-        .where(inArray(profiles.id, [inactiveProfileId, activeProfileId]));
+        .where(inArray(profiles.id, [
+          inactiveProfileId,
+          activeProfileId,
+          noActivityProfileId,
+        ]));
     }
   },
 );

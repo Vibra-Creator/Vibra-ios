@@ -42,7 +42,7 @@ import {
   type ColdMessage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, inArray, lt, ne, gt, lte, asc } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, lt, ne, gt, lte, asc, isNotNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { USER_REPORT_NOTIFICATION_CLAIM_LEASE_MS } from "./user-report-notifications";
 
@@ -1465,7 +1465,10 @@ export class DatabaseStorage implements IStorage {
       .select({ video: profileVideos })
       .from(profileVideos)
       .innerJoin(profiles, eq(profiles.id, profileVideos.profileId))
-      .where(lt(profiles.lastActiveAt, cutoffDate));
+      .where(and(
+        isNotNull(profiles.lastActiveAt),
+        lt(profiles.lastActiveAt, cutoffDate),
+      ));
     return rows.map(({ video }) => video);
   }
 
