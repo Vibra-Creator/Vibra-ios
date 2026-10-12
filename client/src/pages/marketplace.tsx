@@ -43,6 +43,33 @@ function ListingPhoto({
   const [failed, setFailed] = useState(false);
   const replaceInputRef = useRef<HTMLInputElement>(null);
 
+  const replacementInput = isOwner && (
+    <input
+      ref={replaceInputRef}
+      type="file"
+      accept="image/jpeg,image/png,image/webp,image/gif"
+      className="hidden"
+      data-testid={`marketplace-replace-photo-${index}`}
+      onChange={(event) => {
+        const file = event.currentTarget.files?.[0];
+        event.currentTarget.value = "";
+        if (file) onReplace(file);
+      }}
+    />
+  );
+  const replaceButton = isOwner && (
+    <button
+      type="button"
+      aria-label={`${replaceLabel} ${index}`}
+      title={`${replaceLabel} ${index}`}
+      disabled={isUpdating}
+      onClick={() => replaceInputRef.current?.click()}
+      className="rounded bg-white/10 p-1 text-white hover:bg-white/20 disabled:opacity-50"
+    >
+      {isUpdating ? <Loader2 aria-hidden="true" className="w-3 h-3 animate-spin" /> : <ImagePlus aria-hidden="true" className="w-3 h-3" />}
+    </button>
+  );
+
   return failed ? (
     <div className="w-24 h-24 rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 bg-white/10 border border-white/15 text-white/70 text-center px-1 py-1">
       <div role="img" aria-label={`${title}, ${unavailable.toLowerCase()} ${index}`} className="min-h-0 flex-1 flex flex-col items-center justify-center gap-1">
@@ -51,28 +78,8 @@ function ListingPhoto({
       </div>
       {isOwner && (
         <div className="flex items-center gap-2">
-          <input
-            ref={replaceInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="hidden"
-            data-testid={`marketplace-replace-photo-${index}`}
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (file) onReplace(file);
-            }}
-          />
-          <button
-            type="button"
-            aria-label={`${replaceLabel} ${index}`}
-            title={`${replaceLabel} ${index}`}
-            disabled={isUpdating}
-            onClick={() => replaceInputRef.current?.click()}
-            className="rounded bg-white/10 p-1 text-white hover:bg-white/20 disabled:opacity-50"
-          >
-            {isUpdating ? <Loader2 aria-hidden="true" className="w-3 h-3 animate-spin" /> : <ImagePlus aria-hidden="true" className="w-3 h-3" />}
-          </button>
+          {replacementInput}
+          {replaceButton}
           <button
             type="button"
             aria-label={`${removeLabel} ${index}`}
@@ -87,11 +94,21 @@ function ListingPhoto({
       )}
     </div>
   ) : (
-    <img src={src} alt={`${title} ${index}`} onError={() => setFailed(true)} className="w-24 h-24 rounded-xl object-cover shrink-0" />
+    <div className="relative w-24 h-24 shrink-0 group">
+      <img src={src} alt={`${title} ${index}`} onError={() => setFailed(true)} className="w-full h-full rounded-xl object-cover" />
+      {isOwner && (
+        <>
+          {replacementInput}
+          <div className="absolute bottom-1 right-1 rounded bg-black/60">
+            {replaceButton}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
-type MissingPhotoUpdate =
+type ListingPhotoUpdate =
   | { postId: string; imageUrl: string; action: "remove" }
   | { postId: string; imageUrl: string; action: "replace"; file: File };
 
@@ -225,8 +242,8 @@ export default function MarketplacePage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/hub-posts"] }),
   });
 
-  const updateMissingPhoto = useMutation({
-    mutationFn: async (update: MissingPhotoUpdate) => {
+  const updateListingPhoto = useMutation({
+    mutationFn: async (update: ListingPhotoUpdate) => {
       let replacementImageUrl: string | undefined;
       if (update.action === "replace") {
         const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -340,9 +357,9 @@ export default function MarketplacePage() {
                            replaceLabel={t("market.replacePhoto")}
                            removeLabel={t("market.removePhoto")}
                            isOwner={Boolean(myProfile && post.profileId === myProfile.id)}
-                           isUpdating={updateMissingPhoto.isPending && updateMissingPhoto.variables?.postId === post.id && updateMissingPhoto.variables.imageUrl === image}
-                           onReplace={(file) => updateMissingPhoto.mutate({ postId: post.id, imageUrl: image, action: "replace", file })}
-                           onRemove={() => updateMissingPhoto.mutate({ postId: post.id, imageUrl: image, action: "remove" })}
+                           isUpdating={updateListingPhoto.isPending && updateListingPhoto.variables?.postId === post.id && updateListingPhoto.variables.imageUrl === image}
+                           onReplace={(file) => updateListingPhoto.mutate({ postId: post.id, imageUrl: image, action: "replace", file })}
+                           onRemove={() => updateListingPhoto.mutate({ postId: post.id, imageUrl: image, action: "remove" })}
                          />
                      ))}
                    </div>

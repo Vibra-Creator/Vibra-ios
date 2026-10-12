@@ -247,7 +247,7 @@ test.describe("missing Marketplace photo", () => {
     const seller = await registerUser(request, "photo-repair-owner");
     const sellerProfileId = await loginAs(request, seller);
     const images: string[] = [];
-    for (const file of uploadFiles(3)) {
+    for (const file of uploadFiles(4)) {
       const upload = await request.post("/api/hub-posts/upload-image", { multipart: { images: file } });
       expect(upload.status(), await upload.text()).toBe(200);
       images.push(...((await upload.json()) as { urls: string[] }).urls);
@@ -277,6 +277,21 @@ test.describe("missing Marketplace photo", () => {
         data: { action: "remove", imageUrl: images[0] },
       });
       expect(forbiddenEdit.status()).toBe(403);
+
+      const forbiddenReplacement = await outsiderRequest.patch(`/api/hub-posts/${original.id}/photos`, {
+        data: { action: "replace", imageUrl: images[2], replacementImageUrl: images[1] },
+      });
+      expect(forbiddenReplacement.status()).toBe(403);
+
+      const outsiderPage = await outsiderContext.newPage();
+      await injectSessionCookies(outsiderPage, outsiderRequest);
+      await patchEmailVerified(outsiderPage);
+      await outsiderPage.goto("/marketplace", { waitUntil: "load" });
+      const outsiderCard = outsiderPage.locator("div.rounded-2xl.overflow-hidden").filter({
+        has: outsiderPage.getByText(title, { exact: true }),
+      });
+      await expect(outsiderCard.locator('img[alt^="Photo repair listing"]')).toHaveCount(4);
+      await expect(outsiderCard.getByRole("button", { name: /Sostituisci foto|Rimuovi foto/ })).toHaveCount(0);
     } finally {
       await outsiderContext.close();
     }
@@ -292,8 +307,21 @@ test.describe("missing Marketplace photo", () => {
     await expect(card.getByRole("button", { name: "Rimuovi foto 2" })).toBeVisible();
 
     await card.getByRole("button", { name: "Sostituisci foto 1" }).click();
+    const firstReplacement = page.waitForResponse((response) =>
+      response.url().endsWith(`/api/hub-posts/${original.id}/photos`) &&
+      response.request().method() === "PATCH",
+    );
     await page.getByTestId("marketplace-replace-photo-1").setInputFiles(uploadFiles(1));
-    await expect(page.getByText("Foto sostituita", { exact: true })).toBeVisible();
+    expect((await firstReplacement).status()).toBe(200);
+
+    await expect(card.getByRole("button", { name: "Sostituisci foto 3" })).toBeVisible();
+    await card.getByRole("button", { name: "Sostituisci foto 3" }).click();
+    const secondReplacement = page.waitForResponse((response) =>
+      response.url().endsWith(`/api/hub-posts/${original.id}/photos`) &&
+      response.request().method() === "PATCH",
+    );
+    await page.getByTestId("marketplace-replace-photo-3").setInputFiles(uploadFiles(1));
+    expect((await secondReplacement).status()).toBe(200);
 
     await card.getByRole("button", { name: "Rimuovi foto 2" }).click();
     await expect(page.getByText("Foto rimossa", { exact: true })).toBeVisible();
@@ -317,11 +345,12 @@ test.describe("missing Marketplace photo", () => {
       city: original.city,
       profileId: sellerProfileId,
     });
-    expect(updated?.imageUrls).toHaveLength(2);
+    expect(updated?.imageUrls).toHaveLength(3);
     expect(updated?.imageUrls[0]).not.toBe(images[0]);
-    expect(updated?.imageUrls[1]).toBe(images[2]);
+    expect(updated?.imageUrls[1]).not.toBe(images[2]);
+    expect(updated?.imageUrls[2]).toBe(images[3]);
     await expect(card.getByText(title, { exact: true })).toBeVisible();
-    await expect(card.locator(`img[alt^="${title}"]`)).toHaveCount(2);
+    await expect(card.locator(`img[alt^="${title}"]`)).toHaveCount(3);
   });
 });
 
