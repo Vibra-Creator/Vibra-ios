@@ -194,6 +194,73 @@ test("publication asks sellers to reload a Marketplace photo that disappeared af
   expect(listings.some((listing) => listing.title === title)).toBe(false);
 });
 
+test("publication stays retryable when photo verification is temporarily unavailable", async ({ page, request }) => {
+  const user = await registerUser(request, "storage-outage");
+  await loginAs(request, user);
+  await injectSessionCookies(page, request);
+  await patchEmailVerified(page);
+  await page.goto("/marketplace", { waitUntil: "load" });
+  await page.getByTestId("marketplace-fab").click();
+
+  const title = `Storage outage listing ${RUN_ID}`;
+  await page.getByPlaceholder(/Titolo/).fill(title);
+  await page.getByPlaceholder(/Descrizione/).fill("Publication must remain retryable during a photo storage outage.");
+  const uploadResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/hub-posts/upload-image") && response.request().method() === "POST",
+  );
+  await page.locator('input[type="file"]').setInputFiles(uploadFiles(3));
+  expect((await uploadResponse).status()).toBe(200);
+  await expect(page.getByText("Foto caricate", { exact: true })).toBeVisible();
+
+  // Simulate the publish endpoint's temporary response when storage cannot verify a photo.
+  await page.route("**/api/hub-posts", async (route) => {
+    if (route.request().method() !== "POST") {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Non è stato possibile verificare le foto. Riprova tra poco." }),
+    });
+  });
+  const failedPublishResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/hub-posts") && response.request().method() === "POST",
+  );
+  const publishButton = page.getByRole("button", { name: "Pubblica", exact: true });
+  await publishButton.click();
+  const failedPublish = await failedPublishResponse;
+  expect(failedPublish.status()).toBe(503);
+  expect((await failedPublish.json()).error).toBe("Non è stato possibile verificare le foto. Riprova tra poco.");
+  await expect(page.getByText("Non è stato possibile verificare le foto. Riprova tra poco.")).toBeVisible();
+  await expect(publishButton).toBeVisible();
+  await expect(publishButton).toBeEnabled();
+
+  const listingsAfterFailure = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{
+    title: string;
+  }>;
+  expect(listingsAfterFailure.some((listing) => listing.title === title)).toBe(false);
+
+  await page.unroute("**/api/hub-posts");
+  const retryResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/hub-posts") && response.request().method() === "POST",
+  );
+  await publishButton.click();
+  expect((await retryResponse).status()).toBe(200);
+  await expect(page.getByText("Annuncio pubblicato", { exact: true })).toBeVisible();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+
+  const listingsAfterRetry = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{
+    title: string;
+    imageUrls: string[];
+  }>;
+  const listing = listingsAfterRetry.find((post) => post.title === title);
+  expect(listing?.imageUrls).toHaveLength(3);
+});
+
 test.describe("missing Marketplace photo", () => {
   // The app's service worker can bypass Playwright's route interception.
   test.use({ serviceWorkers: "block" });
