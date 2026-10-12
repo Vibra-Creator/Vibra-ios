@@ -114,7 +114,19 @@ test("authenticated listings and public photos survive a reload", async ({ page,
       response.url().includes("/api/hub-posts/upload-image") && response.request().method() === "POST",
   );
   await page.locator('input[type="file"]').setInputFiles(uploadFiles(3));
-  expect((await uploadResponse).status()).toBe(200);
+  const uploaded = await uploadResponse;
+  expect(uploaded.status()).toBe(200);
+  const uploadedUrls = ((await uploaded.json()) as { urls: string[] }).urls;
+  expect(uploadedUrls).toHaveLength(3);
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5000";
+  for (const imageUrl of uploadedUrls) {
+    expect((await fetch(new URL(imageUrl, baseURL))).status).toBe(403);
+    expect((await request.get(imageUrl)).status()).toBe(200);
+  }
+  await expect(page.locator('img[alt^="market.form.photo"]')).toHaveCount(3);
+  expect(await page.locator('img[alt^="market.form.photo"]').evaluateAll((images) =>
+    images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
+  )).toBe(true);
   await expect(page.getByText("Foto caricate", { exact: true })).toBeVisible();
 
   const publishResponse = page.waitForResponse(
@@ -145,7 +157,6 @@ test("authenticated listings and public photos survive a reload", async ({ page,
   expect(listing?.imageUrls.every((url) => url.startsWith("/objects/"))).toBe(true);
 
   // The object endpoint must serve each uploaded image without a session.
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5000";
   for (const imageUrl of listing?.imageUrls || []) {
     const publicResponse = await fetch(new URL(imageUrl, baseURL));
     expect(publicResponse.status).toBe(200);
@@ -568,7 +579,7 @@ test("deleting a listing removes only its unreferenced stored photos", async ({ 
     });
     expect(rejected.status()).toBe(400);
     expect((await rejected.json()).error).toContain("Ricarica le foto mancanti");
-    expect((await request.get(foreignPhoto)).status()).toBe(200);
+    expect((await request.get(foreignPhoto)).status()).toBe(foreignPhoto === otherMarketplacePhoto ? 403 : 200);
   }
 
   const first = await createListing(`First deletion ${RUN_ID}`, images.slice(0, 3));
@@ -579,14 +590,14 @@ test("deleting a listing removes only its unreferenced stored photos", async ({ 
   for (const image of images.slice(0, 2)) expect((await request.get(image)).status()).toBe(404);
   for (const image of images.slice(2)) expect((await request.get(image)).status()).toBe(200);
   expect((await request.get(otherUserPhoto)).status()).toBe(200);
-  expect((await request.get(otherMarketplacePhoto)).status()).toBe(200);
+  expect((await request.get(otherMarketplacePhoto)).status()).toBe(403);
   const remaining = (await (await request.get("/api/hub-posts?category=marketplace")).json()) as Array<{ id: string }>;
   expect(remaining.some((post) => post.id === second)).toBe(true);
 
   expect((await request.delete(`/api/hub-posts/${second}`)).status()).toBe(200);
   for (const image of images.slice(2)) expect((await request.get(image)).status()).toBe(404);
   expect((await request.get(otherUserPhoto)).status()).toBe(200);
-  expect((await request.get(otherMarketplacePhoto)).status()).toBe(200);
+  expect((await request.get(otherMarketplacePhoto)).status()).toBe(403);
 });
 
 test("upload and publication errors are surfaced in the Marketplace UI", async ({ page, request }) => {

@@ -43,6 +43,7 @@ export function registerObjectStorageRoutes(app: Express): void {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
 
       const canAccess = await objectStorageService.canAccessObjectEntity({
+        userId: (req as any).user?.claims?.sub || (req as any).session?.userId,
         objectFile,
       });
 

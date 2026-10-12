@@ -6658,7 +6658,7 @@ REGOLE:
 
         await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
           owner: userId,
-          visibility: "public",
+          visibility: "private",
         });
         urls.push(objectPath);
       }
@@ -6724,6 +6724,20 @@ REGOLE:
       });
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
       const [post] = await db.insert(hubPosts).values(parsed.data).returning();
+      if (post.category === "marketplace") {
+        try {
+          for (const imageUrl of imageUrls) {
+            await objectStorageService.setMarketplaceImageVisibility(imageUrl, userId, "public");
+          }
+        } catch (error) {
+          await db.delete(hubPosts).where(eq(hubPosts.id, post.id));
+          await Promise.all(imageUrls.map((imageUrl) =>
+            objectStorageService.setMarketplaceImageVisibility(imageUrl, userId, "private").catch(() => {}),
+          ));
+          console.error("Error publishing Marketplace photos:", error);
+          return res.status(503).json({ error: "Non è stato possibile pubblicare le foto. Riprova tra poco." });
+        }
+      }
       res.json(post);
     } catch { res.status(500).json({ error: "Errore creazione post" }); }
   });
@@ -6825,6 +6839,23 @@ REGOLE:
         .where(and(...updateConditions))
         .returning();
       if (!updated) return res.status(409).json({ error: "Le foto dell'annuncio sono cambiate. Ricarica la pagina." });
+      if (action === "replace") {
+        try {
+          await objectStorageService.setMarketplaceImageVisibility(imageUrls[imageIndex], userId, "public");
+        } catch (error) {
+          await db.update(hubPosts)
+            .set({ imageUrls: post.imageUrls, imageUrl: post.imageUrl })
+            .where(and(
+              eq(hubPosts.id, post.id),
+              eq(hubPosts.profileId, profile.id),
+              sql`${hubPosts.imageUrls} = ARRAY[${sql.join(imageUrls.map((url) => sql`${url}`), sql`, `)}]::text[]`,
+              imageUrls[0] ? eq(hubPosts.imageUrl, imageUrls[0]) : sql`${hubPosts.imageUrl} IS NULL`,
+            ));
+          await objectStorageService.setMarketplaceImageVisibility(imageUrls[imageIndex], userId, "private").catch(() => {});
+          console.error("Error publishing replacement Marketplace photo:", error);
+          return res.status(503).json({ error: "Non è stato possibile pubblicare la nuova foto. Riprova tra poco." });
+        }
+      }
       res.json(updated);
     } catch (error) {
       console.error("Error updating Marketplace photo:", error);

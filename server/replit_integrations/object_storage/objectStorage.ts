@@ -259,6 +259,24 @@ export class ObjectStorageService {
     await file.delete({ ignoreNotFound: true });
   }
 
+  async setMarketplaceImageVisibility(
+    objectPath: string,
+    ownerId: string,
+    visibility: "public" | "private",
+  ): Promise<void> {
+    if (!/^\/objects\/marketplace\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(objectPath)) {
+      throw new ObjectNotFoundError();
+    }
+
+    const objectFile = await this.getObjectEntityFile(objectPath);
+    const policy = await getObjectAclPolicy(objectFile);
+    if (!policy || policy.owner !== ownerId) {
+      throw new Error("Marketplace image is not owned by the requested user");
+    }
+
+    await setObjectAclPolicy(objectFile, { ...policy, visibility });
+  }
+
   async deleteObject(objectPath: string): Promise<boolean> {
     try {
       const { bucketName, objectName } = parseObjectPath(objectPath);
