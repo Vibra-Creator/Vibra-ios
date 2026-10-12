@@ -178,3 +178,17 @@ mtime_ms = 1790936984628
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/ae855e6d-1e6f-46e0-a2df-5a7cbf5efacd/d4809fdb-eb5c-46c4-b36e-8a1152e8a49a"
 storage_version_token = "1790943776765213"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "42clXoU68THjvDPhiMMXn"
+uri = "file://generated-artifacts/Vibra-Android-2.1.0-code9-source.zip"
+type = "unspecified"
+title = "Progetto Android aggiornato di Vibra"
+description = "Sorgenti TWA per com.vibraalienmatch.twa: versione 2.1.0, versionCode 9, target API 36 e min API 23. Nessuna chiave privata o bundle firmato incluso."
+logical_id = "b1cb3125-e928-4456-a095-4c12068ef061"
+content_hash = "sha256:5ad3e60521d140a3617f17a2fc916c0f9b86b2561c855e4db156619598dd29b2"
+size = 1797095
+mtime_ms = 1791808378181
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b1cb3125-e928-4456-a095-4c12068ef061/ce0eca0c-07fd-4e6b-bde9-11511b51bc7c"
+storage_version_token = "1791808385596032"
+content_type = "application/octet-stream"
