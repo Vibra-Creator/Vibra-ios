@@ -77,6 +77,18 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email, password e nome sono obbligatori" });
       }
 
+      const parsedAge = typeof age === "number" ? age : Number(age);
+      if (
+        age === undefined
+        || age === null
+        || age === ""
+        || !Number.isInteger(parsedAge)
+        || parsedAge < 18
+        || parsedAge > 120
+      ) {
+        return res.status(400).json({ message: "L'età deve essere un numero intero tra 18 e 120 anni" });
+      }
+
       if (password.length < 8) {
         return res.status(400).json({ message: "La password deve avere almeno 8 caratteri" });
       }
@@ -87,10 +99,6 @@ export async function setupAuth(app: Express) {
       }
       if (existingUser && await hasActiveUserSuspension(existingUser.id)) {
         return res.status(403).json({ message: "Questo account è sospeso." });
-      }
-
-      if (age !== undefined && (isNaN(Number(age)) || Number(age) < 18 || Number(age) > 120)) {
-        return res.status(400).json({ message: "L'età deve essere tra 18 e 120 anni" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -139,7 +147,7 @@ export async function setupAuth(app: Express) {
             id: sql`gen_random_uuid()`,
             userId: String(user.id),
             name: firstName,
-            age: age ? Number(age) : 25,
+            age: parsedAge,
             bio: "",
             imageUrl: "/images/avatar-1.png",
             location: "",
