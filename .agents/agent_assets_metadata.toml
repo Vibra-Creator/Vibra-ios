@@ -318,3 +318,45 @@ mtime_ms = 1792406596916
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/cedc10ad-7903-4cfa-ab4e-a023fb3470ac/ff78303f-4382-405c-a24e-14c18e8ceee6"
 storage_version_token = "1792406611415865"
 content_type = "image/png"
+
+[[outputs]]
+id = "UeK0v7VM2lljQipgJNzdO"
+uri = "file://deliverables/Vibra_Screenshot_09_1206x2622.png"
+type = "image"
+title = "Screenshot Vibra 9 — Community Private"
+description = "PNG 1206×2622, dimensione supportata da App Store Connect. Contenuto mantenuto, senza cornice aggiunta."
+logical_id = "67ec53de-1625-44e7-a4f0-d78d36dcc6bd"
+content_hash = "sha256:5563ed4b7cb247d3972e83f7cca89ea9eb123eacd8be4211ccc4b1d72f9cea12"
+size = 2065549
+mtime_ms = 1792407042072
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/67ec53de-1625-44e7-a4f0-d78d36dcc6bd/24a8349c-3f93-45e8-a85c-23ace096eb13"
+storage_version_token = "1792407057992123"
+content_type = "image/png"
+
+[[outputs]]
+id = "faYXQGKBLB8MyIYTIDwGY"
+uri = "file://deliverables/Vibra_Screenshot_10_1206x2622.png"
+type = "image"
+title = "Screenshot Vibra 10 — Social"
+description = "PNG 1206×2622, dimensione supportata da App Store Connect. Contenuto mantenuto, senza cornice aggiunta."
+logical_id = "0e07c7f5-54c4-488b-9724-bea071abd247"
+content_hash = "sha256:d8e4ffa62bde1aa51bede0bd279de7a006dc14e007597aa6dab613c623446a81"
+size = 539178
+mtime_ms = 1792407043012
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/0e07c7f5-54c4-488b-9724-bea071abd247/64dc939d-fd55-401c-8e80-e6baf2f925a2"
+storage_version_token = "1792407058720831"
+content_type = "image/png"
+
+[[outputs]]
+id = "7flLiBNdQGRNcaVtdbQ11"
+uri = "file://deliverables/Vibra_Screenshot_11_1206x2622.png"
+type = "image"
+title = "Screenshot Vibra 11 — Blog e Notizie"
+description = "PNG 1206×2622, dimensione supportata da App Store Connect. Contenuto mantenuto, senza cornice aggiunta."
+logical_id = "e3a2a674-2865-4621-b776-4717d0fce741"
+content_hash = "sha256:707a23bc5c44973138dba553f4404ef0c63a0607fb6b5a671b3f225044759e8b"
+size = 497923
+mtime_ms = 1792407043920
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/e3a2a674-2865-4621-b776-4717d0fce741/57ce09c7-eeaf-45ec-829a-4b025d8cda78"
+storage_version_token = "1792407059420560"
+content_type = "image/png"
