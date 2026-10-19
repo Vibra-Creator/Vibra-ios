@@ -360,3 +360,17 @@ mtime_ms = 1792407043920
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/e3a2a674-2865-4621-b776-4717d0fce741/57ce09c7-eeaf-45ec-829a-4b025d8cda78"
 storage_version_token = "1792407059420560"
 content_type = "image/png"
+
+[[outputs]]
+id = "1rJJzyaguBw8-TASy1g1B"
+uri = "file://deliverables/Vibra_Screenshot_12_1206x2622.png"
+type = "image"
+title = "Screenshot Vibra 12 — Sto Vibing Ora"
+description = "PNG 1206×2622, misura supportata da App Store Connect. Contenuto mantenuto, senza cornice aggiunta."
+logical_id = "5164c429-9440-467b-b84a-9f307c540542"
+content_hash = "sha256:1006c7c701281f6a19c1a5acde82c4f4053ff900eac98cc343b42fa7f652bb8f"
+size = 500720
+mtime_ms = 1792407332196
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/5164c429-9440-467b-b84a-9f307c540542/4d20b536-712b-48df-b3cc-2d795d044174"
+storage_version_token = "1792407343841085"
+content_type = "image/png"
