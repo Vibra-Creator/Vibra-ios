@@ -276,3 +276,45 @@ mtime_ms = 1792406347528
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/6d0a0d7b-29be-4d8a-bb75-9df1ee55126e/03920021-5a07-4c00-868c-6ac15883bf13"
 storage_version_token = "1792406371108079"
 content_type = "image/png"
+
+[[outputs]]
+id = "TlaBXYbg8AcvaEyth-__N"
+uri = "file://deliverables/Vibra_Screenshot_06_1206x2622.png"
+type = "image"
+title = "Screenshot Vibra 6 — Musica e locali"
+description = "PNG 1206×2622, misura supportata da App Store Connect. Contenuto mantenuto, senza cornice aggiunta."
+logical_id = "e8841520-0ed5-48e2-8761-83c18e46973c"
+content_hash = "sha256:cb634219ae9e1c3d645879412e778f1e1c23987295b32dfa1b56019697bf34ea"
+size = 958294
+mtime_ms = 1792406594896
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/e8841520-0ed5-48e2-8761-83c18e46973c/7c66a7cf-a651-4e51-aa5d-e71db8edfbbc"
+storage_version_token = "1792406609966077"
+content_type = "image/png"
+
+[[outputs]]
+id = "D-6dTkRj1XOVD_HsktxR5"
+uri = "file://deliverables/Vibra_Screenshot_07_1206x2622.png"
+type = "image"
+title = "Screenshot Vibra 7 — Lavoro"
+description = "PNG 1206×2622, misura supportata da App Store Connect. Contenuto mantenuto, senza cornice aggiunta."
+logical_id = "e84875a4-b2c0-4914-b470-2fd8bdd2e62b"
+content_hash = "sha256:65c18d609a7f8b4ba48c391effe200f68bcf9525b07bbece2da926dad7aedb02"
+size = 439887
+mtime_ms = 1792406595936
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/e84875a4-b2c0-4914-b470-2fd8bdd2e62b/96fdb535-acf4-4ec1-8159-cd928eeeeb61"
+storage_version_token = "1792406610739693"
+content_type = "image/png"
+
+[[outputs]]
+id = "NSUsPFsEqd4GvRDOhhXCQ"
+uri = "file://deliverables/Vibra_Screenshot_08_1206x2622.png"
+type = "image"
+title = "Screenshot Vibra 8 — Spotify e Vibe Match"
+description = "PNG 1206×2622, misura supportata da App Store Connect. Contenuto mantenuto, senza cornice aggiunta."
+logical_id = "cedc10ad-7903-4cfa-ab4e-a023fb3470ac"
+content_hash = "sha256:b8f83faf35c822fcc4d6d6bab208ba5450b93c8bae204d8d6ce959420f509ef0"
+size = 543570
+mtime_ms = 1792406596916
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/cedc10ad-7903-4cfa-ab4e-a023fb3470ac/ff78303f-4382-405c-a24e-14c18e8ceee6"
+storage_version_token = "1792406611415865"
+content_type = "image/png"
