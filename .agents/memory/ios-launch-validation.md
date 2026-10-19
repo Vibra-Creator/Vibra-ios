@@ -9,6 +9,12 @@ The workspace can validate the built web app, service-worker fallbacks, and mobi
 
 **How to apply:** Report workspace checks separately from device, archive, listing, and crash-log evidence. Only mark real-device validation complete after recording a successful launch on the requested iOS target and reviewing the corresponding Apple crash report; verify archive contents and listing text separately before submission.
 
+On iOS/iPadOS 27, a WKWebView geolocation request requires the native host's `WKUIDelegate` geolocation-permission callback. An `NSLocationWhenInUseUsageDescription` entry alone is not sufficient; returning `.prompt` lets WebKit request user consent. Restrict the callback to Vibra's trusted main-frame origin.
+
+**Why:** Apple's 2.1(a) review on iPadOS 27 reported that “Dove Sei” never prompted for location. The available wrapper already had the usage-description string, but its WKUIDelegate had no geolocation callback.
+
+**How to apply:** When changing web geolocation, check the native wrapper too. Keep the callback availability-guarded for iOS 27, preserve the existing usage string, and validate the final wrapper on a physical iOS device; the Linux workspace cannot compile or sign the archive.
+
 The user reports that an Apple Developer team key is already listed. A Key ID and Issuer ID alone do not authenticate App Store Connect API requests; never request or store a `.p8` private key in chat. If API automation is explicitly requested, first check for a Replit integration, then use the secure Secrets flow for any private credential.
 
 **Why:** the user supplied existing team-key context while discussing Apple review tasks.

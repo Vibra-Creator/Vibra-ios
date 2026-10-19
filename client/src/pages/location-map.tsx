@@ -66,6 +66,19 @@ export default function LocationMap() {
     },
   });
 
+  const getGeolocationErrorDescription = (error: GeolocationPositionError) => {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        return t("location.geoDenied");
+      case error.POSITION_UNAVAILABLE:
+        return t("location.geoUnavailable");
+      case error.TIMEOUT:
+        return t("location.geoTimeout");
+      default:
+        return t("location.allowAccess");
+    }
+  };
+
   const startSharing = () => {
     if (!navigator.geolocation) {
       toast({ title: t("location.geoNotAvailable"), description: t("location.geoNotSupported"), variant: "destructive" });
@@ -94,8 +107,12 @@ export default function LocationMap() {
             (position) => {
               shareMutation.mutate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
             },
-            () => {
-              toast({ title: t("location.positionError"), description: t("location.allowAccess"), variant: "destructive" });
+            (error) => {
+              toast({
+                title: t("location.positionError"),
+                description: getGeolocationErrorDescription(error),
+                variant: "destructive",
+              });
             },
             { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 },
           );
@@ -111,9 +128,13 @@ export default function LocationMap() {
           setRequestingPosition(false);
         }
       },
-      () => {
+      (error) => {
         setRequestingPosition(false);
-        toast({ title: t("location.positionError"), description: t("location.allowAccess"), variant: "destructive" });
+        toast({
+          title: t("location.positionError"),
+          description: getGeolocationErrorDescription(error),
+          variant: "destructive",
+        });
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
