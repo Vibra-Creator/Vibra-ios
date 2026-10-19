@@ -1,1 +1,5 @@
 /generated-artifacts/
+.git/
+.cache/
+attached_assets/*
+!attached_assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png
