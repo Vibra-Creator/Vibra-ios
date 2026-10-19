@@ -169,14 +169,14 @@ content_type = "video/mp4"
 id = "roV_QhhoJn37jGeLqinaE"
 uri = "file://deliverables/Vibra_AppStorePreview_4_886x1920_30fps.mp4"
 type = "video"
-title = "Anteprima App Store 4"
-description = "Video iPhone senza cornice, 15 secondi, H.264 portrait 886×1920 a 30 fps."
+title = "Anteprima App Store senza cornice — candidata 4"
+description = "Video H.264 di 15 secondi a 886×1920. I fotogrammi campionati mostrano la registrazione a schermo intero, senza cornice del dispositivo. Da sostituire nella dimensione corretta in App Store Connect."
 logical_id = "ae855e6d-1e6f-46e0-a2df-5a7cbf5efacd"
 content_hash = "sha256:dde190a04b1a730e5d6bb65b7cb91da566aa2be139552168290f1d8df219b15a"
 size = 2877952
 mtime_ms = 1790936984628
-storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/ae855e6d-1e6f-46e0-a2df-5a7cbf5efacd/d4809fdb-eb5c-46c4-b36e-8a1152e8a49a"
-storage_version_token = "1790943776765213"
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/ae855e6d-1e6f-46e0-a2df-5a7cbf5efacd/fde480af-5ce4-4e28-93b6-2240d360f599"
+storage_version_token = "1792401631182151"
 content_type = "video/mp4"
 
 [[outputs]]
