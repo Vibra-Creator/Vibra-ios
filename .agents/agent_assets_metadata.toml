@@ -192,3 +192,17 @@ mtime_ms = 1791808378181
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b1cb3125-e928-4456-a095-4c12068ef061/ce0eca0c-07fd-4e6b-bde9-11511b51bc7c"
 storage_version_token = "1791808385596032"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "S9XkKKIZPRdNqwDHHi7UE"
+uri = "file://deliverables/Vibra_AppStorePreview_4_NoFrame_AppleSpec.mp4"
+type = "video"
+title = "Anteprima App Store senza cornice — versione corretta per il caricamento"
+description = "Stesse immagini senza cornice; MP4 H.264 High Level 4.0, 886×1920 progressivo a 30 fps, 15 secondi, bitrate video circa 10 Mbps. Include una traccia AAC-LC stereo a 44,1 kHz quasi silenziosa, come richiesto dalle specifiche Apple."
+logical_id = "db43da8c-3891-4d27-9292-b8ff0af8a047"
+content_hash = "sha256:19a8379f6597712ac7875114a933324c863860529465768a08f106c3fe9c21d6"
+size = 19303746
+mtime_ms = 1792405451345
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/db43da8c-3891-4d27-9292-b8ff0af8a047/69fd4f12-e610-4979-ac4d-15da734e225c"
+storage_version_token = "1792405479800733"
+content_type = "video/mp4"
