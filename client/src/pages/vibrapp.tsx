@@ -319,6 +319,7 @@ export default function Vibrapp() {
       setColdMsgBlockConfirm(false);
       refetchColdMsgs();
       queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
     },
     onError: () => {
       alert("Errore nel blocco dell'utente. Riprova.");
@@ -348,6 +349,7 @@ export default function Vibrapp() {
       if (variables.alsoBlock) {
         refetchColdMsgs();
         queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       }
     },
     onError: () => {
