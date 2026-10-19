@@ -113,9 +113,13 @@ function getReportedContentHref(report: Report): string | null {
 
 function getModerationActionLabel(action: string | null | undefined): string {
   if (!action) return "";
+  if (action.endsWith("_and_permanently_suspended")) {
+    return `${getModerationActionLabel(action.slice(0, -"_and_permanently_suspended".length))} · Account sospeso definitivamente`;
+  }
   if (action.endsWith("_and_suspended")) {
     return `${getModerationActionLabel(action.slice(0, -"_and_suspended".length))} · Account sospeso 24 ore`;
   }
+  if (action === "author_permanently_suspended") return "Account sospeso definitivamente";
   if (action === "author_suspended") return "Account sospeso 24 ore";
   if (action === "dismissed") return "Segnalazione archiviata";
   if (action === "resolved") return "Segnalazione risolta";
@@ -548,7 +552,7 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/private-rooms"] });
       queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/cold-messages"] });
-      toast({ title: "Moderazione completata: contenuto rimosso o profilo nascosto, segnalazione chiusa" });
+      toast({ title: "Moderazione completata: contenuto rimosso o profilo nascosto, account sospeso definitivamente e segnalazione chiusa" });
     },
     onError: () => {
       toast({ title: "Impossibile completare la moderazione", variant: "destructive" });
@@ -561,7 +565,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/suspensions"] });
-      toast({ title: "Account sospeso per 24 ore e segnalazione risolta" });
+      toast({ title: "Account sospeso definitivamente e segnalazione risolta" });
     },
     onError: () => {
       toast({ title: "Impossibile sospendere l'account dalla segnalazione", variant: "destructive" });
@@ -1510,15 +1514,15 @@ export default function Admin() {
                                   onClick={() => {
                                     if (!window.confirm(
                                       report.reportedContentType === "profile"
-                                        ? "Nascondere il profilo segnalato e chiudere la segnalazione? Il profilo non sarà cancellato. L'autore verrà sospeso per 24 ore se è collegato a un account."
-                                        : "Rimuovere il contenuto segnalato se ancora presente e chiudere la segnalazione? L'autore verrà sospeso per 24 ore se è collegato a un account.",
+                                        ? "Nascondere il profilo segnalato e chiudere la segnalazione? Il profilo, la segnalazione e le prove saranno conservati. L'account collegato verrà sospeso definitivamente."
+                                        : "Rimuovere il contenuto segnalato se ancora presente e chiudere la segnalazione? La segnalazione e le prove saranno conservate. L'account dell'autore verrà sospeso definitivamente.",
                                     )) return;
                                     removeAndSuspendReportedUserMutation.mutate(report.id);
                                   }}
                                   data-testid={`button-remove-reported-content-${report.id}`}
                                 >
                                   <Trash2 className="w-4 h-4 mr-1" />
-                                  {report.reportedContentType === "profile" ? "Nascondi profilo + sospendi se possibile" : "Rimuovi contenuto + sospendi se possibile"}
+                                  {report.reportedContentType === "profile" ? "Nascondi profilo + sospensione definitiva" : "Rimuovi contenuto + sospensione definitiva"}
                                 </Button>
                               )}
                               {!((report.reportedContentType && report.reportedContentId) || report.coldMessageId) && profiles?.find((profile) => profile.id === report.reportedId)?.userId && (
@@ -1528,12 +1532,12 @@ export default function Admin() {
                                   className="text-destructive"
                                   disabled={suspendReportedUserMutation.isPending}
                                   onClick={() => {
-                                    if (!window.confirm("Sospendere questo account per 24 ore e risolvere la segnalazione?")) return;
+                                    if (!window.confirm("Sospendere definitivamente l'account collegato e risolvere la segnalazione? L'account e le prove saranno conservati.")) return;
                                     suspendReportedUserMutation.mutate(report.id);
                                   }}
                                   data-testid={`button-suspend-report-user-${report.id}`}
                                 >
-                                  <Ban className="w-4 h-4 mr-1" /> Sospendi 24h
+                                  <Ban className="w-4 h-4 mr-1" /> Sospendi definitivamente
                                 </Button>
                               )}
                               {!((report.reportedContentType && report.reportedContentId) || report.coldMessageId) && (

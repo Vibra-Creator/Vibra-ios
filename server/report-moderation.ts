@@ -1,5 +1,3 @@
-export const REPORT_SUSPENSION_DURATION_MS = 24 * 60 * 60 * 1000;
-
 export const REPORT_CONTENT_TYPES = [
   "profile",
   "chat_message",
@@ -50,10 +48,6 @@ export function createBlockedProfileReportData(
     reportedContentId: profile.id,
     reportedContentSnapshot: JSON.stringify(profileEvidence),
   };
-}
-
-export function getReportSuspensionExpiry(now: Date = new Date()): Date {
-  return new Date(now.getTime() + REPORT_SUSPENSION_DURATION_MS);
 }
 
 export function isReportContentType(value: unknown): value is ReportContentType {

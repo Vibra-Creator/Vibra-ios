@@ -14,7 +14,6 @@ import {
 import { db } from "./db";
 import { storage } from "./storage";
 import {
-  getReportSuspensionExpiry,
   isBlogPostAuthoredByReportedUser,
   isChatMessageAuthoredByReportedUser,
   isColdMessageAuthoredByReportedUser,
@@ -477,18 +476,16 @@ export function registerReportRemovalRoute(
               ? `${contentType}_removed`
               : contentHidden
                 ? "profile_hidden"
-                : "content_already_removed"}${reportedUserId ? "_and_suspended" : ""}`,
+                : "content_already_removed"}${reportedUserId ? "_and_permanently_suspended" : ""}`,
           })
           .where(eq(reports.id, report.id));
 
-        let expiresAt: Date | null = null;
         if (reportedUserId) {
-          expiresAt = getReportSuspensionExpiry(now);
           await tx.insert(userSuspensions).values({
             userId: reportedUserId,
             reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
-            expiresAt,
-            isPermanent: false,
+            expiresAt: null,
+            isPermanent: true,
           });
         }
 
@@ -498,7 +495,7 @@ export function registerReportRemovalRoute(
           contentRemoved,
           contentHidden,
           authorSuspended: Boolean(reportedUserId),
-          expiresAt,
+          expiresAt: null,
         };
       });
 
@@ -517,7 +514,7 @@ export function registerReportRemovalRoute(
       disconnectUserSockets(result.targetProfileId);
       console.warn(
         `[ugc-moderation] report=${req.params.id} contentRemoved=${result.contentRemoved} contentHidden=${result.contentHidden} ` +
-        `authorSuspended=${result.authorSuspended} suspensionHours=${result.authorSuspended ? 24 : 0}`,
+        `authorSuspended=${result.authorSuspended} permanent=${result.authorSuspended}`,
       );
       return res.json({
         success: true,
@@ -525,6 +522,7 @@ export function registerReportRemovalRoute(
         contentHidden: result.contentHidden,
         contentWasAlreadyRemoved: !result.contentRemoved && !result.contentHidden,
         authorSuspended: result.authorSuspended,
+        authorPermanentlySuspended: result.authorSuspended,
         suspensionExpiresAt: result.expiresAt,
       });
     } catch (error) {
@@ -573,7 +571,7 @@ export function registerReportSuspensionRoute(
           .set({
             status: "resolved",
             resolvedAt: now,
-            moderationAction: "author_suspended",
+            moderationAction: "author_permanently_suspended",
             moderatedBy: moderatorUserId,
             moderatedAt: now,
           })
@@ -581,14 +579,13 @@ export function registerReportSuspensionRoute(
           .returning({ id: reports.id });
         if (!claimedReport) return { ok: false as const, error: "not_pending" as const };
 
-        const expiresAt = getReportSuspensionExpiry(now);
         await tx.insert(userSuspensions).values({
           userId: reportedUserId,
           reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
-          expiresAt,
-          isPermanent: false,
+          expiresAt: null,
+          isPermanent: true,
         });
-        return { ok: true as const, targetProfileId: report.reportedId, expiresAt };
+        return { ok: true as const, targetProfileId: report.reportedId };
       });
 
       if (!result.ok) {
@@ -602,7 +599,12 @@ export function registerReportSuspensionRoute(
         return res.status(status).json({ error });
       }
       disconnectUserSockets(result.targetProfileId);
-      return res.json({ success: true, authorSuspended: true, suspensionExpiresAt: result.expiresAt });
+      return res.json({
+        success: true,
+        authorSuspended: true,
+        authorPermanentlySuspended: true,
+        suspensionExpiresAt: null,
+      });
     } catch (error) {
       console.error("[ugc-moderation] report suspension failed:", error);
       return res.status(500).json({ error: "Failed to suspend reported user" });
