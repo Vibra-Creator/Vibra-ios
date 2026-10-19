@@ -388,3 +388,31 @@ mtime_ms = 1792407891380
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/6442ca73-a6e9-4aea-9de6-9bc39007e4ad/e02c223e-2d5a-4bcd-a3aa-dc50ceaf6350"
 storage_version_token = "1792407920242126"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "XMOEnYzfVg3V8n4NYYAiI"
+uri = "file://deliverables/Vibra_AppStorePreview_1_Hub_Musica_886x1920.mp4"
+type = "video"
+title = "Anteprima App Store 1 — Hub e Musica"
+description = "Montaggio Hub/Musica con ritorno alla schermata principale. 16,12 s; MP4 H.264 High, 886×1920 progressivo a 30 fps, audio AAC-LC stereo 44,1 kHz."
+logical_id = "035cb130-dadf-4df2-ad97-8ffabcccc8d9"
+content_hash = "sha256:37be0a198429c7aa660048be845216d320f1352030ce076de42c0ee1d08854e7"
+size = 21399592
+mtime_ms = 1792408670764
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/035cb130-dadf-4df2-ad97-8ffabcccc8d9/e2a072e3-eec2-4b99-bc11-515b20e37dc7"
+storage_version_token = "1792408692753337"
+content_type = "video/mp4"
+
+[[outputs]]
+id = "EWWKeOeQEsJYu_5U-Gcny"
+uri = "file://deliverables/Vibra_AppStorePreview_2_Community_Mobilita_886x1920.mp4"
+type = "video"
+title = "Anteprima App Store 2 — Community e Mobilità"
+description = "Montaggio Community/Mobilità, senza il passaggio del browser né il profilo personale. 17,58 s; MP4 H.264 High, 886×1920 progressivo a 30 fps, audio AAC-LC stereo 44,1 kHz."
+logical_id = "b1c947d5-03cb-4691-9cfb-0f2d30fe3a3b"
+content_hash = "sha256:f61b224707c26592d3d6071376bbdaae481c31652591c5edcf65c28287544c0d"
+size = 23399201
+mtime_ms = 1792408672040
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b1c947d5-03cb-4691-9cfb-0f2d30fe3a3b/53fa11a8-5176-4e37-93dc-079c4f59777e"
+storage_version_token = "1792408693909554"
+content_type = "video/mp4"
