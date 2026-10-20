@@ -1343,14 +1343,31 @@ ${urlEntries}
       const userProfile = await storage.getProfileByUserId(userId);
       if (!userProfile) return res.status(404).json({ error: "Profilo non trovato" });
 
+      const requestedProfileId =
+        typeof req.query.profileId === "string" && req.query.profileId.trim()
+          ? req.query.profileId.trim()
+          : null;
+      const swipeConditions = requestedProfileId
+        ? and(
+            eq(swipes.swiperId, userProfile.id),
+            eq(swipes.swipedId, requestedProfileId),
+          )
+        : eq(swipes.swiperId, userProfile.id);
+
       const [lastSwipe] = await db
         .select()
         .from(swipes)
-        .where(eq(swipes.swiperId, userProfile.id))
+        .where(swipeConditions)
         .orderBy(desc(swipes.createdAt))
         .limit(1);
 
-      if (!lastSwipe) return res.status(404).json({ error: "Nessuno swipe da annullare" });
+      if (!lastSwipe) {
+        return res.status(404).json({
+          error: requestedProfileId
+            ? "Lo swipe per questo profilo non è stato trovato"
+            : "Nessuno swipe da annullare",
+        });
+      }
 
       await db.delete(swipes).where(eq(swipes.id, lastSwipe.id));
 

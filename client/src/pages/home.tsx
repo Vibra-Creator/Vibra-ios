@@ -135,6 +135,7 @@ export default function Home() {
   const swipeMutateRef = useRef<((p: { profileId: string; liked: boolean }) => void) | null>(null);
   // Ref che tiene sempre l'ID dell'ultimo profilo swipato (indipendente dalle API, senza stale closure)
   const lastSwipedIdRef = useRef<string | null>(null);
+  const undoInProgressRef = useRef(false);
 
   const swipeMutation = useMutation({
     mutationFn: async ({ profileId, liked }: { profileId: string; liked: boolean }) => {
@@ -288,7 +289,7 @@ export default function Home() {
   }, [availableProfiles.map(p => p.id + (p.imageUrl || "")).slice(0, 6).join(",")]);
 
   const handleSwipe = useCallback((direction: "left" | "right") => {
-    if (!currentProfile) return;
+    if (!currentProfile || undoInProgressRef.current) return;
     if (isGuest) {
       blockIfGuest(direction === "right" ? t("home.like") : t("home.dislike"));
       return;
@@ -329,11 +330,14 @@ export default function Home() {
   }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet, myProfile?.id]);
 
   const undoMutation = useMutation({
-    mutationFn: () => apiRequest("DELETE", "/api/swipes/last"),
-    onSuccess: () => {
-      // Usa il ref locale (aggiornato al momento dello swipe) — non la risposta del server
-      // che può restituire un ID sbagliato se c'è una race condition con la swipe API
-      const targetId = lastSwipedIdRef.current;
+    mutationFn: (profileId: string | null) => {
+      const url = profileId
+        ? `/api/swipes/last?profileId=${encodeURIComponent(profileId)}`
+        : "/api/swipes/last";
+      return apiRequest("DELETE", url) as Promise<{ undoneProfileId: string }>;
+    },
+    onSuccess: (data) => {
+      const targetId = data.undoneProfileId;
       if (targetId) {
         // 1. Rimuovi dal set degli swipati (sessione corrente)
         setSwipedProfiles(prev => {
@@ -344,14 +348,18 @@ export default function Home() {
         setSwipeHistory(prev => prev.filter(id => id !== targetId));
         // 2. Forza il profilo in prima posizione
         setForcedFirstProfileId(targetId);
-        // 3. Reset ref — prossimo undo richiede un altro swipe
-        lastSwipedIdRef.current = null;
+        // 3. Resetta il ref solo se non è cambiato nel frattempo.
+        if (lastSwipedIdRef.current === targetId) {
+          lastSwipedIdRef.current = null;
+        }
       }
+      undoInProgressRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable", myProfile?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile?.id] });
       toast({ title: "↩️ Sei tornato indietro!", description: "Rivedrai il profilo precedente" });
     },
     onError: (err: any) => {
+      undoInProgressRef.current = false;
       const msg = err?.message || "";
       if (msg.includes("404") || msg.includes("Nessuno")) {
         toast({ title: "Nessuno swipe da annullare", description: "Swipa un profilo prima di tornare indietro", variant: "destructive" });
@@ -362,8 +370,17 @@ export default function Home() {
   });
 
   const handleUndo = useCallback(() => {
-    undoMutation.mutate();
-  }, [undoMutation]);
+    if (
+      undoInProgressRef.current ||
+      undoMutation.isPending ||
+      swipeMutation.isPending ||
+      pendingSwipeRef.current
+    ) {
+      return;
+    }
+    undoInProgressRef.current = true;
+    undoMutation.mutate(lastSwipedIdRef.current);
+  }, [undoMutation, swipeMutation.isPending]);
 
   const resetDislikesMutation = useMutation({
     mutationFn: async () => {
@@ -605,7 +622,11 @@ export default function Home() {
             onMutedChange={setGlobalMuted}
             onOpenPostComposer={() => setShowVideoDrawer(true)}
             onUndo={handleUndo}
-            undoDisabled={undoMutation.isPending}
+            undoDisabled={
+              undoMutation.isPending ||
+              swipeMutation.isPending ||
+              !!pendingSwipeRef.current
+            }
           />
         )}
       </div>
