@@ -430,3 +430,17 @@ mtime_ms = 1792416897339
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/2ee3b61b-6f32-4914-86a1-36d3efce5e1d/cd28c191-61d4-4f3d-b79c-6e9a9004be15"
 storage_version_token = "1792416958024680"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "IYfUo5OhibVAFMpFUEOX4"
+uri = "file://deliverables/Vibra_Email_Verification_AppStore_886x1920_full.mp4"
+type = "video"
+title = "Video Vibra — verifica email (99 secondi)"
+description = "Conversione senza tagli: MP4 H.264, 886×1920 px, 30 fps, audio AAC-LC stereo 44,1 kHz. La durata originale è stata mantenuta."
+logical_id = "2a6552ba-7d21-455a-9e6d-7b676345210d"
+content_hash = "sha256:d68be4e3eb1cc6a712a65238fc2fbdca5765f0728175b990e7b0a6e77baa054e"
+size = 22515033
+mtime_ms = 1792488674981
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/2a6552ba-7d21-455a-9e6d-7b676345210d/893425fc-51f9-439a-add4-a472fca3d8b9"
+storage_version_token = "1792488701249846"
+content_type = "video/mp4"
