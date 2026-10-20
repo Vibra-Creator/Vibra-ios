@@ -7,6 +7,7 @@ export interface IAuthStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserPassword(id: string, hashedPassword: string): Promise<User>;
+  promoteUserToAdmin(id: string): Promise<User>;
   setEmailVerificationToken(id: string, token: string): Promise<void>;
   verifyEmailByToken(token: string): Promise<User | undefined>;
   getUserByVerificationToken(token: string): Promise<User | undefined>;
@@ -28,6 +29,15 @@ class AuthStorage implements IAuthStorage {
     const [user] = await db
       .update(users)
       .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async promoteUserToAdmin(id: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ isAdmin: true, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user;

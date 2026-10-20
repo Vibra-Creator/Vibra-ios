@@ -12,3 +12,4 @@
 - [Database fixture IDs](database-fixture-ids.md) — integration-test inserts should set IDs explicitly when a migrated table may lack the schema's server-side default.
 - [Play Store product evolution](play-store-product-evolution.md) — Vibra was listed while positioned as a dating app and has since changed substantially; verify the live package and listing separately.
 - [Swipe undo](swipe-undo.md) — Indietro deve annullare e mostrare lo stesso profilo, usando l’ID esatto invece dell’ultimo timestamp server.
+- [Admin role recovery](admin-role-recovery.md) — gli indirizzi admin autorizzati devono riottenere il ruolo al login/lettura del profilo, non solo all’avvio del seed.

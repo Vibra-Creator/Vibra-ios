@@ -9,12 +9,21 @@ import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { db } from "../../db";
 import { profiles, userSuspensions } from "../../../shared/schema";
+import type { User } from "../../../shared/models/auth";
 import { and, eq, sql } from "drizzle-orm";
 import { sendVerificationEmail } from "../../gmail";
 import { filterOffensiveContent } from "../../ugc-moderation";
+import { isAdminEmail } from "../../admin-access";
 
 let _sessionMiddleware: ReturnType<typeof session> | null = null;
 const TERMS_ACCEPTANCE_REQUIRED = "Devi accettare i Termini di Servizio e la Privacy Policy.";
+
+async function ensureAdminRole(user: User): Promise<User> {
+  if (isAdminEmail(user.email) && !user.isAdmin) {
+    return await authStorage.promoteUserToAdmin(user.id);
+  }
+  return user;
+}
 
 async function hasActiveUserSuspension(userId: string): Promise<boolean> {
   const suspensions = await db.select({
@@ -128,6 +137,7 @@ export async function setupAuth(app: Express) {
         });
       }
 
+      user = await ensureAdminRole(user);
       (req.session as any).userId = user.id;
 
       try {
@@ -173,7 +183,7 @@ export async function setupAuth(app: Express) {
         console.error("Verification email error (non-fatal):", emailErr);
       }
 
-      res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, emailVerified: false });
+      res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, emailVerified: false, isAdmin: user.isAdmin });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Errore durante la registrazione" });
@@ -212,8 +222,9 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
-      (req.session as any).userId = user.id;
-      res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
+      const authenticatedUser = await ensureAdminRole(user);
+      (req.session as any).userId = authenticatedUser.id;
+      res.json({ user: { id: authenticatedUser.id, email: authenticatedUser.email, firstName: authenticatedUser.firstName, lastName: authenticatedUser.lastName, isAdmin: authenticatedUser.isAdmin } });
     } catch (error: any) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Errore server durante l'accesso" });
@@ -301,6 +312,7 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
+      user = await ensureAdminRole(user);
       (req.session as any).userId = user.id;
       // Google email is already verified by Google
       await authStorage.markEmailVerified(user.id);
@@ -383,6 +395,7 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
+      user = await ensureAdminRole(user);
       (req.session as any).userId = user.id;
       // Apple email is already verified by Apple
       await authStorage.markEmailVerified(user.id);

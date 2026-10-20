@@ -34,6 +34,7 @@ import { createBackup, getBackupList, startAutoBackup } from "./backup";
 import { runMigrations } from "./migrate";
 import { Server as SocketIOServer } from "socket.io";
 import { getSession } from "./replit_integrations/auth/replitAuth";
+import { ADMIN_EMAILS, isAdminEmail } from "./admin-access";
 import webpush from "web-push";
 import {
   REPORT_CLEANUP_TTL_DAYS,
@@ -68,8 +69,6 @@ import {
 import { filterOffensiveContent, filterUgcTextPayload, hasUgcTextPayload } from "./ugc-moderation";
 import { createSuspensionWriteGuard } from "./suspension-write-guard";
 import { createUserReportNotificationProcessor } from "./user-report-notifications";
-
-const ADMIN_EMAILS = ["famax61@yahoo.com", "famax61@gmail.com"];
 
 type AdminUserLookup = (userId: string) => Promise<Pick<NonNullable<Awaited<ReturnType<typeof storage.getUser>>>, "isAdmin" | "email"> | undefined>;
 type AdminPromotion = (userId: string) => Promise<void>;
@@ -122,7 +121,7 @@ export function createReportCleanupFailureNotifier(
         adminUsers
           .filter((user) =>
             Boolean(user.email) &&
-            (Boolean(user.isAdmin) || ADMIN_EMAILS.includes(user.email!.toLowerCase()))
+            (Boolean(user.isAdmin) || isAdminEmail(user.email))
           )
           .map((user) => user.email!.trim().toLowerCase())
           .filter((email) => email && !email.endsWith("@vibra.com")),
@@ -198,7 +197,7 @@ export function createAdminAuthorizationMiddleware(
         return res.status(403).json({ error: "Admin access required" });
       }
 
-      if (!user.isAdmin && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+      if (!user.isAdmin && isAdminEmail(user.email)) {
         await promoteUser(userId);
         user.isAdmin = true;
       }
@@ -1594,7 +1593,7 @@ ${urlEntries}
       }
 
       const requestingUser = await storage.getUser(userId);
-      const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+      const isAdminUser = requestingUser?.isAdmin || isAdminEmail(requestingUser?.email);
       if (existing.userId !== userId && !isAdminUser) {
         return res.status(403).json({ error: "Non autorizzato" });
       }
@@ -1647,7 +1646,7 @@ ${urlEntries}
 
       if (targetProfileId) {
         const requestingUser = await storage.getUser(userId);
-        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        const isAdminUser = requestingUser?.isAdmin || isAdminEmail(requestingUser?.email);
         if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
         userProfile = await storage.getProfile(targetProfileId);
         if (!userProfile) return res.status(404).json({ error: "Profile not found" });
@@ -1732,7 +1731,7 @@ ${urlEntries}
 
       if (targetProfileId) {
         const requestingUser = await storage.getUser(userId);
-        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        const isAdminUser = requestingUser?.isAdmin || isAdminEmail(requestingUser?.email);
         if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
         userProfile = await storage.getProfile(targetProfileId);
         if (!userProfile) return res.status(404).json({ error: "Profile not found" });
@@ -1807,7 +1806,7 @@ ${urlEntries}
       let userProfile;
       if (targetProfileId) {
         const requestingUser = await storage.getUser(userId);
-        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        const isAdminUser = requestingUser?.isAdmin || isAdminEmail(requestingUser?.email);
         if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
         userProfile = await storage.getProfile(targetProfileId);
         if (!userProfile) return res.status(404).json({ error: "Profile not found" });
@@ -1833,7 +1832,7 @@ ${urlEntries}
       let userProfile;
       if (targetProfileId) {
         const requestingUser = await storage.getUser(userId);
-        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        const isAdminUser = requestingUser?.isAdmin || isAdminEmail(requestingUser?.email);
         if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
         userProfile = await storage.getProfile(targetProfileId);
         if (!userProfile) return res.status(404).json({ error: "Profile not found" });
@@ -1863,7 +1862,7 @@ ${urlEntries}
       let userProfile;
       if (targetProfileId) {
         const requestingUser = await storage.getUser(userId);
-        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        const isAdminUser = requestingUser?.isAdmin || isAdminEmail(requestingUser?.email);
         if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
         userProfile = await storage.getProfile(targetProfileId);
         if (!userProfile) return res.status(403).json({ error: "Profile not found" });
@@ -1896,7 +1895,7 @@ ${urlEntries}
       let userProfile;
       if (targetProfileId) {
         const requestingUser = await storage.getUser(userId);
-        const isAdminUser = requestingUser?.isAdmin || (requestingUser?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(requestingUser.email.toLowerCase()));
+        const isAdminUser = requestingUser?.isAdmin || isAdminEmail(requestingUser?.email);
         if (!isAdminUser) return res.status(403).json({ error: "Non autorizzato" });
         userProfile = await storage.getProfile(targetProfileId);
         if (!userProfile) return res.status(403).json({ error: "Profile not found" });
@@ -6185,7 +6184,7 @@ REGOLE:
       const userId = req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const user = await storage.getUser(userId);
-      const isAdmin = user?.isAdmin || (user?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(user.email.toLowerCase()));
+      const isAdmin = user?.isAdmin || isAdminEmail(user?.email);
       if (!isAdmin) return res.status(403).json({ error: "Solo admin" });
       const { theme, description, roomId } = req.body;
       if (!theme?.trim()) return res.status(400).json({ error: "Il tema è obbligatorio" });
@@ -6266,7 +6265,7 @@ REGOLE:
       const userId = req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const user = await storage.getUser(userId);
-      const isAdmin = user?.isAdmin || (user?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(user.email.toLowerCase()));
+      const isAdmin = user?.isAdmin || isAdminEmail(user?.email);
       if (!isAdmin) return res.status(403).json({ error: "Solo admin" });
       await storage.selectBriciola(req.params.briolaId);
       res.json({ ok: true });
@@ -6278,7 +6277,7 @@ REGOLE:
       const userId = req.session?.userId;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const user = await storage.getUser(userId);
-      const isAdmin = user?.isAdmin || (user?.email && ["famax61@yahoo.com", "famax61@gmail.com"].includes(user.email.toLowerCase()));
+      const isAdmin = user?.isAdmin || isAdminEmail(user?.email);
       if (!isAdmin) return res.status(403).json({ error: "Solo admin" });
       await storage.completeStory(req.params.id);
       res.json({ ok: true });

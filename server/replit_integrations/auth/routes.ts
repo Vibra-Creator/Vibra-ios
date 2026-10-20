@@ -1,14 +1,18 @@
 import type { Express } from "express";
 import { authStorage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
+import { isAdminEmail } from "../../admin-access";
 
 export function registerAuthRoutes(app: Express): void {
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await authStorage.getUser(userId);
+      let user = await authStorage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+      if (!user.isAdmin && isAdminEmail(user.email)) {
+        user = await authStorage.promoteUserToAdmin(user.id);
       }
       const { password, ...safeUser } = user;
       res.json(safeUser);
