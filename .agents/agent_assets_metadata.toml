@@ -486,3 +486,17 @@ mtime_ms = 1792570436233
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/77666dfc-c2cc-4138-974c-159b0bfda2f8/be96d62f-d669-4a6e-ae24-c1c82a40b922"
 storage_version_token = "1792570449727270"
 content_type = "image/png"
+
+[[outputs]]
+id = "QUMaWmObODqcmLQ-OEQz5"
+uri = "file://generated-artifacts/vibra-hub-ipad-13in-2064x2752.png"
+type = "image"
+title = "Screenshot Hub Vibra — iPad 13″"
+description = "PNG 2064 × 2752 px; screenshot originale mantenuto integro con margini laterali scuri."
+logical_id = "dc7190da-b180-4570-a6da-8729fea71865"
+content_hash = "sha256:5188bc90e81948f4df096dc79dfb43f52dcf638f55d9180562d06f2f22d35a2e"
+size = 1117826
+mtime_ms = 1792570587469
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/dc7190da-b180-4570-a6da-8729fea71865/3280d859-2c77-41ad-bbb6-a637e55d89c3"
+storage_version_token = "1792570600003538"
+content_type = "image/png"
