@@ -780,3 +780,17 @@ mtime_ms = 1792572186480
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/bb281901-2db7-41e9-b5df-3270f48a6789/a80f3053-44d1-4c1c-92cb-a44ba16dfa40"
 storage_version_token = "1792572200200975"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "HCGtUEvZczqc6xfZNbCAi"
+uri = "file://generated-artifacts/Vibra_AppStorePreview_2_iPad13_1200x1600_30fps.mp4"
+type = "video"
+title = "Vibra Community e Mobilità — App Preview iPad 13"
+description = "MP4 verticale 1200 x 1600 px, 30 fps costanti, 17,59 secondi, H.264 High Level 4.0 e audio AAC stereo 48 kHz. Senza bande; allargato per riempire il formato."
+logical_id = "c19e50ba-a73d-47e4-8a2d-1468e26ee2f9"
+content_hash = "sha256:7b6788d614e17abaccda680f431176429170d4f49d8295d2134dd5aa2dbb14ec"
+size = 24776951
+mtime_ms = 1792572348987
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/c19e50ba-a73d-47e4-8a2d-1468e26ee2f9/d6f76bd0-33a3-4d48-a1e2-2e4a763259b3"
+storage_version_token = "1792572363306437"
+content_type = "video/mp4"
