@@ -500,3 +500,17 @@ mtime_ms = 1792570587469
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/dc7190da-b180-4570-a6da-8729fea71865/3280d859-2c77-41ad-bbb6-a637e55d89c3"
 storage_version_token = "1792570600003538"
 content_type = "image/png"
+
+[[outputs]]
+id = "lDgdu5Mw8qpckUMGA_lcL"
+uri = "file://generated-artifacts/vibra-vibing-ipad-13in-2064x2752.png"
+type = "image"
+title = "Screenshot Vibing Ora — iPad 13″"
+description = "PNG 2064 × 2752 px; contenuto originale mantenuto, con margini laterali scuri per conservare le proporzioni."
+logical_id = "d17ead31-8271-42bf-9bec-3b844717fdd9"
+content_hash = "sha256:130b041ca927e07c5937391c0369296b0d251ad1ebfe88b16e2489f770f245c1"
+size = 597523
+mtime_ms = 1792570737916
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/d17ead31-8271-42bf-9bec-3b844717fdd9/7ccccbb8-0cd5-4400-94ca-e1c7d674c6d0"
+storage_version_token = "1792570750581543"
+content_type = "image/png"
