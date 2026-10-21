@@ -18,7 +18,7 @@ export default function Landing() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    document.title = "Vibra - Non è Dating. È Connessione Vera.";
+    document.title = "Vibra - Molto più di un'app di incontri";
     const setMeta = (selector: string, attr: "name" | "property", key: string, content: string) => {
       let el = document.querySelector(`${selector}[${attr}="${key}"]`) as HTMLMetaElement | null;
       if (!el) {
@@ -28,12 +28,12 @@ export default function Landing() {
       }
       el.setAttribute("content", content);
     };
-    setMeta("meta", "name", "description", "Vibra non è una dating app. È una porta aperta per chi si sente invisibile, incompreso o solo. Carica il tuo video, racconta la tua verità, connettiti con chi capisce.");
-    setMeta("meta", "property", "og:title", "Vibra - Non è Dating. È Connessione Vera.");
-    setMeta("meta", "property", "og:description", "Una community cosmica per chi si sente trasparente. Carica il tuo video manifesto e trova chi vibra come te.");
+    setMeta("meta", "name", "description", "Vibra è molto più di un'app di incontri: una community cosmica per conoscere persone, condividere la tua verità e scoprire nuove connessioni.");
+    setMeta("meta", "property", "og:title", "Vibra - Molto più di un'app di incontri");
+    setMeta("meta", "property", "og:description", "Incontri, social e community in un unico spazio cosmico. Conosci persone autentiche e trova chi vibra come te.");
     setMeta("meta", "property", "og:image", "/vibra-logo.png");
-    setMeta("meta", "name", "twitter:title", "Vibra - Non è Dating. È Connessione Vera.");
-    setMeta("meta", "name", "twitter:description", "Una community cosmica per chi si sente trasparente. Carica il tuo video manifesto e trova chi vibra come te.");
+    setMeta("meta", "name", "twitter:title", "Vibra - Molto più di un'app di incontri");
+    setMeta("meta", "name", "twitter:description", "Incontri, social e community in un unico spazio cosmico. Conosci persone autentiche e trova chi vibra come te.");
     setMeta("meta", "name", "twitter:image", "/vibra-logo.png");
   }, []);
 
@@ -292,7 +292,7 @@ export default function Landing() {
           </motion.div>
         </section>
 
-        {/* ── NOT DATING BANNER ── */}
+        {/* ── MORE THAN DATING BANNER ── */}
         <section className="px-4 pb-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
