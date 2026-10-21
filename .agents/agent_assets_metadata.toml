@@ -514,3 +514,17 @@ mtime_ms = 1792570737916
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/d17ead31-8271-42bf-9bec-3b844717fdd9/7ccccbb8-0cd5-4400-94ca-e1c7d674c6d0"
 storage_version_token = "1792570750581543"
 content_type = "image/png"
+
+[[outputs]]
+id = "Y2XxS7bPSqTvzQSIV5Ft1"
+uri = "file://generated-artifacts/vibra-vibrapp-ipad-13in-2064x2752.png"
+type = "image"
+title = "Screenshot Vibrapp — iPad 13″"
+description = "PNG 2064 × 2752 px; schermata mantenuta intera e proporzioni conservate con margini laterali scuri."
+logical_id = "df08cd3e-d0a5-4660-926c-3533957306bf"
+content_hash = "sha256:7e54a39e4a450115007b6e80603c9ca20d193d53d2cab65d9523daf43b2a6d98"
+size = 854627
+mtime_ms = 1792570862721
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/df08cd3e-d0a5-4660-926c-3533957306bf/386dfeb1-63a0-4764-bd75-9122f527ee5e"
+storage_version_token = "1792570875260055"
+content_type = "image/png"
