@@ -612,3 +612,73 @@ mtime_ms = 1792571153725
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b64b6bb4-88cf-4784-b97f-c5d8596dc9ac/b4f50616-550f-4544-b8d5-458b266f58b3"
 storage_version_token = "1792571176001348"
 content_type = "image/png"
+
+[[outputs]]
+id = "TiPBuM2DdUblPIQ0QHBx3"
+uri = "file://generated-artifacts/vibra-camera-permission-ipad13-stretched.png"
+type = "image"
+title = "Permesso fotocamera Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; screenshot allargato come richiesto."
+logical_id = "95b0ffc5-48f1-490e-82c1-c2806f7861ad"
+content_hash = "sha256:e330613d7b36cb79235414f4ea971b408b84615dec68fda6778699cf4b3bd6d3"
+size = 174091
+mtime_ms = 1792571291737
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/95b0ffc5-48f1-490e-82c1-c2806f7861ad/b72b5354-6eab-4015-9d44-d61a6ab2e5bf"
+storage_version_token = "1792571321263654"
+content_type = "image/png"
+
+[[outputs]]
+id = "RJhWyWzT14gyKXCHX9gyo"
+uri = "file://generated-artifacts/vibra-vibefeed-ipad13-stretched.png"
+type = "image"
+title = "Vibe Feed Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "c9e43d49-a5ef-4709-9ad9-b0d131af23a4"
+content_hash = "sha256:9211e7e2ce80a40ff17fbeaf8ac95ae78711727a21f65e639d22e6db349d4b7e"
+size = 8590178
+mtime_ms = 1792571336909
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/c9e43d49-a5ef-4709-9ad9-b0d131af23a4/0fb5bb25-ca81-4111-b268-a0665979b778"
+storage_version_token = "1792571350628637"
+content_type = "image/png"
+
+[[outputs]]
+id = "WtXLn_2iV48qQVwWW2UCH"
+uri = "file://generated-artifacts/vibra-microphone-permission-ipad13-stretched.png"
+type = "image"
+title = "Permesso microfono Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "8157a3b8-2765-46b3-b34a-19aaec5127b8"
+content_hash = "sha256:3bcd5a1ef1368d000596f6a4e980813bbd936422a0a65ebd5a68e91529ca853f"
+size = 1198075
+mtime_ms = 1792571368988
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/8157a3b8-2765-46b3-b34a-19aaec5127b8/4c42bafe-d6a3-4844-ab80-ef4c6c07137d"
+storage_version_token = "1792571381543917"
+content_type = "image/png"
+
+[[outputs]]
+id = "Z6CyvGf8lhTHVWwkufiHn"
+uri = "file://generated-artifacts/vibra-location-ipad13-stretched.png"
+type = "image"
+title = "Dove Sei Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande; l'immagine è allargata come richiesto. Nota: resta visibile 'API KEY REQUIRED' nel contenuto originale."
+logical_id = "b837acb5-d69d-4cae-873b-7b5b6705d20f"
+content_hash = "sha256:979b974922be8ce515b4c8a38447e61d8e8a0e895be9df06dc95079c119a2f2a"
+size = 682150
+mtime_ms = 1792571391812
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b837acb5-d69d-4cae-873b-7b5b6705d20f/c91d9508-c156-4d09-ac6d-63732c4e48b5"
+storage_version_token = "1792571412926968"
+content_type = "image/png"
+
+[[outputs]]
+id = "KUJurJ9DhZmojvFEdidz0"
+uri = "file://generated-artifacts/vibra-video-frame-ipad13-stretched.png"
+type = "image"
+title = "Schermata Vibra con tastiera per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande; allargata come richiesto. Rimane visibile il watermark clideo.com."
+logical_id = "b635079b-2796-4013-b5a6-66011fec01ca"
+content_hash = "sha256:9d23ae747e0065e8b12a83bf0fd57b915632f4ca77e60946db7a4ea2dacfbc7f"
+size = 1485070
+mtime_ms = 1792571426716
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b635079b-2796-4013-b5a6-66011fec01ca/347c84e8-3be2-4518-a7f7-de5a8a92ebac"
+storage_version_token = "1792571443571128"
+content_type = "image/png"
