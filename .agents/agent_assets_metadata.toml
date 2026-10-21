@@ -528,3 +528,87 @@ mtime_ms = 1792570862721
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/df08cd3e-d0a5-4660-926c-3533957306bf/386dfeb1-63a0-4764-bd75-9122f527ee5e"
 storage_version_token = "1792570875260055"
 content_type = "image/png"
+
+[[outputs]]
+id = "REMYgqL03hwCxi9wDhAOx"
+uri = "file://generated-artifacts/vibra-landing-ipad13-stretched.png"
+type = "image"
+title = "Landing Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "40fd72d7-a4b6-4ee7-ac76-44d749596cb5"
+content_hash = "sha256:3a3ed287bf4271aebd2ca08b0fae4b7c2e5b708c238c4c99731c2e2f7fbcd8f5"
+size = 4230970
+mtime_ms = 1792571151301
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/40fd72d7-a4b6-4ee7-ac76-44d749596cb5/bb6a51ea-b30e-4725-b4a4-629b7afa241f"
+storage_version_token = "1792571171617174"
+content_type = "image/png"
+
+[[outputs]]
+id = "jiL-qYCRvnWZ8S5DPNVrK"
+uri = "file://generated-artifacts/vibra-social-ipad13-stretched.png"
+type = "image"
+title = "Social Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "c7431b33-5e6e-41ec-b8dd-7dbaf13d20b3"
+content_hash = "sha256:a22d5f49ee63c0cb2b5a380a057744a4f7ca05c653c3d5b68538b2590c1921b1"
+size = 960828
+mtime_ms = 1792571151849
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/c7431b33-5e6e-41ec-b8dd-7dbaf13d20b3/631975c1-bf80-4cee-b2e6-cf77eba6a5a3"
+storage_version_token = "1792571172579018"
+content_type = "image/png"
+
+[[outputs]]
+id = "5r0FdXIwqmLg4-d7_3-Xl"
+uri = "file://generated-artifacts/vibra-spotify-ipad13-stretched.png"
+type = "image"
+title = "Spotify Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "b8e780be-4bcf-4052-bdbb-630e4df88478"
+content_hash = "sha256:fbc7f43e2cf8db920b8644db766aae5a71c956be65da5e11f34f649ce4be4e34"
+size = 934011
+mtime_ms = 1792571152205
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b8e780be-4bcf-4052-bdbb-630e4df88478/c95aad06-dc76-4e3e-b631-f19624858962"
+storage_version_token = "1792571173640621"
+content_type = "image/png"
+
+[[outputs]]
+id = "MlTUuLECgUInp2dA_mD4G"
+uri = "file://generated-artifacts/vibra-hub-ipad13-stretched.png"
+type = "image"
+title = "Hub Vibra per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "f18fe6aa-a64b-420f-8561-028a9c2da281"
+content_hash = "sha256:d6a1c0012b3110b23756fb8979569ac1e5cfd413cd5aa7f051319b48e71c3ca5"
+size = 1512710
+mtime_ms = 1792571153053
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/f18fe6aa-a64b-420f-8561-028a9c2da281/73c19670-fb67-4c44-a5f0-214f5267d773"
+storage_version_token = "1792571174449193"
+content_type = "image/png"
+
+[[outputs]]
+id = "OCs6nBE8WXBp26QF4yL3S"
+uri = "file://generated-artifacts/vibra-vibing-ipad13-stretched.png"
+type = "image"
+title = "Vibing Ora per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "c9d7f2fe-7273-4fc1-911e-c390b762d682"
+content_hash = "sha256:b466ebe7d8e1288af6c5947173dcda6157f39b8373f78b224abce60c8d5f6092"
+size = 842093
+mtime_ms = 1792571153377
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/c9d7f2fe-7273-4fc1-911e-c390b762d682/4807c4a1-df4f-4312-9aa6-ad2cfec0ccad"
+storage_version_token = "1792571175241444"
+content_type = "image/png"
+
+[[outputs]]
+id = "O4hIwHLh_V_oO3Ydm5gKJ"
+uri = "file://generated-artifacts/vibra-vibrapp-ipad13-stretched.png"
+type = "image"
+title = "Vibrapp per iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; immagine allargata come richiesto."
+logical_id = "b64b6bb4-88cf-4784-b97f-c5d8596dc9ac"
+content_hash = "sha256:9af35fc04189743c1d3a3cd276ec58b15ada7aa76c8404ec8622d50c5e1918eb"
+size = 1200960
+mtime_ms = 1792571153725
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b64b6bb4-88cf-4784-b97f-c5d8596dc9ac/b4f50616-550f-4544-b8d5-458b266f58b3"
+storage_version_token = "1792571176001348"
+content_type = "image/png"
