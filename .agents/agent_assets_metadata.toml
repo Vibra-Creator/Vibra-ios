@@ -682,3 +682,87 @@ mtime_ms = 1792571426716
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b635079b-2796-4013-b5a6-66011fec01ca/347c84e8-3be2-4518-a7f7-de5a8a92ebac"
 storage_version_token = "1792571443571128"
 content_type = "image/png"
+
+[[outputs]]
+id = "YavcPp2AMjchZAL8Km5W1"
+uri = "file://generated-artifacts/vibra-02-ipad13-stretched.png"
+type = "image"
+title = "Vibra 02 - iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; allargata come richiesto."
+logical_id = "0f60c1aa-d960-442a-baa6-cd38a5bfff51"
+content_hash = "sha256:4b65c0d86b8c548355b9dfe52054453c25aa334b810f2fa1fb546bd7655423c2"
+size = 1340370
+mtime_ms = 1792571550496
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/0f60c1aa-d960-442a-baa6-cd38a5bfff51/14022edc-4db5-4461-bea0-828b7f4e7f6b"
+storage_version_token = "1792571559109185"
+content_type = "image/png"
+
+[[outputs]]
+id = "phkpmVeik_qIHxLT8XoOk"
+uri = "file://generated-artifacts/vibra-04-ipad13-stretched.png"
+type = "image"
+title = "Vibra 04 - iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; allargata come richiesto."
+logical_id = "378f6ef5-38d7-46ba-87f8-b2ffdc681159"
+content_hash = "sha256:8bd97ff5fc198b7661b92edb07ce775d6a22a37746cd36db33505d36dbe65701"
+size = 911518
+mtime_ms = 1792571550836
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/378f6ef5-38d7-46ba-87f8-b2ffdc681159/d3a7fe46-2bc2-442f-bb2b-bf027508273d"
+storage_version_token = "1792571560044354"
+content_type = "image/png"
+
+[[outputs]]
+id = "s4QcMgaNrnlYmDF0KdD0c"
+uri = "file://generated-artifacts/vibra-05-ipad13-stretched.png"
+type = "image"
+title = "Vibra 05 - iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; allargata come richiesto."
+logical_id = "1e3d498f-0459-4d87-bc64-552bd25468b4"
+content_hash = "sha256:f5edad82c618a608b0d99e2a02cc31b04097b64f9c214dfb2330f5b2019ab512"
+size = 1001603
+mtime_ms = 1792571551144
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/1e3d498f-0459-4d87-bc64-552bd25468b4/7d84bfd8-1112-4706-9139-fee90b79475b"
+storage_version_token = "1792571560900597"
+content_type = "image/png"
+
+[[outputs]]
+id = "1xYMrshj38gXw3HN7_7mE"
+uri = "file://generated-artifacts/vibra-08-ipad13-stretched.png"
+type = "image"
+title = "Vibra 08 - iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; allargata come richiesto."
+logical_id = "6f06b1d0-ff6f-4f75-94d2-e77dc1f5afff"
+content_hash = "sha256:fbc7f43e2cf8db920b8644db766aae5a71c956be65da5e11f34f649ce4be4e34"
+size = 934011
+mtime_ms = 1792571551456
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/6f06b1d0-ff6f-4f75-94d2-e77dc1f5afff/084bf63c-1f58-4ab3-9321-9b28ed1f5704"
+storage_version_token = "1792571561647585"
+content_type = "image/png"
+
+[[outputs]]
+id = "pLe4fFc_PEqayymS05rJ-"
+uri = "file://generated-artifacts/vibra-10-ipad13-stretched.png"
+type = "image"
+title = "Vibra 10 - iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; allargata come richiesto."
+logical_id = "3d09abf5-e0d2-4b68-812a-db09a6b50161"
+content_hash = "sha256:a22d5f49ee63c0cb2b5a380a057744a4f7ca05c653c3d5b68538b2590c1921b1"
+size = 960828
+mtime_ms = 1792571551776
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/3d09abf5-e0d2-4b68-812a-db09a6b50161/3a4e79d9-e517-4ced-ab92-c1f42649a920"
+storage_version_token = "1792571562452086"
+content_type = "image/png"
+
+[[outputs]]
+id = "ZGI5-yp7cmriKMMEnnBZ8"
+uri = "file://generated-artifacts/vibra-12-ipad13-stretched.png"
+type = "image"
+title = "Vibra 12 - iPad 13"
+description = "PNG 2064 x 2752 px, senza bande laterali; allargata come richiesto."
+logical_id = "d6a362de-0f71-47e7-aa2b-b1faa473f237"
+content_hash = "sha256:b466ebe7d8e1288af6c5947173dcda6157f39b8373f78b224abce60c8d5f6092"
+size = 842093
+mtime_ms = 1792571552084
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/d6a362de-0f71-47e7-aa2b-b1faa473f237/71061853-1051-456f-a970-1f8f67288542"
+storage_version_token = "1792571563174465"
+content_type = "image/png"
