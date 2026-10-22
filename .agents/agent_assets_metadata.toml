@@ -864,3 +864,17 @@ mtime_ms = 1792656061498
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/79cd4cc4-4891-427e-bb68-4165b43eb590/0b63d931-7ff1-44e5-92c6-57c4b8775a8b"
 storage_version_token = "1792656075671467"
 content_type = "image/png"
+
+[[outputs]]
+id = "oXdwpUhlSXehrYEnlwf0h"
+uri = "file://generated-artifacts/google-play/Vibra_Screenshot_08_Play_1311x2622.png"
+type = "image"
+title = "Screenshot Vibra 08 per Google Play"
+description = "Adattato a 1311 × 2622 px, rapporto verticale 1:2, senza tagliare o deformare la schermata."
+logical_id = "063c62c4-465b-4a30-ae9a-ab6b380f6eb8"
+content_hash = "sha256:340e935df9e879c1220999d764e7fcdd56c24c4eb4ea823a962b5e56a3c01168"
+size = 549641
+mtime_ms = 1792656272547
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/063c62c4-465b-4a30-ae9a-ab6b380f6eb8/87295711-f8d8-4f43-b3f2-bf5a21f82d82"
+storage_version_token = "1792656293223706"
+content_type = "image/png"
