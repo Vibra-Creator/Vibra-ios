@@ -878,3 +878,17 @@ mtime_ms = 1792656272547
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/063c62c4-465b-4a30-ae9a-ab6b380f6eb8/87295711-f8d8-4f43-b3f2-bf5a21f82d82"
 storage_version_token = "1792656293223706"
 content_type = "image/png"
+
+[[outputs]]
+id = "8VHHfiqWmsel-3anBfnWm"
+uri = "file://generated-artifacts/google-play/Vibra_AppStorePreview_1_Hub_Musica_Play_1080x1920.mp4"
+type = "video"
+title = "Anteprima Vibra 1 – Musica per Google Play"
+description = "MP4 verticale 1080 × 1920, H.264/AAC, 30 fps, durata circa 16 secondi, pronto da caricare su YouTube e collegare alla scheda Play Console."
+logical_id = "02b0c4ed-cb1f-4574-a3df-efa584c31246"
+content_hash = "sha256:aef0b0207f282327fe301bed3d6e136d244e5eba757b7f4d41f68cca07857402"
+size = 5075724
+mtime_ms = 1792656557150
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/02b0c4ed-cb1f-4574-a3df-efa584c31246/a33e48bb-d684-4ad9-a318-c48bff04ce7b"
+storage_version_token = "1792656612119912"
+content_type = "video/mp4"
