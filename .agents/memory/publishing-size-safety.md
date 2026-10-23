@@ -16,3 +16,5 @@ Do not rely on `REPLIT_DEPLOYMENT` being set during the publishing **build**. It
 Preserve the cache root and platform-managed caches; remove only explicitly identified heavy development-cache subdirectories. Use bounded filesystem retries for transient deletion conflicts.
 
 **Why:** The security scanner can still write cache state while the build finishes. Removing the cache root caused a real `ENOTEMPTY` build failure; deleting platform state also risks disrupting that concurrent process.
+
+Successful cache/history cleanup does not establish that the image fits: an actual publish still exceeded the limit after that step completed. Inspect additional build inputs and runtime dependencies before suggesting another retry; preserve runtime-served assets when considering source-asset exclusions.
