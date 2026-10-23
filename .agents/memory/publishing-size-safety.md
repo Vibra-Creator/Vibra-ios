@@ -29,6 +29,10 @@ Deleting files inside the build command does not shrink the image: the uploaded 
 
 After the size fix, publishing failed on the startup health check (`/` returned 500 while the server was still loading). The server must call listen() before loading heavy modules and running migrations; keep heavy imports dynamic after listen.
 
+The image fits only without a local `dist/` in the workspace (it is uploaded and then rebuilt, about 1.4 GB twice). After any local `npm run build`, delete `dist/` before the user publishes.
+
+**Why:** a local test build re-added dist and the next publish failed again at the Bundle stage.
+
 Keep Java and Python installed during this publishing-size investigation.
 
 **Why:** The user explicitly declined removing these tools to reduce the publishing package.
