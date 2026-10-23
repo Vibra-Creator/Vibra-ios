@@ -27,6 +27,8 @@ Deleting files inside the build command does not shrink the image: the uploaded 
 
 **Why:** cache/.git removal in the build step succeeded yet every publish still exceeded 8 GiB.
 
+After the size fix, publishing failed on the startup health check (`/` returned 500 while the server was still loading). The server must call listen() before loading heavy modules and running migrations; keep heavy imports dynamic after listen.
+
 Keep Java and Python installed during this publishing-size investigation.
 
 **Why:** The user explicitly declined removing these tools to reduce the publishing package.

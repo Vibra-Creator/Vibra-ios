@@ -1,13 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
-import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { startAutoBackup } from "./backup";
-import { db } from "./db";
-import { sql } from "drizzle-orm";
-import { storage } from "./storage";
-import { removeBotProfiles } from "./remove-bots";
+import path from "path";
 
 const app = express();
 
@@ -103,7 +98,51 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Avvio rapido ────────────────────────────────────────────────────────────
+// Il server inizia ad ascoltare subito, così il controllo di salute della
+// pubblicazione riceve risposta mentre le migrazioni sono ancora in corso.
+// Durante l'avvio la home riceve subito la pagina dell'app; tutte le altre
+// richieste attendono che il server sia pronto (nessuna risposta inventata).
+let markReady: () => void = () => {};
+const ready = new Promise<void>((resolve) => {
+  markReady = resolve;
+});
+let isReady = false;
+app.use((req, res, next) => {
+  if (isReady) return next();
+  if (
+    process.env.NODE_ENV === "production" &&
+    (req.method === "GET" || req.method === "HEAD") &&
+    req.path === "/"
+  ) {
+    res.setHeader("Cache-Control", "no-cache");
+    return res.sendFile(path.resolve(__dirname, "public", "index.html"));
+  }
+  ready.then(() => next(), next);
+});
+
+const port = parseInt(process.env.PORT || "5000", 10);
+httpServer.listen(
+  {
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  },
+  () => {
+    log(`listening on port ${port} (startup in progress)`);
+  },
+);
+
 (async () => {
+  // Caricati dopo listen(): il caricamento di questi moduli è lento e non
+  // deve ritardare la prima risposta al controllo di salute.
+  const { registerRoutes } = await import("./routes");
+  const { startAutoBackup } = await import("./backup");
+  const { db } = await import("./db");
+  const { sql } = await import("drizzle-orm");
+  const { storage } = await import("./storage");
+  const { removeBotProfiles } = await import("./remove-bots");
+
   // ── Migrazioni DB startup ────────────────────────────────────────────────
   try {
     await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ghost_mode_expires_at TIMESTAMP`);
@@ -395,21 +434,12 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
   await removeBotProfiles();
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-      startAutoBackup();
-    },
-  );
-})();
+  isReady = true;
+  markReady();
+  log(`serving on port ${port}`);
+  startAutoBackup();
+})().catch((err) => {
+  console.error("[startup] fatal startup error:", err);
+  process.exit(1);
+});
