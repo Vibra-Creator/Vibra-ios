@@ -378,6 +378,32 @@ test("requestPermission errors leave the authenticated app usable and settle the
   expect(uncaughtErrors).toEqual([]);
 });
 
+test("profile notification settings remain usable when requestPermission throws", async ({ page, request }) => {
+  const user = await registerUser(request, "profile-request-permission-error");
+  await prepareAuthenticatedPage(page, request, user, { permissionRequestThrows: true });
+
+  const uncaughtErrors: string[] = [];
+  page.on("pageerror", (error) => uncaughtErrors.push(error.message));
+  await page.goto("/profile", { waitUntil: "load" });
+
+  const notificationButton = page.getByTestId("button-push-notifications");
+  await expect(notificationButton).toBeVisible({ timeout: 10_000 });
+  await notificationButton.click();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionCalls?: number })
+          .__notificationPermissionCalls || 0,
+      ),
+    )
+    .toBe(1);
+  await expect(notificationButton).toBeVisible();
+  await expect(page.getByTestId("button-edit-full-profile")).toBeVisible();
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(uncaughtErrors).toEqual([]);
+});
+
 test("allow requests permission from the button and stays hidden when declined", async ({ page, request }) => {
   const user = await registerUser(request, "allow-declined");
   await prepareAuthenticatedPage(page, request, user);
