@@ -1,1 +1,8 @@
 /generated-artifacts/
+# Excluded from publishing only: version history and regenerable caches.
+/.git/
+/.cache/ms-playwright/
+/.cache/nix/
+/.cache/.bun/
+/.cache/typescript/
+/.local/state/

@@ -23,6 +23,10 @@ For this publishing-size investigation, the user declined modifying or excluding
 
 **Why:** The user selected “No, non modificare gli allegati” when asked whether unused attachments could be excluded from publishing while preserving originals.
 
+Deleting files inside the build command does not shrink the image: the uploaded workspace snapshot is already a layer. Exclude heavy non-runtime paths via `.replitignore` instead (never `dist`, which the build regenerates and the app serves).
+
+**Why:** cache/.git removal in the build step succeeded yet every publish still exceeded 8 GiB.
+
 Keep Java and Python installed during this publishing-size investigation.
 
 **Why:** The user explicitly declined removing these tools to reduce the publishing package.
