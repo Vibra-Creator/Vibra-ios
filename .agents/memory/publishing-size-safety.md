@@ -18,3 +18,7 @@ Preserve the cache root and platform-managed caches; remove only explicitly iden
 **Why:** The security scanner can still write cache state while the build finishes. Removing the cache root caused a real `ENOTEMPTY` build failure; deleting platform state also risks disrupting that concurrent process.
 
 Successful cache/history cleanup does not establish that the image fits: an actual publish still exceeded the limit after that step completed. Inspect additional build inputs and runtime dependencies before suggesting another retry; preserve runtime-served assets when considering source-asset exclusions.
+
+For this publishing-size investigation, the user declined modifying or excluding attachments. Leave the original attachments and their inclusion unchanged unless the user explicitly changes that decision.
+
+**Why:** The user selected “No, non modificare gli allegati” when asked whether unused attachments could be excluded from publishing while preserving originals.
