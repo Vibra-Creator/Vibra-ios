@@ -215,7 +215,6 @@ export default function ProfileEdit() {
     resolver: zodResolver(createProfileFormSchema(t)),
     defaultValues: {
       name: "",
-      age: 25,
       bio: "",
       location: "",
       alienType: "",
@@ -453,6 +452,7 @@ export default function ProfileEdit() {
     setIsUploadingPhoto(true);
     try {
       const formData = new FormData();
+      formData.append("age", String(form.getValues("age") ?? ""));
       formData.append("photo", file);
       const url = adminProfileId
         ? `/api/profiles/upload-photo?targetProfileId=${adminProfileId}`
@@ -858,7 +858,7 @@ export default function ProfileEdit() {
                           <FormItem>
                             <FormLabel className="text-white font-semibold text-sm tracking-wide uppercase">{t("profileEdit.age")}</FormLabel>
                             <FormControl>
-                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.agePlaceholder")} {...field} data-testid="input-age" />
+                              <Input className="bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/90" type="number" placeholder={t("profileEdit.agePlaceholder")} {...field} value={field.value ?? ""} data-testid="input-age" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

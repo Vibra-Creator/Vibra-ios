@@ -1643,6 +1643,7 @@ ${urlEntries}
 
       const targetProfileId = req.query.targetProfileId as string | undefined;
       let userProfile;
+      if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
 
       if (targetProfileId) {
         const requestingUser = await storage.getUser(userId);
@@ -1653,12 +1654,16 @@ ${urlEntries}
       } else {
         userProfile = await storage.getProfileByUserId(userId);
         if (!userProfile) {
+          const age = Number(req.body?.age);
+          if (!Number.isInteger(age) || age < 18 || age > 120) {
+            return res.status(400).json({ error: "Inserisci un'età valida prima di caricare una foto." });
+          }
           const user = await storage.getUser(userId);
           const tempName = user?.firstName || "Nuovo Utente";
           userProfile = await storage.createProfile({
             userId,
             name: tempName,
-            age: 25,
+            age,
             bio: "",
             imageUrl: "/images/profile-1.png",
             location: "",
@@ -1669,8 +1674,6 @@ ${urlEntries}
           });
         }
       }
-
-      if (!req.file) return res.status(400).json({ error: "No photo uploaded" });
 
       const currentPhotos = userProfile.photos || [];
       if (currentPhotos.length >= 6) {

@@ -1,4 +1,4 @@
-import { useState, forwardRef, useRef, useEffect, useCallback } from "react";
+import { useState, forwardRef, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
 import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw, Plus, Rocket, Link2 } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
@@ -36,6 +36,17 @@ function getActivityStatus(lastActiveAt: string | Date | null | undefined, t: (k
   if (diffHours < 24) return { label: `Visto ${diffHours} ${t("swipe.hoursAgo")}`, color: "bg-gray-400", isOnline: false };
   if (diffDays < 7) return { label: `Visto ${diffDays}${t("swipe.daysAgo")}`, color: "bg-gray-500", isOnline: false };
   return { label: "", color: "", isOnline: false };
+}
+
+function getProfilePhotoCandidates(profile: Pick<Profile, "imageUrl" | "photos">): string[] {
+  const uniquePhotos = Array.from(
+    new Set([profile.imageUrl, ...(profile.photos ?? [])].filter((url): url is string => Boolean(url?.trim()))),
+  );
+  const isPlaceholder = (url: string) => /\/images\/(?:avatar|profile-)/i.test(url);
+  return [
+    ...uniquePhotos.filter(url => !isPlaceholder(url)),
+    ...uniquePhotos.filter(isPlaceholder),
+  ];
 }
 
 interface ProfileDetailModalProps {
@@ -114,7 +125,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
 
   if (!isOpen) return null;
 
-    const allPhotos = Array.from(new Set([profile.imageUrl, ...(profile.photos || [])].filter(Boolean))) as string[];
+    const allPhotos = getProfilePhotoCandidates(profile);
 
   const detailItems = [
     { label: t("swipe.alienType"), value: profile.alienType, icon: Sparkles },
@@ -653,19 +664,28 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [showStories, setShowStories] = useState(false);
     const [selectedRating, setSelectedRating] = useState<number | null>(null);
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(() => {
-      if (!profile.imageUrl) return false;
-      const img = new window.Image();
-      img.src = profile.imageUrl;
-      return img.complete;
-    });
+    const photoCandidates = useMemo(() => getProfilePhotoCandidates(profile), [profile.imageUrl, profile.photos]);
+    const photoCandidatesKey = photoCandidates.join("\u0000");
+    const [photoIndex, setPhotoIndex] = useState(0);
+    const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [failedProfileMediaIds, setFailedProfileMediaIds] = useState<Set<string>>(() => new Set());
     const [isFavorited, setIsFavorited] = useState(false);
     const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? false);
     const [isVideoBuffering, setIsVideoBuffering] = useState(false);
     const [showSignalCompose, setShowSignalCompose] = useState(false);
     const [signalText, setSignalText] = useState("");
     const [signalSent, setSignalSent] = useState(false);
+
+    useEffect(() => {
+      setPhotoIndex(0);
+      setImageLoaded(false);
+      setImageError(false);
+    }, [profile.id, photoCandidatesKey]);
+
+    useEffect(() => {
+      setFailedProfileMediaIds(new Set());
+    }, [profile.id]);
 
     // Vibrapp direct compose
     const [showVibCompose, setShowVibCompose] = useState(false);
@@ -845,7 +865,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
   const profileMedia = [...profileSignals]
     .filter((signal: any) => signal.mediaUrl)
     .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  const activeProfileMedia = !hasVideo ? (profileMedia[0] ?? null) : null;
+  const activeProfileMedia = !hasVideo
+    ? (profileMedia.find((signal: any) => !failedProfileMediaIds.has(signal.id)) ?? null)
+    : null;
 
     useEffect(() => {
       const extras = profile.photos || [];
@@ -1238,6 +1260,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         onError={(e) => {
                           const video = e.currentTarget;
                           console.error(`[SwipeCard media-video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code}`);
+                          setFailedProfileMediaIds(previous => new Set(previous).add(activeProfileMedia.id));
                         }}
                       />
                       <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
@@ -1246,7 +1269,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <>
                       <img key={activeProfileMedia.id} src={activeProfileMedia.mediaUrl} alt={profile.name}
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
-                        data-testid={`profile-media-image-${profile.id}`} />
+                        data-testid={`profile-media-image-${profile.id}`}
+                        onError={() => setFailedProfileMediaIds(previous => new Set(previous).add(activeProfileMedia.id))} />
                       <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
                     </>
                   )}
@@ -1263,13 +1287,20 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   )}
                   <img
-                    src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
+                    src={imageError ? "/images/avatar-1.png" : (photoCandidates[photoIndex] || "/images/avatar-1.png")}
                     alt={profile.name}
                     loading="eager"
                     fetchPriority="high"
                     className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
                     onLoad={() => setImageLoaded(true)}
-                    onError={() => setImageError(true)}
+                    onError={() => {
+                      if (photoIndex + 1 < photoCandidates.length) {
+                        setPhotoIndex(index => index + 1);
+                        setImageLoaded(false);
+                      } else {
+                        setImageError(true);
+                      }
+                    }}
                     data-testid={`profile-image-${profile.id}`}
                   />
                   <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
