@@ -329,6 +329,7 @@ export default function ProfileEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       toast({ title: t("profileEdit.profileCreated"), description: t("profileEdit.profileCreatedDesc") });
       setLocation("/");
     },
@@ -359,6 +360,7 @@ export default function ProfileEdit() {
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       toast({ title: t("profileEdit.profileUpdated"), description: t("profileEdit.profileUpdatedDesc") });
       setLocation(adminProfileId ? "/admin" : "/profile");
     },
@@ -470,6 +472,7 @@ export default function ProfileEdit() {
       setUploadedPhotos(data.photos);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       toast({ title: t("profileEdit.photoUploaded"), description: t("profileEdit.photoUploadedDesc") });
     } catch (err: any) {
       const msg = err?.message || t("profileEdit.uploadError");
@@ -495,6 +498,7 @@ export default function ProfileEdit() {
       setUploadedPhotos(data.photos);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
     } catch {
       toast({ title: t("common.error"), description: t("profileEdit.photoRemoveError"), variant: "destructive" });
     }
@@ -514,6 +518,7 @@ export default function ProfileEdit() {
       form.setValue("imageUrl", photoUrl);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/me"] });
       if (adminProfileId) queryClient.invalidateQueries({ queryKey: ["/api/profiles", adminProfileId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       toast({ title: t("profileEdit.profilePhotoUpdated"), description: t("profileEdit.profilePhotoUpdatedDesc") });
     } catch {
       toast({ title: t("common.error"), description: t("profileEdit.profilePhotoError"), variant: "destructive" });

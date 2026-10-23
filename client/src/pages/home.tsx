@@ -113,6 +113,7 @@ export default function Home() {
     },
     enabled: !!myProfile && !isGuest,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const profiles = swipableData?.profiles;
