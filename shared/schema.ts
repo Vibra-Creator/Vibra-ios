@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, doublePrecision, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, doublePrecision, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -466,7 +466,9 @@ export const coldMessages = pgTable("cold_messages", {
   replyContent: text("reply_content"),
   privateRoomId: varchar("private_room_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  uniqueIndex("cold_messages_from_to_unique").on(table.fromProfileId, table.toProfileId),
+]);
 
 export type ColdMessage = typeof coldMessages.$inferSelect;
 

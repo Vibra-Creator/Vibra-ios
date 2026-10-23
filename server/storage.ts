@@ -1483,14 +1483,32 @@ export class DatabaseStorage implements IStorage {
       return { status: "sent" };
     }
 
-    const existing = await db.select().from(coldMessages)
-      .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
-      .limit(1);
-    if (existing.length > 0) {
-      return { status: existing[0].replied ? "already_replied" : "already_exists", coldMessage: existing[0] };
-    }
-    const [msg] = await db.insert(coldMessages).values({ fromProfileId, toProfileId, content, mediaUrl: mediaUrl || null, mediaType: mediaType || null }).returning();
-    return { status: "sent", coldMessage: msg };
+    return db.transaction(async (tx) => {
+      // Serialize sends for the same directed profile pair across all server
+      // instances. The unique index below remains the database-level backstop.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${fromProfileId}), hashtext(${toProfileId}))`);
+
+      const [existing] = await tx.select().from(coldMessages)
+        .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
+        .limit(1);
+      if (existing) {
+        return { status: existing.replied ? "already_replied" as const : "already_exists" as const, coldMessage: existing };
+      }
+
+      const [msg] = await tx.insert(coldMessages)
+        .values({ fromProfileId, toProfileId, content, mediaUrl: mediaUrl || null, mediaType: mediaType || null })
+        .onConflictDoNothing()
+        .returning();
+      if (msg) return { status: "sent" as const, coldMessage: msg };
+
+      // A uniqueness conflict from another writer should return the same clear
+      // result as the normal existing-message path, not a generic server error.
+      const [conflict] = await tx.select().from(coldMessages)
+        .where(and(eq(coldMessages.fromProfileId, fromProfileId), eq(coldMessages.toProfileId, toProfileId)))
+        .limit(1);
+      if (!conflict) throw new Error("Cold message insert conflicted but no existing message was found");
+      return { status: conflict.replied ? "already_replied" as const : "already_exists" as const, coldMessage: conflict };
+    });
   }
 
   async getColdMessagesReceived(toProfileId: string): Promise<Array<ColdMessage & { fromProfile: { id: string; name: string; imageUrl: string; age: number } }>> {

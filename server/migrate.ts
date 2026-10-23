@@ -155,6 +155,29 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
+  // Enforce one cold-message inbox entry per directed profile pair. Preserve
+  // any legacy duplicates rather than deleting messages or replies implicitly;
+  // sendColdMessage also takes this pair's advisory lock if the index cannot
+  // yet be installed.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('cold_messages_from_to_unique_migration'))`);
+    const duplicates = await tx.execute(sql`
+      SELECT 1
+      FROM cold_messages
+      GROUP BY from_profile_id, to_profile_id
+      HAVING COUNT(*) > 1
+      LIMIT 1
+    `);
+    if (duplicates.rows.length > 0) {
+      console.warn("[migrate] Skipped cold-message uniqueness index because legacy duplicate pairs need review");
+    } else {
+      await tx.execute(sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS cold_messages_from_to_unique
+        ON cold_messages (from_profile_id, to_profile_id)
+      `);
+    }
+  });
+
   // Backfill reportedUserId for pre-existing reports whose reported profile still exists
   await db.execute(sql`
     UPDATE reports r

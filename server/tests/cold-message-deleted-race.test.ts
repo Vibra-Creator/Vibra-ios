@@ -31,6 +31,7 @@ import {
 import { DatabaseStorage } from "../storage.js";
 import { profiles, coldMessages, vibrappDms } from "../../shared/schema.js";
 import { and, eq, inArray, or } from "drizzle-orm";
+import { runMigrations } from "../migrate.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -234,6 +235,34 @@ describe("Cold-message deletion race condition", () => {
       null,
       "getColdMessageById must return null after deletion so the HTTP route returns 404 and the client clears the panel"
     );
+  });
+
+  test("overlapping sends persist one row and return sent/already-exists results", async () => {
+    const concurrentSender = await createTestProfile("concurrent_sender");
+    const concurrentRecipient = await createTestProfile("concurrent_recipient");
+    createdProfileIds.push(concurrentSender, concurrentRecipient);
+
+    await runMigrations();
+
+    const results = await Promise.all([
+      storage.sendColdMessage(concurrentSender, concurrentRecipient, "first quick tap"),
+      storage.sendColdMessage(concurrentSender, concurrentRecipient, "second quick tap"),
+    ]);
+
+    assert.deepEqual(
+      results.map(({ status }) => status).sort(),
+      ["already_exists", "sent"],
+      "one overlapping request must create the message and the other must report it already exists",
+    );
+    assert.ok(results[0].coldMessage && results[1].coldMessage);
+    assert.equal(results[0].coldMessage.id, results[1].coldMessage.id);
+
+    const persisted = await db.select().from(coldMessages)
+      .where(and(
+        eq(coldMessages.fromProfileId, concurrentSender),
+        eq(coldMessages.toProfileId, concurrentRecipient),
+      ));
+    assert.equal(persisted.length, 1, "only one cold-message row may be persisted for the profile pair");
   });
 
   test("getColdMessageById still returns the message when it was NOT deleted", async () => {
