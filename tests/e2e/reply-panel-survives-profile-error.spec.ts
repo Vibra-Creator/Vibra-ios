@@ -458,6 +458,97 @@ test("sender sees an unavailable notice when the recipient deletes a message whi
   }
 });
 
+test("sender keeps sent-message context and sees a temporary notice when revalidation has a network failure", async ({
+  page,
+  request,
+}, testInfo) => {
+  const recipient = await registerUser(request, "recipient_network_failure");
+  const sender = await registerUser(request, "sender_network_failure");
+  const recipientProfileId = await loginAs(request, recipient);
+  await loginAs(request, sender);
+  const messageContent = `E2E network failure ${RUN_ID}`;
+  const sendResponse = await request.post("/api/cold-messages", {
+    data: { toProfileId: recipientProfileId, content: messageContent },
+  });
+  if (!sendResponse.ok()) {
+    throw new Error(`Send cold msg: ${sendResponse.status()} – ${await sendResponse.text()}`);
+  }
+  const sentMessagesResponse = await request.get("/api/cold-messages/sent");
+  if (!sentMessagesResponse.ok()) {
+    throw new Error(`Sent messages: ${sentMessagesResponse.status()} – ${await sentMessagesResponse.text()}`);
+  }
+  const sentMessage = (await sentMessagesResponse.json() as Array<{ id: string; toProfileId: string }>)
+    .find((message) => message.toProfileId === recipientProfileId);
+  if (!sentMessage) throw new Error("Sent cold message not found – setup failed");
+
+  const baseURL = String(testInfo.project.use.baseURL ?? "http://localhost:5000");
+  const state = await request.storageState();
+  const baseUrl = new URL(baseURL);
+  await page.context().addCookies(
+    state.cookies.map((cookie) => ({
+      name: cookie.name,
+      value: cookie.value,
+      domain: baseUrl.hostname,
+      path: cookie.path || "/",
+      httpOnly: cookie.httpOnly ?? true,
+      secure: baseUrl.protocol === "https:",
+      sameSite: "Lax" as const,
+    })),
+  );
+
+  await page.route("**/api/auth/user", async (route) => {
+    const response = await route.fetch();
+    if (response.ok()) {
+      const body = (await response.json()) as Record<string, unknown>;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ...body, emailVerified: true }),
+      });
+    } else {
+      await route.fulfill({ response });
+    }
+  });
+
+  const messageResponse = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    response.url().includes(`/api/cold-messages/${sentMessage.id}`),
+  );
+  await page.goto(`/vibrapp?coldMessageId=${encodeURIComponent(sentMessage.id)}`, {
+    waitUntil: "load",
+  });
+  const openedMessageResponse = await messageResponse;
+  expect(openedMessageResponse.status()).toBe(200);
+  expect(await openedMessageResponse.json()).toMatchObject({
+    id: sentMessage.id,
+    content: messageContent,
+    isSentByMe: true,
+  });
+
+  const targetBanner = page.locator('[data-testid="intro-target-banner"]');
+  await expect(targetBanner).toBeVisible({ timeout: 10_000 });
+  const sentMessageBubble = page.locator(
+    `[data-testid="sent-intro-bubble-${sentMessage.id}"]`,
+  );
+  await expect(sentMessageBubble).toBeVisible();
+  await page.locator('[data-testid="button-view-intro-target-profile"]').click();
+  await expect(page.locator('[data-testid="profile-detail-modal"]')).toBeVisible();
+
+  await page.route(`**/api/cold-messages/${sentMessage.id}`, (route) => route.abort());
+  const failedRevalidation = page.waitForEvent("requestfailed", (request) =>
+    request.method() === "GET" &&
+    request.url().includes(`/api/cold-messages/${sentMessage.id}`),
+  );
+  await page.locator('[data-testid="button-modal-close"]').click();
+  await failedRevalidation;
+
+  const toast = page.locator('[data-testid="sender-profile-toast"]');
+  await expect(toast).toContainText("Controllo temporaneamente non riuscito. Riprova.");
+  await expect(targetBanner).toBeVisible();
+  await expect(sentMessageBubble).toBeVisible();
+  await expect(toast).not.toContainText("non è più disponibile");
+});
+
 test("sender sees an unavailable notice when opening a link to a message already deleted by the recipient", async ({
   page,
   request,

@@ -2202,7 +2202,9 @@ export default function Vibrapp() {
                   showSenderProfileToast("Questo messaggio non è più disponibile");
                 }
               } catch {
-                // Keep the sent-message context if revalidation fails transiently.
+                // The check failed, but that does not mean the message was deleted.
+                // Keep the sent-message context and tell the sender to try again.
+                showSenderProfileToast("Controllo temporaneamente non riuscito. Riprova.");
               }
             }
           }}
