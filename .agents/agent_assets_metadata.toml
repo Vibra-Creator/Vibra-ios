@@ -934,3 +934,17 @@ mtime_ms = 1792747888322
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/ea3d6d12-87a1-42f7-beb3-38a33e06cc47/aa2de0cd-6f40-45ba-a679-da4ac1fb0492"
 storage_version_token = "1792747897017149"
 content_type = "image/png"
+
+[[outputs]]
+id = "oA3dfW7p_gCSbBVJ65GTd"
+uri = "file://generated-artifacts/google-play/Sffb168f3a47a4fa3b778ff9e895810b9o_600x600.png"
+type = "image"
+title = "Immagine prodotto 600 × 600 px"
+description = "Versione PNG quadrata. Ho mantenuto tutta la grafica verticale al centro e riempito i lati con uno sfondo sfocato, così non si perdono testo o dettagli."
+logical_id = "80979bee-6869-4385-98e6-48426e1b70fb"
+content_hash = "sha256:40384c51ff55ed6b06fcb81c4b5053a67d8e07ceddfcd76f2c1f7c33c6ca828d"
+size = 281947
+mtime_ms = 1792748833622
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/80979bee-6869-4385-98e6-48426e1b70fb/ea5b12c9-82d1-4a42-8922-fa67de838098"
+storage_version_token = "1792748851938958"
+content_type = "image/png"
