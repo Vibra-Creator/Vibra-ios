@@ -1191,6 +1191,8 @@ ${urlEntries}
       let afterSelf = 0, afterBlocked = 0, afterGender = 0, afterAge = 0, afterDist = 0;
       const swipable = allProfiles.filter(p => {
         if (p.id === profileId) return false;
+        // Swipe Cosmici: solo chi ha scelto di partecipare al dating
+        if (!p.datingEnabled) return false;
         afterSelf++;
         // I profili bloccati sono l'unico caso di esclusione permanente
         if (blockedSet.has(p.id)) return false;
@@ -1527,6 +1529,78 @@ ${urlEntries}
     }
   });
 
+  // ── Vibra Dating opzionale ──────────────────────────────────────────────
+  // Dati necessari per entrare negli Swipe Cosmici (controllati solo quando
+  // un profilo passa da "fuori" a "dentro" il dating).
+  const DATING_FIELD_LABELS: Record<string, string> = {
+    gender: "genere",
+    preferredGender: "chi cerchi",
+    bio: "bio",
+    imageUrl: "foto",
+  };
+  const missingDatingFields = (p: { gender?: string | null; preferredGender?: string | null; bio?: string | null; imageUrl?: string | null }) =>
+    (["gender", "preferredGender", "bio", "imageUrl"] as const).filter((key) => !String(p[key] ?? "").trim());
+  const datingFieldsError = (missing: string[]) => ({
+    error: `Per entrare negli Swipe Cosmici completa: ${missing.map((m) => DATING_FIELD_LABELS[m] || m).join(", ")}`,
+    code: "DATING_FIELDS_MISSING",
+    missing,
+  });
+  const generateReferralCode = async () => {
+    for (let i = 0; i < 10; i++) {
+      const candidate = "VBR-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const [existing] = await db.select().from(profiles).where(eq(profiles.referralCode, candidate));
+      if (!existing) return candidate;
+    }
+    return "VBR-" + Date.now().toString(36).toUpperCase();
+  };
+
+  // Bivio dopo la registrazione: "vai avanti e usa le altre sezioni".
+  // Crea il profilo base se manca (utenti registrati senza profilo) e chiude il bivio.
+  app.post("/api/profiles/me/hub-choice", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const existing = await storage.getProfileByUserId(userId);
+      if (existing) {
+        const [updated] = await db.update(profiles)
+          .set({ datingChoicePending: false })
+          .where(eq(profiles.id, existing.id))
+          .returning();
+        return res.json(updated);
+      }
+
+      const rawAge = req.body?.age;
+      const age = typeof rawAge === "number" ? rawAge : Number(rawAge);
+      if (rawAge === undefined || rawAge === null || rawAge === "" || !Number.isInteger(age) || age < 18 || age > 120) {
+        return res.status(400).json({ error: "L'età deve essere un numero intero tra 18 e 120 anni", code: "AGE_REQUIRED" });
+      }
+      const user = await storage.getUser(userId);
+      const name = String(user?.firstName || "").trim() || "Nuovo Utente";
+      const alienTypes = ["Nebulare", "Cristallino", "Biotico", "Dimensionale", "Solare", "Viaggiatore Stellare", "Quantico", "Etereo"];
+      const [created] = await db.insert(profiles).values({
+        userId: String(userId),
+        name,
+        age,
+        bio: "",
+        imageUrl: "/images/avatar-1.png",
+        location: "",
+        interests: [],
+        alienType: alienTypes[Math.floor(Math.random() * alienTypes.length)],
+        isBot: false,
+        isVerified: false,
+        points: 0,
+        referralCode: await generateReferralCode(),
+        datingEnabled: false,
+        datingChoicePending: false,
+      }).returning();
+      res.status(201).json(created);
+    } catch (error) {
+      console.error("Error saving hub choice:", error);
+      res.status(500).json({ error: "Impossibile salvare la scelta" });
+    }
+  });
+
   app.post("/api/profiles", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
@@ -1549,27 +1623,28 @@ ${urlEntries}
       }
 
       const existingProfile = await storage.getProfileByUserId(userId);
+      const joiningDating = validatedData.datingEnabled === true && existingProfile?.datingEnabled !== true;
+      if (joiningDating) {
+        const missing = missingDatingFields({ ...(existingProfile || {}), ...validatedData });
+        if (missing.length) return res.status(400).json(datingFieldsError(missing));
+      }
       if (existingProfile) {
-        const updated = await storage.updateProfile(existingProfile.id, {
+        let updated = await storage.updateProfile(existingProfile.id, {
           ...validatedData,
           userId,
           isBot: false,
         });
+        if (validatedData.datingEnabled === true && existingProfile.datingChoicePending) {
+          [updated] = await db.update(profiles).set({ datingChoicePending: false }).where(eq(profiles.id, existingProfile.id)).returning();
+        }
         return res.json(updated);
       }
-      let refCode = "";
-      for (let i = 0; i < 10; i++) {
-        const candidate = "VBR-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-        const [existing] = await db.select().from(profiles).where(eq(profiles.referralCode, candidate));
-        if (!existing) { refCode = candidate; break; }
-      }
-      if (!refCode) refCode = "VBR-" + Date.now().toString(36).toUpperCase();
       const profile = await storage.createProfile({
         ...validatedData,
         userId,
         isBot: false,
         points: 0,
-        referralCode: refCode,
+        referralCode: await generateReferralCode(),
       });
       res.status(201).json(profile);
     } catch (error) {
@@ -1660,8 +1735,16 @@ ${urlEntries}
         }
       }
 
+      if (validatedData.datingEnabled === true && existing.datingEnabled !== true) {
+        const missing = missingDatingFields({ ...existing, ...validatedData });
+        if (missing.length) return res.status(400).json(datingFieldsError(missing));
+      }
+
       console.log(`[PROFILE UPDATE] id=${req.params.id} saving: gender=${validatedData.preferredGender} ageMin=${validatedData.preferredAgeMin} ageMax=${validatedData.preferredAgeMax} heightMin=${validatedData.preferredHeightMin} heightMax=${validatedData.preferredHeightMax} maxDist=${validatedData.maxDistanceKm}`);
-      const profile = await storage.updateProfile(req.params.id, validatedData);
+      let profile = await storage.updateProfile(req.params.id, validatedData);
+      if (validatedData.datingEnabled === true && existing.datingChoicePending) {
+        [profile] = await db.update(profiles).set({ datingChoicePending: false }).where(eq(profiles.id, existing.id)).returning();
+      }
       res.json(profile);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1713,6 +1796,7 @@ ${urlEntries}
             alienType: "Andromediano",
             isBot: false,
             points: 0,
+            datingEnabled: false,
           });
         }
       }
@@ -1969,6 +2053,20 @@ ${urlEntries}
   app.post("/api/swipe", async (req, res) => {
     try {
       const validatedData = insertSwipeSchema.parse(req.body);
+
+      const [swiperProfile, targetProfile] = await Promise.all([
+        storage.getProfile(validatedData.swiperId),
+        storage.getProfile(validatedData.swipedId),
+      ]);
+      if (!swiperProfile || !targetProfile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      if (!swiperProfile.datingEnabled) {
+        return res.status(403).json({ error: "Attiva il tuo profilo dating per mettere like negli Swipe Cosmici", code: "DATING_REQUIRED" });
+      }
+      if (!targetProfile.datingEnabled) {
+        return res.status(400).json({ error: "Questo profilo non partecipa agli Swipe Cosmici" });
+      }
       
       console.log(`[SWIPE] ${validatedData.swiperId} -> ${validatedData.swipedId}, liked: ${validatedData.liked}`);
       db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, validatedData.swiperId)).execute().catch(() => {});

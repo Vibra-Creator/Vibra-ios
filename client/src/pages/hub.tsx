@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Mic, MicOff, Send, Loader2, ExternalLink, ArrowRight, Sparkles, Lock } from "lucide-react";
+import { Mic, MicOff, Send, Loader2, ExternalLink, ArrowRight, Sparkles, Lock, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -105,14 +105,26 @@ export default function HubPage() {
     document.title = "Vibra — Hub";
   }, []);
 
-  const { data: profile } = useQuery<{ name?: string }>({
+  const { data: profile } = useQuery<{ name?: string; datingEnabled?: boolean } | null>({
     queryKey: ["/api/profiles/me"],
     queryFn: async () => {
       const r = await fetch("/api/profiles/me", { credentials: "include" });
-      return r.ok ? r.json() : null;
+      if (!r.ok) throw new Error(`${r.status}`);
+      return r.json();
     },
     retry: false,
   });
+
+  // Promemoria Vibra Dating: chiudibile, non ricompare a ogni accesso.
+  const DATING_REMINDER_KEY = "vibra-dating-reminder-dismissed";
+  const [datingReminderDismissed, setDatingReminderDismissed] = useState(() => {
+    try { return localStorage.getItem(DATING_REMINDER_KEY) === "1"; } catch { return false; }
+  });
+  const dismissDatingReminder = () => {
+    setDatingReminderDismissed(true);
+    try { localStorage.setItem(DATING_REMINDER_KEY, "1"); } catch {}
+  };
+  const showDatingReminder = !!profile && profile.datingEnabled === false && !datingReminderDismissed;
 
   const search = useMutation({
     mutationFn: async (q: string) => {
@@ -168,6 +180,33 @@ export default function HubPage() {
             {t("hub.subtitle")}
           </h1>
         </motion.div>
+
+        {showDatingReminder && (
+          <div
+            className="mb-4 rounded-2xl p-4 relative"
+            style={{ background: "linear-gradient(135deg, rgba(236,72,153,0.18), rgba(139,92,246,0.18))", border: "1px solid rgba(236,72,153,0.35)" }}
+            data-testid="hub-dating-reminder"
+          >
+            <button
+              onClick={dismissDatingReminder}
+              className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white/60 hover:text-white"
+              aria-label={t("dating.reminderDismiss")}
+              data-testid="button-dismiss-dating-reminder"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <p className="text-white font-semibold text-sm pr-8">{t("dating.reminderTitle")}</p>
+            <p className="text-white/70 text-xs mt-1 mb-3">{t("dating.reminderDesc")}</p>
+            <button
+              onClick={() => setLocation("/profile/edit?dating=1")}
+              className="px-4 py-2 rounded-xl text-white text-xs font-semibold"
+              style={{ background: "linear-gradient(135deg,#ec4899,#8b5cf6)" }}
+              data-testid="button-hub-activate-dating"
+            >
+              {t("dating.reminderBtn")}
+            </button>
+          </div>
+        )}
 
         {/* AI Search Bar */}
         <motion.div

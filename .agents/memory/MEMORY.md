@@ -12,3 +12,4 @@
 - [Database fixture IDs](database-fixture-ids.md) — integration-test inserts should set IDs explicitly when a migrated table may lack the schema's server-side default.
 - [Play Store product evolution](play-store-product-evolution.md) — Vibra was listed while positioned as a dating app and has since changed substantially; verify the live package and listing separately.
 - [Publishing size safety](publishing-size-safety.md) — remove build-only caches/history only in the isolated publishing copy; never delete workspace history or runtime media to fit the image limit.
+- [Vibra Dating opt-in](dating-opt-in.md) — hub/dating split rules: view-only cards, required fields, matches kept on opt-out

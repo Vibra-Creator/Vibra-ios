@@ -59,6 +59,10 @@ export const profiles = pgTable("profiles", {
   instagramHandle: text("instagram_handle"),
   tiktokHandle: text("tiktok_handle"),
   facebookUrl: text("facebook_url"),
+  // Vibra Dating (Swipe Cosmici): solo i profili con datingEnabled compaiono nelle card.
+  datingEnabled: boolean("dating_enabled").default(true).notNull(),
+  // true finché l'utente appena registrato non ha scelto tra dating e hub (bivio).
+  datingChoicePending: boolean("dating_choice_pending").default(false).notNull(),
 });
 
 export const swipes = pgTable("swipes", {
@@ -88,6 +92,7 @@ export const messages = pgTable("messages", {
 export const insertProfileSchema = createInsertSchema(profiles).omit({
   id: true,
   moderationHidden: true,
+  datingChoicePending: true,
 });
 
 export const updateProfileSchema = createInsertSchema(profiles).omit({
@@ -96,6 +101,7 @@ export const updateProfileSchema = createInsertSchema(profiles).omit({
   isBot: true,
   isVerified: true,
   moderationHidden: true,
+  datingChoicePending: true,
 }).partial();
 
 export const insertSwipeSchema = createInsertSchema(swipes).omit({

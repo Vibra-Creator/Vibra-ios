@@ -166,6 +166,7 @@ export default function Admin() {
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [profileSearch, setProfileSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [datingFilter, setDatingFilter] = useState<"all" | "dating" | "hub" | "none">("all");
   const [hideBotsFilter, setHideBotsFilter] = useState(true);
   const [reportClockNow, setReportClockNow] = useState(Date.now());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1146,11 +1147,37 @@ export default function Admin() {
                     </button>
                   )}
                 </div>
+                <div className="flex flex-wrap gap-1.5 mt-2" data-testid="filter-dating">
+                  {([
+                    ["all", "Tutti"],
+                    ["dating", "Dating: sì"],
+                    ["hub", "Dating: no"],
+                    ["none", "Senza profilo"],
+                  ] as const).map(([value, label]) => (
+                    <Button
+                      key={value}
+                      size="sm"
+                      variant={datingFilter === value ? "default" : "outline"}
+                      className="h-7 text-xs"
+                      onClick={() => setDatingFilter(value)}
+                      data-testid={`filter-dating-${value}`}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {(users || [])
                     .filter(u => !hideBotsFilter || !isBot(u))
+                    .filter(u => {
+                      if (datingFilter === "all") return true;
+                      const up = profiles?.find(p => p.userId === u.id);
+                      if (datingFilter === "none") return !up;
+                      if (!up) return false;
+                      return datingFilter === "dating" ? up.datingEnabled !== false : up.datingEnabled === false;
+                    })
                     .filter(u => {
                       if (!userSearch) return true;
                       const q = userSearch.toLowerCase();
@@ -1179,6 +1206,13 @@ export default function Admin() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-medium text-foreground truncate">{userProfile?.name || (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : "Utente")}</h3>
                               {u.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
+                              {userProfile ? (
+                                <Badge className={userProfile.datingEnabled !== false ? "bg-pink-500 text-white text-[10px] px-1.5 py-0" : "bg-slate-500 text-white text-[10px] px-1.5 py-0"} data-testid={`badge-dating-${u.id}`}>
+                                  Dating: {userProfile.datingEnabled !== false ? "sì" : "no"}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Senza profilo</Badge>
+                              )}
                               {userProfile?.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
                               {u.createdAt && (Date.now() - new Date(u.createdAt).getTime()) < 48 * 60 * 60 * 1000 && (
                                 <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0 animate-pulse">🆕 Nuovo</Badge>

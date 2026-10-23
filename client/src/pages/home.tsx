@@ -8,6 +8,7 @@ import { EmptyState, ProfileCardSkeleton } from "@/components/EmptyState";
 import { ActivityToastSystem } from "@/components/ActivityFeed";
 import { ProfileVideosSection } from "@/components/ProfileVideosSection";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
@@ -53,6 +54,7 @@ export default function Home() {
   const [forcedFirstProfileId, setForcedFirstProfileId] = useState<string | null>(null);
   const [globalMuted, setGlobalMuted] = useState(false);
   const [showVideoDrawer, setShowVideoDrawer] = useState(false);
+  const [showDatingLocked, setShowDatingLocked] = useState(false);
   const { user, logout: logoutFn } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
@@ -185,7 +187,17 @@ export default function Home() {
 
   swipeMutateRef.current = swipeMutation.mutate;
 
-  const allProfilesRaw = isGuest ? (guestProfiles || []) : (profiles || []);
+  // Sola visione: iscritto all'hub ma non (ancora) a Vibra Dating.
+  const isDatingLocked = !isGuest && !!myProfile && !myProfile.datingEnabled;
+  const openDatingLocked = useCallback(() => setShowDatingLocked(true), []);
+  const goToDatingProfile = useCallback(() => {
+    setShowDatingLocked(false);
+    setLocation("/profile/edit?dating=1");
+  }, [setLocation]);
+
+  const allProfilesRaw = isGuest
+    ? (guestProfiles || []).filter(p => p.datingEnabled !== false)
+    : (profiles || []);
   // Profili già piaciuti in fondo — li vedi dopo aver esplorato tutti i nuovi
   const allProfiles = allProfilesRaw
     ? [...allProfilesRaw.filter(p => !likedIdsSet.has(p.id)), ...allProfilesRaw.filter(p => likedIdsSet.has(p.id))]
@@ -295,6 +307,16 @@ export default function Home() {
     }
     if (!myProfile?.id) return;
 
+    if (isDatingLocked) {
+      if (direction === "right") {
+        openDatingLocked();
+        return;
+      }
+      // Scartare in sola visione passa solo alla card successiva, senza salvare nulla.
+      setSwipedProfiles(prev => new Set(prev).add(currentProfile.id));
+      return;
+    }
+
     // Ogni nuovo swipe cancella il "forza primo" dell'undo precedente
     setForcedFirstProfileId(null);
 
@@ -326,7 +348,7 @@ export default function Home() {
     }
 
     swipeMutation.mutate(payload);
-  }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet, myProfile?.id]);
+  }, [currentProfile, swipeMutation, isGuest, blockIfGuest, likedIdsSet, myProfile?.id, isDatingLocked, openDatingLocked]);
 
   const undoMutation = useMutation({
     mutationFn: () => apiRequest("DELETE", "/api/swipes/last"),
@@ -551,6 +573,15 @@ export default function Home() {
         `}</style>
       </div>
 
+      {isDatingLocked && (
+        <div className="relative z-20 mx-3 mb-2 rounded-xl px-3 py-2 flex items-center justify-between gap-2 bg-gradient-to-r from-primary/90 to-pink-500/90 backdrop-blur-sm" data-testid="dating-view-only-banner">
+          <span className="text-xs text-white font-medium">{t("dating.viewOnlyBanner")}</span>
+          <Button size="sm" variant="outline" className="text-xs text-white border-white/50 shrink-0" onClick={goToDatingProfile} data-testid="button-activate-dating">
+            {t("dating.activateBtn")}
+          </Button>
+        </div>
+      )}
+
       <div className="w-full relative z-10 flex-1 min-h-0">
         {availableProfiles.slice(1, 9).filter(p => p.profileVideoUrl).map(p => {
           const _url = p.profileVideoUrl ?? "";
@@ -603,9 +634,10 @@ export default function Home() {
             alreadyLiked={likedIdsSet.has(currentProfile.id)}
             globalMuted={globalMuted}
             onMutedChange={setGlobalMuted}
-            onOpenPostComposer={() => setShowVideoDrawer(true)}
-            onUndo={handleUndo}
+            onOpenPostComposer={isDatingLocked ? undefined : () => setShowVideoDrawer(true)}
+            onUndo={isDatingLocked ? undefined : handleUndo}
             undoDisabled={undoMutation.isPending}
+            onLockedAction={isDatingLocked ? openDatingLocked : undefined}
           />
         )}
       </div>
@@ -613,6 +645,18 @@ export default function Home() {
       {matchModalElement}
       {!isGuest && <ActivityToastSystem />}
       <GuestBlockerModal />
+      <Dialog open={showDatingLocked} onOpenChange={setShowDatingLocked}>
+        <DialogContent className="max-w-sm" data-testid="dialog-dating-locked">
+          <DialogHeader>
+            <DialogTitle>{t("dating.lockedTitle")}</DialogTitle>
+            <DialogDescription>{t("dating.lockedDesc")}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-2">
+            <Button onClick={goToDatingProfile} data-testid="button-dating-locked-activate">{t("dating.activateBtn")}</Button>
+            <Button variant="ghost" onClick={() => setShowDatingLocked(false)} data-testid="button-dating-locked-later">{t("dating.lockedLater")}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

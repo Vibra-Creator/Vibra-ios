@@ -9,6 +9,7 @@ import { VideoBackground } from "@/components/VideoBackground";
 import { Header, BottomNav } from "@/components/Header";
 import { SplashScreen } from "@/components/SplashScreen";
 import { EmailVerificationGate } from "@/components/EmailVerificationGate";
+import { DatingChoice } from "@/components/DatingChoice";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const HubPage = lazy(() => import("@/pages/hub"));
@@ -416,11 +417,13 @@ function AppContent() {
   const isGuestPublicPage = guestPublicPages.includes(location);
   const hideVideoBackground = pagesWithOwnBackground.includes(location) || (!isAuthenticated && !isGuest);
 
-  const { data: myProfile, isLoading: profileLoading } = useQuery({
+  const { data: myProfile, isLoading: profileLoading, isError: profileError } = useQuery({
     queryKey: ["/api/profiles/me"],
     queryFn: async () => {
       const res = await fetch("/api/profiles/me", { credentials: "include" });
-      if (!res.ok) return null;
+      // Un errore non va confuso con "nessun profilo": il bivio compare solo
+      // quando il server conferma che il profilo manca o la scelta è in sospeso.
+      if (!res.ok) throw new Error(`${res.status}`);
       return res.json();
     },
     enabled: isAuthenticated && !isGuest,
@@ -455,6 +458,21 @@ function AppContent() {
         }}
       />
     );
+  }
+
+  // Bivio dating/hub per i nuovi iscritti (e per chi non ha ancora un profilo).
+  const datingChoiceAllowedPaths = ["/profile/edit", "/verify-email", "/privacy", "/terms", "/child-safety", "/support"];
+  if (
+    isAuthenticated &&
+    user &&
+    !user.isAdmin &&
+    !isGuest &&
+    !profileLoading &&
+    !profileError &&
+    (myProfile === null || (myProfile && myProfile.datingChoicePending)) &&
+    !datingChoiceAllowedPaths.includes(location)
+  ) {
+    return <DatingChoice hasProfile={!!myProfile} />;
   }
 
   const pageFallback = (

@@ -398,6 +398,11 @@ httpServer.listen(
     await db.execute(sql`CREATE INDEX IF NOT EXISTS profile_views_viewed_idx ON profile_views(viewed_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS profile_views_viewer_idx ON profile_views(viewer_id)`);
     console.log("[migration] Profile Views table ready");
+
+    // Vibra Dating opzionale: i profili esistenti restano nel dating.
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dating_enabled boolean NOT NULL DEFAULT true`);
+    await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dating_choice_pending boolean NOT NULL DEFAULT false`);
+    console.log("[migration] Dating opt-in columns ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }

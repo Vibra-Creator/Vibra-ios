@@ -631,6 +631,9 @@ interface SwipeCardProps {
   onOpenPostComposer?: () => void;
   onUndo?: () => void;
   undoDisabled?: boolean;
+  /** Se presente, la card è in sola visione: like, preferiti, messaggi e
+   * interazioni chiamano questa funzione invece di agire. */
+  onLockedAction?: () => void;
 }
 
 function resolveVideoSrc(url: string | null | undefined): string | undefined {
@@ -645,7 +648,7 @@ function resolveVideoSrc(url: string | null | undefined): string | undefined {
 }
 
 export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
-  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange, onOpenPostComposer, onUndo, undoDisabled }, ref) {
+  function SwipeCard({ profile, onSwipe, isTop = false, hasPrivateRoom = false, alreadyLiked = false, actionButtons, topOverlay, globalMuted, onMutedChange, onOpenPostComposer, onUndo, undoDisabled, onLockedAction }, ref) {
     const [exitX, setExitX] = useState(0);
     const [exitY, setExitY] = useState(0);
     const [showDetail, setShowDetail] = useState(false);
@@ -1144,6 +1147,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         setShowRating(false);
         setSelectedRating(null);
         onSwipe("left");
+      } else if (info.offset.x > 100 && !alreadyLiked && onLockedAction) {
+        onLockedAction();
       } else if (info.offset.x > 100 && !alreadyLiked) {
         setExitX(300);
         setShowRating(false);
@@ -1321,7 +1326,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </motion.button>
 
                     {/* Preferiti */}
-                    <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavoriteMutation.mutate(); }}
+                    <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (onLockedAction) { onLockedAction(); return; } toggleFavoriteMutation.mutate(); }}
                       className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-favorite-${profile.id}`}>
                       <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">👾</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Preferiti</span>
@@ -1330,6 +1335,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     {/* Impression */}
                     <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => {
                         e.stopPropagation(); e.preventDefault();
+                        if (onLockedAction) { onLockedAction(); return; }
                         if (profile.ratingEnabled) { setShowRating(true); setSelectedRating(null); setRatingSubmitted(false); }
                         else { toast({ title: "Non disponibile", description: `${profile.name} non ha attivato le impressioni` }); }
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-impression-${profile.id}`}>
@@ -1338,7 +1344,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </motion.button>
 
                     {/* Signal */}
-                    <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowSignalCompose(true); }}
+                    <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (onLockedAction) { onLockedAction(); return; } setShowSignalCompose(true); }}
                       className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-signals-sidebar-${profile.id}`}>
                       <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">🛸</span>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Signal</span>
@@ -1403,6 +1409,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     {/* Vibrapp */}
                     <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => {
                         e.stopPropagation(); e.preventDefault();
+                        if (onLockedAction) { onLockedAction(); return; }
                         navigate(`/vibrapp?dm=${encodeURIComponent(profile.id)}`);
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-vibrapp-${profile.id}`}>
                       <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">👽</span>
@@ -1502,7 +1509,14 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     </div>
                   </div>
                 )}
-                {isTop && <div className="pb-1"><ReactionBar profileId={profile.id} /></div>}
+                {isTop && (
+                  <div
+                    className="pb-1"
+                    onClickCapture={onLockedAction ? (e) => { e.stopPropagation(); e.preventDefault(); onLockedAction(); } : undefined}
+                  >
+                    <ReactionBar profileId={profile.id} />
+                  </div>
+                )}
               </div>
             </div>
           </div>

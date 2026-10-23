@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Camera, Sparkles, MapPin, User, Heart, ArrowLeft, ArrowRight, Save, Ruler, Languages, Star, Search, Check, CheckCircle, Phone, ImagePlus, X, Loader2, UserCircle, Eye, Compass, Video } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -184,6 +185,9 @@ export default function ProfileEdit() {
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [profileVideoUrl, setProfileVideoUrl] = useState<string | null>(null);
   const [ratingEnabled, setRatingEnabled] = useState(false);
+  // Arrivando da "Attiva il tuo profilo dating" (?dating=1) l'interruttore parte acceso.
+  const datingRequested = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("dating") === "1";
+  const [datingEnabled, setDatingEnabled] = useState(true);
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(true);
   const [maxDistanceKm, setMaxDistanceKm] = useState<number>(0);
   const [profileLatitude, setProfileLatitude] = useState<number | null>(null);
@@ -289,6 +293,7 @@ export default function ProfileEdit() {
       setUploadedPhotos(existingProfile.photos || []);
       setProfileVideoUrl(existingProfile.profileVideoUrl || null);
       setRatingEnabled(existingProfile.ratingEnabled || false);
+      setDatingEnabled(datingRequested || existingProfile.datingEnabled !== false);
       setLocationSharingEnabled(existingProfile.locationSharingEnabled ?? true);
       if (existingProfile.maxDistanceKm != null) setMaxDistanceKm(existingProfile.maxDistanceKm);
       if (existingProfile.profileLatitude) setProfileLatitude(existingProfile.profileLatitude);
@@ -375,13 +380,34 @@ export default function ProfileEdit() {
 
   const submitClickedRef = useRef(false);
 
+  // Chi entra nel dating (interruttore acceso, prima spento) deve avere questi dati.
+  const joiningDating = datingEnabled && existingProfile?.datingEnabled !== true;
+  const missingDatingFields = (data: Partial<ProfileFormValues>) => {
+    const fields: { key: "gender" | "preferredGender" | "bio" | "imageUrl"; label: string; step: number }[] = [
+      { key: "gender", label: t("dating.fieldGender"), step: 0 },
+      { key: "preferredGender", label: t("dating.fieldPreferredGender"), step: 0 },
+      { key: "imageUrl", label: t("dating.fieldImage"), step: 0 },
+      { key: "bio", label: t("dating.fieldBio"), step: 5 },
+    ];
+    return fields.filter((f) => !String(data[f.key] ?? "").trim());
+  };
+
   const onSubmit = (data: ProfileFormValues) => {
     if (!submitClickedRef.current) return;
     submitClickedRef.current = false;
 
     if (step !== TOTAL_STEPS - 1) return;
 
-    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled, locationSharingEnabled, maxDistanceKm, profileLatitude, profileLongitude };
+    if (joiningDating) {
+      const missing = missingDatingFields(data);
+      if (missing.length) {
+        toast({ title: `${t("dating.missingFields")}: ${missing.map((m) => m.label).join(", ")}`, variant: "destructive" });
+        setStep(Math.min(...missing.map((m) => m.step)));
+        return;
+      }
+    }
+
+    const profileData = { ...data, interests, languages, communicationStyle: communicationStyles.join(","), ratingEnabled, locationSharingEnabled, maxDistanceKm, profileLatitude, profileLongitude, datingEnabled };
     if (existingProfile) {
       updateMutation.mutate(profileData);
     } else {
@@ -419,6 +445,13 @@ export default function ProfileEdit() {
     if (step === 0) {
       const valid = await form.trigger(["name", "age", "alienType", "imageUrl"]);
       if (!valid) return;
+      if (joiningDating) {
+        const missing = missingDatingFields(form.getValues()).filter((m) => m.step === 0);
+        if (missing.length) {
+          toast({ title: `${t("dating.missingFields")}: ${missing.map((m) => m.label).join(", ")}`, variant: "destructive" });
+          return;
+        }
+      }
     }
     if (step < TOTAL_STEPS - 1) setStep(step + 1);
   };
@@ -671,6 +704,17 @@ export default function ProfileEdit() {
                     <User className="w-5 h-5 text-primary" />
                     {t("profileEdit.step1")}
                   </div>
+                  {!existingProfile?.isBot && (
+                    <div className="rounded-xl border border-pink-400/30 bg-white/5 p-3 flex items-start gap-3" data-testid="dating-toggle-card">
+                      <Heart className="w-5 h-5 text-pink-400 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-sm">{t("dating.toggleLabel")}</p>
+                        <p className="text-white/70 text-xs mt-0.5">{t("dating.toggleDesc")}</p>
+                        {joiningDating && <p className="text-pink-300 text-xs mt-1">{t("dating.toggleRequired")}</p>}
+                      </div>
+                      <Switch checked={datingEnabled} onCheckedChange={setDatingEnabled} data-testid="switch-dating-enabled" />
+                    </div>
+                  )}
                     <FormField
                       control={form.control}
                       name="imageUrl"

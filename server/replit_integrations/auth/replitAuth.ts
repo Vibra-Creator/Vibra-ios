@@ -158,6 +158,9 @@ export async function setupAuth(app: Express) {
             gender: gender || null,
             points: 0,
             referralCode: refCode,
+            // Nuovi iscritti: profilo base per l'hub; il dating si sceglie al bivio.
+            datingEnabled: false,
+            datingChoicePending: true,
           });
         }
       } catch (profileErr) {
