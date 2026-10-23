@@ -1,3 +1,4 @@
+import { resolveMergedProfileId, resolveMergedUserId } from "./confirmed-profile-merge";
 import { 
   type User, type UpsertUser, 
   type Profile, type InsertProfile,
@@ -358,6 +359,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProfilesByIds(ids: string[]): Promise<Profile[]> {
+    ids = [...new Set(ids.map(resolveMergedProfileId))];
     if (!ids.length) return [];
     return db.select().from(profiles).where(
       and(inArray(profiles.id, ids), eq(profiles.moderationHidden, false)),
@@ -414,21 +416,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProfile(id: string): Promise<Profile | undefined> {
+    id = resolveMergedProfileId(id);
     const [profile] = await db.select().from(profiles).where(eq(profiles.id, id));
     return profile;
   }
 
   async createProfile(insertProfile: InsertProfile): Promise<Profile> {
-    const [profile] = await db.insert(profiles).values(insertProfile).returning();
-    return profile;
+    return db.transaction(async tx => {
+      if (insertProfile.userId && !insertProfile.isBot) {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${"profile-owner:" + insertProfile.userId}))`);
+        const [existing] = await tx.select().from(profiles).where(eq(profiles.userId, insertProfile.userId));
+        if (existing) return existing;
+      }
+      const [profile] = await tx.insert(profiles).values(insertProfile).returning();
+      return profile;
+    });
   }
 
   async getProfileByUserId(userId: string): Promise<Profile | undefined> {
+    userId = resolveMergedUserId(userId);
     const [profile] = await db.select().from(profiles).where(eq(profiles.userId, userId));
     return profile;
   }
 
   async updateProfile(id: string, profileData: Partial<InsertProfile>): Promise<Profile | undefined> {
+    id = resolveMergedProfileId(id);
     const [profile] = await db.update(profiles)
       .set(profileData)
       .where(eq(profiles.id, id))
@@ -548,7 +560,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllProfiles(): Promise<Profile[]> {
-    return db.select().from(profiles).orderBy(profiles.id);
+    const rows = await db.select().from(profiles).orderBy(profiles.id);
+    return rows.filter(p => resolveMergedProfileId(p.id) === p.id);
   }
 
   async getAllMatches(): Promise<Match[]> {

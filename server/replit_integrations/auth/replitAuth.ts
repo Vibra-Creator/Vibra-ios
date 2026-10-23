@@ -14,6 +14,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { sendVerificationEmail } from "../../gmail";
 import { filterOffensiveContent } from "../../ugc-moderation";
 import { isAdminEmail } from "../../admin-access";
+import { resolveMergedUserId, setSessionIdentity } from "../../confirmed-profile-merge";
+import { storage } from "../../storage";
 
 let _sessionMiddleware: ReturnType<typeof session> | null = null;
 const TERMS_ACCEPTANCE_REQUIRED = "Devi accettare i Termini di Servizio e la Privacy Policy.";
@@ -73,6 +75,11 @@ export function getSession() {
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
+  app.use((req: any, _res, next) => {
+    const identityId = req.session?.loginIdentityId || req.session?.userId;
+    if (identityId) setSessionIdentity(req, identityId);
+    next();
+  });
 
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -138,10 +145,11 @@ export async function setupAuth(app: Express) {
       }
 
       user = await ensureAdminRole(user);
-      (req.session as any).userId = user.id;
+      setSessionIdentity(req, user.id);
 
       try {
-        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, String(user.id))).limit(1);
+        const profileOwnerId = resolveMergedUserId(String(user.id));
+        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, profileOwnerId)).limit(1);
         if (!existingProfile.length) {
           const alienTypes = ["Nebulare", "Cristallino", "Biotico", "Dimensionale", "Solare", "Viaggiatore Stellare", "Quantico", "Etereo"];
           const randomAlienType = alienTypes[Math.floor(Math.random() * alienTypes.length)];
@@ -153,9 +161,8 @@ export async function setupAuth(app: Express) {
           }
           if (!refCode) refCode = "VBR-" + Date.now().toString(36).toUpperCase();
 
-          await db.insert(profiles).values({
-            id: sql`gen_random_uuid()`,
-            userId: String(user.id),
+          await storage.createProfile({
+            userId: profileOwnerId,
             name: firstName,
             age: parsedAge,
             bio: "",
@@ -223,7 +230,7 @@ export async function setupAuth(app: Express) {
       }
 
       const authenticatedUser = await ensureAdminRole(user);
-      (req.session as any).userId = authenticatedUser.id;
+      setSessionIdentity(req, authenticatedUser.id);
       res.json({ user: { id: authenticatedUser.id, email: authenticatedUser.email, firstName: authenticatedUser.firstName, lastName: authenticatedUser.lastName, isAdmin: authenticatedUser.isAdmin } });
     } catch (error: any) {
       console.error("Login error:", error);
@@ -233,7 +240,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/change-password", async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = (req.session as any)?.loginIdentityId || (req.session as any)?.userId;
       if (!userId) {
         return res.status(401).json({ message: "Non autenticato" });
       }
@@ -313,7 +320,7 @@ export async function setupAuth(app: Express) {
       }
 
       user = await ensureAdminRole(user);
-      (req.session as any).userId = user.id;
+      setSessionIdentity(req, user.id);
       // Google email is already verified by Google
       await authStorage.markEmailVerified(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
@@ -396,7 +403,7 @@ export async function setupAuth(app: Express) {
       }
 
       user = await ensureAdminRole(user);
-      (req.session as any).userId = user.id;
+      setSessionIdentity(req, user.id);
       // Apple email is already verified by Apple
       await authStorage.markEmailVerified(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
@@ -418,7 +425,7 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Token non valido o già utilizzato" });
       }
       // Set session so user is immediately logged in after verification
-      (req.session as any).userId = user.id;
+      setSessionIdentity(req, user.id);
       res.json({ message: "Email verificata con successo!", user: { id: user.id, email: user.email, firstName: user.firstName } });
     } catch (error) {
       console.error("Verify email error:", error);
@@ -428,7 +435,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/resend-verification", async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = (req.session as any)?.loginIdentityId || (req.session as any)?.userId;
       if (!userId) return res.status(401).json({ message: "Non autenticato" });
 
       const user = await authStorage.getUser(userId);
@@ -534,7 +541,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 
   try {
-    if (await hasActiveUserSuspension(userId)) {
+    const loginIdentityId = (req.session as any)?.loginIdentityId || userId;
+    if (await hasActiveUserSuspension(userId) || (loginIdentityId !== userId && await hasActiveUserSuspension(loginIdentityId))) {
       await new Promise<void>((resolve) => {
         (req.session as any).destroy(() => resolve());
       });

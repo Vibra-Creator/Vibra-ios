@@ -3,6 +3,8 @@ import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
 import { storage } from "./storage";
+import { validateProfileWrite } from "./profile-write-policy";
+import { resolveMergedUserId, setSessionIdentity, mergedLoginIdentityIds } from "./confirmed-profile-merge";
 import { getProfileVideoCleanupCutoff, removeInactiveProfileVideos } from "./profile-video-cleanup";
 import {
   createAdminBotImageFixHandler,
@@ -1503,12 +1505,7 @@ ${urlEntries}
 
       const existingProfile = await storage.getProfileByUserId(userId);
       if (existingProfile) {
-        const updated = await storage.updateProfile(existingProfile.id, {
-          ...validatedData,
-          userId,
-          isBot: false,
-        });
-        return res.json(updated);
+        return res.status(409).json({ error: "Il profilo esiste già. Ricaricalo e usa Modifica per salvare: i dati esistenti non sono stati cambiati.", code: "PROFILE_ALREADY_EXISTS" });
       }
       let refCode = "";
       for (let i = 0; i < 10; i++) {
@@ -1574,7 +1571,10 @@ ${urlEntries}
 
       const deleteAccount = req.query.deleteAccount === "true";
       if (deleteAccount) {
-        await db.delete(users).where(eq(users.id, userId));
+        for (const identityId of mergedLoginIdentityIds(userId)) {
+          await db.delete(profiles).where(and(eq(profiles.userId, identityId), eq(profiles.moderationHidden, true)));
+          await db.delete(users).where(eq(users.id, identityId));
+        }
       }
 
       res.json({ success: true });
@@ -1599,6 +1599,8 @@ ${urlEntries}
       }
       
       const validatedData = updateProfileSchema.parse(req.body);
+      const writeError = validateProfileWrite(existing, validatedData, req.body);
+      if (writeError) return res.status(409).json({ error: writeError, code: "PROFILE_WRITE_CONFLICT" });
 
       if (validatedData.phoneNumber && validatedData.phonePrefix) {
         const [duplicate] = await db.select().from(profiles).where(
@@ -1614,7 +1616,11 @@ ${urlEntries}
       }
 
       console.log(`[PROFILE UPDATE] id=${req.params.id} saving: gender=${validatedData.preferredGender} ageMin=${validatedData.preferredAgeMin} ageMax=${validatedData.preferredAgeMax} heightMin=${validatedData.preferredHeightMin} heightMax=${validatedData.preferredHeightMax} maxDist=${validatedData.maxDistanceKm}`);
-      const profile = await storage.updateProfile(req.params.id, validatedData);
+      const conditions = [eq(profiles.id, existing.id)];
+      if (validatedData.age !== undefined) conditions.push(eq(profiles.age, existing.age));
+      if (validatedData.imageUrl !== undefined) conditions.push(eq(profiles.imageUrl, existing.imageUrl));
+      const [profile] = await db.update(profiles).set(validatedData).where(and(...conditions)).returning();
+      if (!profile) return res.status(409).json({ error: "Il profilo è cambiato durante il salvataggio. Ricarica e riprova.", code: "PROFILE_WRITE_CONFLICT" });
       res.json(profile);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1699,15 +1705,17 @@ ${urlEntries}
         visibility: "public",
       });
 
-      const updatedPhotos = [...currentPhotos, objectPath];
-      const updateData: any = { photos: updatedPhotos };
-      const isDefaultAvatar = !userProfile.imageUrl || userProfile.imageUrl.startsWith('/images/avatar') || userProfile.imageUrl.startsWith('/images/profile-');
-      if (currentPhotos.length === 0 || isDefaultAvatar) {
-        updateData.imageUrl = objectPath;
+      // Append against the live row, not the snapshot read before uploading.
+      const [updated] = await db.update(profiles).set({
+        photos: sql`array_append(COALESCE(${profiles.photos}, ARRAY[]::text[]), ${objectPath})`,
+        imageUrl: sql`CASE WHEN ${profiles.imageUrl} = '' OR ${profiles.imageUrl} LIKE '/images/avatar%' OR ${profiles.imageUrl} LIKE '/images/profile-%' THEN ${objectPath} ELSE ${profiles.imageUrl} END`,
+      }).where(and(eq(profiles.id, userProfile.id), sql`cardinality(COALESCE(${profiles.photos}, ARRAY[]::text[])) < 6`)).returning();
+      if (!updated) {
+        const unusedFile = await objectStorageService.getObjectEntityFile(objectPath);
+        await unusedFile.delete();
+        return res.status(409).json({ error: "La galleria è cambiata o contiene già 6 foto. Ricarica il profilo." });
       }
-      await storage.updateProfile(userProfile.id, updateData);
-
-      res.json({ url: objectPath, photos: updatedPhotos });
+      res.json({ url: objectPath, imageUrl: updated.imageUrl, photos: updated.photos });
     } catch (error: any) {
       console.error("Error uploading profile photo:", error?.message || error);
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
@@ -1874,15 +1882,12 @@ ${urlEntries}
         if (!userProfile) return res.status(403).json({ error: "Profile not found" });
       }
 
-      const currentPhotos = userProfile.photos || [];
-      const updatedPhotos = currentPhotos.filter((p: string) => p !== photoUrl);
-      const updateData: any = { photos: updatedPhotos };
-      if (userProfile.imageUrl === photoUrl) {
-        updateData.imageUrl = updatedPhotos.length > 0 ? updatedPhotos[0] : '/images/profile-1.png';
-      }
-      await storage.updateProfile(userProfile.id, updateData);
-
-      res.json({ photos: updatedPhotos });
+      const remainingPhotos = sql`array_remove(COALESCE(${profiles.photos}, ARRAY[]::text[]), ${photoUrl})`;
+      const [updated] = await db.update(profiles).set({
+        photos: remainingPhotos,
+        imageUrl: sql`CASE WHEN ${profiles.imageUrl} = ${photoUrl} THEN COALESCE((${remainingPhotos})[1], '/images/profile-1.png') ELSE ${profiles.imageUrl} END`,
+      }).where(eq(profiles.id, userProfile.id)).returning();
+      res.json({ photos: updated.photos, imageUrl: updated.imageUrl });
     } catch (error) {
       console.error("Error removing profile photo:", error);
       res.status(500).json({ error: "Failed to remove photo" });
@@ -1909,12 +1914,11 @@ ${urlEntries}
 
       if (!photoUrl) return res.status(400).json({ error: "Missing photoUrl" });
 
-      const currentPhotos = userProfile.photos || [];
-      if (!currentPhotos.includes(photoUrl)) {
+      const [updated] = await db.update(profiles).set({ imageUrl: photoUrl })
+        .where(and(eq(profiles.id, userProfile.id), sql`${photoUrl} = ANY(${profiles.photos})`)).returning();
+      if (!updated) {
         return res.status(400).json({ error: "Photo not found in your gallery" });
       }
-
-      await storage.updateProfile(userProfile.id, { imageUrl: photoUrl });
       res.json({ imageUrl: photoUrl });
     } catch (error) {
       console.error("Error setting profile photo:", error);
@@ -2542,7 +2546,7 @@ ${urlEntries}
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      (req.session as any).userId = user.id;
+      setSessionIdentity(req, user.id);
       res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, isAdmin: user.isAdmin } });
     } catch (error) {
       console.error("Login-as error:", error);
@@ -4664,7 +4668,8 @@ REGOLE:
   const ALLOWED_REACTIONS = ["❤️", "😂", "😮", "😢", "🔥", "👍"];
 
   io.on("connection", async (socket) => {
-    const userId = (socket.request as any).session?.userId;
+    const sessionUserId = (socket.request as any).session?.userId;
+    const userId = sessionUserId ? resolveMergedUserId(sessionUserId) : undefined;
     if (!userId) { socket.disconnect(); return; }
 
     let userProfile: any = null;
