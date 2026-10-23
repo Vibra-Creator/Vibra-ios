@@ -646,6 +646,45 @@ describe("GET /api/cold-messages list authentication", () => {
 });
 
 describe("POST /api/cold-messages/:id/reply authentication", () => {
+  test("allows the authenticated recipient to reply and persists the returned DM", async () => {
+    const sender = await createTestProfile("http_reply_success_sender");
+    const recipient = await createTestProfile("http_reply_success_recipient");
+    const recipientUserId = `__test_cold_reply_success_${RUN_ID}`;
+    createdProfileIds.push(sender, recipient);
+
+    await db.update(profiles).set({ userId: recipientUserId }).where(eq(profiles.id, recipient));
+    const { coldMessage } = await storage.sendColdMessage(sender, recipient, "original cold message");
+    assert.ok(coldMessage, "sendColdMessage must return the message used by the reply request");
+
+    const replyContent = `recipient reply ${RUN_ID}`;
+    const server = await startRouteTestServer(recipientUserId);
+    try {
+      const response = await postColdMessageReplyOverHttp(server, coldMessage.id, replyContent);
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.body.privateRoomId, null);
+      assert.ok(response.body.dm?.id, "successful response must include the created DM");
+      assert.equal(response.body.dm.fromProfileId, recipient);
+      assert.equal(response.body.dm.toProfileId, sender);
+      assert.equal(response.body.dm.content, replyContent);
+
+      const updatedColdMessage = await storage.getColdMessageById(coldMessage.id);
+      assert.equal(updatedColdMessage?.replied, true);
+      assert.equal(updatedColdMessage?.replyContent, replyContent);
+
+      const [persistedReply] = await db
+        .select()
+        .from(vibrappDms)
+        .where(eq(vibrappDms.id, response.body.dm.id));
+      assert.ok(persistedReply, "the DM included in the response must be persisted");
+      assert.equal(persistedReply.fromProfileId, recipient);
+      assert.equal(persistedReply.toProfileId, sender);
+      assert.equal(persistedReply.content, replyContent);
+    } finally {
+      await closeRouteTestServer(server);
+    }
+  });
+
   test("concurrent replies persist one DM conversation and return one success plus already-replied", async () => {
     const sender = await createTestProfile("http_reply_race_sender");
     const recipient = await createTestProfile("http_reply_race_recipient");
