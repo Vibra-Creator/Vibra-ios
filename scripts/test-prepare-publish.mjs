@@ -17,10 +17,14 @@ const contents = {
   "uploads/photo.png": "user upload",
 };
 
-function run(deployment) {
+function run(authorization, runtimeDeployment = "") {
   return spawnSync(process.execPath, [cleanupScript], {
     cwd: fixture,
-    env: { ...process.env, REPLIT_DEPLOYMENT: deployment },
+    env: {
+      ...process.env,
+      VIBRA_PUBLISH_CLEANUP: authorization,
+      REPLIT_DEPLOYMENT: runtimeDeployment,
+    },
     encoding: "utf8",
   });
 }
@@ -34,6 +38,8 @@ try {
 
   const workspace = run("");
   assert.notEqual(workspace.status, 0, "Workspace cleanup must be refused.");
+  const runtimeOnly = run("", "1");
+  assert.notEqual(runtimeOnly.status, 0, "The runtime flag must not authorize cleanup.");
   for (const [name, content] of Object.entries(contents)) {
     assert.equal(await readFile(path.join(fixture, name), "utf8"), content);
   }

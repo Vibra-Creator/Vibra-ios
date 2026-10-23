@@ -3,9 +3,11 @@ import path from "node:path";
 
 // This is a publishing-only step, never part of the regular workspace build.
 // Replit packages the build filesystem, including caches/history that the app
-// does not need. Remove those copies only inside the isolated publishing build.
-if (process.env.REPLIT_DEPLOYMENT !== "1") {
-  throw new Error("Publish cleanup refused: this is not a Replit publishing environment.");
+// does not need. The publishing command must explicitly authorize this step.
+// REPLIT_DEPLOYMENT is a runtime flag and is not available during publishing builds.
+// Never run the publishing command manually in the workspace.
+if (process.env.VIBRA_PUBLISH_CLEANUP !== "1") {
+  throw new Error("Publish cleanup refused: explicit publishing authorization is required.");
 }
 
 const root = process.cwd();
