@@ -948,3 +948,17 @@ mtime_ms = 1792748833622
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/80979bee-6869-4385-98e6-48426e1b70fb/ea5b12c9-82d1-4a42-8922-fa67de838098"
 storage_version_token = "1792748851938958"
 content_type = "image/png"
+
+[[outputs]]
+id = "LteXy3zTWo26acL35DmJz"
+uri = "file://generated-artifacts/google-play/S0901d216025a4c1bb17326140b0ca253A_600x600.png"
+type = "image"
+title = "Immagine 600 × 600 px"
+description = "PNG quadrato ridimensionato da 800 × 800 px, senza tagli o deformazioni."
+logical_id = "053b80ae-8ae7-478c-be2e-82b725439464"
+content_hash = "sha256:3e665d137ee9f8ac92d5515265abbac3b1327ac448de6e4d08111521159b6a17"
+size = 186789
+mtime_ms = 1792749129650
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/053b80ae-8ae7-478c-be2e-82b725439464/66166045-4161-4f42-80e8-333d09bfd358"
+storage_version_token = "1792749144660781"
+content_type = "image/png"
