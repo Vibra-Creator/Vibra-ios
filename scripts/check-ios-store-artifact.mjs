@@ -4,6 +4,7 @@ import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import {
   getAssetNameViolation,
+  RasterImageReviewScanner,
   StreamingReferenceScanner,
 } from "./ios-store-policy.mjs";
 
@@ -16,6 +17,7 @@ if (!inputPath || process.argv.length !== 3) {
 const artifactPath = path.resolve(inputPath);
 const artifactExtension = path.extname(artifactPath).toLowerCase();
 const violations = [];
+const rasterImagesForReview = new Set();
 let scannedFiles = 0;
 
 function validateArchivePath(entryName) {
@@ -39,11 +41,14 @@ function recordAssetNameViolation(relativePath) {
 async function scanFile(filePath, relativePath) {
   recordAssetNameViolation(relativePath);
   const scanner = new StreamingReferenceScanner();
+  const rasterScanner = new RasterImageReviewScanner();
   for await (const chunk of createReadStream(filePath)) {
     scanner.push(chunk);
+    rasterScanner.push(chunk);
     if (scanner.found) break;
   }
   scannedFiles += 1;
+  if (rasterScanner.found) rasterImagesForReview.add(relativePath);
   if (scanner.found) {
     violations.push(`${relativePath}: Google Play reference in artifact content`);
   }
@@ -120,11 +125,15 @@ function listIpaEntries(ipaPath) {
 function scanIpaEntry(ipaPath, entryName) {
   return new Promise((resolve, reject) => {
     const scanner = new StreamingReferenceScanner();
+    const rasterScanner = new RasterImageReviewScanner();
     const child = spawn("unzip", ["-p", ipaPath, entryName], {
       stdio: ["ignore", "pipe", "pipe"],
     });
     let stderr = "";
-    child.stdout.on("data", (chunk) => scanner.push(chunk));
+    child.stdout.on("data", (chunk) => {
+      scanner.push(chunk);
+      rasterScanner.push(chunk);
+    });
     child.stderr.on("data", (chunk) => {
       if (stderr.length < 4096) stderr += chunk.toString("utf8");
     });
@@ -137,6 +146,7 @@ function scanIpaEntry(ipaPath, entryName) {
         return;
       }
       scannedFiles += 1;
+      if (rasterScanner.found) rasterImagesForReview.add(entryName);
       if (scanner.found) {
         violations.push(`${entryName}: Google Play reference in artifact content`);
       }
@@ -185,9 +195,22 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
+if (rasterImagesForReview.size > 0) {
+  console.warn(
+    "Separate visual review required: automated checks cannot reliably identify image-only Google Play branding in these raster assets:",
+  );
+  for (const imagePath of rasterImagesForReview) console.warn(`- ${imagePath}`);
+}
+
 if (scannedFiles === 0) {
   console.error("iOS artifact check failed: no app files were inspected.");
   process.exit(1);
 }
 
-console.log(`iOS artifact passed Google Play checks (${scannedFiles} files scanned).`);
+if (rasterImagesForReview.size > 0) {
+  console.log(
+    `iOS artifact passed text and filename checks (${scannedFiles} files scanned); visual review is still required.`,
+  );
+} else {
+  console.log(`iOS artifact passed Google Play checks (${scannedFiles} files scanned).`);
+}

@@ -188,6 +188,27 @@ try {
 
   assertPass("clean xcarchive is accepted", runNode(archiveChecker, [xcarchive]));
 
+  const ordinaryArtworkPath = path.join(xcarchiveApp, "Resources", "profile-art.png");
+  mkdirSync(path.dirname(ordinaryArtworkPath), { recursive: true });
+  const tinyPng = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lN8AAAAASUVORK5CYII=",
+    "base64",
+  );
+  writeFileSync(ordinaryArtworkPath, tinyPng);
+  const ordinaryArtworkResult = runNode(archiveChecker, [xcarchive]);
+  assertPass("ordinary raster app artwork is not treated as Play branding", ordinaryArtworkResult);
+  assert.match(
+    `${ordinaryArtworkResult.stdout}${ordinaryArtworkResult.stderr}`,
+    /Separate visual review required:[\s\S]*Products\/Applications\/Vibra\.app\/Resources\/profile-art\.png/,
+    "Raster artwork with a generic filename must be listed for separate visual review.",
+  );
+  assert.doesNotMatch(
+    `${ordinaryArtworkResult.stdout}${ordinaryArtworkResult.stderr}`,
+    /Google Play reference in artifact content|Google Play-specific asset name/,
+    "Ordinary app artwork must not be misreported as known Google Play branding.",
+  );
+  rmSync(ordinaryArtworkPath);
+
   writeFileSync(
     path.join(xcarchiveApp, "Assets.car"),
     Buffer.from("A platform badge: Google Play", "utf16le"),
@@ -219,6 +240,17 @@ try {
     runNode(archiveChecker, [xcarchive]),
     "Google Play-specific asset name",
   );
+  rmSync(playAssetPath);
+
+  const genericPlayArtworkPath = path.join(xcarchiveApp, "Resources", "badge.png");
+  writeFileSync(genericPlayArtworkPath, tinyPng);
+  const genericArtworkResult = runNode(archiveChecker, [xcarchive]);
+  assertPass("generic-named raster artwork is surfaced for visual review", genericArtworkResult);
+  assert.match(
+    `${genericArtworkResult.stdout}${genericArtworkResult.stderr}`,
+    /Separate visual review required:[\s\S]*Products\/Applications\/Vibra\.app\/Resources\/badge\.png/,
+    "A generic-named raster asset must be identified even when its pixels contain no readable text.",
+  );
 
   const safeIpa = createIpaFixture(
     path.join(temporaryRoot, "safe-ipa"),
@@ -236,6 +268,19 @@ try {
     "Google Play-specific IPA assets are rejected",
     runNode(archiveChecker, [unsafeIpa]),
     "Google Play-specific asset name",
+  );
+
+  const genericArtworkIpa = createIpaFixture(
+    path.join(temporaryRoot, "generic-artwork-ipa"),
+    "Payload/Vibra.app/Resources/badge.png",
+    tinyPng,
+  );
+  const genericArtworkIpaResult = runNode(archiveChecker, [genericArtworkIpa]);
+  assertPass("generic-named raster IPA artwork is surfaced for visual review", genericArtworkIpaResult);
+  assert.match(
+    `${genericArtworkIpaResult.stdout}${genericArtworkIpaResult.stderr}`,
+    /Separate visual review required:[\s\S]*Payload\/Vibra\.app\/Resources\/badge\.png/,
+    "Generic-named raster artwork inside the IPA must be listed for separate visual review.",
   );
 
   const metadataFile = path.join(temporaryRoot, "app-store-metadata.txt");
