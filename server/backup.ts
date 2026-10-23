@@ -2,8 +2,7 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { objectStorageClient } from "./replit_integrations/object_storage/objectStorage";
 
-// Development and production share object storage, not backup retention.
-const BACKUP_DIR = process.env.NODE_ENV === "production" ? ".private/backups" : ".private/development-backups";
+const BACKUP_DIR = ".private/backups";
 const MAX_BACKUPS = 7;
 const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -64,14 +63,9 @@ async function listBackups(): Promise<string[]> {
 
 async function deleteOldBackups(): Promise<void> {
   const backups = await listBackups();
-  const retainedDays = new Set<string>();
-  const toDelete = backups.slice().reverse().filter(name => {
-    const day = name.match(/vibra-backup-(\d{4}-\d{2}-\d{2})T/)?.[1];
-    if (!day) return false;
-    if (retainedDays.has(day) || retainedDays.size >= MAX_BACKUPS) return true;
-    retainedDays.add(day);
-    return false;
-  });
+  if (backups.length <= MAX_BACKUPS) return;
+
+  const toDelete = backups.slice(0, backups.length - MAX_BACKUPS);
   const bucket = objectStorageClient.bucket(getBucketName());
   for (const fileName of toDelete) {
     try {

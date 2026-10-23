@@ -8,7 +8,6 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { removeBotProfiles } from "./remove-bots";
-import { initializeConfirmedProfileRepair, normalizeMergedReferences, resolveMergedProfileId, resolveMergedUserId } from "./confirmed-profile-merge";
 
 const app = express();
 
@@ -31,25 +30,6 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
-app.use((req, _res, next) => {
-  normalizeMergedReferences(req.body);
-  normalizeMergedReferences(req.query);
-  next();
-});
-for (const parameter of ["id", "profileId", "targetProfileId", "fromProfileId", "toProfileId"]) {
-  app.param(parameter, (req, res, next, value) => {
-    const canonical = resolveMergedProfileId(value);
-    if (canonical !== value && req.method === "DELETE") {
-      return res.status(409).json({ error: "Questo profilo è stato unificato. Riapri il profilo aggiornato prima di eliminare dati." });
-    }
-    req.params[parameter] = canonical;
-    next();
-  });
-}
-app.param("userId", (req, _res, next, value) => {
-  req.params.userId = resolveMergedUserId(value);
-  next();
-});
 
 app.post("/api/client-errors", (req, res) => {
   const sameSite = req.get("sec-fetch-site");
@@ -390,7 +370,6 @@ app.use((req, res, next) => {
     } catch {}
   }, 60 * 60 * 1000);
 
-  await initializeConfirmedProfileRepair();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

@@ -11,8 +11,3 @@
 - [UGC report moderation](ugc-report-moderation.md) — remove only explicitly linked, author-verified content; keep the report snapshot as evidence.
 - [Database fixture IDs](database-fixture-ids.md) — integration-test inserts should set IDs explicitly when a migrated table may lack the schema's server-side default.
 - [Play Store product evolution](play-store-product-evolution.md) — Vibra was listed while positioned as a dating app and has since changed substantially; verify the live package and listing separately.
-- [Swipe undo](swipe-undo.md) — Indietro deve annullare e mostrare lo stesso profilo, usando l’ID esatto invece dell’ultimo timestamp server.
-- [Admin role recovery](admin-role-recovery.md) — gli indirizzi admin autorizzati devono riottenere il ruolo al login/lettura del profilo, non solo all’avvio del seed.
-- [Vibra positioning](vibra-positioning.md) — Vibra include gli incontri, ma il messaggio deve chiarire che offre anche social e community.
-- [Profile data integrity](profile-data-integrity.md) — età e foto solo dal profilo; identità dei duplicati da confermare, mai dedotte dal nome.
-- [Backup isolation](backup-isolation.md) — sviluppo e produzione condividono AppStorage: isolare backup e conservazione per evitare cancellazioni incrociate.

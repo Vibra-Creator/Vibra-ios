@@ -1,10 +1,10 @@
-import { useState, forwardRef, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, forwardRef, useRef, useEffect, useCallback } from "react";
 import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
 import { Heart, X, Star, MapPin, Sparkles, BadgeCheck, ChevronDown, User, Ruler, GraduationCap, MessageCircle, Briefcase, Lock, Flag, Eye, ChevronLeft, ChevronRight, ZoomIn, Crown, Play, Bookmark, Share2, Volume2, VolumeX, Radio, Mic, MicOff, Square, RotateCcw, Plus, Rocket, Link2 } from "lucide-react";
 import { StoryViewer } from "@/components/StoriesBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -36,22 +36,6 @@ function getActivityStatus(lastActiveAt: string | Date | null | undefined, t: (k
   if (diffHours < 24) return { label: `Visto ${diffHours} ${t("swipe.hoursAgo")}`, color: "bg-gray-400", isOnline: false };
   if (diffDays < 7) return { label: `Visto ${diffDays}${t("swipe.daysAgo")}`, color: "bg-gray-500", isOnline: false };
   return { label: "", color: "", isOnline: false };
-}
-
-function isPlaceholderProfilePhoto(url: string): boolean {
-  return /\/images\/(?:avatar|profile-)/i.test(url);
-}
-
-function getProfilePhotoCandidates(profile: Pick<Profile, "imageUrl" | "photos">): string[] {
-  return Array.from(
-    new Set([profile.imageUrl, ...(profile.photos ?? [])].filter(
-      (url): url is string => Boolean(url?.trim()) && !isPlaceholderProfilePhoto(url),
-    )),
-  );
-}
-
-function getDisplayAge(age: unknown): number | null {
-  return typeof age === "number" && Number.isInteger(age) && age >= 18 && age <= 120 ? age : null;
 }
 
 interface ProfileDetailModalProps {
@@ -130,11 +114,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
 
   if (!isOpen) return null;
 
-  const allPhotos = getProfilePhotoCandidates(profile);
-  const additionalPhotos = (profile.photos ?? []).filter(
-    photo => Boolean(photo?.trim()) && !isPlaceholderProfilePhoto(photo),
-  );
-  const displayAge = getDisplayAge(profile.age);
+    const allPhotos = Array.from(new Set([profile.imageUrl, ...(profile.photos || [])].filter(Boolean))) as string[];
 
   const detailItems = [
     { label: t("swipe.alienType"), value: profile.alienType, icon: Sparkles },
@@ -171,14 +151,12 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
           >
             <div className="relative shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClose(); }}>
               {/* Sempre foto statica nel dettaglio */}
-              {allPhotos[0] && (
-                <img
-                  src={allPhotos[0]}
-                  alt={profile.name}
-                  className="w-full aspect-[3/4] object-cover object-top"
-                  data-testid="detail-profile-image"
-                />
-              )}
+              <img
+                src={profile.imageUrl}
+                alt={profile.name}
+                className="w-full aspect-[3/4] object-cover object-top"
+                data-testid="detail-profile-image"
+              />
               {/* Bottone chiudi/torna sempre visibile in alto a sinistra */}
               <button
                 type="button"
@@ -199,7 +177,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
               <div className="absolute bottom-4 left-4 right-4">
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="text-3xl font-bold text-white" data-testid="detail-profile-name">
-                    {profile.name}{displayAge !== null ? `, ${displayAge}` : ""}
+                    {profile.name}, {profile.age}
                   </h2>
                   {profile.isVerified && (
                     <BadgeCheck className="w-6 h-6 text-blue-400" />
@@ -317,11 +295,11 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                 </div>
               )}
 
-              {additionalPhotos.length > 0 && (
+              {profile.photos && profile.photos.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-white/60 mb-2">{t("swipe.photos")}</h3>
                   <div className="grid grid-cols-3 gap-2">
-                    {additionalPhotos.map((photo, idx) => (
+                    {profile.photos.map((photo, idx) => (
                       <div
                         key={idx}
                         className="aspect-square rounded-lg overflow-hidden border border-white/10 relative cursor-pointer group"
@@ -416,10 +394,10 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                         )}
                       </div>
                     ))
-                  ) : allPhotos[0] ? (
+                  ) : profile.imageUrl ? (
                     <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black">
                       <img
-                        src={allPhotos[0]}
+                        src={profile.imageUrl}
                         alt={profile.name}
                         className="w-full max-h-64 object-contain"
                         data-testid="profile-detail-image"
@@ -460,11 +438,11 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                       <Flag className="w-4 h-4 mr-2" />
                       {t("swipe.reportProfile")}
                     </Button>
-                    {allPhotos[0] && (
+                    {profile.imageUrl && (
                       <Button
                         variant="ghost"
                         className="w-full text-white/50 hover:text-red-400"
-                        onClick={() => chooseReportTarget({ type: "profile_photo", id: allPhotos[0], label: "la foto profilo" })}
+                        onClick={() => chooseReportTarget({ type: "profile_photo", id: profile.imageUrl, label: "la foto profilo" })}
                         data-testid={`button-report-profile-primary-photo-${profile.id}`}
                       >
                         <Flag className="w-4 h-4 mr-2" />
@@ -675,29 +653,19 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [showStories, setShowStories] = useState(false);
     const [selectedRating, setSelectedRating] = useState<number | null>(null);
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
-    const photoCandidates = useMemo(() => getProfilePhotoCandidates(profile), [profile.imageUrl, profile.photos]);
-    const displayAge = getDisplayAge(profile.age);
-    const photoCandidatesKey = photoCandidates.join("\u0000");
-    const [photoIndex, setPhotoIndex] = useState(0);
-    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(() => {
+      if (!profile.imageUrl) return false;
+      const img = new window.Image();
+      img.src = profile.imageUrl;
+      return img.complete;
+    });
     const [imageError, setImageError] = useState(false);
-    const [failedProfileMediaIds, setFailedProfileMediaIds] = useState<Set<string>>(() => new Set());
     const [isFavorited, setIsFavorited] = useState(false);
     const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? false);
     const [isVideoBuffering, setIsVideoBuffering] = useState(false);
     const [showSignalCompose, setShowSignalCompose] = useState(false);
     const [signalText, setSignalText] = useState("");
     const [signalSent, setSignalSent] = useState(false);
-
-    useEffect(() => {
-      setPhotoIndex(0);
-      setImageLoaded(false);
-      setImageError(false);
-    }, [profile.id, photoCandidatesKey]);
-
-    useEffect(() => {
-      setFailedProfileMediaIds(new Set());
-    }, [profile.id]);
 
     // Vibrapp direct compose
     const [showVibCompose, setShowVibCompose] = useState(false);
@@ -854,7 +822,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
     const cardVideoRef = useRef<HTMLVideoElement>(null);
     const dragDistanceRef = useRef(0);
-    const [primaryVideoFailed, setPrimaryVideoFailed] = useState(false);
     const { toast } = useToast();
     const { t } = useLanguage();
     const [, navigate] = useLocation();
@@ -873,17 +840,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     : (profile.isBot !== true && cardVideos.length > 0 && cardVideos[0]?.videoUrl)
       ? (resolveVideoSrc(cardVideos[0].videoUrl) ?? null)
       : null;
-  useEffect(() => {
-    setPrimaryVideoFailed(false);
-  }, [profile.id, primaryVideoUrl]);
-  const hasVideo = !!primaryVideoUrl && !primaryVideoFailed;
+  const hasVideo = !!primaryVideoUrl;
   // Signal media: solo se non c'è video primario
   const profileMedia = [...profileSignals]
     .filter((signal: any) => signal.mediaUrl)
     .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  const activeProfileMedia = !hasVideo
-    ? (profileMedia.find((signal: any) => !failedProfileMediaIds.has(signal.id)) ?? null)
-    : null;
+  const activeProfileMedia = !hasVideo ? (profileMedia[0] ?? null) : null;
 
     useEffect(() => {
       const extras = profile.photos || [];
@@ -1238,7 +1200,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     muted
                     preload="auto"
                     src={primaryVideoUrl ?? undefined}
-                    poster={photoCandidates[0] ?? undefined}
+                    poster={profile.imageUrl ?? undefined}
                     className="absolute inset-0 w-full h-full object-cover object-top z-10"
                     style={{ willChange: "transform" }}
                     data-testid={`profile-video-${profile.id}`}
@@ -1248,7 +1210,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     onError={(e) => {
                       const video = e.currentTarget;
                       console.error(`[SwipeCard video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code} msg=${video.error?.message}`);
-                      setPrimaryVideoFailed(true);
                     }}
                   />
                   <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
@@ -1267,7 +1228,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         muted
                         preload="auto"
                         src={activeProfileMedia.mediaUrl}
-                        poster={photoCandidates[0] ?? undefined}
+                        poster={profile.imageUrl ?? undefined}
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
                         style={{ willChange: "transform" }}
                         data-testid={`profile-media-video-${profile.id}`}
@@ -1277,7 +1238,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         onError={(e) => {
                           const video = e.currentTarget;
                           console.error(`[SwipeCard media-video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code}`);
-                          setFailedProfileMediaIds(previous => new Set(previous).add(activeProfileMedia.id));
                         }}
                       />
                       <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
@@ -1286,8 +1246,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <>
                       <img key={activeProfileMedia.id} src={activeProfileMedia.mediaUrl} alt={profile.name}
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
-                        data-testid={`profile-media-image-${profile.id}`}
-                        onError={() => setFailedProfileMediaIds(previous => new Set(previous).add(activeProfileMedia.id))} />
+                        data-testid={`profile-media-image-${profile.id}`} />
                       <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
                     </>
                   )}
@@ -1295,7 +1254,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               ) : (
                 /* ── RAMO 3: foto statica ── */
                 <>
-                  {photoCandidates[photoIndex] && !imageLoaded && !imageError && (
+                  {!imageLoaded && !imageError && (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-purple-900/50 to-black/80 animate-pulse"
                       data-testid={`image-loading-${profile.id}`}>
                       <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
@@ -1303,25 +1262,16 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       </div>
                     </div>
                   )}
-                  {photoCandidates[photoIndex] && !imageError && (
-                    <img
-                      src={photoCandidates[photoIndex]}
-                      alt={profile.name}
-                      loading="eager"
-                      fetchPriority="high"
-                      className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
-                      onLoad={() => setImageLoaded(true)}
-                      onError={() => {
-                        if (photoIndex + 1 < photoCandidates.length) {
-                          setPhotoIndex(index => index + 1);
-                          setImageLoaded(false);
-                        } else {
-                          setImageError(true);
-                        }
-                      }}
-                      data-testid={`profile-image-${profile.id}`}
-                    />
-                  )}
+                  <img
+                    src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
+                    alt={profile.name}
+                    loading="eager"
+                    fetchPriority="high"
+                    className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
+                    onLoad={() => setImageLoaded(true)}
+                    onError={() => setImageError(true)}
+                    data-testid={`profile-image-${profile.id}`}
+                  />
                   <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
                 </>
               )}
@@ -1398,7 +1348,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <motion.button whileTap={{ scale: 0.88 }} onClick={async (e) => {
                         e.stopPropagation(); e.preventDefault();
                         const shareUrl = `${window.location.origin}`;
-                        if (navigator.share) { try { await navigator.share({ title: `${profile.name}${displayAge !== null ? `, ${displayAge}` : ""}`, text: `Guarda questo profilo su Vibra!`, url: shareUrl }); } catch {} }
+                        if (navigator.share) { try { await navigator.share({ title: `${profile.name}, ${profile.age}`, text: `Guarda questo profilo su Vibra!`, url: shareUrl }); } catch {} }
                         else { await navigator.clipboard.writeText(shareUrl); toast({ title: "Link copiato!" }); }
                       }} className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-share-${profile.id}`}>
                       <span className="text-[36px] leading-none drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">🌌</span>
@@ -1441,11 +1391,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <motion.button whileTap={{ scale: 0.88 }} onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowStories(true); }}
                       className="flex flex-col items-center gap-0.5" style={{ touchAction: "none" }} data-testid={`button-stories-${profile.id}`}>
                       <div className={`w-9 h-9 rounded-full p-[2px] drop-shadow-[0_2px_8px_rgba(0,0,0,1)] ${cardVideos.length > 0 ? "bg-gradient-to-tr from-violet-400 via-fuchsia-400 to-teal-400" : "bg-white/40"}`}>
-                        {photoCandidates[0] && (
-                          <div className="w-full h-full rounded-full bg-black/60 overflow-hidden">
-                            <img src={photoCandidates[0]} alt="" className="w-full h-full object-cover rounded-full" />
-                          </div>
-                        )}
+                        <div className="w-full h-full rounded-full bg-black/60 overflow-hidden">
+                          {profile.imageUrl
+                            ? <img src={profile.imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
+                            : <span className="w-full h-full flex items-center justify-center text-[20px] text-white/60">📡</span>}
+                        </div>
                       </div>
                       <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,1)]">Storie</span>
                     </motion.button>
@@ -1497,11 +1447,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         <span className="text-white font-bold text-2xl leading-tight drop-shadow-lg" data-testid={`card-name-${profile.id}`}>
                           {profile.name}
                         </span>
-                        {displayAge !== null && (
-                          <span className="text-white/90 font-semibold text-xl leading-tight drop-shadow-lg" data-testid={`card-age-${profile.id}`}>
-                            {displayAge}
-                          </span>
-                        )}
+                        <span className="text-white/90 font-semibold text-xl leading-tight drop-shadow-lg" data-testid={`card-age-${profile.id}`}>
+                          {profile.age}
+                        </span>
                         {profile.isVerified && (
                           <BadgeCheck className="w-5 h-5 text-blue-400 shrink-0" />
                         )}
@@ -1581,13 +1529,12 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 data-testid="rating-selector"
               >
                 <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
-                  {photoCandidates[0] && (
-                    <Avatar className="w-12 h-12 border-2 border-primary/50">
-                      <AvatarImage src={photoCandidates[0]} alt={profile.name} />
-                    </Avatar>
-                  )}
+                  <Avatar className="w-12 h-12 border-2 border-primary/50">
+                    <AvatarImage src={profile.imageUrl || undefined} alt={profile.name} />
+                    <AvatarFallback className="bg-primary/30 text-white text-sm">{profile.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
                   <div className="flex flex-col">
-                    <span className="text-white text-base font-semibold leading-tight">{profile.name}{displayAge !== null ? `, ${displayAge}` : ""}</span>
+                    <span className="text-white text-base font-semibold leading-tight">{profile.name}, {profile.age}</span>
                     <span className="text-white/50 text-xs leading-tight mt-0.5">{t("swipe.piPrompt")}</span>
                   </div>
                 </div>
@@ -1665,7 +1612,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     <div className="flex items-center justify-between mb-3 shrink-0">
                       <div className="flex items-center gap-2">
                         <div className="relative">
-                          {photoCandidates[0] && <img src={photoCandidates[0]} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-teal-600/60" loading="lazy" />}
+                          <img src={profile.imageUrl} alt={profile.name} className="w-8 h-8 rounded-full object-cover border-2 border-teal-600/60" loading="lazy" />
                           {(vibBotOnline || vibReply) && (
                             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white" />
                           )}
@@ -1758,9 +1705,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 ) : (
                   <>
                     <div className="flex items-center gap-3 mb-4">
-                      {photoCandidates[0] && <img src={photoCandidates[0]} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-teal-600/60" loading="lazy" />}
+                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-teal-600/60" loading="lazy" />
                       <div>
-                        <p className="text-teal-900 font-bold">{profile.name}{displayAge !== null ? `, ${displayAge}` : ""}</p>
+                        <p className="text-teal-900 font-bold">{profile.name}, {profile.age}</p>
                         <p className="text-teal-700 text-xs flex items-center gap-1.5">
                           <MessageCircle className="w-3 h-3" /> Messaggio diretto su Vibrapp
                         </p>
@@ -1869,9 +1816,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                 ) : (
                   <>
                     <div className="flex items-center gap-3 mb-4">
-                      {photoCandidates[0] && <img src={photoCandidates[0]} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-green-600/60" />}
+                      <img src={profile.imageUrl} alt={profile.name} className="w-11 h-11 rounded-full object-cover border-2 border-green-600/60" />
                       <div>
-                        <p className="text-green-900 font-bold">{profile.name}{displayAge !== null ? `, ${displayAge}` : ""}</p>
+                        <p className="text-green-900 font-bold">{profile.name}, {profile.age}</p>
                         <p className="text-green-700 text-xs flex items-center gap-1"><Radio className="w-3 h-3" /> {t("swipe.sendSignalDirect")}</p>
                       </div>
                     </div>
@@ -1925,7 +1872,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
 
         {showStories && cardVideos.length > 0 && (
           <StoryViewer
-            profile={{ name: profile.name, imageUrl: photoCandidates[0] ?? "" }}
+            profile={{ name: profile.name, imageUrl: profile.imageUrl }}
             videos={cardVideos}
             onClose={() => setShowStories(false)}
           />

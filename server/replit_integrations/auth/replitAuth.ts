@@ -9,23 +9,12 @@ import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { db } from "../../db";
 import { profiles, userSuspensions } from "../../../shared/schema";
-import type { User } from "../../../shared/models/auth";
 import { and, eq, sql } from "drizzle-orm";
 import { sendVerificationEmail } from "../../gmail";
 import { filterOffensiveContent } from "../../ugc-moderation";
-import { isAdminEmail } from "../../admin-access";
-import { resolveMergedUserId, setSessionIdentity } from "../../confirmed-profile-merge";
-import { storage } from "../../storage";
 
 let _sessionMiddleware: ReturnType<typeof session> | null = null;
 const TERMS_ACCEPTANCE_REQUIRED = "Devi accettare i Termini di Servizio e la Privacy Policy.";
-
-async function ensureAdminRole(user: User): Promise<User> {
-  if (isAdminEmail(user.email) && !user.isAdmin) {
-    return await authStorage.promoteUserToAdmin(user.id);
-  }
-  return user;
-}
 
 async function hasActiveUserSuspension(userId: string): Promise<boolean> {
   const suspensions = await db.select({
@@ -75,11 +64,6 @@ export function getSession() {
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
-  app.use((req: any, _res, next) => {
-    const identityId = req.session?.loginIdentityId || req.session?.userId;
-    if (identityId) setSessionIdentity(req, identityId);
-    next();
-  });
 
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -144,12 +128,10 @@ export async function setupAuth(app: Express) {
         });
       }
 
-      user = await ensureAdminRole(user);
-      setSessionIdentity(req, user.id);
+      (req.session as any).userId = user.id;
 
       try {
-        const profileOwnerId = resolveMergedUserId(String(user.id));
-        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, profileOwnerId)).limit(1);
+        const existingProfile = await db.select().from(profiles).where(eq(profiles.userId, String(user.id))).limit(1);
         if (!existingProfile.length) {
           const alienTypes = ["Nebulare", "Cristallino", "Biotico", "Dimensionale", "Solare", "Viaggiatore Stellare", "Quantico", "Etereo"];
           const randomAlienType = alienTypes[Math.floor(Math.random() * alienTypes.length)];
@@ -161,8 +143,9 @@ export async function setupAuth(app: Express) {
           }
           if (!refCode) refCode = "VBR-" + Date.now().toString(36).toUpperCase();
 
-          await storage.createProfile({
-            userId: profileOwnerId,
+          await db.insert(profiles).values({
+            id: sql`gen_random_uuid()`,
+            userId: String(user.id),
             name: firstName,
             age: parsedAge,
             bio: "",
@@ -190,7 +173,7 @@ export async function setupAuth(app: Express) {
         console.error("Verification email error (non-fatal):", emailErr);
       }
 
-      res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, emailVerified: false, isAdmin: user.isAdmin });
+      res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, emailVerified: false });
     } catch (error) {
       console.error("Registration error:", error);
       res.status(500).json({ message: "Errore durante la registrazione" });
@@ -229,9 +212,8 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
-      const authenticatedUser = await ensureAdminRole(user);
-      setSessionIdentity(req, authenticatedUser.id);
-      res.json({ user: { id: authenticatedUser.id, email: authenticatedUser.email, firstName: authenticatedUser.firstName, lastName: authenticatedUser.lastName, isAdmin: authenticatedUser.isAdmin } });
+      (req.session as any).userId = user.id;
+      res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
     } catch (error: any) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Errore server durante l'accesso" });
@@ -240,7 +222,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/change-password", async (req, res) => {
     try {
-      const userId = (req.session as any)?.loginIdentityId || (req.session as any)?.userId;
+      const userId = (req.session as any)?.userId;
       if (!userId) {
         return res.status(401).json({ message: "Non autenticato" });
       }
@@ -319,8 +301,7 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
-      user = await ensureAdminRole(user);
-      setSessionIdentity(req, user.id);
+      (req.session as any).userId = user.id;
       // Google email is already verified by Google
       await authStorage.markEmailVerified(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
@@ -402,8 +383,7 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Questo account è sospeso." });
       }
 
-      user = await ensureAdminRole(user);
-      setSessionIdentity(req, user.id);
+      (req.session as any).userId = user.id;
       // Apple email is already verified by Apple
       await authStorage.markEmailVerified(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: user.isAdmin } });
@@ -425,7 +405,7 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Token non valido o già utilizzato" });
       }
       // Set session so user is immediately logged in after verification
-      setSessionIdentity(req, user.id);
+      (req.session as any).userId = user.id;
       res.json({ message: "Email verificata con successo!", user: { id: user.id, email: user.email, firstName: user.firstName } });
     } catch (error) {
       console.error("Verify email error:", error);
@@ -435,7 +415,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/resend-verification", async (req, res) => {
     try {
-      const userId = (req.session as any)?.loginIdentityId || (req.session as any)?.userId;
+      const userId = (req.session as any)?.userId;
       if (!userId) return res.status(401).json({ message: "Non autenticato" });
 
       const user = await authStorage.getUser(userId);
@@ -541,8 +521,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 
   try {
-    const loginIdentityId = (req.session as any)?.loginIdentityId || userId;
-    if (await hasActiveUserSuspension(userId) || (loginIdentityId !== userId && await hasActiveUserSuspension(loginIdentityId))) {
+    if (await hasActiveUserSuspension(userId)) {
       await new Promise<void>((resolve) => {
         (req.session as any).destroy(() => resolve());
       });
