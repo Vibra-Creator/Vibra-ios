@@ -125,7 +125,9 @@ before(async () => {
   await runMigrations();
   const app = express();
   app.use(express.json());
-  registerReportSubmissionRoute(app, testAuthentication, () => {});
+  registerReportSubmissionRoute(app, testAuthentication, (reportId) => {
+    reportNotificationRequests.push(reportId);
+  });
   registerBlockedUserRoute(app, testAuthentication, reportStorage, (reportId) => {
     reportNotificationRequests.push(reportId);
   });
@@ -354,20 +356,34 @@ test("room-message reports require authentication and the reported author; evide
     roomId: "forged-room-id",
     reportedContentSnapshot: JSON.stringify({ content: "forged snapshot" }),
   };
+  const notificationsBeforeReport = reportNotificationRequests.length;
   const unauthorized = await requestJson("/api/reports", "POST", payload);
   assert.equal(unauthorized.statusCode, 401);
+  assert.equal(reportNotificationRequests.length, notificationsBeforeReport);
 
   const wrongAuthor = await requestJson("/api/reports", "POST", {
     ...payload,
     reportedId: otherProfile.id,
   }, { "x-test-user": reporter.userId });
   assert.equal(wrongAuthor.statusCode, 400);
+  assert.equal(reportNotificationRequests.length, notificationsBeforeReport);
 
   const accepted = await requestJson("/api/reports", "POST", payload, {
     "x-test-user": reporter.userId,
   });
   assert.equal(accepted.statusCode, 200);
   createdReportIds.push(accepted.body.id);
+  assert.deepEqual(
+    reportNotificationRequests.slice(notificationsBeforeReport),
+    [accepted.body.id],
+    "only the accepted report's persisted ID must be passed to the moderator notification queue",
+  );
+  const [persistedReport] = await db.select().from(reports)
+    .where(eq(reports.id, accepted.body.id))
+    .limit(1);
+  assert.ok(persistedReport, "the report must be persisted before its notification is queued");
+  assert.equal(persistedReport.status, "pending");
+  assert.equal(persistedReport.notificationStatus, "pending");
   assert.equal(accepted.body.reportedId, author.id);
   assert.equal(accepted.body.reportedContentId, message.id);
   const snapshot = JSON.parse(accepted.body.reportedContentSnapshot);

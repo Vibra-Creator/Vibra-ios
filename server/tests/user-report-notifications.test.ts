@@ -21,6 +21,14 @@ test("a temporary email failure keeps the report and persisted alert queued unti
   ]]);
   let deliveryAttempts = 0;
   const errors: string[] = [];
+  let releaseFirstDelivery!: (result: { sent: number; failed: number }) => void;
+  let resolveFirstDeliveryStarted!: () => void;
+  const firstDeliveryStarted = new Promise<void>((resolve) => {
+    resolveFirstDeliveryStarted = resolve;
+  });
+  const firstDeliveryResult = new Promise<{ sent: number; failed: number }>((resolve) => {
+    releaseFirstDelivery = resolve;
+  });
 
   const notify = createUserReportNotificationProcessor({
     claimPendingReports: async ({ reportId } = {}) => {
@@ -41,7 +49,10 @@ test("a temporary email failure keeps the report and persisted alert queued unti
     getAdminRecipients: async () => [{ email: "admin@example.test", name: "Admin" }],
     sendBulkEmail: async () => {
       deliveryAttempts += 1;
-      if (deliveryAttempts === 1) return { sent: 0, failed: 1 };
+      if (deliveryAttempts === 1) {
+        resolveFirstDeliveryStarted();
+        return firstDeliveryResult;
+      }
       return { sent: 1, failed: 0 };
     },
     markSent: async (reportId, sentAt) => {
@@ -60,7 +71,15 @@ test("a temporary email failure keeps the report and persisted alert queued unti
     logError: (message) => errors.push(message),
   });
 
-  await notify("report-1");
+  const firstAttempt = notify("report-1");
+  await firstDeliveryStarted;
+
+  const whileEmailIsDelayed = reports.get("report-1")!;
+  assert.equal(whileEmailIsDelayed.status, "pending", "a delayed email must not remove the report from moderation");
+  assert.equal(whileEmailIsDelayed.notificationStatus, "sending");
+
+  releaseFirstDelivery({ sent: 0, failed: 1 });
+  await firstAttempt;
 
   const afterTemporaryFailure = reports.get("report-1")!;
   assert.equal(afterTemporaryFailure.status, "pending", "the report itself must remain available");
