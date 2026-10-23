@@ -457,3 +457,93 @@ test("sender sees an unavailable notice when the recipient deletes a message whi
     await recipientSession.dispose();
   }
 });
+
+test("sender sees an unavailable notice when opening a link to a message already deleted by the recipient", async ({
+  page,
+  request,
+}, testInfo) => {
+  const recipient = await registerUser(request, "recipient_deleted_before_link");
+  const sender = await registerUser(request, "sender_deleted_before_link");
+  const recipientProfileId = await loginAs(request, recipient);
+  const senderProfileId = await loginAs(request, sender);
+  const messageContent = `E2E deleted before link ${RUN_ID}`;
+  const sendResponse = await request.post("/api/cold-messages", {
+    data: { toProfileId: recipientProfileId, content: messageContent },
+  });
+  if (!sendResponse.ok()) {
+    throw new Error(`Send cold msg: ${sendResponse.status()} – ${await sendResponse.text()}`);
+  }
+
+  const baseURL = String(testInfo.project.use.baseURL ?? "http://localhost:5000");
+  const recipientSession = await playwrightRequest.newContext({ baseURL });
+  try {
+    const sessionRecipientId = await loginAs(recipientSession, recipient);
+    if (sessionRecipientId !== recipientProfileId) {
+      throw new Error("Recipient session resolved to a different profile");
+    }
+    const inboxResponse = await recipientSession.get("/api/cold-messages/received");
+    if (!inboxResponse.ok()) {
+      throw new Error(`Recipient inbox: ${inboxResponse.status()} – ${await inboxResponse.text()}`);
+    }
+    const inbox = (await inboxResponse.json()) as Array<{ id: string; fromProfileId: string }>;
+    const coldMessage = inbox.find((message) => message.fromProfileId === senderProfileId);
+    if (!coldMessage) throw new Error("Cold message not in recipient's inbox – setup failed");
+
+    const deleteResponse = await recipientSession.delete(
+      `/api/cold-messages/${coldMessage.id}`,
+    );
+    if (!deleteResponse.ok()) {
+      throw new Error(`Delete cold msg: ${deleteResponse.status()} – ${await deleteResponse.text()}`);
+    }
+
+    await loginAs(request, sender);
+    const state = await request.storageState();
+    const baseUrl = new URL(baseURL);
+    await page.context().addCookies(
+      state.cookies.map((cookie) => ({
+        name: cookie.name,
+        value: cookie.value,
+        domain: baseUrl.hostname,
+        path: cookie.path || "/",
+        httpOnly: cookie.httpOnly ?? true,
+        secure: baseUrl.protocol === "https:",
+        sameSite: "Lax" as const,
+      })),
+    );
+
+    await page.route("**/api/auth/user", async (route) => {
+      const response = await route.fetch();
+      if (response.ok()) {
+        const body = (await response.json()) as Record<string, unknown>;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ ...body, emailVerified: true }),
+        });
+      } else {
+        await route.fulfill({ response });
+      }
+    });
+
+    const messageResponse = page.waitForResponse((response) =>
+      response.request().method() === "GET" &&
+      response.url().includes(`/api/cold-messages/${coldMessage.id}`),
+    );
+    await page.goto(`/vibrapp?coldMessageId=${encodeURIComponent(coldMessage.id)}`, {
+      waitUntil: "load",
+    });
+    const openedMessageResponse = await messageResponse;
+    expect(openedMessageResponse.status()).toBe(404);
+    expect(await openedMessageResponse.json()).toMatchObject({ reason: "message_deleted" });
+
+    await expect(page.locator('[data-testid="sender-profile-toast"]')).toContainText(
+      "Questo messaggio non è più disponibile",
+    );
+    await expect(page.locator('[data-testid="intro-target-banner"]')).not.toBeVisible();
+    await expect(page.locator(`[data-testid="sent-intro-bubble-${coldMessage.id}"]`)).not.toBeVisible();
+    await expect(page.getByText(messageContent, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(recipient.name, { exact: true })).toHaveCount(0);
+  } finally {
+    await recipientSession.dispose();
+  }
+});
