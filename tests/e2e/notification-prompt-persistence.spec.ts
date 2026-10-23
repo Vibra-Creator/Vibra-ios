@@ -64,13 +64,25 @@ async function patchEmailVerified(page: Page) {
   });
 }
 
+async function changeNotificationPermission(page: Page, permission: NotificationPermission) {
+  await page.evaluate((nextPermission) => {
+    const testWindow = window as typeof window & {
+      __setNotificationPermission?: (nextPermission: NotificationPermission) => void;
+    };
+    if (!testWindow.__setNotificationPermission) {
+      throw new Error("Notification permission change helper was not installed");
+    }
+    testWindow.__setNotificationPermission(nextPermission);
+  }, permission);
+}
+
 async function prepareAuthenticatedPage(
   page: Page,
   request: APIRequestContext,
   credentials: Credentials,
   options: {
     supported?: boolean;
-    permission?: "default" | "denied";
+    permission?: "default" | "denied" | "granted";
     permissionThrows?: boolean;
     permissionRequestThrows?: boolean;
     storageMode?: "write-fails" | "read-and-write-fail";
@@ -89,6 +101,40 @@ async function prepareAuthenticatedPage(
   await page.addInitScript(
     ({ supported, permission, permissionThrows, permissionRequestThrows, decisionKey, storageAccessThrows }) => {
       window.localStorage.setItem("vibra-splash-seen", "1");
+      let permissionValue: NotificationPermission = permission;
+      const permissionChangeTarget = new EventTarget() as EventTarget & {
+        state: PermissionState;
+        onchange: ((event: Event) => void) | null;
+      };
+      let permissionChangeHandler: ((event: Event) => void) | null = null;
+      Object.defineProperty(permissionChangeTarget, "state", {
+        configurable: true,
+        get: () => permissionValue === "default" ? "prompt" : permissionValue,
+      });
+      Object.defineProperty(permissionChangeTarget, "onchange", {
+        configurable: true,
+        get: () => permissionChangeHandler,
+        set: (handler: ((event: Event) => void) | null) => {
+          permissionChangeHandler = handler;
+        },
+      });
+      const setPermission = (nextPermission: NotificationPermission) => {
+        permissionValue = nextPermission;
+        const event = new Event("change");
+        permissionChangeTarget.dispatchEvent(event);
+        permissionChangeHandler?.(event);
+      };
+      (window as typeof window & {
+        __setNotificationPermission?: (nextPermission: NotificationPermission) => void;
+      }).__setNotificationPermission = setPermission;
+
+      const originalPermissionsQuery = navigator.permissions.query.bind(navigator.permissions);
+      Object.defineProperty(navigator.permissions, "query", {
+        configurable: true,
+        value: (descriptor: PermissionDescriptor) => descriptor.name === "notifications"
+          ? Promise.resolve(permissionChangeTarget as PermissionStatus)
+          : originalPermissionsQuery(descriptor),
+      });
 
       const storageMode = new URLSearchParams(window.location.search).get("notificationStorage");
       const storagePrototype = Storage.prototype;
@@ -137,7 +183,7 @@ async function prepareAuthenticatedPage(
               if (permissionThrows) {
                 throw new Error("Notification.permission access failed");
               }
-              return permission;
+              return permissionValue;
             }
             if (property === "requestPermission") {
               return () => {
@@ -148,6 +194,7 @@ async function prepareAuthenticatedPage(
                 if (permissionRequestThrows) {
                   throw new Error("Notification.requestPermission failed");
                 }
+                setPermission("denied");
                 return Promise.resolve("denied");
               };
             }
@@ -231,6 +278,57 @@ test("a denied notification permission hides the prompt without requesting again
   await expect(page).toHaveURL(/\/dating$/);
   await expect(page.getByTestId("vibra-logo-header")).toBeVisible();
   await expect(page.getByTestId("notification-banner")).not.toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionCalls?: number })
+          .__notificationPermissionCalls || 0,
+      ),
+    )
+    .toBe(0);
+});
+
+test("profile notification control updates when browser permission changes from denied to granted", async ({
+  page,
+  request,
+}) => {
+  const user = await registerUser(request, "permission-denied-to-granted");
+  await prepareAuthenticatedPage(page, request, user, { permission: "denied" });
+  await page.goto("/profile", { waitUntil: "load" });
+
+  const notificationButton = page.getByTestId("button-push-notifications");
+  await expect(notificationButton).toBeVisible({ timeout: 10_000 });
+  await expect(notificationButton).toHaveClass(/text-yellow-400/);
+
+  await changeNotificationPermission(page, "granted");
+
+  await expect(notificationButton).not.toHaveClass(/text-yellow-400/);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as typeof window & { __notificationPermissionCalls?: number })
+          .__notificationPermissionCalls || 0,
+      ),
+    )
+    .toBe(0);
+});
+
+test("profile notification control updates when browser permission changes from granted to denied", async ({
+  page,
+  request,
+}) => {
+  const user = await registerUser(request, "permission-granted-to-denied");
+  await prepareAuthenticatedPage(page, request, user);
+  await page.goto("/profile", { waitUntil: "load" });
+
+  const notificationButton = page.getByTestId("button-push-notifications");
+  await expect(notificationButton).toBeVisible({ timeout: 10_000 });
+  await changeNotificationPermission(page, "granted");
+  await expect(notificationButton).not.toHaveClass(/text-yellow-400/);
+
+  await changeNotificationPermission(page, "denied");
+
+  await expect(notificationButton).toHaveClass(/text-yellow-400/);
   await expect
     .poll(() =>
       page.evaluate(() =>

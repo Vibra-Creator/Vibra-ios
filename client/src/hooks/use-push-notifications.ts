@@ -75,6 +75,51 @@ export function usePushNotifications() {
     return false;
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    let permissionStatus: PermissionStatus | undefined;
+
+    const refreshPermission = () => {
+      if (!active) return;
+      try {
+        setPermission(Notification.permission);
+      } catch {
+        // Permission access may be restricted in some browser contexts.
+      }
+    };
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshPermission();
+    };
+
+    const attachPermissionListener = async () => {
+      try {
+        if (!("Notification" in window) || !("permissions" in navigator)) return;
+        const status = await navigator.permissions.query({
+          name: "notifications" as PermissionName,
+        });
+        if (!active) return;
+        permissionStatus = status;
+        permissionStatus.addEventListener("change", refreshPermission);
+        refreshPermission();
+      } catch {
+        // Permissions API is not available in every browser; focus/visibility checks remain.
+      }
+    };
+
+    refreshPermission();
+    void attachPermissionListener();
+    window.addEventListener("focus", refreshPermission);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      active = false;
+      permissionStatus?.removeEventListener("change", refreshPermission);
+      window.removeEventListener("focus", refreshPermission);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
   const performSubscribe = useCallback(async () => {
     try {
       const res = await fetch("/api/push/vapid-key");
