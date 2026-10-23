@@ -1,8 +1,8 @@
-import type { Express } from "express";
+import type { Express, RequestHandler } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import https from "https";
-import { storage } from "./storage";
+import { storage, type IStorage } from "./storage";
 import { getProfileVideoCleanupCutoff, removeInactiveProfileVideos } from "./profile-video-cleanup";
 import {
   createAdminBotImageFixHandler,
@@ -14,6 +14,7 @@ import { eq, or, and, ne, sql, lt, gt, desc, asc, isNotNull } from "drizzle-orm"
 import { z } from "zod";
 import { createBlockedProfileReportData } from "./report-moderation";
 import {
+  registerAdminReportListRoute,
   registerReportRemovalRoute,
   registerReportSubmissionRoute,
   registerReportSuspensionRoute,
@@ -660,6 +661,68 @@ export function registerColdMessageListRoutes(app: Express): void {
     } catch (err) {
       console.error("[cold-messages received]", err);
       res.status(500).json({ error: "Errore" });
+    }
+  });
+}
+
+export function registerBlockedUserRoute(
+  app: Express,
+  isAuthenticatedMiddleware: RequestHandler,
+  reportStorage: Pick<IStorage, "getProfileByUserId" | "getBlockedUsers" | "blockUser" | "createReport">,
+  notifyAdminsOfNewUserReport: (reportId: string) => unknown,
+): void {
+  app.post("/api/block", isAuthenticatedMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const profile = await reportStorage.getProfileByUserId(userId);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+      const { blockedId } = req.body;
+      if (!blockedId) return res.status(400).json({ error: "blockedId required" });
+      if (blockedId === profile.id) return res.status(400).json({ error: "Cannot block yourself" });
+
+      const [blockedProfile] = await db
+        .select({
+          id: profiles.id,
+          name: profiles.name,
+          bio: profiles.bio,
+          imageUrl: profiles.imageUrl,
+          photos: profiles.photos,
+          profileVideoUrl: profiles.profileVideoUrl,
+        })
+        .from(profiles)
+        .where(eq(profiles.id, blockedId))
+        .limit(1);
+      if (!blockedProfile) return res.status(404).json({ error: "Profile to block not found" });
+
+      const outgoingBlocks = await reportStorage.getBlockedUsers(profile.id);
+      const wasAlreadyBlocked = outgoingBlocks.some((entry) => entry.blockedId === blockedId);
+      const block = await reportStorage.blockUser(profile.id, blockedId);
+      if (!wasAlreadyBlocked) {
+        try {
+          const [existingBlockReport] = await db.select({ id: reports.id })
+            .from(reports)
+            .where(and(
+              eq(reports.reporterId, profile.id),
+              eq(reports.reportedId, blockedId),
+              eq(reports.status, "pending"),
+              gt(reports.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
+              or(isNotNull(reports.reportedContentId), isNotNull(reports.coldMessageId)),
+            ))
+            .limit(1);
+          if (!existingBlockReport) {
+            const report = await reportStorage.createReport(createBlockedProfileReportData(profile.id, blockedProfile));
+            void notifyAdminsOfNewUserReport(report.id);
+          }
+        } catch (reportError) {
+          console.error("[ugc-moderation] User was blocked, but the moderation report could not be created:", reportError);
+        }
+      }
+      res.json(block);
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      res.status(500).json({ error: "Failed to block user" });
     }
   });
 }
@@ -2765,14 +2828,7 @@ ${urlEntries}
   // === ADMIN MODERATION ROUTES ===
 
   // Reports
-  app.get("/api/admin/reports", isAuthenticated, isAdmin, async (req: any, res) => {
-    try {
-      const reps = await storage.getReports();
-      res.json(reps);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch reports" });
-    }
-  });
+  registerAdminReportListRoute(app, isAuthenticated, isAdmin, () => storage.getReports());
 
   app.patch("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
@@ -4091,59 +4147,7 @@ REGOLE:
   });
 
   // === BLOCKED USERS ===
-  app.post("/api/block", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user?.claims?.sub;
-      if (!userId) return res.status(401).json({ error: "Not authenticated" });
-      const profile = await storage.getProfileByUserId(userId);
-      if (!profile) return res.status(404).json({ error: "Profile not found" });
-
-      const { blockedId } = req.body;
-      if (!blockedId) return res.status(400).json({ error: "blockedId required" });
-      if (blockedId === profile.id) return res.status(400).json({ error: "Cannot block yourself" });
-
-      const [blockedProfile] = await db
-        .select({
-          id: profiles.id,
-          name: profiles.name,
-          bio: profiles.bio,
-          imageUrl: profiles.imageUrl,
-          photos: profiles.photos,
-          profileVideoUrl: profiles.profileVideoUrl,
-        })
-        .from(profiles)
-        .where(eq(profiles.id, blockedId))
-        .limit(1);
-      if (!blockedProfile) return res.status(404).json({ error: "Profile to block not found" });
-
-      const outgoingBlocks = await storage.getBlockedUsers(profile.id);
-      const wasAlreadyBlocked = outgoingBlocks.some((entry) => entry.blockedId === blockedId);
-      const block = await storage.blockUser(profile.id, blockedId);
-      if (!wasAlreadyBlocked) {
-        try {
-          const [existingBlockReport] = await db.select({ id: reports.id })
-            .from(reports)
-            .where(and(
-              eq(reports.reporterId, profile.id),
-              eq(reports.reportedId, blockedId),
-              eq(reports.status, "pending"),
-              gt(reports.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
-              or(isNotNull(reports.reportedContentId), isNotNull(reports.coldMessageId)),
-            ))
-            .limit(1);
-          if (!existingBlockReport) {
-            const report = await storage.createReport(createBlockedProfileReportData(profile.id, blockedProfile));
-            void notifyAdminsOfNewUserReport(report.id);
-          }
-        } catch (reportError) {
-          console.error("[ugc-moderation] User was blocked, but the moderation report could not be created:", reportError);
-        }
-      }
-      res.json(block);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to block user" });
-    }
-  });
+  registerBlockedUserRoute(app, isAuthenticated, storage, notifyAdminsOfNewUserReport);
 
   app.delete("/api/block/:blockedId", isAuthenticated, async (req: any, res) => {
     try {

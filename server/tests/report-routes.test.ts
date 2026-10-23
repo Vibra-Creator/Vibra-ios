@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import express, { type RequestHandler } from "express";
 import { createServer, request as httpRequest, type Server as HttpServer } from "node:http";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import {
   challengeSubmissions,
   dailyChallenges,
   events,
   hubPosts,
+  blockedUsers,
   privateRoomMessages,
   privateRoomRequests,
   privateRooms,
@@ -21,12 +22,14 @@ import {
 } from "../../shared/schema.js";
 import { db } from "../db.js";
 import { runMigrations } from "../migrate.js";
-import { createAdminAuthorizationMiddleware } from "../routes.js";
+import { createAdminAuthorizationMiddleware, registerBlockedUserRoute } from "../routes.js";
 import {
+  registerAdminReportListRoute,
   registerReportRemovalRoute,
   registerReportSubmissionRoute,
   registerReportSuspensionRoute,
 } from "../report-routes.js";
+import { DatabaseStorage } from "../storage.js";
 
 const runId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 const createdProfileIds: string[] = [];
@@ -43,7 +46,9 @@ const createdBriciolaIds: string[] = [];
 const createdStoryVoteIds: string[] = [];
 const createdChallengeIds: string[] = [];
 const createdChallengeSubmissionIds: string[] = [];
+const reportNotificationRequests: string[] = [];
 let server: HttpServer;
+const reportStorage = new DatabaseStorage();
 
 const testAuthentication: RequestHandler = (req: any, res, next) => {
   const userId = req.header("x-test-user");
@@ -121,6 +126,15 @@ before(async () => {
   const app = express();
   app.use(express.json());
   registerReportSubmissionRoute(app, testAuthentication, () => {});
+  registerBlockedUserRoute(app, testAuthentication, reportStorage, (reportId) => {
+    reportNotificationRequests.push(reportId);
+  });
+  registerAdminReportListRoute(
+    app,
+    testAuthentication,
+    testAdminAuthorization,
+    () => reportStorage.getReports(),
+  );
   registerReportRemovalRoute(app, testAuthentication, testAdminAuthorization, () => {});
   registerReportSuspensionRoute(app, testAuthentication, testAdminAuthorization, () => {});
   server = createServer(app);
@@ -141,6 +155,12 @@ after(async () => {
   }
   if (createdReportIds.length) {
     await db.delete(reports).where(inArray(reports.id, createdReportIds));
+  }
+  if (createdProfileIds.length) {
+    await db.delete(blockedUsers).where(or(
+      inArray(blockedUsers.blockerId, createdProfileIds),
+      inArray(blockedUsers.blockedId, createdProfileIds),
+    ));
   }
   if (createdRoomMessageIds.length) {
     await db.delete(roomMessages).where(inArray(roomMessages.id, createdRoomMessageIds));
@@ -178,6 +198,140 @@ after(async () => {
   if (createdProfileIds.length) {
     await db.delete(profiles).where(inArray(profiles.id, createdProfileIds));
   }
+});
+
+test("authenticated blocks create actionable profile reports, notify admins, and preserve evidence through moderation", async () => {
+  const linkedReporter = await createProfile("block-linked-reporter");
+  const linkedTarget = await createProfile("block-linked-target");
+  await db.update(profiles).set({
+    name: "Linked target profile",
+    bio: "Evidence from the linked profile",
+    imageUrl: "/linked-target-avatar.png",
+    photos: ["/linked-target-photo.png"],
+    profileVideoUrl: null,
+  }).where(eq(profiles.id, linkedTarget.id));
+  const [existingLinkedReport] = await db.insert(reports).values({
+    reporterId: linkedReporter.id,
+    reportedId: linkedTarget.id,
+    reason: "Segnalazione preesistente",
+    reportedContentType: "profile",
+    reportedContentId: linkedTarget.id,
+    reportedContentSnapshot: JSON.stringify({ id: linkedTarget.id, name: "Earlier snapshot" }),
+  }).returning({ id: reports.id });
+  createdReportIds.push(existingLinkedReport.id);
+
+  const notificationsBeforeLinkedBlock = reportNotificationRequests.length;
+  const linkedBlock = await requestJson(
+    "/api/block",
+    "POST",
+    { blockedId: linkedTarget.id },
+    { "x-test-user": linkedReporter.userId },
+  );
+  assert.equal(linkedBlock.statusCode, 200);
+  assert.equal(linkedBlock.body.blockedId, linkedTarget.id);
+  const linkedReports = await db.select({ id: reports.id })
+    .from(reports)
+    .where(and(
+      eq(reports.reporterId, linkedReporter.id),
+      eq(reports.reportedId, linkedTarget.id),
+      eq(reports.status, "pending"),
+      eq(reports.reportedContentType, "profile"),
+    ));
+  assert.deepEqual(linkedReports.map(({ id }) => id), [existingLinkedReport.id]);
+  assert.equal(reportNotificationRequests.length, notificationsBeforeLinkedBlock);
+
+  const unlinkedReporter = await createProfile("block-unlinked-reporter");
+  const unlinkedTarget = await createProfile("block-unlinked-target");
+  await db.update(profiles).set({
+    name: "Block target profile",
+    bio: "Profile evidence shown to moderators",
+    imageUrl: "/block-target-avatar.png",
+    photos: ["/block-target-photo.png"],
+    profileVideoUrl: null,
+  }).where(eq(profiles.id, unlinkedTarget.id));
+  const [unrelatedReport] = await db.insert(reports).values({
+    reporterId: unlinkedReporter.id,
+    reportedId: unlinkedTarget.id,
+    reason: "Segnalazione senza collegamento",
+  }).returning({ id: reports.id });
+  createdReportIds.push(unrelatedReport.id);
+
+  const unlinkedBlock = await requestJson(
+    "/api/block",
+    "POST",
+    { blockedId: unlinkedTarget.id },
+    { "x-test-user": unlinkedReporter.userId },
+  );
+  assert.equal(unlinkedBlock.statusCode, 200);
+  assert.equal(unlinkedBlock.body.blockedId, unlinkedTarget.id);
+
+  const [actionableReport] = await db.select().from(reports)
+    .where(and(
+      eq(reports.reporterId, unlinkedReporter.id),
+      eq(reports.reportedId, unlinkedTarget.id),
+      eq(reports.reportedContentType, "profile"),
+      eq(reports.reportedContentId, unlinkedTarget.id),
+      eq(reports.status, "pending"),
+    ))
+    .limit(1);
+  assert.ok(actionableReport, "blocking must create a linked pending profile report");
+  createdReportIds.push(actionableReport.id);
+  assert.equal(actionableReport.notificationStatus, "pending");
+  assert.deepEqual(JSON.parse(actionableReport.reportedContentSnapshot ?? "null"), {
+    id: unlinkedTarget.id,
+    name: "Block target profile",
+    bio: "Profile evidence shown to moderators",
+    imageUrl: "/block-target-avatar.png",
+    photos: ["/block-target-photo.png"],
+    profileVideoUrl: null,
+  });
+  assert.ok(reportNotificationRequests.includes(actionableReport.id), "new block reports must trigger the admin notification queue");
+
+  const adminReports = await requestJson(
+    "/api/admin/reports",
+    "GET",
+    undefined,
+    { "x-test-user": "test-moderator" },
+  );
+  assert.equal(adminReports.statusCode, 200);
+  const adminVisibleReport = adminReports.body.find((report: any) => report.id === actionableReport.id);
+  assert.ok(adminVisibleReport, "admins must be able to find the block report");
+  assert.equal(adminVisibleReport.reportedContentType, "profile");
+  assert.equal(adminVisibleReport.reportedContentId, unlinkedTarget.id);
+  assert.equal(adminVisibleReport.status, "pending");
+  assert.deepEqual(JSON.parse(adminVisibleReport.reportedContentSnapshot), {
+    id: unlinkedTarget.id,
+    name: "Block target profile",
+    bio: "Profile evidence shown to moderators",
+    imageUrl: "/block-target-avatar.png",
+    photos: ["/block-target-photo.png"],
+    profileVideoUrl: null,
+  });
+
+  const moderation = await requestJson(
+    `/api/admin/reports/${encodeURIComponent(actionableReport.id)}/remove-and-suspend`,
+    "POST",
+    {},
+    { "x-test-user": "test-moderator" },
+  );
+  assert.equal(moderation.statusCode, 200);
+  assert.equal(moderation.body.contentHidden, true);
+  assert.equal(moderation.body.authorSuspended, true);
+  const [hiddenTarget] = await db.select().from(profiles)
+    .where(eq(profiles.id, unlinkedTarget.id))
+    .limit(1);
+  assert.equal(hiddenTarget.moderationHidden, true);
+  const [resolvedReport] = await db.select().from(reports)
+    .where(eq(reports.id, actionableReport.id))
+    .limit(1);
+  assert.equal(resolvedReport.status, "resolved");
+  assert.equal(resolvedReport.moderationAction, "profile_hidden_and_suspended");
+  assert.equal(resolvedReport.moderatedBy, "test-moderator");
+  assert.ok(resolvedReport.reportedContentSnapshot, "moderation must preserve the review evidence");
+  const [suspension] = await db.select().from(userSuspensions)
+    .where(eq(userSuspensions.userId, unlinkedTarget.userId))
+    .limit(1);
+  assert.ok(suspension, "the linked account must be suspended by the admin action");
 });
 
 test("room-message reports require authentication and the reported author; evidence comes from the server", async () => {

@@ -30,6 +30,21 @@ import {
 type ReportNotification = (reportId: string) => void | Promise<unknown>;
 type DisconnectReportedProfile = (profileId: string) => void;
 
+export function registerAdminReportListRoute(
+  app: Express,
+  isAuthenticated: RequestHandler,
+  isAdmin: RequestHandler,
+  getReports: () => Promise<unknown[]>,
+): void {
+  app.get("/api/admin/reports", isAuthenticated, isAdmin, async (_req: any, res) => {
+    try {
+      res.json(await getReports());
+    } catch {
+      res.status(500).json({ error: "Failed to fetch reports" });
+    }
+  });
+}
+
 export function registerReportSubmissionRoute(
   app: Express,
   isAuthenticated: RequestHandler,
