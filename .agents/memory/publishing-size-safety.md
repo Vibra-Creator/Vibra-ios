@@ -33,6 +33,10 @@ The image fits only without a local `dist/` in the workspace (it is uploaded and
 
 **Why:** a local test build re-added dist and the next publish failed again at the Bundle stage.
 
+The publishing build skips Vite's public-folder copy (env flag in the publish build command) and the production server serves client/public directly as a fallback. Normal builds still copy it because the iOS bundle scripts need assets inside dist/public.
+
+**Why:** the duplicate copy added about 1.4 GB to the published image.
+
 Keep Java and Python installed during this publishing-size investigation.
 
 **Why:** The user explicitly declined removing these tools to reduce the publishing package.

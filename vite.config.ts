@@ -30,6 +30,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Publishing only: the server serves client/public directly, so skip the
+    // 1.4 GB duplicate copy that pushes the published image over 8 GiB.
+    copyPublicDir: process.env.VIBRA_SKIP_PUBLIC_COPY !== "1",
     rollupOptions: {
       output: {
         manualChunks(id) {
