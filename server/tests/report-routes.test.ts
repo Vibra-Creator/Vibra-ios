@@ -371,7 +371,7 @@ test("private-room reports require current membership and still ignore client ro
   assert.notEqual(snapshot.content, "forged private snapshot");
 });
 
-test("admin moderation removes only the linked room message and permanently suspends its author", async () => {
+test("admin moderation removes only the linked room message and retains its snapshot and 24-hour suspension", async () => {
   const reporter = await createProfile("moderation-reporter");
   const author = await createProfile("moderation-author");
   const [reportedMessage, siblingMessage] = await db.insert(roomMessages).values([
@@ -438,8 +438,10 @@ test("admin moderation removes only the linked room message and permanently susp
   assert.equal(moderation.body.contentRemoved, true);
   assert.equal(moderation.body.contentWasAlreadyRemoved, false);
   assert.equal(moderation.body.authorSuspended, true);
-  assert.equal(moderation.body.authorPermanentlySuspended, true);
-  assert.equal(moderation.body.suspensionExpiresAt, null);
+  const expiresAt = Date.parse(moderation.body.suspensionExpiresAt);
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  assert.ok(expiresAt >= requestStartedAt + oneDayMs);
+  assert.ok(expiresAt <= requestFinishedAt + oneDayMs);
 
   const remainingMessages = await db.select({ id: roomMessages.id })
     .from(roomMessages)
@@ -450,7 +452,7 @@ test("admin moderation removes only the linked room message and permanently susp
     .limit(1);
   assert.equal(reviewedReport.status, "resolved");
   assert.ok(reviewedReport.reportedContentSnapshot);
-  assert.equal(reviewedReport.moderationAction, "room_message_removed_and_permanently_suspended");
+  assert.equal(reviewedReport.moderationAction, "room_message_removed_and_suspended");
   assert.equal(reviewedReport.moderatedBy, "test-moderator");
   assert.ok(reviewedReport.moderatedAt instanceof Date);
   assert.ok(reviewedReport.moderatedAt.getTime() >= requestStartedAt);
@@ -460,8 +462,8 @@ test("admin moderation removes only the linked room message and permanently susp
     .where(eq(userSuspensions.userId, author.userId))
     .limit(1);
   assert.ok(suspension);
-  assert.equal(suspension.isPermanent, true);
-  assert.equal(suspension.expiresAt, null);
+  assert.equal(suspension.isPermanent, false);
+  assert.equal(suspension.expiresAt?.getTime(), expiresAt);
 
   const repeatedAction = await requestJson(
     `/api/admin/reports/${encodeURIComponent(reportResponse.body.id)}/remove-and-suspend`,
@@ -564,16 +566,11 @@ test("only admins can suspend an author from a pending profile report, once", as
   const finishedAt = Date.now();
   assert.equal(action.statusCode, 200);
   assert.equal(action.body.authorSuspended, true);
-  assert.equal(action.body.authorPermanentlySuspended, true);
 
   const [reviewedReport] = await db.select().from(reports)
     .where(eq(reports.id, reportResponse.body.id)).limit(1);
   assert.equal(reviewedReport.status, "resolved");
-  assert.equal(reviewedReport.moderationAction, "author_permanently_suspended");
-  const [suspension] = await db.select().from(userSuspensions)
-    .where(eq(userSuspensions.userId, author.userId)).limit(1);
-  assert.equal(suspension.isPermanent, true);
-  assert.equal(suspension.expiresAt, null);
+  assert.equal(reviewedReport.moderationAction, "author_suspended");
   assert.equal(reviewedReport.moderatedBy, "test-moderator");
   assert.ok(reviewedReport.moderatedAt instanceof Date);
   assert.ok(reviewedReport.moderatedAt.getTime() >= startedAt);
@@ -622,12 +619,11 @@ test("moderation still resolves a report whose exact room message was deleted ea
   assert.equal(moderation.body.contentRemoved, false);
   assert.equal(moderation.body.contentWasAlreadyRemoved, true);
   assert.equal(moderation.body.authorSuspended, true);
-  assert.equal(moderation.body.authorPermanentlySuspended, true);
 
   const [reviewedReport] = await db.select().from(reports)
     .where(eq(reports.id, reportResponse.body.id))
     .limit(1);
   assert.equal(reviewedReport.status, "resolved");
   assert.ok(reviewedReport.reportedContentSnapshot);
-  assert.equal(reviewedReport.moderationAction, "content_already_removed_and_permanently_suspended");
+  assert.equal(reviewedReport.moderationAction, "content_already_removed_and_suspended");
 });

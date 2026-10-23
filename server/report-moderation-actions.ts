@@ -16,6 +16,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import {
+  getReportSuspensionExpiry,
   isCosmicSignalAuthoredByReportedUser,
   isProfilePhotoOwnedByReportedProfile,
   isProfileVideoAuthoredByReportedUser,
@@ -306,19 +307,20 @@ export async function moderateDetailedReportInTransaction(
     reportedUserId = reportedProfile?.userId ?? null;
   }
 
+  let expiresAt: Date | null = null;
   if (reportedUserId) {
+    expiresAt = getReportSuspensionExpiry(now);
     await tx.insert(userSuspensions).values({
       userId: reportedUserId,
       reason: `Segnalazione ${report.id.slice(0, 8)}: ${report.reason}`.slice(0, 500),
-      expiresAt: null,
-      isPermanent: true,
+      expiresAt,
+      isPermanent: false,
     });
   }
 
-  const expiresAt: Date | null = null;
   const action = contentRemoved
-    ? `${contentType}_removed${reportedUserId ? "_and_permanently_suspended" : ""}`
-    : `content_already_removed${reportedUserId ? "_and_permanently_suspended" : ""}`;
+    ? `${contentType}_removed${reportedUserId ? "_and_suspended" : ""}`
+    : `content_already_removed${reportedUserId ? "_and_suspended" : ""}`;
   await tx.update(reports)
     .set({ moderationAction: action })
     .where(eq(reports.id, report.id));

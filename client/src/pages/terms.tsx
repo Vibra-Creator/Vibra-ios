@@ -85,7 +85,7 @@ export default function Terms() {
               </ul>
               <p className="mt-3 font-medium">
                 Vibra applica una politica di tolleranza zero verso contenuti offensivi o inappropriati e comportamenti abusivi.
-                Quando la violazione è confermata, il contenuto viene rimosso e l'account dell'autore sospeso definitivamente.
+                I contenuti che violano queste regole possono essere rimossi e gli account responsabili sospesi o chiusi.
               </p>
             </section>
 
@@ -99,8 +99,8 @@ export default function Terms() {
               </p>
               <p className="mt-2">
                 La moderazione combina filtri automatici e revisione del team di amministrazione.
-                Quando una violazione è confermata, Vibra rimuove il contenuto e sospende
-                definitivamente l'account responsabile.
+                Vibra può rimuovere contenuti che violano queste regole e sospendere gli account
+                responsabili.
               </p>
             </section>
 
@@ -109,9 +109,8 @@ export default function Terms() {
               <p>
                 Gli utenti possono segnalare profili e singoli messaggi inappropriati dalla chat,
                 dalle stanze pubbliche o dalle stanze private tramite l'azione Segnala.
-                Le segnalazioni vengono inoltrate al team di moderazione, che le esamina e interviene
-                entro 24 ore dalla ricezione. Se conferma una violazione, rimuove il contenuto e
-                sospende definitivamente l'account dell'autore:
+                Le segnalazioni vengono inoltrate al team di moderazione, che le esamina e adotta
+                le misure necessarie entro 24 ore dalla ricezione:
               </p>
               <ul className="list-disc pl-5 space-y-1 mt-2">
                 <li>Contenuto inappropriato</li>

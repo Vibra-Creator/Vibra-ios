@@ -4,11 +4,13 @@ import { updateProfileSchema } from "../../shared/schema.js";
 import { createSuspensionWriteGuard } from "../suspension-write-guard.js";
 import {
   createBlockedProfileReportData,
+  getReportSuspensionExpiry,
   isBlogPostAuthoredByReportedUser,
   isChatMessageAuthoredByReportedUser,
   isColdMessageAuthoredByReportedUser,
   isRoomMessageAuthoredByReportedUser,
   isReportContentType,
+  REPORT_SUSPENSION_DURATION_MS,
 } from "../report-moderation.js";
 
 test("blocking a user creates an actionable profile report with a review snapshot", () => {
@@ -59,6 +61,14 @@ test("reported cold message must be sent by the reported profile to the reporter
       toProfileId: "reporter-profile",
     }),
     false,
+  );
+});
+
+test("moderation suspension expires after exactly 24 hours", () => {
+  const now = new Date("2026-09-29T12:00:00.000Z");
+  assert.equal(
+    getReportSuspensionExpiry(now).getTime(),
+    now.getTime() + REPORT_SUSPENSION_DURATION_MS,
   );
 });
 

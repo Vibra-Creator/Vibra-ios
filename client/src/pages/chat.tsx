@@ -195,7 +195,6 @@ export default function Chat() {
     onSuccess: () => {
       toast({ title: t("chat.userBlocked"), description: t("chat.userBlockedDesc") });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/swipable"] });
       if (myProfile) {
         queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile.id] });
       }
