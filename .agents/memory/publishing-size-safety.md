@@ -12,3 +12,7 @@ Limit size reduction to build-only copies of caches and version-control history 
 Do not rely on `REPLIT_DEPLOYMENT` being set during the publishing **build**. It was absent in actual remote build logs even though it is documented for published runtime. Keep cleanup authorization scoped explicitly to the publishing command, never ordinary workspace commands.
 
 **Why:** Using the runtime variable as a build-time detector caused successful compilations to fail before image packaging.
+
+Preserve the cache root and platform-managed caches; remove only explicitly identified heavy development-cache subdirectories. Use bounded filesystem retries for transient deletion conflicts.
+
+**Why:** The security scanner can still write cache state while the build finishes. Removing the cache root caused a real `ENOTEMPTY` build failure; deleting platform state also risks disrupting that concurrent process.

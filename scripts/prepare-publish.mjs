@@ -15,7 +15,26 @@ for (const required of ["dist/index.cjs", "dist/public/index.html"]) {
   await access(path.join(root, required));
 }
 
-for (const directory of [".cache", ".git"]) {
+// Replit can still write security-scan state under .cache/replit while the
+// build finishes. Never remove .cache itself or platform-managed subdirectories.
+const buildOnlyDirectories = [
+  ".cache/ms-playwright",
+  ".cache/.bun",
+  ".cache/nix",
+  ".git",
+];
+for (const directory of buildOnlyDirectories) {
+  if (directory.startsWith(".cache/")) {
+    try {
+      const cache = await lstat(path.join(root, ".cache"));
+      if (cache.isSymbolicLink()) {
+        throw new Error("Publish cleanup refused: .cache is a symlink.");
+      }
+    } catch (error) {
+      if (error.code === "ENOENT") continue;
+      throw error;
+    }
+  }
   const target = path.join(root, directory);
   try {
     await lstat(target);
@@ -23,7 +42,12 @@ for (const directory of [".cache", ".git"]) {
     if (error.code === "ENOENT") continue;
     throw error;
   }
-  await rm(target, { recursive: true, force: true });
+  await rm(target, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 200,
+  });
   console.log(`[publish] Removed build-only copy of ${directory}`);
 }
 

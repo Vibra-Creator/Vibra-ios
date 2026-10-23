@@ -9,7 +9,11 @@ const cleanupScript = fileURLToPath(new URL("./prepare-publish.mjs", import.meta
 const fixture = await mkdtemp(path.join(os.tmpdir(), "vibra-publish-"));
 const contents = {
   ".git/history": "history",
-  ".cache/browser": "cache",
+  ".cache/ms-playwright/browser": "browser cache",
+  ".cache/.bun/install/packages": "package cache",
+  ".cache/nix/tarball-cache/archive": "download cache",
+  ".cache/replit/security-scan/result.json": "platform scan state",
+  ".cache/other-tool/state": "unrelated cache",
   "dist/index.cjs": "server",
   "dist/public/index.html": "client",
   "dist/public/videos/example.mp4": "video",
@@ -48,20 +52,21 @@ try {
   const incompleteBuild = run("1");
   assert.notEqual(incompleteBuild.status, 0, "Cleanup requires a complete build.");
   await access(path.join(fixture, ".git/history"));
-  await access(path.join(fixture, ".cache/browser"));
+  await access(path.join(fixture, ".cache/ms-playwright/browser"));
   await writeFile(path.join(fixture, "dist/index.cjs"), "server");
 
   const publish = run("1");
   assert.equal(publish.status, 0, publish.stderr);
-  for (const directory of [".git", ".cache"]) {
+  const removedDirectories = [".git", ".cache/ms-playwright", ".cache/.bun", ".cache/nix"];
+  for (const directory of removedDirectories) {
     await assert.rejects(access(path.join(fixture, directory)), { code: "ENOENT" });
   }
   for (const [name, content] of Object.entries(contents)) {
-    if (name.startsWith(".git/") || name.startsWith(".cache/")) continue;
+    if (removedDirectories.some((directory) => name.startsWith(`${directory}/`))) continue;
     assert.equal(await readFile(path.join(fixture, name), "utf8"), content);
   }
   assert.equal(run("1").status, 0, "Cleanup must be safe to repeat.");
-  console.log("✓ publishing cleanup is guarded, preserves assets, and is repeatable");
+  console.log("✓ publishing cleanup is guarded, preserves assets and platform scan state, and is repeatable");
 } finally {
   await rm(fixture, { recursive: true, force: true });
 }
