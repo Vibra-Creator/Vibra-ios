@@ -22,3 +22,7 @@ Successful cache/history cleanup does not establish that the image fits: an actu
 For this publishing-size investigation, the user declined modifying or excluding attachments. Leave the original attachments and their inclusion unchanged unless the user explicitly changes that decision.
 
 **Why:** The user selected “No, non modificare gli allegati” when asked whether unused attachments could be excluded from publishing while preserving originals.
+
+Keep Java and Python installed during this publishing-size investigation.
+
+**Why:** The user explicitly declined removing these tools to reduce the publishing package.
