@@ -1,11 +1,11 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  forbiddenReference,
   getAssetNameViolation,
   googleSiteVerificationMetaTag,
   playStoreAssetName,
   googleSiteVerificationAssetName,
+  StreamingReferenceScanner,
 } from "./ios-store-policy.mjs";
 
 const publicDir = path.resolve("dist/public");
@@ -40,8 +40,9 @@ async function scanDirectory(directory) {
     }
 
     if (!textExtensions.has(path.extname(entry.name).toLowerCase())) continue;
-    const content = await readFile(entryPath, "utf8");
-    if (forbiddenReference.test(content)) {
+    const scanner = new StreamingReferenceScanner();
+    scanner.push(await readFile(entryPath));
+    if (scanner.found) {
       violations.push(`${relativePath}: Google Play reference in text content`);
     }
   }
