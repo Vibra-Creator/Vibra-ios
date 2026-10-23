@@ -858,6 +858,36 @@ ${urlEntries}
     res.send(xml);
   });
 
+  // iOS Universal Links: senza questo file iOS apre i link di vibraalienmatch.com
+  // (es. verifica email) in Safari invece che nell'app (com.vibraalienmatch).
+  // Deve rispondere JSON direttamente, senza redirect, sia su /.well-known sia in radice.
+  const appleAppSiteAssociation = {
+    applinks: {
+      apps: [],
+      details: [
+        {
+          appID: "MA8PHU39TR.com.vibraalienmatch",
+          appIDs: ["MA8PHU39TR.com.vibraalienmatch"],
+          paths: ["NOT /api/*", "NOT /objects/*", "NOT /uploads/*", "/*"],
+          components: [
+            { "/": "/api/*", exclude: true },
+            { "/": "/objects/*", exclude: true },
+            { "/": "/uploads/*", exclude: true },
+            { "/": "/*" },
+          ],
+        },
+      ],
+    },
+    webcredentials: { apps: ["MA8PHU39TR.com.vibraalienmatch"] },
+  };
+  const sendAppleAppSiteAssociation = (_req: any, res: any) => {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(JSON.stringify(appleAppSiteAssociation));
+  };
+  app.get("/.well-known/apple-app-site-association", sendAppleAppSiteAssociation);
+  app.get("/apple-app-site-association", sendAppleAppSiteAssociation);
+
   app.get("/.well-known/assetlinks.json", (_req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Access-Control-Allow-Origin", "*");
