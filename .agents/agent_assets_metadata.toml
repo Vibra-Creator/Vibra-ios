@@ -920,3 +920,17 @@ mtime_ms = 1792746654597
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/7c4f6dd7-e68e-4b51-9091-554aefa21deb/1d64784a-472d-4ba1-bc87-c52ce04624dc"
 storage_version_token = "1792746667425474"
 content_type = "image/png"
+
+[[outputs]]
+id = "OTFemy0AiIfC_pIObgwEO"
+uri = "file://generated-artifacts/google-play/aliexpress-image_600x600.png"
+type = "image"
+title = "Immagine 600 × 600 px"
+description = "Immagine PNG quadrata, ingrandita dalla sorgente AVIF originale di 220 × 220 px."
+logical_id = "ea3d6d12-87a1-42f7-beb3-38a33e06cc47"
+content_hash = "sha256:b99bf7d06690db160fe2f190d87fae8216ba686229af67a6b3e247c60d8aea68"
+size = 229676
+mtime_ms = 1792747888322
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/ea3d6d12-87a1-42f7-beb3-38a33e06cc47/aa2de0cd-6f40-45ba-a679-da4ac1fb0492"
+storage_version_token = "1792747897017149"
+content_type = "image/png"
