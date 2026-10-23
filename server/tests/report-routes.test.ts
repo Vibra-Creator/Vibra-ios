@@ -630,6 +630,72 @@ test("admin moderation removes only the linked room message and retains its snap
     .where(eq(userSuspensions.userId, author.userId))).length, 1);
 });
 
+test("simultaneous moderation requests handle a room-message report only once", async () => {
+  const reporter = await createProfile("concurrent-moderation-reporter");
+  const author = await createProfile("concurrent-moderation-author");
+  const [reportedMessage, siblingMessage] = await db.insert(roomMessages).values([
+    {
+      roomId: `concurrent-moderation-room-${runId}`,
+      senderId: author.id,
+      senderName: "Author",
+      content: "The linked message must be removed once",
+    },
+    {
+      roomId: `concurrent-moderation-room-${runId}`,
+      senderId: author.id,
+      senderName: "Author",
+      content: "The unrelated message must remain",
+    },
+  ]).returning();
+  createdRoomMessageIds.push(reportedMessage.id, siblingMessage.id);
+
+  const reportResponse = await requestJson("/api/reports", "POST", {
+    reportedId: author.id,
+    reason: "Contenuto inappropriato",
+    reportedContentType: "room_message",
+    reportedContentId: reportedMessage.id,
+  }, { "x-test-user": reporter.userId });
+  assert.equal(reportResponse.statusCode, 200);
+  createdReportIds.push(reportResponse.body.id);
+
+  const actionPath =
+    `/api/admin/reports/${encodeURIComponent(reportResponse.body.id)}/remove-and-suspend`;
+  const moderatorHeaders = { "x-test-user": "test-moderator" };
+  const [firstAction, secondAction] = await Promise.all([
+    requestJson(actionPath, "POST", {}, moderatorHeaders),
+    requestJson(actionPath, "POST", {}, moderatorHeaders),
+  ]);
+
+  const successfulActions = [firstAction, secondAction].filter(({ statusCode }) => statusCode === 200);
+  const conflictingActions = [firstAction, secondAction].filter(({ statusCode }) => statusCode === 409);
+  assert.equal(successfulActions.length, 1);
+  assert.equal(conflictingActions.length, 1);
+  assert.equal(conflictingActions[0].body.error, "Report has already been handled");
+  assert.equal(successfulActions[0].body.contentRemoved, true);
+  assert.equal(successfulActions[0].body.authorSuspended, true);
+
+  const remainingMessages = await db.select({ id: roomMessages.id })
+    .from(roomMessages)
+    .where(inArray(roomMessages.id, [reportedMessage.id, siblingMessage.id]));
+  assert.deepEqual(remainingMessages.map(({ id }) => id), [siblingMessage.id]);
+
+  const [reviewedReport] = await db.select().from(reports)
+    .where(eq(reports.id, reportResponse.body.id))
+    .limit(1);
+  assert.equal(reviewedReport.status, "resolved");
+  assert.equal(reviewedReport.moderationAction, "room_message_removed_and_suspended");
+  assert.equal(reviewedReport.moderatedBy, "test-moderator");
+
+  const suspensions = await db.select().from(userSuspensions)
+    .where(eq(userSuspensions.userId, author.userId));
+  assert.equal(suspensions.length, 1);
+  assert.equal(suspensions[0].isPermanent, false);
+  const expiresAt = Date.parse(successfulActions[0].body.suspensionExpiresAt);
+  const suspensionDuration = 24 * 60 * 60 * 1000;
+  assert.ok(Math.abs(suspensions[0].expiresAt!.getTime() - expiresAt) < 1000);
+  assert.ok(Math.abs(expiresAt - Date.now() - suspensionDuration) < 5000);
+});
+
 test("moderation rejects a report linked to a room message by another profile", async () => {
   const reporter = await createProfile("forged-moderation-reporter");
   const actualAuthor = await createProfile("forged-moderation-author");
