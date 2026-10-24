@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoginVideoBackground } from "@/components/LoginVideoBackground";
+import { HubCategoryIntro } from "@/components/HubCategoryIntro";
 
 export default function Login() {
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function Login() {
       }
       el.setAttribute("content", content);
     };
-    const desc = "Accedi a Vibra per continuare a swipare, chattare e gestire il tuo profilo cosmico.";
+    const desc = "Accedi a Vibra Hub: community, marketplace, mobilità, servizi e dating facoltativo.";
     setMeta("description", desc);
     setMeta("og:title", "Vibra - Accedi", true);
     setMeta("og:description", desc, true);
@@ -242,6 +243,8 @@ export default function Login() {
             </Button>
           </CardContent>
         </Card>
+
+        <HubCategoryIntro />
 
         <div className="mt-6 text-center text-xs text-white/50">
           <p>

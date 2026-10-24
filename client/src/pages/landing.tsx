@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic } from "lucide-react";
+import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic, Home } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,7 +18,7 @@ export default function Landing() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    document.title = "Vibra - Non è Dating. È Connessione Vera.";
+    document.title = "Vibra Hub - Community, servizi e connessioni";
     const setMeta = (selector: string, attr: "name" | "property", key: string, content: string) => {
       let el = document.querySelector(`${selector}[${attr}="${key}"]`) as HTMLMetaElement | null;
       if (!el) {
@@ -28,12 +28,12 @@ export default function Landing() {
       }
       el.setAttribute("content", content);
     };
-    setMeta("meta", "name", "description", "Vibra non è una dating app. È una porta aperta per chi si sente invisibile, incompreso o solo. Carica il tuo video, racconta la tua verità, connettiti con chi capisce.");
-    setMeta("meta", "property", "og:title", "Vibra - Non è Dating. È Connessione Vera.");
-    setMeta("meta", "property", "og:description", "Una community cosmica per chi si sente trasparente. Carica il tuo video manifesto e trova chi vibra come te.");
+    setMeta("meta", "name", "description", "Vibra Hub riunisce community, social, marketplace, mobilità, casa e lavoro. Il dating cosmico è facoltativo.");
+    setMeta("meta", "property", "og:title", "Vibra Hub - Community, servizi e connessioni");
+    setMeta("meta", "property", "og:description", "Esplora community, annunci e servizi in un unico hub. Scegli tu se attivare anche Vibra Dating.");
     setMeta("meta", "property", "og:image", "/vibra-logo.png");
-    setMeta("meta", "name", "twitter:title", "Vibra - Non è Dating. È Connessione Vera.");
-    setMeta("meta", "name", "twitter:description", "Una community cosmica per chi si sente trasparente. Carica il tuo video manifesto e trova chi vibra come te.");
+    setMeta("meta", "name", "twitter:title", "Vibra Hub - Community, servizi e connessioni");
+    setMeta("meta", "name", "twitter:description", "Esplora community, annunci e servizi in un unico hub. Scegli tu se attivare anche Vibra Dating.");
     setMeta("meta", "name", "twitter:image", "/vibra-logo.png");
   }, []);
 
@@ -82,28 +82,13 @@ export default function Landing() {
   ];
 
   const features = [
-    { icon: Video,        title: t("landing.feature9.title"),  description: t("landing.feature9.desc"),  color: "from-rose-500 to-pink-600" },
-    { icon: Star,         title: t("landing.feature7.title"),  description: t("landing.feature7.desc"),  color: "from-amber-500 to-yellow-500" },
-    { icon: Zap,          title: t("landing.feature8.title"),  description: t("landing.feature8.desc"),  color: "from-cyan-500 to-blue-500" },
-    { icon: Sparkles,     title: t("landing.feature1.title"),  description: t("landing.feature1.desc"),  color: "from-purple-500 to-pink-500" },
-    { icon: MessageCircle,title: t("landing.feature2.title"),  description: t("landing.feature2.desc"),  color: "from-indigo-500 to-purple-500" },
-    { icon: ShieldCheck,  title: t("landing.feature3.title"),  description: t("landing.feature3.desc"),  color: "from-green-500 to-emerald-500" },
-    { icon: Users,        title: t("landing.feature4.title"),  description: t("landing.feature4.desc"),  color: "from-orange-500 to-amber-500" },
-    { icon: Trophy,       title: t("landing.feature5.title"),  description: t("landing.feature5.desc"),  color: "from-yellow-500 to-orange-500" },
-    { icon: Radio,        title: t("landing.feature6.title"),  description: t("landing.feature6.desc"),  color: "from-pink-500 to-rose-500" },
-    { icon: Dna,          title: t("landing.feature10.title"), description: t("landing.feature10.desc"), color: "from-violet-500 to-purple-600" },
-    { icon: Swords,       title: t("landing.feature11.title"), description: t("landing.feature11.desc"), color: "from-amber-600 to-orange-500" },
-    { icon: BookOpen,     title: t("landing.feature12.title"), description: t("landing.feature12.desc"), color: "from-teal-500 to-cyan-600" },
-    { icon: Globe,        title: t("landing.feature13.title"), description: t("landing.feature13.desc"), color: "from-blue-500 to-indigo-600" },
-    { icon: Telescope,    title: t("landing.feature14.title"), description: t("landing.feature14.desc"), color: "from-indigo-500 to-blue-700" },
-    { icon: EyeOff,       title: t("landing.feature15.title"), description: t("landing.feature15.desc"), color: "from-slate-500 to-gray-700" },
-    { icon: Clock,        title: t("landing.feature16.title"), description: t("landing.feature16.desc"), color: "from-yellow-500 to-amber-600" },
-    { icon: LayoutGrid,   title: t("landing.feature17.title"), description: t("landing.feature17.desc"), color: "from-purple-500 to-pink-500" },
-    { icon: Share2,       title: t("landing.feature18.title"), description: t("landing.feature18.desc"), color: "from-pink-500 to-rose-500" },
-    { icon: ShoppingBag,  title: t("landing.feature19.title"), description: t("landing.feature19.desc"), color: "from-orange-500 to-amber-500" },
-    { icon: Navigation,   title: t("landing.feature20.title"), description: t("landing.feature20.desc"), color: "from-slate-500 to-blue-600" },
-    { icon: Music2,       title: t("landing.feature21.title"), description: t("landing.feature21.desc"), color: "from-green-500 to-emerald-600" },
-    { icon: Briefcase,    title: t("landing.feature22.title"), description: t("landing.feature22.desc"), color: "from-indigo-500 to-violet-600" },
+    { icon: Share2,       title: t("hubIntro.social.title"),       description: t("hubIntro.social.desc"),       color: "from-pink-500 to-purple-600" },
+    { icon: ShoppingBag,  title: t("hubIntro.marketplace.title"),  description: t("hubIntro.marketplace.desc"),  color: "from-orange-500 to-amber-500" },
+    { icon: Navigation,   title: t("hubIntro.mobility.title"),     description: t("hubIntro.mobility.desc"),     color: "from-slate-500 to-blue-600" },
+    { icon: Home,         title: t("hubIntro.home.title"),         description: t("hubIntro.home.desc"),         color: "from-green-500 to-emerald-500" },
+    { icon: Briefcase,    title: t("hubIntro.work.title"),         description: t("hubIntro.work.desc"),         color: "from-indigo-500 to-violet-600" },
+    { icon: Music2,       title: t("hubIntro.media.title"),        description: t("hubIntro.media.desc"),        color: "from-cyan-500 to-blue-500" },
+    { icon: Heart,        title: t("hubIntro.dating.title"),       description: t("hubIntro.dating.desc"),       color: "from-rose-500 to-pink-600" },
   ];
 
   return (
@@ -571,8 +556,9 @@ export default function Landing() {
                 { icon: Share2,       label: t("landing.hub.tile.social"),      color: "from-pink-500 to-purple-600",   bg: "bg-pink-500/10 border-pink-500/25" },
                 { icon: ShoppingBag,  label: t("landing.hub.tile.marketplace"), color: "from-orange-500 to-amber-500",  bg: "bg-orange-500/10 border-orange-500/25" },
                 { icon: Navigation,   label: t("landing.hub.tile.mobility"),    color: "from-slate-500 to-blue-600",    bg: "bg-blue-500/10 border-blue-500/25" },
-                { icon: Music2,        label: t("landing.hub.tile.home"),        color: "from-green-500 to-emerald-500",  bg: "bg-green-500/10 border-green-500/25" },
+                { icon: Home,          label: t("landing.hub.tile.home"),        color: "from-green-500 to-emerald-500",  bg: "bg-green-500/10 border-green-500/25" },
                 { icon: Briefcase,    label: t("landing.hub.tile.work"),        color: "from-indigo-500 to-violet-600", bg: "bg-indigo-500/10 border-indigo-500/25" },
+                { icon: Music2,       label: t("landing.hub.tile.media"),       color: "from-cyan-500 to-blue-500",      bg: "bg-cyan-500/10 border-cyan-500/25" },
               ].map((tile, i) => (
                 <motion.div
                   key={i}

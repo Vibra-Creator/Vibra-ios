@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, UserPlus, CheckCircle, Sparkles, Calendar, Heart, ShoppingBag, Navigation, Home, Briefcase, Share2 } from "lucide-react";
 import { LoginVideoBackground } from "@/components/LoginVideoBackground";
+import { HubCategoryIntro } from "@/components/HubCategoryIntro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +29,7 @@ export default function Register() {
       }
       el.setAttribute("content", content);
     };
-    const desc = "Crea il tuo account Vibra e inizia a conoscere nuove persone nella community cosmica.";
+    const desc = "Crea il tuo account Vibra Hub e scopri community, marketplace, mobilità e servizi. Il dating è facoltativo.";
     setMeta("description", desc);
     setMeta("og:title", "Vibra - Registrati", true);
     setMeta("og:description", desc, true);
@@ -433,6 +434,8 @@ export default function Register() {
             </p>
           </CardContent>
         </Card>
+
+        <HubCategoryIntro />
       </motion.div>
     </div>
   );
