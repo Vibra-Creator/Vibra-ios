@@ -14,6 +14,10 @@ import { eq, or, and, ne, sql, lt, gt, desc, asc, isNotNull } from "drizzle-orm"
 import { z } from "zod";
 import { createBlockedProfileReportData } from "./report-moderation";
 import {
+  captureDetailedReportContentSnapshot,
+  type DetailedReportContentType,
+} from "./report-content-evidence";
+import {
   registerAdminReportListRoute,
   registerReportRemovalRoute,
   registerReportSubmissionRoute,
@@ -694,7 +698,44 @@ export function registerBlockedUserRoute(
         .from(profiles)
         .where(eq(profiles.id, blockedId))
         .limit(1);
-      if (!blockedProfile) return res.status(404).json({ error: "Profile to block not found" });
+      let orphanedContentReportData: Parameters<IStorage["createReport"]>[0] | null = null;
+      if (!blockedProfile) {
+        const { reportedContentType, reportedContentId } = req.body ?? {};
+        const blockableContentTypes = new Set([
+          "hub_post",
+          "event",
+          "story_briciola",
+          "challenge_submission",
+        ]);
+        if (
+          typeof reportedContentType !== "string" ||
+          !blockableContentTypes.has(reportedContentType) ||
+          typeof reportedContentId !== "string" ||
+          !reportedContentId
+        ) {
+          return res.status(404).json({ error: "Profile to block not found" });
+        }
+
+        const reportedContentSnapshot = await captureDetailedReportContentSnapshot({
+          reporterId: profile.id,
+          reportedId: blockedId,
+          contentType: reportedContentType as DetailedReportContentType,
+          contentId: reportedContentId,
+        });
+        if (!reportedContentSnapshot) {
+          return res.status(404).json({ error: "Profile to block not found" });
+        }
+
+        orphanedContentReportData = {
+          reporterId: profile.id,
+          reportedId: blockedId,
+          reason: "Blocco utente",
+          description: "Segnalazione automatica: l'autore è stato bloccato da un contenuto ancora disponibile, ma il suo profilo non è più presente.",
+          reportedContentType: reportedContentType as DetailedReportContentType,
+          reportedContentId,
+          reportedContentSnapshot,
+        };
+      }
 
       const outgoingBlocks = await reportStorage.getBlockedUsers(profile.id);
       const wasAlreadyBlocked = outgoingBlocks.some((entry) => entry.blockedId === blockedId);
@@ -712,7 +753,11 @@ export function registerBlockedUserRoute(
             ))
             .limit(1);
           if (!existingBlockReport) {
-            const report = await reportStorage.createReport(createBlockedProfileReportData(profile.id, blockedProfile));
+            const reportData = blockedProfile
+              ? createBlockedProfileReportData(profile.id, blockedProfile)
+              : orphanedContentReportData;
+            if (!reportData) throw new Error("Verified content evidence is required to report a missing profile");
+            const report = await reportStorage.createReport(reportData);
             void notifyAdminsOfNewUserReport(report.id);
           }
         } catch (reportError) {

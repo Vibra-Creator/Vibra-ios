@@ -33,6 +33,7 @@ import { DatabaseStorage } from "../storage.js";
 
 const runId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 const createdProfileIds: string[] = [];
+const createdBlockedTargetIds: string[] = [];
 const createdUserIds: string[] = [];
 const createdReportIds: string[] = [];
 const createdRoomMessageIds: string[] = [];
@@ -163,6 +164,9 @@ after(async () => {
       inArray(blockedUsers.blockerId, createdProfileIds),
       inArray(blockedUsers.blockedId, createdProfileIds),
     ));
+  }
+  if (createdBlockedTargetIds.length) {
+    await db.delete(blockedUsers).where(inArray(blockedUsers.blockedId, createdBlockedTargetIds));
   }
   if (createdRoomMessageIds.length) {
     await db.delete(roomMessages).where(inArray(roomMessages.id, createdRoomMessageIds));
@@ -334,6 +338,70 @@ test("authenticated blocks create actionable profile reports, notify admins, and
     .where(eq(userSuspensions.userId, unlinkedTarget.userId))
     .limit(1);
   assert.ok(suspension, "the linked account must be suspended by the admin action");
+});
+
+test("a missing profile can only be blocked through its verified reportable content", async () => {
+  const reporter = await createProfile("orphan-content-reporter");
+  const orphanProfileId = `__missing_report_route_profile_${runId}`;
+  createdBlockedTargetIds.push(orphanProfileId);
+  const [orphanPost] = await db.insert(hubPosts).values({
+    profileId: orphanProfileId,
+    profileName: "Unavailable author",
+    profileImageUrl: "/orphan-author.png",
+    category: "marketplace",
+    subcategory: "Altro",
+    title: "Orphaned Marketplace listing",
+    description: "A listing remains visible after its profile was removed.",
+    imageUrls: [],
+  }).returning({ id: hubPosts.id });
+  createdHubPostIds.push(orphanPost.id);
+
+  const validBlock = await requestJson(
+    "/api/block",
+    "POST",
+    {
+      blockedId: orphanProfileId,
+      reportedContentType: "hub_post",
+      reportedContentId: orphanPost.id,
+    },
+    { "x-test-user": reporter.userId },
+  );
+  assert.equal(validBlock.statusCode, 200);
+  assert.equal(validBlock.body.blockedId, orphanProfileId);
+
+  const [blockReport] = await db.select().from(reports)
+    .where(and(
+      eq(reports.reporterId, reporter.id),
+      eq(reports.reportedId, orphanProfileId),
+      eq(reports.reportedContentType, "hub_post"),
+      eq(reports.reportedContentId, orphanPost.id),
+      eq(reports.status, "pending"),
+    ))
+    .limit(1);
+  assert.ok(blockReport, "blocking a verified orphan author must preserve the exact listing for review");
+  createdReportIds.push(blockReport.id);
+  assert.equal(JSON.parse(blockReport.reportedContentSnapshot ?? "null").id, orphanPost.id);
+  assert.ok(reportNotificationRequests.includes(blockReport.id));
+
+  const forgedTargetId = `__unverified_report_route_profile_${runId}`;
+  createdBlockedTargetIds.push(forgedTargetId);
+  const forgedBlock = await requestJson(
+    "/api/block",
+    "POST",
+    {
+      blockedId: forgedTargetId,
+      reportedContentType: "hub_post",
+      reportedContentId: orphanPost.id,
+    },
+    { "x-test-user": reporter.userId },
+  );
+  assert.equal(forgedBlock.statusCode, 404, "content authored by a different ID must not authorize a block");
+  const forgedRows = await db.select({ id: blockedUsers.id }).from(blockedUsers)
+    .where(and(
+      eq(blockedUsers.blockerId, reporter.id),
+      eq(blockedUsers.blockedId, forgedTargetId),
+    ));
+  assert.equal(forgedRows.length, 0);
 });
 
 test("room-message reports require authentication and the reported author; evidence comes from the server", async () => {

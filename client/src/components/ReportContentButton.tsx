@@ -64,7 +64,11 @@ export function ReportContentButton({
   });
 
   const blockMutation = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/block", { blockedId: reportedId }),
+    mutationFn: () => apiRequest("POST", "/api/block", {
+      blockedId: reportedId,
+      reportedContentType: contentType,
+      reportedContentId: contentId,
+    }),
     onSuccess: () => {
       setOpen(false);
       setReason(REPORT_REASONS[0]);
