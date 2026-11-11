@@ -256,10 +256,6 @@ export default function Landing() {
 
             <div className="flex items-center justify-center gap-6 text-sm text-white/60 flex-wrap mt-2">
               <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-green-400" />
-                <span>{t("landing.free")}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
                 <Rocket className="w-4 h-4 text-pink-400 rotate-[-20deg]" />
                 <span>{t("landing.noCost")}</span>
               </div>
