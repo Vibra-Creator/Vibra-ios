@@ -12,12 +12,58 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const clientSource = path.join(projectRoot, "client", "src");
+const workflowPath = path.join(projectRoot, ".github", "workflows", "e2e.yml");
 const packageJson = JSON.parse(
   readFileSync(path.join(projectRoot, "package.json"), "utf8"),
 );
 const productionBuild = packageJson.scripts.build;
 const clientGatePosition = productionBuild.indexOf("npm run check:client");
 const bundlePosition = productionBuild.indexOf("script/build.ts");
+
+function extractWorkflowSection(lines, header, indentation) {
+  const headerPattern = new RegExp(`^${" ".repeat(indentation)}${header}:\\s*(?:#.*)?$`);
+  const start = lines.findIndex((line) => headerPattern.test(line));
+  assert.notEqual(start, -1, `The GitHub Actions workflow must include ${header}.`);
+
+  const nextSection = new RegExp(`^${" ".repeat(indentation)}[A-Za-z0-9_-]+:\\s*(?:#.*)?$`);
+  let end = start + 1;
+  while (end < lines.length && !nextSection.test(lines[end])) end += 1;
+  return lines.slice(start + 1, end);
+}
+
+const workflowLines = readFileSync(workflowPath, "utf8").split(/\r?\n/);
+const workflowTriggers = extractWorkflowSection(workflowLines, "on", 0);
+for (const trigger of ["push", "pull_request"]) {
+  assert(
+    workflowTriggers.some((line) => new RegExp(`^  ${trigger}:\\s*(?:#.*)?$`).test(line)),
+    `The GitHub Actions workflow must run on ${trigger}.`,
+  );
+}
+
+const releaseGateLines = extractWorkflowSection(workflowLines, "client-release-gate", 2);
+const releaseGateJob = releaseGateLines.join("\n");
+assert.match(
+  releaseGateJob,
+  /^\s+run:\s*npm run test:client-release-gate\s*$/m,
+  "The client-release-gate job must run npm run test:client-release-gate.",
+);
+assert.doesNotMatch(
+  releaseGateJob,
+  /^\s+(?:if|needs):/m,
+  "The client-release-gate job and its steps must not be conditionally skipped or wait on another job.",
+);
+assert.doesNotMatch(
+  releaseGateJob,
+  /test:e2e:setup|playwright.*install|install.*playwright/i,
+  "The client-release-gate job must not depend on Playwright browser setup.",
+);
+const failureOverrides = releaseGateLines.filter((line) =>
+  /^\s+continue-on-error\s*:/i.test(line),
+);
+assert(
+  failureOverrides.every((line) => /^\s+continue-on-error\s*:\s*false\s*(?:#.*)?$/i.test(line)),
+  "The client-release-gate job must not be configured to ignore failures.",
+);
 
 assert(
   clientGatePosition >= 0 && bundlePosition > clientGatePosition,
