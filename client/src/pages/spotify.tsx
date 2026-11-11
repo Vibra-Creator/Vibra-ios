@@ -76,7 +76,7 @@ export default function SpotifyPage() {
               {connected ? (
                 <>
                   <p className="text-white font-bold text-base">{t("spotify.connected")}</p>
-                  <p className="text-white/70 text-xs mt-0.5">famax61 · Premium</p>
+                  <p className="text-white/70 text-xs mt-0.5">famax61 · Spotify</p>
                 </>
               ) : (
                 <>

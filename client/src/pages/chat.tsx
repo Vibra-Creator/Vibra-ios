@@ -8,6 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { hideBlockedProfileFromFeeds } from "@/lib/block-user";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import GiftPicker from "@/components/GiftPicker";
@@ -194,6 +195,7 @@ export default function Chat() {
     },
     onSuccess: () => {
       toast({ title: t("chat.userBlocked"), description: t("chat.userBlockedDesc") });
+      if (otherProfile) hideBlockedProfileFromFeeds(otherProfile.id);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       if (myProfile) {
         queryClient.invalidateQueries({ queryKey: ["/api/matches", myProfile.id] });

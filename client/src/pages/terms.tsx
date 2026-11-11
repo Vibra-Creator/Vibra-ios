@@ -172,10 +172,9 @@ export default function Terms() {
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-3">10. Punti e Regali Virtuali</h2>
               <p>
-                I punti vengono guadagnati completando le Sfide Giornaliere. I punti possono essere 
-                utilizzati esclusivamente per acquistare e inviare Regali Virtuali ad altri utenti. 
-                I punti e i regali non hanno valore monetario reale e non possono essere convertiti 
-                in denaro, trasferiti ad altri account o rimborsati.
+                I punti si ottengono completando le Sfide Giornaliere e si possono usare per inviare
+                Regali Virtuali ad altri utenti. I punti e i regali non hanno valore monetario reale,
+                non possono essere convertiti in denaro o trasferiti ad altri account.
               </p>
             </section>
 
@@ -201,11 +200,11 @@ export default function Terms() {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-3">13. Abbonamenti e Pagamenti</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-3">13. Annunci del Marketplace</h2>
               <p>
-                Vibra offre un servizio gratuito. Funzionalità premium potrebbero essere 
-                disponibili in futuro. Eventuali acquisti saranno soggetti ai termini 
-                dello store da cui è stato effettuato l'acquisto.
+                Gli annunci possono riportare prezzi e condizioni indicati dagli utenti. Vibra
+                fornisce gli strumenti per pubblicare gli annunci e contattare chi li ha creati;
+                eventuali accordi sono gestiti direttamente tra gli utenti.
               </p>
             </section>
 

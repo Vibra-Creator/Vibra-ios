@@ -8,7 +8,7 @@ import {
   createAdminBotImageFixHandler,
   registerAdminBotImageFixRoute,
 } from "./admin-bot-image-fix";
-import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, appSettings, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
+import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
@@ -738,6 +738,14 @@ export async function registerRoutes(
   let bannedWordRefresh: Promise<string[]> | null = null;
   let disconnectUserSockets = (_profileId: string) => {};
 
+  async function getBlockedProfileIdsForRequest(req: any): Promise<Set<string>> {
+    const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+    if (!userId) return new Set();
+    const profile = await storage.getProfileByUserId(userId);
+    if (!profile) return new Set();
+    return new Set(await storage.getBlockedIds(profile.id));
+  }
+
   async function getBannedWordsForFiltering(): Promise<string[]> {
     if (Date.now() < bannedWordCacheExpiresAt) return bannedWordCache;
     if (bannedWordRefresh) return bannedWordRefresh;
@@ -1319,7 +1327,8 @@ ${urlEntries}
       const limit = Math.min(Math.max(1, parseInt((req.query.limit as string) || "15")), 30);
 
       const allProfiles = await storage.getProfiles();
-      const withVideos = allProfiles.filter(p => p.profileVideoUrl);
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
+      const withVideos = allProfiles.filter(p => p.profileVideoUrl && !blockedProfileIds.has(p.id));
 
       // Deterministic day-seeded shuffle (same order for all users within a day)
       const daySeed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
@@ -2361,11 +2370,10 @@ ${urlEntries}
         }
         if (!code) code = "VBR-" + Date.now().toString(36).toUpperCase();
         await db.update(profiles).set({ referralCode: code }).where(eq(profiles.id, profile.id));
-        return res.json({ code, referrals: 0, paidReferrals: 0 });
+        return res.json({ code, referrals: 0 });
       }
       const myReferrals = await db.select().from(referrals).where(eq(referrals.referrerProfileId, profile.id));
-      const paidCount = myReferrals.filter(r => r.hasPaid).length;
-      res.json({ code: profile.referralCode, referrals: myReferrals.length, paidReferrals: paidCount });
+      res.json({ code: profile.referralCode, referrals: myReferrals.length });
     } catch (error) {
       console.error("Error fetching referral code:", error);
       res.status(500).json({ error: "Failed to fetch referral code" });
@@ -2377,9 +2385,7 @@ ${urlEntries}
       const code = req.params.code.toUpperCase();
       const [profile] = await db.select().from(profiles).where(eq(profiles.referralCode, code));
       if (!profile) return res.json({ valid: false });
-      const [discountSetting] = await db.select().from(appSettings).where(eq(appSettings.key, "referral_discount_percent"));
-      const discountPercent = discountSetting ? parseFloat(discountSetting.value) : 10;
-      res.json({ valid: true, referrerName: profile.name, discountPercent });
+      res.json({ valid: true, referrerName: profile.name });
     } catch (error) {
       res.status(500).json({ error: "Failed to validate code" });
     }
@@ -2417,7 +2423,7 @@ ${urlEntries}
       const allUsers = await storage.getAllUsers();
       const profileMap = new Map(allProfiles.map(p => [p.id, p]));
       const userMap = new Map(allUsers.map(u => [u.id, u]));
-      const referrerStats = new Map<string, { profileId: string; name: string; code: string; totalReferred: number; paidReferred: number; referredUsers: any[] }>();
+      const referrerStats = new Map<string, { profileId: string; name: string; code: string; totalReferred: number; referredUsers: any[] }>();
       for (const r of allReferrals) {
         const referrer = profileMap.get(r.referrerProfileId);
         if (!referrer) continue;
@@ -2427,19 +2433,16 @@ ${urlEntries}
             name: referrer.name,
             code: referrer.referralCode || r.referralCode,
             totalReferred: 0,
-            paidReferred: 0,
             referredUsers: [],
           });
         }
         const stat = referrerStats.get(r.referrerProfileId)!;
         stat.totalReferred++;
-        if (r.hasPaid) stat.paidReferred++;
         const referredUser = userMap.get(r.referredUserId);
         stat.referredUsers.push({
           userId: r.referredUserId,
           email: referredUser?.email || "N/A",
           name: referredUser ? `${referredUser.firstName || ""} ${referredUser.lastName || ""}`.trim() : "N/A",
-          hasPaid: r.hasPaid,
           createdAt: r.createdAt,
         });
       }
@@ -2447,51 +2450,6 @@ ${urlEntries}
     } catch (error) {
       console.error("Error fetching admin referrals:", error);
       res.status(500).json({ error: "Failed to fetch referrals" });
-    }
-  });
-
-  app.patch("/api/admin/referrals/:id/paid", isAuthenticated, isAdmin, async (req: any, res) => {
-    try {
-      const { hasPaid } = req.body;
-      await db.update(referrals).set({ hasPaid: !!hasPaid }).where(eq(referrals.id, req.params.id));
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update referral" });
-    }
-  });
-
-  app.get("/api/admin/settings", isAuthenticated, isAdmin, async (req: any, res) => {
-    try {
-      const settings = await db.select().from(appSettings);
-      const result: Record<string, string> = {};
-      for (const s of settings) { result[s.key] = s.value; }
-      if (!result["referral_discount_percent"]) result["referral_discount_percent"] = "10";
-      if (!result["referral_commission_percent"]) result["referral_commission_percent"] = "15";
-      res.json(result);
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-      res.status(500).json({ error: "Failed to fetch settings" });
-    }
-  });
-
-  app.put("/api/admin/settings", isAuthenticated, isAdmin, async (req: any, res) => {
-    try {
-      const { key, value } = req.body;
-      if (!key || value === undefined) return res.status(400).json({ error: "key and value required" });
-      const allowedKeys = ["referral_discount_percent", "referral_commission_percent"];
-      if (!allowedKeys.includes(key)) return res.status(400).json({ error: "Invalid setting key" });
-      const numValue = parseFloat(value);
-      if (isNaN(numValue) || numValue < 0 || numValue > 100) return res.status(400).json({ error: "Value must be between 0 and 100" });
-      const [existing] = await db.select().from(appSettings).where(eq(appSettings.key, key));
-      if (existing) {
-        await db.update(appSettings).set({ value: String(numValue), updatedAt: new Date() }).where(eq(appSettings.key, key));
-      } else {
-        await db.insert(appSettings).values({ key, value: String(numValue) });
-      }
-      res.json({ success: true, key, value: numValue });
-    } catch (error) {
-      console.error("Error updating setting:", error);
-      res.status(500).json({ error: "Failed to update setting" });
     }
   });
 
@@ -3453,7 +3411,9 @@ ${urlEntries}
 
   app.get("/api/challenges/gallery", async (_req, res) => {
     try {
-      res.json(await storage.getApprovedChallengeGallery());
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(_req);
+      const gallery = await storage.getApprovedChallengeGallery();
+      res.json(gallery.filter((submission) => !blockedProfileIds.has(submission.profileId)));
     } catch (error) {
       console.error("Error fetching approved challenge gallery:", error);
       res.status(500).json({ error: "Failed to fetch challenge gallery" });
@@ -5100,6 +5060,7 @@ REGOLE:
       if (!profile) return res.status(404).json({ error: "Profile not found" });
 
       const profileId = profile.id;
+      const blockedProfileIds = new Set(await storage.getBlockedIds(profileId));
       const limit = parseInt(req.query.limit as string) || 50;
       const before = req.query.before as string | undefined;
 
@@ -5135,7 +5096,10 @@ REGOLE:
           .limit(limit);
       }
 
-      res.json(query.reverse());
+      res.json(query.filter((message) =>
+        !blockedProfileIds.has(message.senderId) &&
+        (!message.replyToSenderId || !blockedProfileIds.has(message.replyToSenderId))
+      ).reverse());
     } catch (err) {
       console.error("[vibrapp] fetch messages error:", err);
       res.status(500).json({ error: "Failed to fetch messages" });
@@ -5655,8 +5619,11 @@ REGOLE:
   // ─── Stories Feed ─────────────────────────────────────────────────────────
   app.get("/api/stories", async (req, res) => {
     try {
-      const stories = await storage.getStoriesFeed(20);
-      res.json(stories);
+      const [stories, blockedProfileIds] = await Promise.all([
+        storage.getStoriesFeed(20),
+        getBlockedProfileIdsForRequest(req),
+      ]);
+      res.json(stories.filter((story) => !blockedProfileIds.has(story.profileId)));
     } catch (err) {
       console.error("[stories] feed error:", err);
       res.status(500).json({ error: "Errore nel recupero storie" });
@@ -5861,7 +5828,8 @@ REGOLE:
         myProfileId = myProfile?.id || "";
       }
       const feed = await storage.getSignalsFeed(myProfileId, 50);
-      res.json(feed);
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
+      res.json(feed.filter((signal) => !blockedProfileIds.has(signal.profileId)));
     } catch (err) {
       console.error("[signals] feed error:", err);
       res.status(500).json({ error: "Errore nel recupero segnali" });
@@ -5940,7 +5908,8 @@ REGOLE:
   app.get("/api/signals/:id/comments", isAuthenticated, async (req: any, res) => {
     try {
       const comments = await storage.getSignalComments(req.params.id);
-      res.json(comments);
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
+      res.json(comments.filter((comment) => !blockedProfileIds.has(comment.profileId)));
     } catch (err) {
       console.error("[signals] comments get error:", err);
       res.status(500).json({ error: "Errore nel recupero commenti" });
@@ -5968,6 +5937,8 @@ REGOLE:
 
   app.get("/api/signals/profile/:profileId", async (req, res) => {
     try {
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
+      if (blockedProfileIds.has(req.params.profileId)) return res.json([]);
       const profile = await storage.getProfile(req.params.profileId);
       if (!profile || profile.moderationHidden) {
         return res.status(404).json({ error: "Profile not found" });
@@ -6315,8 +6286,14 @@ REGOLE:
       const story = await storage.getStory(req.params.id);
       if (!story) return res.status(404).json({ error: "Storia non trovata" });
       const profile = userId ? await storage.getProfileByUserId(userId) : null;
-      const briciole = await storage.getStoryBriciole(story.id, profile?.id);
-      res.json({ story, briciole });
+      const [briciole, blockedProfileIds] = await Promise.all([
+        storage.getStoryBriciole(story.id, profile?.id),
+        getBlockedProfileIdsForRequest(req),
+      ]);
+      res.json({
+        story,
+        briciole: briciole.filter((briciola) => !blockedProfileIds.has(briciola.profileId)),
+      });
     } catch { res.status(500).json({ error: "Errore nel caricamento" }); }
   });
 
@@ -6745,6 +6722,7 @@ REGOLE:
   app.get("/api/hub-posts", isAuthenticated, async (req: any, res) => {
     try {
       const { category, subcategory } = req.query;
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
       const conditions = [eq(hubPosts.status, "active")];
       if (category) conditions.push(eq(hubPosts.category, category as string));
       if (subcategory) conditions.push(eq(hubPosts.subcategory, subcategory as string));
@@ -6752,7 +6730,7 @@ REGOLE:
         .where(and(...conditions))
         .orderBy(desc(hubPosts.createdAt))
         .limit(100);
-      res.json(posts);
+      res.json(posts.filter((post) => !blockedProfileIds.has(post.profileId)));
     } catch { res.status(500).json({ error: "Errore hub-posts" }); }
   });
 
@@ -7050,6 +7028,7 @@ REGOLE:
   app.get("/api/blog-posts", async (req, res) => {
     try {
       const category = req.query.category as string | undefined;
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
       const conditions = [eq(blogPosts.status, "active")];
       if (category && category !== "tutti") conditions.push(eq(blogPosts.category, category));
       const rows = await db.select({ post: blogPosts })
@@ -7061,7 +7040,9 @@ REGOLE:
         .where(and(...conditions))
         .orderBy(desc(blogPosts.createdAt))
         .limit(50);
-      const list = rows.map((row) => row.post);
+      const list = rows
+        .map((row) => row.post)
+        .filter((post) => !blockedProfileIds.has(post.profileId));
       res.json(list);
     } catch { res.status(500).json({ error: "Errore caricamento articoli" }); }
   });
@@ -7111,10 +7092,12 @@ REGOLE:
     try {
       const city = req.query.city as string | undefined;
       const type = req.query.type as string | undefined;
+      const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
       const conditions = [eq(events.status, "active")];
       if (city) conditions.push(sql`LOWER(${events.city}) = LOWER(${city})`);
       if (type) conditions.push(eq(events.eventType, type));
-      const list = await db.select().from(events).where(and(...conditions)).orderBy(desc(events.createdAt)).limit(50);
+      const list = (await db.select().from(events).where(and(...conditions)).orderBy(desc(events.createdAt)).limit(50))
+        .filter((event) => !blockedProfileIds.has(event.profileId));
       res.json(list);
     } catch { res.status(500).json({ error: "Errore caricamento eventi" }); }
   });

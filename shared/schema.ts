@@ -397,12 +397,11 @@ export const referrals = pgTable("referrals", {
   referrerProfileId: varchar("referrer_profile_id").notNull(),
   referredUserId: varchar("referred_user_id").notNull(),
   referralCode: varchar("referral_code").notNull(),
-  hasPaid: boolean("has_paid").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export type Referral = typeof referrals.$inferSelect;
-export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true, hasPaid: true });
+export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true });
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 
 export const appSettings = pgTable("app_settings", {

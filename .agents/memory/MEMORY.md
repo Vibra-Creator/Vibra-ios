@@ -1,7 +1,7 @@
 - [Vibra Feature Blocks](vibra-feature-blocks.md) — blocchi funzionalità completati e quelli rimanenti da implementare
 - [Quest Tracking Hooks](quest-tracking.md) — fire-and-forget trackQuestProgress hooks added in swipe/message/room/signals/gift routes
 - [Blocco 6 Completato](blocco6.md) — VibraLegacy page, VibraConsent inbox, VibraTime schema+storage+routes+chat UI
-- [Production data safety](production-data-safety.md) — la produzione si verifica in sola lettura; le pulizie devono passare da una nuova pubblicazione
+- [Production data safety](production-data-safety.md) — usare Publish per lo schema e fermarsi se Drizzle propone di eliminare colonne non correlate con dati
 - [Apple review scope](apple-review-scope.md) — la revisione più recente non cita 4.3(b); non disattivare il dating sulla base del vecchio piano
 - [iOS launch validation](ios-launch-validation.md) — controlli su dispositivo, IPA finale e metadati App Store richiedono evidenze Apple esterne al payload web
 - [Playwright browser tests](playwright-browser-setup.md) — il setup può fallire dopo il download; simulare 404 sugli oggetti richiede bloccare il service worker

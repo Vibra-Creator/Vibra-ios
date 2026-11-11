@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Gift, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil, LogIn, ExternalLink } from "lucide-react";
+import { Users, Heart, MessageCircle, UserCheck, Trash2, Shield, ArrowLeft, BadgeCheck, RotateCcw, AlertTriangle, Ban, Filter, Flag, Eye, CheckCircle, XCircle, Plus, X, ChevronDown, ChevronUp, Mail, Phone, MapPin, Calendar, Ruler, BookOpen, Globe, Star, MessageSquare, UserPlus, Database, Download, Loader2, FileText, Crown, Upload, Send, EyeOff, Pencil, LogIn, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -252,22 +252,6 @@ export default function Admin() {
     queryKey: ["/api/admin/all-codes"],
   });
 
-  const { data: appSettingsData } = useQuery<Record<string, string>>({
-    queryKey: ["/api/admin/settings"],
-  });
-
-  const updateSettingMutation = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: number }) =>
-      apiRequest("PUT", "/api/admin/settings", { key, value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
-      toast({ title: "Impostazione salvata!", description: "La percentuale è stata aggiornata." });
-    },
-    onError: () => {
-      toast({ title: "Errore", description: "Impossibile salvare l'impostazione", variant: "destructive" });
-    },
-  });
-
   const { data: expandedProfileVideos = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/profiles", expandedProfile, "videos"],
     enabled: !!expandedProfile,
@@ -365,22 +349,18 @@ export default function Admin() {
 
   const generateFullReport = () => {
     if (!referralStats || referralStats.length === 0) return;
-    const discountPct = appSettingsData?.referral_discount_percent || "10";
-    const commissionPct = appSettingsData?.referral_commission_percent || "15";
-    let csv = "REPORT REFERRAL VIBRA\n";
+    let csv = "REPORT INVITI VIBRA\n";
     csv += `Data Report;${new Date().toLocaleString("it-IT")}\n`;
-    csv += `Sconto Invitato;${discountPct}%\n`;
-    csv += `Commissione Procacciatore;${commissionPct}%\n\n`;
-    csv += "Procacciatore;Codice;Tot. Invitati;Abbonati;Commissione Dovuta\n";
+    csv += "Invitante;Codice;Totale invitati\n";
     for (const r of referralStats) {
-      csv += `${r.name};${r.code};${r.totalReferred};${r.paidReferred};Da calcolare\n`;
+      csv += `${r.name};${r.code};${r.totalReferred}\n`;
     }
-    csv += `\n\nDETTAGLIO PER PROCACCIATORE\n`;
+    csv += `\n\nDETTAGLIO INVITI\n`;
     for (const r of referralStats) {
       csv += `\n--- ${r.name} (${r.code}) ---\n`;
-      csv += "Nome Invitato;Email;Data Registrazione;Ha Pagato\n";
+      csv += "Nome invitato;Email;Data registrazione\n";
       for (const u of r.referredUsers) {
-        csv += `${u.name || "N/A"};${u.email};${new Date(u.createdAt).toLocaleDateString("it-IT")};${u.hasPaid ? "Si" : "No"}\n`;
+        csv += `${u.name || "N/A"};${u.email};${new Date(u.createdAt).toLocaleDateString("it-IT")}\n`;
       }
     }
     downloadCSV(`report-referral-vibra-${new Date().toISOString().slice(0, 10)}.csv`, csv);
@@ -388,18 +368,13 @@ export default function Admin() {
   };
 
   const generateSingleReport = (referrer: any) => {
-    const discountPct = appSettingsData?.referral_discount_percent || "10";
-    const commissionPct = appSettingsData?.referral_commission_percent || "15";
-    let csv = `REPORT PROCACCIATORE - ${referrer.name}\n`;
+    let csv = `REPORT INVITI - ${referrer.name}\n`;
     csv += `Data Report;${new Date().toLocaleString("it-IT")}\n`;
     csv += `Codice Referral;${referrer.code}\n`;
     csv += `Totale Invitati;${referrer.totalReferred}\n`;
-    csv += `Abbonati;${referrer.paidReferred}\n`;
-    csv += `Sconto Invitato;${discountPct}%\n`;
-    csv += `Commissione Procacciatore;${commissionPct}%\n\n`;
-    csv += "Nome Invitato;Email;Data Registrazione;Ha Pagato\n";
+    csv += "\nNome invitato;Email;Data registrazione\n";
     for (const u of referrer.referredUsers) {
-      csv += `${u.name || "N/A"};${u.email};${new Date(u.createdAt).toLocaleDateString("it-IT")};${u.hasPaid ? "Si" : "No"}\n`;
+      csv += `${u.name || "N/A"};${u.email};${new Date(u.createdAt).toLocaleDateString("it-IT")}\n`;
     }
     downloadCSV(`report-${referrer.name.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     toast({ title: "Report scaricato!", description: `Report di ${referrer.name} generato.` });
@@ -1790,65 +1765,6 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="referrals">
-            <Card className="mb-4">
-              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Gift className="w-5 h-5" /> Impostazioni Percentuali</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Imposta le percentuali per il sistema referral. Le modifiche hanno effetto immediato.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="border rounded-lg p-4 space-y-3" data-testid="setting-discount">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="secondary" className="text-xs">Invitato</Badge>
-                      <p className="font-semibold">Sconto Utente Invitato</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Chi si registra con un codice referral riceve questo sconto sull'abbonamento</p>
-                    <div className="flex items-center gap-3">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={appSettingsData?.referral_discount_percent || "10"}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val) && val >= 0 && val <= 100) {
-                            updateSettingMutation.mutate({ key: "referral_discount_percent", value: val });
-                          }
-                        }}
-                        className="w-24 text-center font-bold text-lg"
-                        data-testid="input-discount-percent"
-                      />
-                      <span className="text-2xl font-bold text-muted-foreground">%</span>
-                    </div>
-                  </div>
-                  <div className="border rounded-lg p-4 space-y-3" data-testid="setting-commission">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="default" className="text-xs">Procacciatore</Badge>
-                      <p className="font-semibold">Commissione Procacciatore</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Chi invita altri utenti guadagna questa percentuale su ogni abbonamento</p>
-                    <div className="flex items-center gap-3">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={appSettingsData?.referral_commission_percent || "15"}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val) && val >= 0 && val <= 100) {
-                            updateSettingMutation.mutate({ key: "referral_commission_percent", value: val });
-                          }
-                        }}
-                        className="w-24 text-center font-bold text-lg"
-                        data-testid="input-commission-percent"
-                      />
-                      <span className="text-2xl font-bold text-muted-foreground">%</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {allCodes && allCodes.length > 0 && (
               <Card className="mb-4">
                 <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="w-5 h-5" /> Codici Utenti ({allCodes.length})</CardTitle></CardHeader>
@@ -1872,7 +1788,7 @@ export default function Admin() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Procacciatori & Referral</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Inviti degli utenti</CardTitle>
                   {referralStats && referralStats.length > 0 && (
                     <Button size="sm" variant="outline" onClick={generateFullReport} data-testid="button-download-full-report">
                       <FileText className="w-4 h-4 mr-1" /> Scarica Report Completo
@@ -1883,7 +1799,7 @@ export default function Admin() {
               <CardContent>
                 {referralStats && referralStats.length > 0 ? (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="bg-muted/50 rounded-lg p-3 text-center">
                         <p className="text-2xl font-bold">{referralStats.length}</p>
                         <p className="text-xs text-muted-foreground">Procacciatori</p>
@@ -1891,10 +1807,6 @@ export default function Admin() {
                       <div className="bg-muted/50 rounded-lg p-3 text-center">
                         <p className="text-2xl font-bold">{referralStats.reduce((a: number, r: any) => a + r.totalReferred, 0)}</p>
                         <p className="text-xs text-muted-foreground">Totale Invitati</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-3 text-center">
-                        <p className="text-2xl font-bold">{referralStats.reduce((a: number, r: any) => a + r.paidReferred, 0)}</p>
-                        <p className="text-xs text-muted-foreground">Abbonati</p>
                       </div>
                     </div>
                     {referralStats.map((referrer: any) => (
@@ -1907,7 +1819,6 @@ export default function Admin() {
                           <div className="flex items-center gap-2">
                             <div className="text-right">
                               <Badge variant="secondary" className="mb-1">{referrer.totalReferred} invitati</Badge>
-                              {referrer.paidReferred > 0 && <Badge variant="default" className="ml-1">{referrer.paidReferred} abbonati</Badge>}
                             </div>
                             <Button size="sm" variant="ghost" onClick={() => generateSingleReport(referrer)} title="Scarica report" data-testid={`button-report-${referrer.profileId}`}>
                               <FileText className="w-4 h-4" />
@@ -1922,12 +1833,7 @@ export default function Admin() {
                                   <span className="font-medium">{u.name || "N/A"}</span>
                                   <span className="text-muted-foreground ml-2">{u.email}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString("it-IT")}</span>
-                                  <Badge variant={u.hasPaid ? "default" : "outline"} className="text-xs">
-                                    {u.hasPaid ? "Pagato" : "Non pagato"}
-                                  </Badge>
-                                </div>
+                                <span className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString("it-IT")}</span>
                               </div>
                             ))}
                           </div>

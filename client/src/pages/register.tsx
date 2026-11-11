@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, UserPlus, CheckCircle, Sparkles, Calendar, Heart, ShoppingBag, Navigation, Home, Briefcase, Share2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, UserPlus, CheckCircle, Calendar, Heart, ShoppingBag, Navigation, Home, Briefcase, Share2 } from "lucide-react";
 import { LoginVideoBackground } from "@/components/LoginVideoBackground";
 import { HubCategoryIntro } from "@/components/HubCategoryIntro";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,6 @@ export default function Register() {
   const [referralCode, setReferralCode] = useState("");
   const [referralValid, setReferralValid] = useState<boolean | null>(null);
   const [referralName, setReferralName] = useState("");
-  const [referralDiscount, setReferralDiscount] = useState<number>(0);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
@@ -64,8 +63,7 @@ export default function Register() {
       const data = await res.json();
       setReferralValid(data.valid);
       setReferralName(data.referrerName || "");
-      setReferralDiscount(data.discountPercent || 0);
-    } catch { setReferralValid(null); setReferralDiscount(0); }
+    } catch { setReferralValid(null); }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -370,19 +368,9 @@ export default function Register() {
                   />
                 </div>
                 {referralValid === true && (
-                  <div className="space-y-1.5">
-                    <p className="text-xs text-green-400 flex items-center gap-1" data-testid="text-referral-valid">
-                      <CheckCircle className="w-3 h-3" /> {t("register.referralValid")} {referralName}
-                    </p>
-                    {referralDiscount > 0 && !isNaN(referralDiscount) && (
-                      <div className="flex items-center gap-2 rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-2" data-testid="text-referral-discount">
-                        <Sparkles className="w-4 h-4 text-green-400 shrink-0" />
-                        <p className="text-xs text-green-300 font-medium">
-                          {t("register.discountMessage").replace("{percent}", String(referralDiscount))}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-xs text-green-400 flex items-center gap-1" data-testid="text-referral-valid">
+                    <CheckCircle className="w-3 h-3" /> {t("register.referralValid")} {referralName}
+                  </p>
                 )}
                 {referralValid === false && referralCode.length >= 4 && (
                   <p className="text-xs text-red-400" data-testid="text-referral-invalid">{t("register.referralInvalid")}</p>

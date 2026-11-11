@@ -1,10 +1,12 @@
 ---
 name: Production data safety
-description: Production database queries are read-only through the agent database interface; destructive cleanup must ship in application code and run after publish.
+description: Keep production database changes on the Publish path and stop on unrelated destructive schema drift.
 ---
 
-The agent can inspect the production database but cannot directly mutate it through the supported database interface. For production data cleanup, scope the operation narrowly in application code, run it before the server begins accepting traffic, and require a new publish for the change to take effect.
+Production queries through the supported database interface are read-only. Managed production schema changes must go through Replit Publish; do not add startup-time DDL or custom scripts that mutate production. Use the supported development schema flow, then let Publish apply the schema diff.
 
-**Why:** The live database can differ from development, and direct production writes are intentionally blocked.
+This workspace has schema drift: `drizzle-kit push` has warned that it would remove populated legacy profile columns that are absent from the current schema source. Never confirm a schema push that includes unrelated data-loss changes.
 
-**How to apply:** Verify production counts read-only, add an idempotent startup cleanup only when the user explicitly authorizes it, test against development first, then tell the user to publish.
+**Why:** The development and production databases can contain valuable fields not represented in the current schema source; a broad push can delete unrelated user data.
+
+**How to apply:** Query production only for verification, inspect every data-loss warning from the development schema flow, and stop for a safe reconciliation if unrelated populated fields are included. Never mutate production outside Publish.

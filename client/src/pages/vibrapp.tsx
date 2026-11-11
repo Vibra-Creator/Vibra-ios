@@ -7,6 +7,7 @@ import { playNotificationSound, initNotificationSound } from "@/lib/notification
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { hideBlockedProfileFromFeeds } from "@/lib/block-user";
 import { useLocation, useSearch } from "wouter";
 import { ProfileDetailModal } from "@/components/SwipeCard";
 
@@ -314,9 +315,10 @@ export default function Vibrapp() {
       await apiRequest("POST", "/api/block", { blockedId });
       await apiRequest("DELETE", `/api/cold-messages/${coldMsgId}`);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       setSelectedColdMsg(null);
       setColdMsgBlockConfirm(false);
+      hideBlockedProfileFromFeeds(variables.blockedId);
       refetchColdMsgs();
       queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
     },
@@ -346,6 +348,7 @@ export default function Vibrapp() {
       // Keep the "already reported" banner accurate immediately after reporting
       queryClient.invalidateQueries({ queryKey: ["/api/reports/mine"] });
       if (variables.alsoBlock) {
+        hideBlockedProfileFromFeeds(variables.reportedId);
         refetchColdMsgs();
         queryClient.invalidateQueries({ queryKey: ["/api/cold-messages/pending-count"] });
       }
