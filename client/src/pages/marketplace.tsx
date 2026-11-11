@@ -509,23 +509,46 @@ export default function MarketplacePage() {
                      )}
                     </div>}
                     <button
-                     onClick={() => editingPost
-                       ? updatePost.mutate({
-                           postId: editingPost.id,
-                           details: {
-                             title: form.title,
-                             description: form.description,
-                             price: form.price,
-                             subcategory: form.subcategory,
-                             city: form.city,
-                             contactInfo: form.contactInfo,
-                           },
-                         })
-                       : createPost.mutate()}
-                     disabled={!form.title.trim() || !form.description.trim() || (editingPost ? updatePost.isPending : form.imageUrls.length < 3 || createPost.isPending || isUploadingImage)}
+                      onClick={() => {
+                        const missingRequirements: string[] = [];
+                        if (!form.title.trim()) missingRequirements.push(t("market.missingTitle"));
+                        if (!form.description.trim()) missingRequirements.push(t("market.missingDescription"));
+                        if (!editingPost && form.imageUrls.length < 3) missingRequirements.push(t("market.missingPhotos"));
+                        if (missingRequirements.length > 0) {
+                          toast({
+                            title: t("market.incomplete"),
+                            description: missingRequirements.join(" "),
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        if (editingPost) {
+                          updatePost.mutate({
+                            postId: editingPost.id,
+                            details: {
+                              title: form.title,
+                              description: form.description,
+                              price: form.price,
+                              subcategory: form.subcategory,
+                              city: form.city,
+                              contactInfo: form.contactInfo,
+                            },
+                          });
+                        } else {
+                          createPost.mutate();
+                        }
+                      }}
+                     disabled={editingPost ? updatePost.isPending : createPost.isPending || isUploadingImage}
                     className="w-full py-3 rounded-xl font-bold text-white disabled:opacity-40"
                     style={{ background:"linear-gradient(135deg,#f97316,#ea580c)", fontFamily:"Space Grotesk,sans-serif" }}>
-                     {(editingPost ? updatePost.isPending : createPost.isPending) ? "..." : editingPost ? t("market.saveChanges") : t("market.publish")}
+                      {(editingPost ? updatePost.isPending : createPost.isPending)
+                        ? "..."
+                        : !editingPost && isUploadingImage
+                          ? t("market.uploadingPhotos")
+                          : editingPost
+                            ? t("market.saveChanges")
+                            : t("market.publish")}
                   </button>
                 </div>
               </div>
