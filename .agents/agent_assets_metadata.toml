@@ -192,3 +192,17 @@ mtime_ms = 1791808378181
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/b1cb3125-e928-4456-a095-4c12068ef061/ce0eca0c-07fd-4e6b-bde9-11511b51bc7c"
 storage_version_token = "1791808385596032"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "ruugeraJw5tKG2NR0hlPX"
+uri = "file://generated-artifacts/Vibra-source-code.zip"
+type = "unspecified"
+title = "Codice sorgente Vibra"
+description = "Archivio ZIP con il codice applicativo e la configurazione; senza media pesanti, dipendenze, build e cronologia Git."
+logical_id = "56fb9a51-7755-41f2-95c0-740658c908b4"
+content_hash = "sha256:3621ea499a62ac519919bdf9e62a49338309de49d84ac45b0ad3872dd3d8933a"
+size = 1088411
+mtime_ms = 1794911068521
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:58209161-33d4-4661-889d-4b79a98fe5e5/56fb9a51-7755-41f2-95c0-740658c908b4/8bbc178a-d574-4251-9888-10e43a6ef8eb"
+storage_version_token = "1794911081027198"
+content_type = "application/octet-stream"
