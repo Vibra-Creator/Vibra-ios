@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { objectStorageClient } from "./replit_integrations/object_storage/objectStorage";
+import { safeErrorType } from "./http-hardening";
 
 const BACKUP_DIR = ".private/backups";
 const MAX_BACKUPS = 7;
@@ -43,7 +44,7 @@ async function exportTableData(tableName: string): Promise<any[]> {
     return Array.isArray(result) ? result : (result as any).rows || [];
   } catch (error: any) {
     if (error.code === "42P01") return [];
-    console.error(`[backup] Error exporting table ${tableName}:`, error.message);
+    console.error(`[backup] Error exporting table ${tableName}:`, safeErrorType(error));
     return [];
   }
 }
@@ -72,7 +73,7 @@ async function deleteOldBackups(): Promise<void> {
       await bucket.file(fileName).delete();
       console.log(`[backup] Deleted old backup: ${fileName}`);
     } catch (error: any) {
-      console.error(`[backup] Failed to delete ${fileName}:`, error.message);
+      console.error("[backup] Failed to delete an old backup:", safeErrorType(error));
     }
   }
 }
@@ -116,8 +117,8 @@ export async function createBackup(): Promise<{ success: boolean; fileName?: str
 
     return { success: true, fileName, size: Buffer.byteLength(jsonContent), tables: TABLES_TO_BACKUP.length };
   } catch (error: any) {
-    console.error("[backup] Backup failed:", error.message);
-    return { success: false, error: error.message };
+    console.error("[backup] Backup failed:", safeErrorType(error));
+    return { success: false, error: "Backup failed" };
   }
 }
 

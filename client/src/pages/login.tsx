@@ -101,7 +101,7 @@ export default function Login() {
         setLocation("/");
       }
     } catch (error: any) {
-      console.error("[LOGIN] Failed:", error.message, "| email:", email, "| pass length:", password.length);
+      console.warn("[LOGIN] Authentication failed");
       toast({
         title: t("common.error"),
         description: error.message || t("login.invalidCredentials"),

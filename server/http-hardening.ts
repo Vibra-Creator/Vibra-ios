@@ -13,6 +13,25 @@ const CLIENT_ERROR_TYPES = new Set([
   "URIError",
 ]);
 
+const SAFE_SERVER_ERROR_TYPES = new Set([
+  "AggregateError",
+  "Error",
+  "EvalError",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "TypeError",
+  "URIError",
+]);
+
+/** Keep useful error categories in logs without storing messages or stack data. */
+export function safeErrorType(error: unknown): string {
+  const name = error && typeof error === "object"
+    ? (error as { name?: unknown }).name
+    : undefined;
+  return typeof name === "string" && SAFE_SERVER_ERROR_TYPES.has(name) ? name : "Error";
+}
+
 const REPORT_ONLY_CSP = [
   "default-src 'self'",
   "base-uri 'self'",

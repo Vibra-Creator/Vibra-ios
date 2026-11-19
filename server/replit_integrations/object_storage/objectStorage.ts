@@ -1,6 +1,7 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Response } from "express";
 import { randomUUID } from "crypto";
+import { safeErrorType } from "../../http-hardening";
 import {
   ObjectAclPolicy,
   ObjectPermission,
@@ -115,7 +116,7 @@ export class ObjectStorageService {
       const stream = file.createReadStream();
 
       stream.on("error", (err) => {
-        console.error("Stream error:", err);
+        console.error("Object stream failed:", safeErrorType(err));
         if (!res.headersSent) {
           res.status(500).json({ error: "Error streaming file" });
         }
@@ -123,7 +124,7 @@ export class ObjectStorageService {
 
       stream.pipe(res);
     } catch (error) {
-      console.error("Error downloading file:", error);
+      console.error("Error downloading object:", safeErrorType(error));
       if (!res.headersSent) {
         res.status(500).json({ error: "Error downloading file" });
       }
@@ -289,7 +290,7 @@ export class ObjectStorageService {
       }
       return false;
     } catch (error) {
-      console.error("Error deleting object:", objectPath, error);
+      console.error("Error deleting object:", safeErrorType(error));
       return false;
     }
   }

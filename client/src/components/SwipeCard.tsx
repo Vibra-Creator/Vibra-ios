@@ -1199,7 +1199,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     }}
                     onError={(e) => {
                       const video = e.currentTarget;
-                      console.error(`[SwipeCard video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code} msg=${video.error?.message}`);
+                      console.error("[SwipeCard] Profile video failed to load", video.error?.code ?? "unknown");
                     }}
                   />
                   <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />
@@ -1227,7 +1227,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                         }}
                         onError={(e) => {
                           const video = e.currentTarget;
-                          console.error(`[SwipeCard media-video error] profile=${profile.id} src=${video.src?.slice(0,120)} code=${video.error?.code}`);
+                          console.error("[SwipeCard] Profile media failed to load", video.error?.code ?? "unknown");
                         }}
                       />
                       <div className="absolute top-3 left-3 z-30" onPointerDown={(e) => e.stopPropagation()} />

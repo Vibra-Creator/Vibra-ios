@@ -12,6 +12,7 @@ import { profiles, userSuspensions } from "../../../shared/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { sendVerificationEmail } from "../../gmail";
 import { filterOffensiveContent } from "../../ugc-moderation";
+import { safeErrorType } from "../../http-hardening";
 
 let _sessionMiddleware: ReturnType<typeof session> | null = null;
 const TERMS_ACCEPTANCE_REQUIRED = "Devi accettare i Termini di Servizio e la Privacy Policy.";
@@ -164,21 +165,21 @@ export async function setupAuth(app: Express) {
           });
         }
       } catch (profileErr) {
-        console.error("Auto-create profile error (non-fatal):", profileErr);
+        console.error("Auto-create profile failed (non-fatal):", safeErrorType(profileErr));
       }
 
       try {
         const appUrl = `${req.protocol}://${req.get("host")}`;
         sendVerificationEmail(email, firstName, verificationToken, appUrl).catch((err: any) =>
-          console.error("[verify-email] async send error:", err.message)
+          console.error("[verify-email] async send failed:", safeErrorType(err))
         );
       } catch (emailErr) {
-        console.error("Verification email error (non-fatal):", emailErr);
+        console.error("Verification email failed (non-fatal):", safeErrorType(emailErr));
       }
 
       res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, emailVerified: false });
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Registration failed:", safeErrorType(error));
       res.status(500).json({ message: "Errore durante la registrazione" });
     }
   });
@@ -219,7 +220,7 @@ export async function setupAuth(app: Express) {
       (req.session as any).userId = user.id;
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: authenticatedUser?.isAdmin ?? user.isAdmin } });
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Login failed:", safeErrorType(error));
       res.status(500).json({ message: "Errore server durante l'accesso" });
     }
   });
@@ -256,7 +257,7 @@ export async function setupAuth(app: Express) {
 
       res.json({ message: "Password aggiornata con successo" });
     } catch (error) {
-      console.error("Change password error:", error);
+      console.error("Change password failed:", safeErrorType(error));
       res.status(500).json({ message: "Errore durante il cambio password" });
     }
   });
@@ -311,7 +312,7 @@ export async function setupAuth(app: Express) {
       const authenticatedUser = await authStorage.promoteVerifiedAllowlistedAdmin(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: authenticatedUser?.isAdmin ?? user.isAdmin } });
     } catch (error: any) {
-      console.error("Google auth error:", error);
+      console.error("Google auth failed:", safeErrorType(error));
       res.status(401).json({ message: "Autenticazione Google fallita" });
     }
   });
@@ -394,7 +395,7 @@ export async function setupAuth(app: Express) {
       const authenticatedUser = await authStorage.promoteVerifiedAllowlistedAdmin(user.id);
       res.json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin: authenticatedUser?.isAdmin ?? user.isAdmin } });
     } catch (error: any) {
-      console.error("Apple auth error:", error);
+      console.error("Apple auth failed:", safeErrorType(error));
       res.status(401).json({ message: "Autenticazione Apple fallita" });
     }
   });
@@ -415,7 +416,7 @@ export async function setupAuth(app: Express) {
       (req.session as any).userId = user.id;
       res.json({ message: "Email verificata con successo!", user: { id: user.id, email: user.email, firstName: user.firstName, isAdmin: authenticatedUser?.isAdmin ?? user.isAdmin } });
     } catch (error) {
-      console.error("Verify email error:", error);
+      console.error("Verify email failed:", safeErrorType(error));
       res.status(500).json({ message: "Errore durante la verifica" });
     }
   });
@@ -434,12 +435,12 @@ export async function setupAuth(app: Express) {
 
       const appUrl = `${req.protocol}://${req.get("host")}`;
       sendVerificationEmail(user.email, user.firstName || "Utente", newToken, appUrl).catch((err: any) =>
-        console.error("[verify-email] resend error:", err.message)
+        console.error("[verify-email] resend failed:", safeErrorType(err))
       );
 
       res.json({ message: "Email di verifica inviata!" });
     } catch (error) {
-      console.error("Resend verification error:", error);
+      console.error("Resend verification failed:", safeErrorType(error));
       res.status(500).json({ message: "Errore durante l'invio" });
     }
   });
@@ -503,7 +504,7 @@ export async function setupAuth(app: Express) {
 
       res.json({ message: "Password aggiornata con successo! Ora puoi accedere." });
     } catch (error) {
-      console.error("Forgot password error:", error);
+      console.error("Forgot password failed:", safeErrorType(error));
       res.status(500).json({ message: "Errore durante il ripristino della password" });
     }
   });
@@ -538,7 +539,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.error("[auth] Could not verify account suspension status:", error);
+    console.error("[auth] Could not verify account suspension status:", safeErrorType(error));
     return res.status(503).json({ message: "Impossibile verificare lo stato dell'account." });
   }
 

@@ -69,7 +69,7 @@ import { AlertTriangle, RefreshCw, Bell, X } from "lucide-react";
 const publicPages = ["/privacy", "/terms", "/child-safety", "/login", "/register", "/onboarding", "/forgot-password"];
 
 function reportClientError(error: Error, errorInfo: React.ErrorInfo, scope: string) {
-  console.error(`[app] ${scope}:`, error, errorInfo);
+  console.error("[app] Client render error");
   try {
     void fetch("/api/client-errors", {
       method: "POST",

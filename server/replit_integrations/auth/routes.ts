@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { authStorage } from "./storage";
 import { isAuthenticated } from "./replitAuth";
+import { safeErrorType } from "../../http-hardening";
 
 export function registerAuthRoutes(app: Express): void {
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
@@ -13,7 +14,7 @@ export function registerAuthRoutes(app: Express): void {
       const { password, ...safeUser } = user;
       res.json(safeUser);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error("Error fetching user:", safeErrorType(error));
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });

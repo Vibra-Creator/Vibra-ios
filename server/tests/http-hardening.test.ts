@@ -5,6 +5,7 @@ import type { NextFunction, Request, Response } from "express";
 import {
   createApiRequestLogger,
   createSecurityHeadersMiddleware,
+  safeErrorType,
   summarizeClientError,
 } from "../http-hardening";
 
@@ -62,6 +63,17 @@ test("client error summaries discard message, URL, user agent, and stack content
 
   assert.deepEqual(summary, { scope: "optional-feature", type: "TypeError" });
   assert.doesNotMatch(JSON.stringify(summary), /private|example\.com/i);
+});
+
+test("server error summaries keep only a known error type", () => {
+  const summary = safeErrorType(Object.assign(
+    new Error("private message for alice@example.com"),
+    { stack: "private stack with token" },
+  ));
+
+  assert.equal(summary, "Error");
+  assert.equal(safeErrorType({ name: "private-user@example.com", message: "secret" }), "Error");
+  assert.equal(safeErrorType(new TypeError("private input")), "TypeError");
 });
 
 test("security headers are set without breaking Replit development framing", () => {

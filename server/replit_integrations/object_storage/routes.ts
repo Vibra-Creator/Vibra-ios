@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { isAuthenticated } from "../auth";
+import { safeErrorType } from "../../http-hardening";
 
 export function registerObjectStorageRoutes(app: Express): void {
   const objectStorageService = new ObjectStorageService();
@@ -33,7 +34,7 @@ export function registerObjectStorageRoutes(app: Express): void {
         metadata: { name, size, contentType },
       });
     } catch (error) {
-      console.error("Error generating upload URL:", error);
+      console.error("Error generating upload URL:", safeErrorType(error));
       res.status(500).json({ error: "Failed to generate upload URL" });
     }
   });
@@ -53,7 +54,7 @@ export function registerObjectStorageRoutes(app: Express): void {
 
       await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
-      console.error("Error serving object:", error);
+      console.error("Error serving object:", safeErrorType(error));
       if (error instanceof ObjectNotFoundError) {
         return res.status(404).json({ error: "Object not found" });
       }

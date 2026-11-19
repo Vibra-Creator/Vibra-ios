@@ -6,6 +6,7 @@ import path from "path";
 import {
   createApiRequestLogger,
   createSecurityHeadersMiddleware,
+  safeErrorType,
   summarizeClientError,
 } from "./http-hardening";
 
@@ -375,7 +376,7 @@ httpServer.listen(
     await db.execute(sql`ALTER TABLE location_shares ADD COLUMN IF NOT EXISTS consent_confirmed boolean NOT NULL DEFAULT false`);
     console.log("[migration] Location sharing consent column ready");
   } catch (err) {
-    console.error("[migration] startup migration error:", err);
+    console.error("[migration] startup migration failed:", safeErrorType(err));
   }
 
   // ── VibraVault cleanup job (every hour) ────────────────────────────────────
@@ -392,7 +393,7 @@ httpServer.listen(
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    console.error("Internal Server Error:", err);
+    console.error("Internal Server Error:", safeErrorType(err));
 
     if (res.headersSent) {
       return next(err);
@@ -417,6 +418,6 @@ httpServer.listen(
   log(`serving on port ${port}`);
   startAutoBackup();
 })().catch((err) => {
-  console.error("[startup] fatal startup error:", err);
+  console.error("[startup] fatal startup error:", safeErrorType(err));
   process.exit(1);
 });
