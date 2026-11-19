@@ -401,6 +401,7 @@ export function BottomNav() {
     { path: "/profile", icon: User, label: t("nav.profile"), badge: 0, color: "text-emerald-400", activeBg: "bg-emerald-500" },
     ...(isAdmin ? [{ path: "/admin", icon: Shield, label: t("nav.admin"), badge: 0, color: "text-red-400", activeBg: "bg-red-500" }] : []),
   ];
+  const navItemWidth = isAdmin ? "min-w-[48px]" : "min-w-[56px]";
 
   const renderItem = (item: typeof navItems[0]) => {
     const isActive = location === item.path;
@@ -410,7 +411,7 @@ export function BottomNav() {
       }}>
         <motion.div
           whileTap={{ scale: 0.9 }}
-          className="flex flex-col items-center gap-0.5 min-w-[56px]"
+          className={`flex shrink-0 flex-col items-center gap-0.5 ${navItemWidth}`}
           data-testid={`nav-${item.label.toLowerCase()}`}
         >
           <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-colors ${
@@ -436,7 +437,7 @@ export function BottomNav() {
 
   return (
     <nav className="sticky bottom-0 z-40 w-full bg-black/50 backdrop-blur-xl border-t border-white/10" data-testid="bottom-nav">
-      <div className="flex flex-wrap items-center justify-around px-2 pt-1.5 pb-1">
+      <div className={`flex ${isAdmin ? "flex-nowrap overflow-x-auto scrollbar-hide" : "flex-wrap"} items-center justify-around px-2 pt-1.5 pb-1`}>
         {navItems.map(renderItem)}
       </div>
     </nav>

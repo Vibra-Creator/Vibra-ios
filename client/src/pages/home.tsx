@@ -214,91 +214,6 @@ export default function Home() {
 
   const nextProfile = availableProfiles[1];
 
-  // Keep the Image objects in a ref so the browser never GC's them before the
-  // HTTP cache is populated — without this the browser may evict them mid-load
-  // and the next card still shows a blank/spinner when it mounts.
-  const imagePreloadCacheRef = useRef<HTMLImageElement[]>([]);
-
-  useEffect(() => {
-    const imgs: HTMLImageElement[] = [];
-    // Preload current card + next 11: matches the same depth as video preloading
-    availableProfiles.slice(0, 12).forEach(p => {
-      const urls = [p.imageUrl, ...(p.photos || [])].filter(Boolean) as string[];
-      urls.forEach((url) => {
-        // Also preload .webp variant if available (next-gen image format)
-        const webpUrl = url.replace(/\.(png|jpg|jpeg)$/i, '.webp');
-        const img = new window.Image();
-        img.src = url;
-        imgs.push(img);
-        if (webpUrl !== url) {
-          const webpImg = new window.Image();
-          webpImg.src = webpUrl;
-          imgs.push(webpImg);
-        }
-      });
-    });
-    imagePreloadCacheRef.current = imgs;
-    return () => { imagePreloadCacheRef.current = []; };
-  }, [availableProfiles.map(p => p.id).slice(0, 12).join(",")]);
-
-  // Preload video: fetch() aggressivo per pre-scaldare la HTTP cache del browser.
-  // I <link rel="preload"> vengono ignorati su mobile per le range request.
-  // fetch() forza il browser a scaricare i primi 3MB di ogni video imminente
-  // → quando la SwipeCard monta, il video parte già dal buffer.
-  useEffect(() => {
-    const controllers: AbortController[] = [];
-    const seen = new Set<string>();
-
-    availableProfiles.slice(1, 16).forEach(p => {
-      if (!p.profileVideoUrl) return;
-      const isOwnServer = p.profileVideoUrl.startsWith("/objects/");
-      const isExternal = p.profileVideoUrl.startsWith("https://") || p.profileVideoUrl.startsWith("http://");
-      const url = isOwnServer
-        ? `/api/video-stream-object?path=${encodeURIComponent(p.profileVideoUrl)}`
-        : isExternal
-        ? `/api/video-proxy?url=${encodeURIComponent(p.profileVideoUrl)}`
-        : p.profileVideoUrl;
-      if (seen.has(url)) return;
-      seen.add(url);
-
-      const controller = new AbortController();
-      controllers.push(controller);
-      // Scarica i primi 5MB in background — finisce nella HTTP cache.
-      // Il video element farà la stessa range request → risposta già in cache → play immediato.
-      fetch(url, {
-        headers: { Range: "bytes=0-5242879" },
-        credentials: "include",
-        signal: controller.signal,
-      }).then(r => r.blob()).catch(() => {});
-    });
-
-    return () => {
-      controllers.forEach(c => c.abort());
-    };
-  }, [availableProfiles.map(p => p.id).slice(0, 16).join(",")]);
-
-  // Preload immagini: fetch() per popolare HTTP cache — come i video, ma per foto.
-  // Le immagini senza fetch() possono impiegare troppo ad apparire dopo lo swipe.
-  useEffect(() => {
-    const controllers: AbortController[] = [];
-    const seen = new Set<string>();
-
-    availableProfiles.slice(0, 6).forEach(p => {
-      const urls = [p.imageUrl, ...(p.photos || [])].filter(Boolean) as string[];
-      urls.forEach((url) => {
-        if (seen.has(url)) return;
-        seen.add(url);
-        const controller = new AbortController();
-        controllers.push(controller);
-        fetch(url, { credentials: "include", signal: controller.signal })
-          .then(r => r.blob())
-          .catch(() => {});
-      });
-    });
-
-    return () => { controllers.forEach(c => c.abort()); };
-  }, [availableProfiles.map(p => p.id + (p.imageUrl || "")).slice(0, 6).join(",")]);
-
   const handleSwipe = useCallback((direction: "left" | "right") => {
     if (!currentProfile) return;
     if (isGuest) {
@@ -407,7 +322,7 @@ export default function Home() {
 
   const bgLayer = (
     <div className="fixed inset-0 z-0">
-      <img src="/backgrounds/vibra-dance.png" alt="" className="w-full h-full object-cover" />
+      <img src="/backgrounds/vibra-dance.webp" alt="" className="w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
     </div>
   );
@@ -583,35 +498,6 @@ export default function Home() {
       )}
 
       <div className="w-full relative z-10 flex-1 min-h-0">
-        {availableProfiles.slice(1, 9).filter(p => p.profileVideoUrl).map(p => {
-          const _url = p.profileVideoUrl ?? "";
-          const resolvedSrc = _url.startsWith("/objects/")
-            ? `/api/video-stream-object?path=${encodeURIComponent(_url)}`
-            : (_url.startsWith("https://") || _url.startsWith("http://"))
-            ? `/api/video-proxy?url=${encodeURIComponent(_url)}`
-            : _url || undefined;
-          return (
-            <video
-              key={`preload-${p.id}`}
-              src={resolvedSrc}
-              preload="auto"
-              autoPlay
-              muted
-              playsInline
-              loop
-              aria-hidden="true"
-              style={{
-                position: "fixed",
-                left: "-9999px",
-                top: "-9999px",
-                width: "1px",
-                height: "1px",
-                opacity: 0,
-                pointerEvents: "none",
-              }}
-            />
-          );
-        })}
         {nextProfile && (
           <SwipeCard
             key={nextProfile.id}

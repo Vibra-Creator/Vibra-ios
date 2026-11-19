@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Rocket, MessageCircle, ShieldCheck, Sparkles, ChevronRight, Shield, Eye, Users, Star, UserPlus, ArrowRight, Trophy, Radio, Heart, Video, Zap, Rss, ChevronDown, Quote, Dna, Swords, BookOpen, Globe, Telescope, EyeOff, Clock, LayoutGrid, ShoppingBag, Navigation, Music2, Briefcase, Share2, Mic, Home } from "lucide-react";
 import { useGuest } from "@/hooks/use-guest";
@@ -7,10 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { useDeferredVideo } from "@/hooks/use-deferred-video";
 import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
 
 export default function Landing() {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const { videoRef, shouldLoadVideo } = useDeferredVideo(1800);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { enterGuestMode } = useGuest();
@@ -36,29 +37,6 @@ export default function Landing() {
     setMeta("meta", "name", "twitter:title", "Vibra Hub - Community, servizi e connessioni");
     setMeta("meta", "name", "twitter:description", "Esplora community, social, marketplace e servizi in un unico hub. Vibra Dating è facoltativo.");
     setMeta("meta", "name", "twitter:image", "https://vibraalienmatch.com/vibra-logo.png");
-  }, []);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = true;
-    video.setAttribute("muted", "");
-    video.setAttribute("playsinline", "");
-    video.setAttribute("webkit-playsinline", "");
-    const onPlaying = () => setVideoPlaying(true);
-    video.addEventListener("playing", onPlaying);
-    const tryPlay = () => {
-      video.play().then(() => setVideoPlaying(true)).catch(() => {});
-    };
-    tryPlay();
-    const handleClick = () => { tryPlay(); };
-    document.addEventListener("touchstart", handleClick, { once: true });
-    document.addEventListener("click", handleClick, { once: true });
-    return () => {
-      video.removeEventListener("playing", onPlaying);
-      document.removeEventListener("touchstart", handleClick);
-      document.removeEventListener("click", handleClick);
-    };
   }, []);
 
   const steps = [
@@ -110,17 +88,18 @@ export default function Landing() {
         )}
         <video
           ref={videoRef}
-          autoPlay
+          autoPlay={shouldLoadVideo}
           loop
           muted
           playsInline
           webkit-playsinline=""
-          preload="auto"
-          poster="/images/vibra-landing-video-thumbnail.jpg"
-          className={`w-full h-full object-cover ${videoPlaying ? 'opacity-100' : 'opacity-0'}`}
+          preload="none"
+          poster="/images/vibra-landing-video-thumbnail.webp"
+          className="w-full h-full object-cover"
           style={{ transition: 'opacity 0.5s ease-in' }}
           data-testid="video-landing-background"
-          src="/backgrounds/vibra-landing.mp4"
+          src={shouldLoadVideo ? "/backgrounds/vibra-landing.mp4" : undefined}
+          onPlaying={() => setVideoPlaying(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
       </div>

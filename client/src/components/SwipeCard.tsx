@@ -247,10 +247,10 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                           <p className="text-white/85 text-sm leading-relaxed">"{sig.content}"</p>
                         )}
                         {sig.mediaUrl && sig.mediaType === "image" && (
-                          <img src={sig.mediaUrl} alt="signal" className="mt-2 w-full rounded-lg object-cover max-h-48" />
+                          <img src={sig.mediaUrl} alt="signal" loading="lazy" className="mt-2 w-full rounded-lg object-cover max-h-48" />
                         )}
                         {sig.mediaUrl && sig.mediaType === "video" && (
-                          <video src={sig.mediaUrl} controls playsInline className="mt-2 w-full rounded-lg max-h-48 bg-black" />
+                          <video src={sig.mediaUrl} controls playsInline preload="none" className="mt-2 w-full rounded-lg max-h-48 bg-black" />
                         )}
                         {sig.mediaUrl && sig.mediaType === "audio" && (
                           <audio src={sig.mediaUrl} controls className="mt-2 w-full" />
@@ -341,7 +341,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                           src={`/api/video-stream/${video.id}`}
                           controls
                           playsInline
-                          preload={idx === 0 ? "auto" : "metadata"}
+                            preload="none"
                           className="w-full max-h-64 object-contain"
                           data-testid={`profile-video-${idx}`}
                           ref={(el) => {
@@ -381,7 +381,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                         {/* GIF overlay */}
                         {(video as any).gifOverlayUrl && (
                           <div className="absolute top-6 right-2 pointer-events-none">
-                            <img src={(video as any).gifOverlayUrl} alt="gif" className="w-14 h-14 object-contain rounded-lg" />
+                            <img src={(video as any).gifOverlayUrl} alt="gif" loading="lazy" className="w-14 h-14 object-contain rounded-lg" />
                           </div>
                         )}
                         {/* Caption overlay */}
@@ -400,6 +400,7 @@ export function ProfileDetailModal({ profile, isOpen, onClose, hasPrivateRoom = 
                         src={profile.imageUrl}
                         alt={profile.name}
                         className="w-full max-h-64 object-contain"
+                        loading="lazy"
                         data-testid="profile-detail-image"
                       />
                       <div className="absolute bottom-2 left-2 bg-black/70 rounded-full px-2 py-0.5 pointer-events-none">
@@ -656,12 +657,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
     const [showStories, setShowStories] = useState(false);
     const [selectedRating, setSelectedRating] = useState<number | null>(null);
     const [ratingSubmitted, setRatingSubmitted] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(() => {
-      if (!profile.imageUrl) return false;
-      const img = new window.Image();
-      img.src = profile.imageUrl;
-      return img.complete;
-    });
+    const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [isFavorited, setIsFavorited] = useState(false);
     const [isCardMuted, setIsCardMuted] = useState(globalMuted ?? false);
@@ -851,14 +847,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
   const activeProfileMedia = !hasVideo ? (profileMedia[0] ?? null) : null;
 
     useEffect(() => {
-      const extras = profile.photos || [];
-      extras.forEach((url: string) => {
-        const img = new window.Image();
-        img.src = url;
-      });
-    }, [profile.id, profile.photos]);
-
-    useEffect(() => {
       setIsCardMuted(globalMuted ?? false);
     }, [globalMuted]);
 
@@ -922,9 +910,6 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         if (!video.paused) {
           try { video.pause(); } catch {}
         }
-        // iOS ignora preload="auto" — forziamo il buffering della prossima card
-        // con video.load() in modo che sia pronta quando diventa top.
-        try { video.load(); } catch {}
       }
     }, [isTop, hasVideo, primaryVideoUrl]);
 
@@ -1201,9 +1186,9 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                     key={primaryVideoUrl}
                     loop
                     playsInline
-                    autoPlay
+                    autoPlay={isTop}
                     muted
-                    preload="auto"
+                    preload={isTop ? "auto" : "none"}
                     src={primaryVideoUrl ?? undefined}
                     poster={profile.imageUrl ?? undefined}
                     className="absolute inset-0 w-full h-full object-cover object-top z-10"
@@ -1227,11 +1212,11 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                       <video
                         ref={cardVideoRef}
                         key={activeProfileMedia.id}
-                        autoPlay
+                        autoPlay={isTop}
                         loop
                         playsInline
                         muted
-                        preload="auto"
+                        preload={isTop ? "auto" : "none"}
                         src={activeProfileMedia.mediaUrl}
                         poster={profile.imageUrl ?? undefined}
                         className="absolute inset-0 w-full h-full object-cover object-top z-10"
@@ -1270,8 +1255,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                   <img
                     src={imageError ? "/images/avatar-1.png" : profile.imageUrl}
                     alt={profile.name}
-                    loading="eager"
-                    fetchPriority="high"
+                    loading={isTop ? "eager" : "lazy"}
+                    fetchPriority={isTop ? "high" : "auto"}
                     className={`w-full h-full object-cover object-top transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"}`}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
@@ -1499,10 +1484,10 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
                             {signal.content || " "}
                           </div>
                           {signal.mediaUrl && signal.mediaType === "image" && (
-                            <img src={signal.mediaUrl} alt="" className="mt-2 w-full h-24 object-cover rounded-xl" />
+                            <img src={signal.mediaUrl} alt="" loading="lazy" className="mt-2 w-full h-24 object-cover rounded-xl" />
                           )}
                           {signal.mediaUrl && signal.mediaType === "video" && (
-                            <video src={signal.mediaUrl} controls className="mt-2 w-full h-24 object-cover rounded-xl" />
+                            <video src={signal.mediaUrl} controls preload="none" className="mt-2 w-full h-24 object-cover rounded-xl" />
                           )}
                         </div>
                       ))}

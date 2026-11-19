@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState } from "react";
+import { useState } from "react";
+import { useDeferredVideo } from "@/hooks/use-deferred-video";
 
 interface VideoBackgroundProps {
   videoUrl?: string;
@@ -6,14 +7,8 @@ interface VideoBackgroundProps {
 }
 
 export function VideoBackground({ videoUrl, fallbackGradient = true }: VideoBackgroundProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const { videoRef, shouldLoadVideo } = useDeferredVideo();
   const [videoError, setVideoError] = useState(false);
-
-  useEffect(() => {
-    if (videoRef.current && videoUrl) {
-      videoRef.current.play().catch(() => setVideoError(true));
-    }
-  }, [videoUrl]);
 
   if (!videoUrl || videoError) {
     if (fallbackGradient) {
@@ -35,11 +30,13 @@ export function VideoBackground({ videoUrl, fallbackGradient = true }: VideoBack
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
-        src={videoUrl}
+        src={shouldLoadVideo ? videoUrl : undefined}
         muted
         loop
         playsInline
-        autoPlay
+        autoPlay={shouldLoadVideo}
+        preload="none"
+        onError={() => setVideoError(true)}
       />
       <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
     </div>

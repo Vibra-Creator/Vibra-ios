@@ -1,6 +1,7 @@
 import { users, type User, type UpsertUser } from "@shared/models/auth";
 import { db } from "../../db";
 import { eq, ilike } from "drizzle-orm";
+import { shouldPromoteVerifiedAdmin } from "../../admin-access";
 
 export interface IAuthStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -11,6 +12,7 @@ export interface IAuthStorage {
   verifyEmailByToken(token: string): Promise<User | undefined>;
   getUserByVerificationToken(token: string): Promise<User | undefined>;
   markEmailVerified(id: string): Promise<void>;
+  promoteVerifiedAllowlistedAdmin(id: string): Promise<User | undefined>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -72,6 +74,19 @@ class AuthStorage implements IAuthStorage {
     await db.update(users)
       .set({ emailVerified: true, emailVerificationToken: null, updatedAt: new Date() })
       .where(eq(users.id, id));
+  }
+
+  async promoteVerifiedAllowlistedAdmin(id: string): Promise<User | undefined> {
+    const user = await this.getUser(id);
+    if (!user || !shouldPromoteVerifiedAdmin(user)) return user;
+
+    const [promotedUser] = await db
+      .update(users)
+      .set({ isAdmin: true, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+
+    return promotedUser ?? user;
   }
 }
 

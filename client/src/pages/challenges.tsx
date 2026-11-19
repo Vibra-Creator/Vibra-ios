@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useDeferredVideo } from "@/hooks/use-deferred-video";
 import { ReportContentButton } from "@/components/ReportContentButton";
 import type { DailyChallenge, ChallengeSubmission, Profile } from "@shared/schema";
 
@@ -103,6 +104,7 @@ function useCountdown(expiresAt: string | Date | null | undefined, t?: (key: str
 }
 
 export default function Challenges() {
+  const { videoRef: backgroundVideoRef, shouldLoadVideo: shouldLoadBackgroundVideo } = useDeferredVideo();
   const { user } = useAuth();
   const { isGuest } = useGuest();
   const { blockIfGuest, GuestBlockerModal } = useGuestBlocker();
@@ -328,10 +330,18 @@ export default function Challenges() {
 
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto relative">
-      <div className="fixed inset-0 z-0">
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-          <source src="/backgrounds/vibra-video-1.mp4" type="video/mp4" />
-        </video>
+      <div className="fixed inset-0 z-0 bg-[#0a0118]">
+        <video
+          ref={backgroundVideoRef}
+          src={shouldLoadBackgroundVideo ? "/backgrounds/vibra-video-1.mp4" : undefined}
+          autoPlay={shouldLoadBackgroundVideo}
+          loop
+          muted
+          playsInline
+          preload="none"
+          poster="/backgrounds/vibra-challenges-poster.webp"
+          className="w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
       </div>
 
@@ -578,6 +588,7 @@ export default function Challenges() {
                             src={submission!.imageUrl}
                             alt={t("challenges.submission")}
                             className="w-full h-full object-cover"
+                            loading="lazy"
                             data-testid={`img-submission-${challenge.id}`}
                           />
                         </div>
@@ -588,6 +599,7 @@ export default function Challenges() {
                               src={submission!.imageUrl}
                               alt={t("challenges.pendingAlt")}
                               className="w-full h-full object-cover opacity-60"
+                              loading="lazy"
                               data-testid={`img-pending-${challenge.id}`}
                             />
                             <div className="absolute inset-0 flex items-center justify-center">

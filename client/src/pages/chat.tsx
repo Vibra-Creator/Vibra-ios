@@ -11,6 +11,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { hideBlockedProfileFromFeeds } from "@/lib/block-user";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useDeferredVideo } from "@/hooks/use-deferred-video";
 import GiftPicker from "@/components/GiftPicker";
 import GiftAnimation from "@/components/GiftAnimation";
 import type { Message, Profile, Match, VirtualGift, SentGift, ProfileRating } from "@shared/schema";
@@ -42,6 +43,7 @@ export default function Chat() {
   const [giftAnimation, setGiftAnimation] = useState<{ gift: VirtualGift; senderName: string; message?: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { videoRef: backgroundVideoRef, shouldLoadVideo: shouldLoadBackgroundVideo } = useDeferredVideo();
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
   const [botIsTyping, setBotIsTyping] = useState(false);
   const botTypingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -328,10 +330,18 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-full relative z-10">
-      <div className="fixed inset-0 z-0">
-        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-          <source src="/backgrounds/5e8d7f392f6b41939b06e7f70a2114dd.mp4_1770326642074.MP4" type="video/mp4" />
-        </video>
+      <div className="fixed inset-0 z-0 bg-[#0a0118]">
+        <video
+          ref={backgroundVideoRef}
+          src={shouldLoadBackgroundVideo ? "/backgrounds/5e8d7f392f6b41939b06e7f70a2114dd.mp4_1770326642074.MP4" : undefined}
+          autoPlay={shouldLoadBackgroundVideo}
+          loop
+          muted
+          playsInline
+          preload="none"
+          poster="/backgrounds/vibra-chat-poster.webp"
+          className="w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-black/50" />
       </div>
 

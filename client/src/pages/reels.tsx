@@ -147,14 +147,26 @@ const VideoItem = memo(function VideoItem({
       {/* Video layer */}
       {isTikTokUrl(profile.profileVideoUrl) ? (
         <div className="absolute inset-0 w-full h-full bg-black flex flex-col">
-          {getTikTokEmbedUrl(profile.profileVideoUrl) ? (
+          {getTikTokEmbedUrl(profile.profileVideoUrl) && isNear ? (
             <iframe
               src={getTikTokEmbedUrl(profile.profileVideoUrl)!}
               className="w-full flex-1 border-0"
               allow="autoplay; encrypted-media"
               allowFullScreen
+              loading="lazy"
               title={`TikTok di ${profile.name}`}
             />
+          ) : getTikTokEmbedUrl(profile.profileVideoUrl) ? (
+            profile.imageUrl ? (
+              <img
+                src={profile.imageUrl}
+                alt=""
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex-1 bg-black" />
+            )
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
               <span className="text-5xl">🎵</span>
@@ -279,6 +291,7 @@ const VideoItem = memo(function VideoItem({
                 src={profile.imageUrl}
                 alt={profile.name}
                 className="w-full h-full object-cover object-top"
+                loading="lazy"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -604,7 +617,7 @@ export default function Reels() {
                 profile={profile}
                 index={index}
                 isActive={index === currentIndex}
-                isNear={distance <= 2}
+                isNear={distance <= 1}
                 muted={muted}
                 isLiked={liked.has(profile.id)}
                 onLike={handleLike}
