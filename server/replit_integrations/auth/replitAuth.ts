@@ -13,6 +13,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { sendVerificationEmail } from "../../gmail";
 import { filterOffensiveContent } from "../../ugc-moderation";
 import { safeErrorType } from "../../http-hardening";
+import { isSeedAccountBlockedFromLogin } from "./seed-account-policy";
 
 let _sessionMiddleware: ReturnType<typeof session> | null = null;
 const TERMS_ACCEPTANCE_REQUIRED = "Devi accettare i Termini di Servizio e la Privacy Policy.";
@@ -200,6 +201,10 @@ export async function setupAuth(app: Express) {
       const user = await authStorage.getUserByEmail(trimmedEmail);
       
       if (!user) {
+        return res.status(401).json({ message: "Email o password non corretti" });
+      }
+
+      if (isSeedAccountBlockedFromLogin(user.id, user.email)) {
         return res.status(401).json({ message: "Email o password non corretti" });
       }
       
@@ -525,6 +530,13 @@ export async function setupAuth(app: Express) {
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const userId = (req.session as any)?.userId;
   if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (isSeedAccountBlockedFromLogin(userId)) {
+    await new Promise<void>((resolve) => {
+      (req.session as any).destroy(() => resolve());
+    });
     return res.status(401).json({ message: "Unauthorized" });
   }
 

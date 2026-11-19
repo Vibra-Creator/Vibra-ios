@@ -2,9 +2,11 @@ import { db } from "./db";
 import { profiles, swipes, matches, messages, privateRooms, roomMembers, roomMessages, privateRoomRequests, privateRoomMessages, challengeSubmissions, sentGifts, users, bannedWords, virtualGifts, dailyChallenges, profileRatings, vibingSessions, reports, blockedUsers, deletedBotIds } from "@shared/schema";
 import { eq, or, sql, and, like } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import fs from "fs";
 import path from "path";
 import { safeErrorType } from "./http-hardening";
+import { BOT_SEED_USER_ID_PREFIX } from "./replit_integrations/auth/seed-account-policy";
 
 const cityCoords: Record<string, { lat: number; lng: number }> = {
   Roma: { lat: 41.90, lng: 12.50 }, Milano: { lat: 45.46, lng: 9.19 }, Napoli: { lat: 40.85, lng: 14.27 },
@@ -1596,225 +1598,44 @@ async function cleanupUserByEmail(email: string) {
   }
 }
 
-async function ensureAdminAccount() {
-  try {
-    const adminEmail = "admin@vibra.com";
-    const adminId = "admin-vibra-001";
-    const [existingByEmail] = await db.select().from(users).where(eq(users.email, adminEmail));
-    const [existingById] = await db.select().from(users).where(eq(users.id, adminId));
-    if (existingByEmail || existingById) {
-      const existing = existingByEmail || existingById;
-      if (existing && !existing.isAdmin) {
-        await db.update(users).set({ isAdmin: true }).where(eq(users.id, existing.id));
-        console.log("Admin account updated with admin privileges.");
-      }
-      console.log("Admin account already exists.");
-      return;
-    }
-    const hashedPassword = await bcrypt.hash("VAdmin2024!", 12);
-    await db.insert(users).values({
-      id: adminId,
-      email: adminEmail,
-      password: hashedPassword,
-      firstName: "Admin",
-      lastName: "Vibra",
-      isAdmin: true,
-    });
-    console.log("Admin account created");
-  } catch (error) {
-    console.error("Admin account creation failed:", safeErrorType(error));
-  }
-}
-
-async function promoteUserToAdmin(email: string) {
-  try {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    if (user && !user.isAdmin) {
-      await db.update(users).set({ isAdmin: true }).where(eq(users.id, user.id));
-      console.log("Account promoted to admin");
-    } else if (user && user.isAdmin) {
-      console.log("Account already has admin privileges");
-    } else {
-      console.log("Account not found; promotion will be retried after registration");
-    }
-  } catch (error) {
-    console.error("Admin promotion failed:", safeErrorType(error));
-  }
-}
-
-
-
-const botAccountCredentials = [
-  { profileId: "16", email: "giulia@vibra.app", password: "Vibra2024!", firstName: "Giulia", lastName: "Romani" },
-  { profileId: "17", email: "martina@vibra.app", password: "Vibra2024!", firstName: "Martina", lastName: "Bianchi" },
-  { profileId: "18", email: "valentina@vibra.app", password: "Vibra2024!", firstName: "Valentina", lastName: "Esposito" },
-  { profileId: "19", email: "matteo.t@vibra.app", password: "Vibra2024!", firstName: "Matteo", lastName: "Moretti" },
-  { profileId: "20", email: "alessia@vibra.app", password: "Vibra2024!", firstName: "Alessia", lastName: "Colombo" },
-  { profileId: "21", email: "chiara@vibra.app", password: "Vibra2024!", firstName: "Chiara", lastName: "Ricci" },
-  { profileId: "22", email: "francesca@vibra.app", password: "Vibra2024!", firstName: "Francesca", lastName: "Marino" },
-  { profileId: "23", email: "elena@vibra.app", password: "Vibra2024!", firstName: "Elena", lastName: "Greco" },
-  { profileId: "24", email: "aurora.r@vibra.app", password: "Vibra2024!", firstName: "Aurora", lastName: "Rossi" },
-  { profileId: "25", email: "serena@vibra.app", password: "Vibra2024!", firstName: "Serena", lastName: "Conti" },
-  { profileId: "31", email: "marco@vibra.app", password: "Vibra2024!", firstName: "Marco", lastName: "De Luca" },
-  { profileId: "32", email: "luca@vibra.app", password: "Vibra2024!", firstName: "Luca", lastName: "Barbieri" },
-  { profileId: "33", email: "alessandro@vibra.app", password: "Vibra2024!", firstName: "Alessandro", lastName: "Vitale" },
-  { profileId: "34", email: "andrea@vibra.app", password: "Vibra2024!", firstName: "Andrea", lastName: "Marchetti" },
-  { profileId: "35", email: "tommaso@vibra.app", password: "Vibra2024!", firstName: "Tommaso", lastName: "Ferrara" },
-  { profileId: "36", email: "davide@vibra.app", password: "Vibra2024!", firstName: "Davide", lastName: "Lombardi" },
-  { profileId: "37", email: "federico@vibra.app", password: "Vibra2024!", firstName: "Federico", lastName: "Santoro" },
-  { profileId: "38", email: "matteo@vibra.app", password: "Vibra2024!", firstName: "Matteo", lastName: "Caruso" },
-  { profileId: "39", email: "riccardo@vibra.app", password: "Vibra2024!", firstName: "Riccardo", lastName: "Bruno" },
-  { profileId: "40", email: "stefano@vibra.app", password: "Vibra2024!", firstName: "Stefano", lastName: "Rinaldi" },
-  { profileId: "41", email: "giorgia@vibra.app", password: "Vibra2024!", firstName: "Giorgia", lastName: "Ferretti" },
-  { profileId: "42", email: "lorenzo@vibra.app", password: "Vibra2024!", firstName: "Lorenzo", lastName: "Gallo" },
-  { profileId: "43", email: "elisa@vibra.app", password: "Vibra2024!", firstName: "Elisa", lastName: "Pellegrini" },
-  { profileId: "44", email: "simonem@vibra.app", password: "Vibra2024!", firstName: "Simone", lastName: "Mazza" },
-  { profileId: "45", email: "roberta@vibra.app", password: "Vibra2024!", firstName: "Roberta", lastName: "Palumbo" },
-  { profileId: "46", email: "fabio@vibra.app", password: "Vibra2024!", firstName: "Fabio", lastName: "Serra" },
-  { profileId: "47", email: "anna@vibra.app", password: "Vibra2024!", firstName: "Anna", lastName: "Costa" },
-  { profileId: "48", email: "giuseppe@vibra.app", password: "Vibra2024!", firstName: "Giuseppe", lastName: "Amato" },
-  { profileId: "49", email: "lucia@vibra.app", password: "Vibra2024!", firstName: "Lucia", lastName: "Rizzi" },
-  { profileId: "50", email: "daniele@vibra.app", password: "Vibra2024!", firstName: "Daniele", lastName: "Morandi" },
-  { profileId: "51", email: "ilaria@vibra.app", password: "Vibra2024!", firstName: "Ilaria", lastName: "Silvestri" },
-  { profileId: "52", email: "nicola@vibra.app", password: "Vibra2024!", firstName: "Nicola", lastName: "Fabbri" },
-  { profileId: "53", email: "claudia@vibra.app", password: "Vibra2024!", firstName: "Claudia", lastName: "Marini" },
-  { profileId: "54", email: "paolo@vibra.app", password: "Vibra2024!", firstName: "Paolo", lastName: "Gentile" },
-  { profileId: "55", email: "michela@vibra.app", password: "Vibra2024!", firstName: "Michela", lastName: "Barone" },
-  { profileId: "56", email: "emanuele@vibra.app", password: "Vibra2024!", firstName: "Emanuele", lastName: "Leone" },
-  { profileId: "57", email: "sara@vibra.app", password: "Vibra2024!", firstName: "Sara", lastName: "Fontana" },
-  { profileId: "58", email: "antonio@vibra.app", password: "Vibra2024!", firstName: "Antonio", lastName: "Ruggiero" },
-  { profileId: "59", email: "valentinab@vibra.app", password: "Vibra2024!", firstName: "Valentina", lastName: "Bernardi" },
-  { profileId: "60", email: "giovanni@vibra.app", password: "Vibra2024!", firstName: "Giovanni", lastName: "Messina" },
-  { profileId: "61", email: "serenag@vibra.app", password: "Vibra2024!", firstName: "Serena", lastName: "Grasso" },
-  { profileId: "62", email: "simone@vibra.app", password: "Vibra2024!", firstName: "Simone", lastName: "Monti" },
-  { profileId: "63", email: "massimo@vibra.app", password: "Vibra2024!", firstName: "Massimo", lastName: "Benedetti" },
-  { profileId: "64", email: "marcoa@vibra.app", password: "Vibra2024!", firstName: "Marco", lastName: "Riva" },
-  { profileId: "65", email: "arianna@vibra.app", password: "Vibra2024!", firstName: "Arianna", lastName: "Longo" },
-  { profileId: "66", email: "franco@vibra.app", password: "Vibra2024!", firstName: "Franco", lastName: "Donati" },
-  { profileId: "67", email: "riccardo@vibra.app", password: "Vibra2024!", firstName: "Riccardo", lastName: "Sala" },
-  { profileId: "68", email: "giacomo@vibra.app", password: "Vibra2024!", firstName: "Giacomo", lastName: "Testa" },
-  { profileId: "69", email: "salvatore@vibra.app", password: "Vibra2024!", firstName: "Salvatore", lastName: "D'Angelo" },
-  { profileId: "70", email: "piero@vibra.app", password: "Vibra2024!", firstName: "Piero", lastName: "Sartori" },
-  // English-speaking bots
-  { profileId: "71", email: "emily@vibra.app", password: "Vibra2024!", firstName: "Emily", lastName: "Clarke" },
-  { profileId: "72", email: "sarah@vibra.app", password: "Vibra2024!", firstName: "Sarah", lastName: "Mitchell" },
-  { profileId: "73", email: "jessica@vibra.app", password: "Vibra2024!", firstName: "Jessica", lastName: "Brooks" },
-  { profileId: "74", email: "hannah@vibra.app", password: "Vibra2024!", firstName: "Hannah", lastName: "Chen" },
-  { profileId: "75", email: "olivia@vibra.app", password: "Vibra2024!", firstName: "Olivia", lastName: "Patel" },
-  { profileId: "76", email: "chloe@vibra.app", password: "Vibra2024!", firstName: "Chloe", lastName: "Taylor" },
-  { profileId: "77", email: "megan@vibra.app", password: "Vibra2024!", firstName: "Megan", lastName: "Sullivan" },
-  { profileId: "78", email: "lauren@vibra.app", password: "Vibra2024!", firstName: "Lauren", lastName: "Harper" },
-  { profileId: "79", email: "sophie@vibra.app", password: "Vibra2024!", firstName: "Sophie", lastName: "Williams" },
-  { profileId: "80", email: "rachel@vibra.app", password: "Vibra2024!", firstName: "Rachel", lastName: "Kim" },
-  { profileId: "81", email: "james@vibra.app", password: "Vibra2024!", firstName: "James", lastName: "Wright" },
-  { profileId: "82", email: "william@vibra.app", password: "Vibra2024!", firstName: "William", lastName: "Scott" },
-  { profileId: "83", email: "daniel@vibra.app", password: "Vibra2024!", firstName: "Daniel", lastName: "Okonkwo" },
-  { profileId: "84", email: "ryan@vibra.app", password: "Vibra2024!", firstName: "Ryan", lastName: "Cooper" },
-  { profileId: "85", email: "thomas@vibra.app", password: "Vibra2024!", firstName: "Thomas", lastName: "Bennett" },
-  { profileId: "86", email: "nathan@vibra.app", password: "Vibra2024!", firstName: "Nathan", lastName: "Moore" },
-  { profileId: "87", email: "alex@vibra.app", password: "Vibra2024!", firstName: "Alex", lastName: "Davies" },
-  { profileId: "88", email: "charlie@vibra.app", password: "Vibra2024!", firstName: "Charlie", lastName: "Price" },
-  { profileId: "89", email: "ben@vibra.app", password: "Vibra2024!", firstName: "Ben", lastName: "Carter" },
-  { profileId: "90", email: "jack@vibra.app", password: "Vibra2024!", firstName: "Jack", lastName: "Hughes" },
-  // Spanish-speaking bots
-  { profileId: "91", email: "maria@vibra.app", password: "Vibra2024!", firstName: "María", lastName: "López" },
-  { profileId: "92", email: "carmen@vibra.app", password: "Vibra2024!", firstName: "Carmen", lastName: "Fernández" },
-  { profileId: "93", email: "lucia@vibra.app", password: "Vibra2024!", firstName: "Lucía", lastName: "Ramírez" },
-  { profileId: "94", email: "isabel@vibra.app", password: "Vibra2024!", firstName: "Isabel", lastName: "Martínez" },
-  { profileId: "95", email: "paula@vibra.app", password: "Vibra2024!", firstName: "Paula", lastName: "Gutiérrez" },
-  { profileId: "96", email: "ana@vibra.app", password: "Vibra2024!", firstName: "Ana", lastName: "Morales" },
-  { profileId: "97", email: "valentina@vibra.app", password: "Vibra2024!", firstName: "Valentina", lastName: "Torres" },
-  { profileId: "98", email: "camila@vibra.app", password: "Vibra2024!", firstName: "Camila", lastName: "Herrera" },
-  { profileId: "99", email: "sofia@vibra.app", password: "Vibra2024!", firstName: "Sofía", lastName: "Vargas" },
-  { profileId: "100", email: "daniela@vibra.app", password: "Vibra2024!", firstName: "Daniela", lastName: "Mendoza" },
-  { profileId: "101", email: "carlos@vibra.app", password: "Vibra2024!", firstName: "Carlos", lastName: "García" },
-  { profileId: "102", email: "alejandro@vibra.app", password: "Vibra2024!", firstName: "Alejandro", lastName: "Ríos" },
-  { profileId: "103", email: "diego@vibra.app", password: "Vibra2024!", firstName: "Diego", lastName: "Sánchez" },
-  { profileId: "104", email: "miguel@vibra.app", password: "Vibra2024!", firstName: "Miguel", lastName: "Romero" },
-  { profileId: "105", email: "pablo@vibra.app", password: "Vibra2024!", firstName: "Pablo", lastName: "Navarro" },
-  { profileId: "106", email: "andres@vibra.app", password: "Vibra2024!", firstName: "Andrés", lastName: "Castillo" },
-  { profileId: "107", email: "santiago@vibra.app", password: "Vibra2024!", firstName: "Santiago", lastName: "Díaz" },
-  { profileId: "108", email: "mateos@vibra.app", password: "Vibra2024!", firstName: "Mateo", lastName: "Peña" },
-  { profileId: "109", email: "javier@vibra.app", password: "Vibra2024!", firstName: "Javier", lastName: "Ruiz" },
-  { profileId: "110", email: "fernando@vibra.app", password: "Vibra2024!", firstName: "Fernando", lastName: "Vega" },
-  { profileId: "111", email: "sara@vibra.app", password: "Vibra2024!", firstName: "Sara", lastName: "Conti" },
-  { profileId: "112", email: "federica@vibra.app", password: "Vibra2024!", firstName: "Federica", lastName: "Moretti" },
-  { profileId: "113", email: "elisa@vibra.app", password: "Vibra2024!", firstName: "Elisa", lastName: "Galli" },
-  { profileId: "114", email: "monica@vibra.app", password: "Vibra2024!", firstName: "Monica", lastName: "Ferraro" },
-  { profileId: "115", email: "giada@vibra.app", password: "Vibra2024!", firstName: "Giada", lastName: "Esposito" },
-  { profileId: "116", email: "roberta@vibra.app", password: "Vibra2024!", firstName: "Roberta", lastName: "Toscano" },
-  { profileId: "117", email: "patrizia@vibra.app", password: "Vibra2024!", firstName: "Patrizia", lastName: "Rinaldi" },
-  { profileId: "118", email: "noemi@vibra.app", password: "Vibra2024!", firstName: "Noemi", lastName: "Sala" },
-  { profileId: "119", email: "daniela@vibra.app", password: "Vibra2024!", firstName: "Daniela", lastName: "Marchetti" },
-  { profileId: "120", email: "aurora@vibra.app", password: "Vibra2024!", firstName: "Aurora", lastName: "Zanetti" },
-  { profileId: "121", email: "teresa@vibra.app", password: "Vibra2024!", firstName: "Teresa", lastName: "Pugliese" },
-  { profileId: "122", email: "lucia@vibra.app", password: "Vibra2024!", firstName: "Lucia", lastName: "Ferrara" },
-  { profileId: "123", email: "angela@vibra.app", password: "Vibra2024!", firstName: "Angela", lastName: "Colombo" },
-  { profileId: "124", email: "martinar@vibra.app", password: "Vibra2024!", firstName: "Martina", lastName: "Rossi" },
-  { profileId: "125", email: "irene@vibra.app", password: "Vibra2024!", firstName: "Irene", lastName: "Barbieri" },
-  { profileId: "126", email: "tommaso@vibra.app", password: "Vibra2024!", firstName: "Tommaso", lastName: "Vitale" },
-  { profileId: "127", email: "davide@vibra.app", password: "Vibra2024!", firstName: "Davide", lastName: "Parodi" },
-  { profileId: "128", email: "lucam@vibra.app", password: "Vibra2024!", firstName: "Luca", lastName: "Mancini" },
-  { profileId: "129", email: "roberto@vibra.app", password: "Vibra2024!", firstName: "Roberto", lastName: "Grandi" },
-  { profileId: "130", email: "simone@vibra.app", password: "Vibra2024!", firstName: "Simone", lastName: "Pieri" },
-  { profileId: "131", email: "massimo@vibra.app", password: "Vibra2024!", firstName: "Massimo", lastName: "Rizzo" },
-  { profileId: "132", email: "andreap@vibra.app", password: "Vibra2024!", firstName: "Andrea", lastName: "Pellegrino" },
-  { profileId: "133", email: "marcob@vibra.app", password: "Vibra2024!", firstName: "Marco", lastName: "Bianchi" },
-  { profileId: "134", email: "filippo@vibra.app", password: "Vibra2024!", firstName: "Filippo", lastName: "De Luca" },
-  { profileId: "135", email: "giuseppe@vibra.app", password: "Vibra2024!", firstName: "Giuseppe", lastName: "Ferrante" },
-  // ── Nuovi bot adulti (40-60 anni) ──────────────────────────────────────────
-  { profileId: "136", email: "carla@vibra.app", password: "Vibra2024!", firstName: "Carla", lastName: "Ferretti" },
-  { profileId: "137", email: "giovanna@vibra.app", password: "Vibra2024!", firstName: "Giovanna", lastName: "Morelli" },
-  { profileId: "138", email: "paolac@vibra.app", password: "Vibra2024!", firstName: "Paola", lastName: "Santoro" },
-  { profileId: "139", email: "mariagrazia@vibra.app", password: "Vibra2024!", firstName: "Maria Grazia", lastName: "Rizzo" },
-  { profileId: "140", email: "luisaf@vibra.app", password: "Vibra2024!", firstName: "Luisa", lastName: "Fabbri" },
-  { profileId: "141", email: "danielap@vibra.app", password: "Vibra2024!", firstName: "Daniela", lastName: "Parodi" },
-  { profileId: "142", email: "antonella@vibra.app", password: "Vibra2024!", firstName: "Antonella", lastName: "Bianchi" },
-  { profileId: "143", email: "rosaria@vibra.app", password: "Vibra2024!", firstName: "Rosaria", lastName: "Conti" },
-  { profileId: "144", email: "cristina@vibra.app", password: "Vibra2024!", firstName: "Cristina", lastName: "Longo" },
-  { profileId: "145", email: "marisa@vibra.app", password: "Vibra2024!", firstName: "Marisa", lastName: "Toscano" },
-  { profileId: "146", email: "sergiom@vibra.app", password: "Vibra2024!", firstName: "Sergio", lastName: "Marini" },
-  { profileId: "147", email: "robertoa@vibra.app", password: "Vibra2024!", firstName: "Roberto", lastName: "Aiello" },
-  { profileId: "148", email: "francescop@vibra.app", password: "Vibra2024!", firstName: "Francesco", lastName: "Paglia" },
-  { profileId: "149", email: "claudio@vibra.app", password: "Vibra2024!", firstName: "Claudio", lastName: "Benedetti" },
-  { profileId: "150", email: "enrico@vibra.app", password: "Vibra2024!", firstName: "Enrico", lastName: "Galli" },
-  { profileId: "151", email: "albertom@vibra.app", password: "Vibra2024!", firstName: "Alberto", lastName: "Mancini" },
-  { profileId: "152", email: "salvatorel@vibra.app", password: "Vibra2024!", firstName: "Salvatore", lastName: "Russo" },
-  { profileId: "153", email: "giorgiof@vibra.app", password: "Vibra2024!", firstName: "Giorgio", lastName: "Ferrara" },
-  { profileId: "154", email: "lucap@vibra.app", password: "Vibra2024!", firstName: "Luca", lastName: "Piani" },
-  { profileId: "155", email: "pietrov@vibra.app", password: "Vibra2024!", firstName: "Pietro", lastName: "Vitale" },
-];
-
 async function createBotUserAccounts() {
-  for (const bot of botAccountCredentials) {
+  for (const bot of seedProfiles) {
     try {
-      const userId = `bot-user-${bot.profileId}`;
+      const userId = `${BOT_SEED_USER_ID_PREFIX}${bot.id}`;
+      const [profile] = await db
+        .select({ id: profiles.id, isBot: profiles.isBot, userId: profiles.userId })
+        .from(profiles)
+        .where(eq(profiles.id, bot.id));
+      if (!profile || !profile.isBot || (profile.userId && profile.userId !== userId)) {
+        continue;
+      }
+
       const [existingById] = await db.select().from(users).where(eq(users.id, userId));
       if (existingById) {
-        const [profile] = await db.select().from(profiles).where(eq(profiles.id, bot.profileId));
         if (profile && !profile.userId) {
-          await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.profileId));
+          await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.id));
         }
         continue;
       }
-      const [existingByEmail] = await db.select().from(users).where(eq(users.email, bot.email));
+      const email = `bot-${bot.id}@accounts.vibra.invalid`;
+      const [existingByEmail] = await db.select().from(users).where(eq(users.email, email));
       if (existingByEmail) {
-        const [profile] = await db.select().from(profiles).where(eq(profiles.id, bot.profileId));
         if (profile && !profile.userId) {
-          await db.update(profiles).set({ userId: existingByEmail.id }).where(eq(profiles.id, bot.profileId));
+          await db.update(profiles).set({ userId: existingByEmail.id }).where(eq(profiles.id, bot.id));
         }
         continue;
       }
-      const hashedPassword = await bcrypt.hash(bot.password, 12);
+      const generatedPassword = randomBytes(32).toString("base64url");
+      const hashedPassword = await bcrypt.hash(generatedPassword, 12);
       await db.insert(users).values({
         id: userId,
-        email: bot.email,
+        email,
         password: hashedPassword,
-        firstName: bot.firstName,
-        lastName: bot.lastName,
+        firstName: bot.name.split(" ")[0] || "Bot",
+        lastName: "",
         isAdmin: false,
       });
-      await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.profileId));
+      await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.id));
       console.log("Bot account created");
     } catch (error) {
       console.error("Bot account creation failed:", safeErrorType(error));
@@ -1859,44 +1680,6 @@ async function updateBotCoordinates() {
     }
   }
   console.log(`[seed] Coordinate bot aggiornate: ${updated} profili`);
-}
-
-async function normalizeAllBotCredentials() {
-  try {
-    await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`);
-    console.log("[normalizeAllBotCredentials] Dropped unique email constraint on users table");
-  } catch (e) {
-    console.warn("[seed] Credential constraint adjustment was skipped");
-  }
-  const allBots = await db.select().from(profiles).where(eq(profiles.isBot, true));
-  const sharedEmail = "nome@vibra.app";
-  const sharedPassword = await bcrypt.hash("Vibra2026", 12);
-  let updated = 0;
-  for (const bot of allBots) {
-    if (!bot.userId) {
-      const userId = `bot-user-${bot.id}`;
-      await db.insert(users).values({
-        id: userId,
-        email: sharedEmail,
-        password: sharedPassword,
-        firstName: bot.name || "Bot",
-        lastName: "",
-        isAdmin: false,
-      });
-      await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.id));
-      updated++;
-    } else {
-      await db.update(users)
-        .set({ email: sharedEmail, password: sharedPassword })
-        .where(eq(users.id, bot.userId));
-      updated++;
-    }
-  }
-  console.log(`[seed] Updated ${updated} bot accounts; total: ${allBots.length}`);
-}
-
-async function ensureAllBotAccounts() {
-  await normalizeAllBotCredentials();
 }
 
 async function seedBotCities() {
@@ -2706,13 +2489,9 @@ export async function seedDatabase() {
     }
 
     await createBotUserAccounts();
-    await ensureAllBotAccounts();
     await seedBotCities();
     await updateBotCoordinates();
     await seedBotVideosByCity();
-    await ensureAdminAccount();
-    await promoteUserToAdmin("famax61@yahoo.com");
-    await promoteUserToAdmin("famax61@gmail.com");
     await cleanupTestData();
     try {
       const oldRoom = await db.select().from(privateRooms).where(eq(privateRooms.id, "entra-chi-dico-io"));
