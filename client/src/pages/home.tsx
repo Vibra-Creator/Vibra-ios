@@ -25,7 +25,7 @@ interface SwipableResponse {
 
 export default function Home() {
   useEffect(() => {
-    document.title = "Vibra - Swipe e Match Cosmici";
+    document.title = "Vibra Dating - Profili e match | Vibra Hub";
     const setMeta = (name: string, content: string, isProperty = false) => {
       const selector = isProperty ? `meta[property="${name}"]` : `meta[name="${name}"]`;
       let el = document.querySelector(selector) as HTMLMetaElement | null;
@@ -36,13 +36,13 @@ export default function Home() {
       }
       el.setAttribute("content", content);
     };
-    const desc = "Scorri profili alieni, fai match e chatta su Vibra, la dating app cosmica in italiano.";
+    const desc = "Scopri profili, match e chat nella sezione Vibra Dating di Vibra Hub. Il dating è una funzione facoltativa.";
     setMeta("description", desc);
-    setMeta("og:title", "Vibra - Swipe e Match Cosmici", true);
+    setMeta("og:title", "Vibra Dating - Profili e match | Vibra Hub", true);
     setMeta("og:description", desc, true);
     setMeta("og:type", "website", true);
     setMeta("twitter:card", "summary_large_image");
-    setMeta("twitter:title", "Vibra - Swipe e Match Cosmici");
+    setMeta("twitter:title", "Vibra Dating - Profili e match | Vibra Hub");
     setMeta("twitter:description", desc);
   }, []);
 

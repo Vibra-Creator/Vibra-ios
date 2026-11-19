@@ -32,7 +32,7 @@ export function safeErrorType(error: unknown): string {
   return typeof name === "string" && SAFE_SERVER_ERROR_TYPES.has(name) ? name : "Error";
 }
 
-const JSON_LD_SCRIPT_HASH = "'sha256-WFY21qGIy06xWekL1ludprGn2qNalRITNpFewpPX/JI='";
+const JSON_LD_SCRIPT_HASH = "'sha256-H/kjyb0EnRMSKscd7mmGzV/FDeCn5WJzc6pC6gy7uo0='";
 
 function buildContentSecurityPolicy(isProduction: boolean): string {
   const frameAncestors = isProduction

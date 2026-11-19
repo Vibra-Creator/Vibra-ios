@@ -29,13 +29,13 @@ export default function Landing() {
       }
       el.setAttribute("content", content);
     };
-    setMeta("meta", "name", "description", "Vibra Hub riunisce community, social, marketplace, mobilità, casa e lavoro. Il dating cosmico è facoltativo.");
+    setMeta("meta", "name", "description", "Vibra Hub riunisce community, social, marketplace, mobilità, casa e lavoro. Vibra Dating è una funzione facoltativa.");
     setMeta("meta", "property", "og:site_name", "Vibra Hub");
     setMeta("meta", "property", "og:title", "Vibra Hub - Community, servizi e connessioni");
-    setMeta("meta", "property", "og:description", "Esplora community, social, marketplace e servizi in un unico hub. Vibra Dating è facoltativo.");
+    setMeta("meta", "property", "og:description", "Community, social, marketplace, mobilità, casa e lavoro in un unico hub. Vibra Dating è facoltativo.");
     setMeta("meta", "property", "og:image", "https://vibraalienmatch.com/vibra-logo.png");
     setMeta("meta", "name", "twitter:title", "Vibra Hub - Community, servizi e connessioni");
-    setMeta("meta", "name", "twitter:description", "Esplora community, social, marketplace e servizi in un unico hub. Vibra Dating è facoltativo.");
+    setMeta("meta", "name", "twitter:description", "Community, social, marketplace, mobilità, casa e lavoro in un unico hub. Vibra Dating è facoltativo.");
     setMeta("meta", "name", "twitter:image", "https://vibraalienmatch.com/vibra-logo.png");
   }, []);
 
