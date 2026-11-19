@@ -43,6 +43,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, lt, ne, gt, lte, asc, isNotNull } from "drizzle-orm";
+import { getLocationShareCutoff } from "@shared/location-sharing";
 import { randomUUID } from "crypto";
 import { USER_REPORT_NOTIFICATION_CLAIM_LEASE_MS } from "./user-report-notifications";
 
@@ -212,6 +213,7 @@ export interface IStorage {
   deactivateLocationShare(profileId: string): Promise<void>;
   getLocationShare(profileId: string): Promise<LocationShare | undefined>;
   getMatchLocationShares(profileId: string): Promise<(LocationShare & { profile: Profile })[]>;
+  deleteExpiredLocationShares(now?: Date | number): Promise<number>;
 
   // Profile Videos
   getProfileVideos(profileId: string): Promise<ProfileVideo[]>;
@@ -1390,26 +1392,30 @@ export class DatabaseStorage implements IStorage {
     const existing = await db.select().from(locationShares).where(eq(locationShares.profileId, profileId));
     if (existing.length > 0) {
       const [updated] = await db.update(locationShares)
-        .set({ latitude: lat, longitude: lng, active: true, updatedAt: new Date() })
+        .set({ latitude: lat, longitude: lng, active: true, consentConfirmed: true, updatedAt: new Date() })
         .where(eq(locationShares.profileId, profileId))
         .returning();
       return updated;
     }
     const [created] = await db.insert(locationShares)
-      .values({ profileId, latitude: lat, longitude: lng, active: true })
+      .values({ profileId, latitude: lat, longitude: lng, active: true, consentConfirmed: true })
       .returning();
     return created;
   }
 
   async deactivateLocationShare(profileId: string): Promise<void> {
-    await db.update(locationShares)
-      .set({ active: false })
+    await db.delete(locationShares)
       .where(eq(locationShares.profileId, profileId));
   }
 
   async getLocationShare(profileId: string): Promise<LocationShare | undefined> {
     const [share] = await db.select().from(locationShares)
-      .where(and(eq(locationShares.profileId, profileId), eq(locationShares.active, true)));
+      .where(and(
+        eq(locationShares.profileId, profileId),
+        eq(locationShares.active, true),
+        eq(locationShares.consentConfirmed, true),
+        gt(locationShares.updatedAt, getLocationShareCutoff()),
+      ));
     return share;
   }
 
@@ -1422,6 +1428,8 @@ export class DatabaseStorage implements IStorage {
     const activeShares = await db.select().from(locationShares)
       .where(and(
         eq(locationShares.active, true),
+        eq(locationShares.consentConfirmed, true),
+        gt(locationShares.updatedAt, getLocationShareCutoff()),
         sql`${locationShares.profileId} IN (${sql.join(matchedIds.map(id => sql`${id}`), sql`, `)})`
       ));
 
@@ -1440,6 +1448,14 @@ export class DatabaseStorage implements IStorage {
       .filter(s => profileMap.has(s.profileId))
       .map(s => ({ ...s, profile: profileMap.get(s.profileId)! }));
   }
+
+  async deleteExpiredLocationShares(now: Date | number = Date.now()): Promise<number> {
+    const deleted = await db.delete(locationShares)
+      .where(lte(locationShares.updatedAt, getLocationShareCutoff(now)))
+      .returning({ id: locationShares.id });
+    return deleted.length;
+  }
+
   async getProfileVideos(profileId: string): Promise<ProfileVideo[]> {
     return db.select().from(profileVideos)
       .where(eq(profileVideos.profileId, profileId))

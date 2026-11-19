@@ -388,6 +388,7 @@ export const locationShares = pgTable("location_shares", {
   longitude: doublePrecision("longitude").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   active: boolean("active").default(false).notNull(),
+  consentConfirmed: boolean("consent_confirmed").default(false).notNull(),
 });
 
 export type LocationShare = typeof locationShares.$inferSelect;

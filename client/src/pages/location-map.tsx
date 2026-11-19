@@ -10,7 +10,18 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Profile, LocationShare } from "@shared/schema";
+import { LOCATION_SHARE_HEARTBEAT_MS } from "@shared/location-sharing";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -24,8 +35,11 @@ export default function LocationMap() {
   const markersRef = useRef<L.Marker[]>([]);
   const myMarkerRef = useRef<L.Marker | null>(null);
   const [showInfo, setShowInfo] = useState(false);
+  const [showShareConsent, setShowShareConsent] = useState(false);
   const [watchId, setWatchId] = useState<number | null>(null);
   const [requestingPosition, setRequestingPosition] = useState(false);
+  const latestCoordinatesRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const sharingStoppedRef = useRef(false);
 
   const { data: myProfile } = useQuery<Profile | null>({
     queryKey: ["/api/profiles/me"],
@@ -45,7 +59,7 @@ export default function LocationMap() {
   });
 
   const shareMutation = useMutation({
-    mutationFn: (pos: { latitude: number; longitude: number }) =>
+    mutationFn: (pos: { latitude: number; longitude: number; consentConfirmed: true }) =>
       apiRequest("POST", "/api/location/share", pos),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/location/status"] });
@@ -55,14 +69,25 @@ export default function LocationMap() {
 
   const stopMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/location/stop"),
-    onSuccess: () => {
+    onMutate: () => {
+      sharingStoppedRef.current = true;
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
         setWatchId(null);
       }
+      latestCoordinatesRef.current = null;
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/location/status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/location/matches"] });
       toast({ title: t("location.stopped"), description: t("location.stoppedDesc") });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: t("location.stopError"),
+        variant: "destructive",
+      });
     },
   });
 
@@ -76,6 +101,7 @@ export default function LocationMap() {
       return;
     }
 
+    sharingStoppedRef.current = false;
     setRequestingPosition(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -88,11 +114,18 @@ export default function LocationMap() {
           }
 
           const coordinates = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-          await shareMutation.mutateAsync(coordinates);
+          latestCoordinatesRef.current = coordinates;
+          await shareMutation.mutateAsync({ ...coordinates, consentConfirmed: true });
 
           const id = navigator.geolocation.watchPosition(
             (position) => {
-              shareMutation.mutate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+              if (sharingStoppedRef.current) return;
+              const nextCoordinates = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              };
+              latestCoordinatesRef.current = nextCoordinates;
+              shareMutation.mutate({ ...nextCoordinates, consentConfirmed: true });
             },
             () => {
               toast({ title: t("location.positionError"), description: t("location.allowAccess"), variant: "destructive" });
@@ -118,6 +151,23 @@ export default function LocationMap() {
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
+
+  useEffect(() => {
+    if (watchId === null) return;
+
+    const sendHeartbeat = () => {
+      const coordinates = latestCoordinatesRef.current;
+      if (sharingStoppedRef.current || document.visibilityState !== "visible" || !coordinates) return;
+      shareMutation.mutate({ ...coordinates, consentConfirmed: true });
+    };
+
+    const timer = window.setInterval(sendHeartbeat, LOCATION_SHARE_HEARTBEAT_MS);
+    document.addEventListener("visibilitychange", sendHeartbeat);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", sendHeartbeat);
+    };
+  }, [watchId, shareMutation.mutate]);
 
   useEffect(() => {
     return () => {
@@ -287,7 +337,7 @@ export default function LocationMap() {
               </div>
             </div>
             <Button
-              onClick={startSharing}
+              onClick={() => setShowShareConsent(true)}
               disabled={requestingPosition || shareMutation.isPending || !myProfile}
               className="w-full mt-3 bg-gradient-to-r from-secondary to-primary"
               data-testid="button-enable-location-sharing"
@@ -298,7 +348,7 @@ export default function LocationMap() {
           </Card>
         ) : !isSharing ? (
           <Button
-            onClick={startSharing}
+            onClick={() => setShowShareConsent(true)}
             disabled={requestingPosition || shareMutation.isPending}
             className="w-full bg-gradient-to-r from-secondary to-primary py-6 text-base font-semibold"
             data-testid="button-start-sharing"
@@ -341,6 +391,26 @@ export default function LocationMap() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={showShareConsent} onOpenChange={setShowShareConsent}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("location.preciseConsentTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("location.preciseConsentDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-location-consent">
+              {t("location.preciseConsentCancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-location-consent"
+              onClick={startSharing}
+            >
+              {t("location.preciseConsentAccept")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

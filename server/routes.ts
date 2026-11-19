@@ -9,6 +9,7 @@ import {
   registerAdminBotImageFixRoute,
 } from "./admin-bot-image-fix";
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
+import { isValidLocationCoordinates } from "@shared/location-sharing";
 import { db } from "./db";
 import { eq, or, and, ne, sql, lt, gt, desc, asc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
@@ -4324,8 +4325,13 @@ REGOLE:
       if (!profile) return res.status(404).json({ error: "Profile not found" });
       if (!profile.locationSharingEnabled) return res.status(403).json({ error: "Location sharing not enabled in profile" });
 
-      const { latitude, longitude } = req.body;
-      if (latitude == null || longitude == null) return res.status(400).json({ error: "latitude and longitude required" });
+      const { latitude, longitude, consentConfirmed } = req.body || {};
+      if (consentConfirmed !== true) {
+        return res.status(403).json({ error: "Explicit location sharing consent is required" });
+      }
+      if (!isValidLocationCoordinates(latitude, longitude)) {
+        return res.status(400).json({ error: "Valid latitude and longitude are required" });
+      }
 
       const share = await storage.updateLocationShare(profile.id, latitude, longitude);
       res.json(share);

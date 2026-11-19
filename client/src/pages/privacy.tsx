@@ -64,7 +64,7 @@ export default function Privacy() {
               <ul className="list-disc pl-5 space-y-1.5">
                 <li><strong>Dati di registrazione</strong>: email, username, data di nascita, età</li>
                 <li><strong>Dati di profilo</strong>: foto, biografie, interessi, città di residenza</li>
-                <li><strong>Dati di geolocalizzazione</strong>: posizione approssimativa, condivisa solo su consenso esplicito nell'attivazione della funzione "Sto Vibing Ora"</li>
+                <li><strong>Dati di geolocalizzazione</strong>: la funzione "Sto Vibing Ora" usa una posizione approssimativa; con "Dove Sei", le coordinate precise sono condivise solo dopo conferma esplicita e solo con match reciproci che hanno attivato la funzione</li>
                 <li><strong>Contenuti pubblicati</strong>: messaggi, foto caricate, articoli del Blog, annunci del Marketplace, post nei Segnali Cosmici, video</li>
                 <li><strong>Dati tecnici</strong>: indirizzo IP, log di accesso, tipo di dispositivo, sistema operativo, browser</li>
                 <li><strong>Token di notifica push</strong>: per l'invio di notifiche, solo su consenso</li>
@@ -143,9 +143,11 @@ export default function Privacy() {
                 con altri utenti attivi nelle vicinanze.
               </p>
               <p className="mt-2">
-                I dati di posizione sono trattati esclusivamente durante la sessione attiva e non sono conservati
-                dopo la disattivazione della funzione. L'utente può disattivare la condivisione in qualsiasi momento.
-                La posizione non è mai mostrata in forma esatta: viene visualizzata solo la distanza approssimativa.
+                La funzione <strong className="text-foreground">"Dove Sei"</strong> condivide le coordinate precise
+                solo dopo una conferma esplicita nell'app e il permesso del browser, e solo con match reciproci che
+                hanno attivato la condivisione. Toccando "Interrompi", la posizione non è più visibile e le coordinate
+                vengono eliminate subito. Se non arrivano aggiornamenti, la condivisione scade e le coordinate vengono
+                eliminate dopo 15 minuti.
               </p>
             </section>
 
@@ -155,7 +157,8 @@ export default function Privacy() {
               <ul className="list-disc pl-5 space-y-1.5">
                 <li>Dati account: conservati per tutta la durata dell'account attivo</li>
                 <li>In caso di cancellazione account: eliminazione entro 30 giorni, salvo obblighi di legge</li>
-                <li>Dati di geolocalizzazione (Vibing): eliminati al termine della sessione</li>
+                <li>Coordinate di "Dove Sei": eliminate quando si interrompe la condivisione o, in assenza di aggiornamenti, entro 15 minuti; eventuali copie nei backup operativi possono restare fino a 7 giorni</li>
+                <li>Dati di geolocalizzazione (Sto Vibing Ora): eliminati al termine della sessione</li>
                 <li>Log tecnici: conservati per massimo 12 mesi</li>
                 <li>Backup operativi: conservati per 7 giorni, poi sostituiti dal backup successivo</li>
               </ul>

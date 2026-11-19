@@ -106,6 +106,7 @@ httpServer.listen(
   // deve ritardare la prima risposta al controllo di salute.
   const { registerRoutes } = await import("./routes");
   const { startAutoBackup } = await import("./backup");
+  const { startLocationShareCleanup } = await import("./location-share-cleanup");
   const { db } = await import("./db");
   const { sql } = await import("drizzle-orm");
   const { storage } = await import("./storage");
@@ -371,6 +372,8 @@ httpServer.listen(
     await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dating_enabled boolean NOT NULL DEFAULT true`);
     await db.execute(sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dating_choice_pending boolean NOT NULL DEFAULT false`);
     console.log("[migration] Dating opt-in columns ready");
+    await db.execute(sql`ALTER TABLE location_shares ADD COLUMN IF NOT EXISTS consent_confirmed boolean NOT NULL DEFAULT false`);
+    console.log("[migration] Location sharing consent column ready");
   } catch (err) {
     console.error("[migration] startup migration error:", err);
   }
@@ -383,6 +386,7 @@ httpServer.listen(
   }, 60 * 60 * 1000);
 
   await registerRoutes(httpServer, app);
+  startLocationShareCleanup();
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
