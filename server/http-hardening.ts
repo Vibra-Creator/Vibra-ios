@@ -32,21 +32,36 @@ export function safeErrorType(error: unknown): string {
   return typeof name === "string" && SAFE_SERVER_ERROR_TYPES.has(name) ? name : "Error";
 }
 
-const REPORT_ONLY_CSP = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "form-action 'self'",
-  "frame-ancestors 'self' https://replit.com https://*.replit.com https://*.replit.dev https://*.replit.app",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://accounts.google.com https://appleid.cdn-apple.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob: https: https://*.tile.openstreetmap.org",
-  "media-src 'self' data: blob: https:",
-  "connect-src 'self' ws: wss: https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.googleapis.com https://storage.googleapis.com https://*.storage.googleapis.com https://app.trysoro.com",
-  "frame-src 'self' https://open.spotify.com https://accounts.google.com https://appleid.apple.com",
-  "worker-src 'self' blob:",
-].join("; ");
+const JSON_LD_SCRIPT_HASH = "'sha256-WFY21qGIy06xWekL1ludprGn2qNalRITNpFewpPX/JI='";
+
+function buildContentSecurityPolicy(isProduction: boolean): string {
+  const frameAncestors = isProduction
+    ? "'self'"
+    : "'self' https://replit.com https://*.replit.com https://*.replit.dev https://*.replit.app";
+  const websocketSources = isProduction
+    ? "wss://vibraalienmatch.com wss://www.vibraalienmatch.com"
+    : "ws: wss:";
+  // Vite React Refresh injects an inline module preamble in development only.
+  const developmentScriptSource = isProduction ? "" : " 'unsafe-inline'";
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "form-action 'self' https://accounts.google.com https://appleid.apple.com",
+    `frame-ancestors ${frameAncestors}`,
+    `script-src 'self' https://www.googletagmanager.com https://accounts.google.com https://appleid.cdn-apple.com ${JSON_LD_SCRIPT_HASH}${developmentScriptSource}`,
+    "script-src-attr 'none'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' data: blob: https:",
+    `connect-src 'self' ${websocketSources} https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.googleapis.com https://accounts.google.com https://appleid.apple.com https://storage.googleapis.com https://*.storage.googleapis.com https://app.trysoro.com`,
+    "frame-src 'self' https://open.spotify.com https://www.tiktok.com https://accounts.google.com https://appleid.apple.com",
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+  ].join("; ");
+}
 
 /**
  * Return a fixed, non-identifying summary of a client error payload.
@@ -98,8 +113,7 @@ export function createApiRequestLogger(
 }
 
 /**
- * Apply low-risk security headers immediately and send CSP in report-only mode
- * while the app's inline scripts and third-party resources are checked.
+ * Apply the app's enforced CSP and standard browser security headers.
  */
 export function createSecurityHeadersMiddleware(
   isProduction = process.env.NODE_ENV === "production",
@@ -111,7 +125,7 @@ export function createSecurityHeadersMiddleware(
       "Permissions-Policy",
       "camera=(self), microphone=(self), geolocation=(self), payment=()",
     );
-    res.setHeader("Content-Security-Policy-Report-Only", REPORT_ONLY_CSP);
+    res.setHeader("Content-Security-Policy", buildContentSecurityPolicy(isProduction));
 
     // Production is served over HTTPS. Keep these out of development previews,
     // which may be embedded by Replit and can use a different origin.

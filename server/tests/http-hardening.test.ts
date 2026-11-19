@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { NextFunction, Request, Response } from "express";
 import {
@@ -88,7 +90,7 @@ test("cleanup health stores an error category, not private exception text", () =
   assert.doesNotMatch(JSON.stringify([reportState, coldMessageState]), /alice@example\.com|private message body/);
 });
 
-test("security headers are set without breaking Replit development framing", () => {
+test("enforced CSP allows Replit preview framing and blocks inline scripts", () => {
   const headers = new Map<string, string>();
   const res = {
     setHeader: (name: string, value: string) => headers.set(name, value),
@@ -104,12 +106,17 @@ test("security headers are set without breaking Replit development framing", () 
   assert.equal(nextCalled, true);
   assert.equal(headers.get("X-Content-Type-Options"), "nosniff");
   assert.equal(headers.get("Referrer-Policy"), "strict-origin-when-cross-origin");
-  assert.match(headers.get("Content-Security-Policy-Report-Only") || "", /default-src 'self'/);
+  const csp = headers.get("Content-Security-Policy") || "";
+  assert.match(csp, /default-src 'self'/);
+  assert.match(csp, /frame-ancestors 'self'.*https:\/\/\*\.replit\.dev/);
+  assert.match(csp, /script-src-attr 'none'/);
+  assert.match(csp, /script-src[^;]*unsafe-inline/);
+  assert.equal(headers.has("Content-Security-Policy-Report-Only"), false);
   assert.equal(headers.has("X-Frame-Options"), false);
   assert.equal(headers.has("Strict-Transport-Security"), false);
 });
 
-test("production security headers include framing and HTTPS protections", () => {
+test("production CSP restricts framing and includes HTTPS protections", () => {
   const headers = new Map<string, string>();
   const res = {
     setHeader: (name: string, value: string) => headers.set(name, value),
@@ -121,6 +128,25 @@ test("production security headers include framing and HTTPS protections", () => 
     (() => {}) as NextFunction,
   );
 
+  const csp = headers.get("Content-Security-Policy") || "";
+  assert.match(csp, /frame-ancestors 'self'(;|$)/);
+  assert.doesNotMatch(csp, /frame-ancestors[^;]*replit/i);
+  assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/);
+  assert.match(csp, /https:\/\/www\.tiktok\.com/);
   assert.equal(headers.get("X-Frame-Options"), "SAMEORIGIN");
   assert.equal(headers.get("Strict-Transport-Security"), "max-age=31536000");
+});
+
+test("the inline script hash matches the static JSON-LD block", () => {
+  const html = readFileSync(new URL("../../client/index.html", import.meta.url), "utf8");
+  const jsonLd = html.match(/<script\s+type="application\/ld\+json">(.*?)<\/script>/s)?.[1];
+  assert.ok(jsonLd, "JSON-LD block should remain available to crawlers");
+  const hash = `'sha256-${createHash("sha256").update(jsonLd).digest("base64")}'`;
+  const headers = new Map<string, string>();
+  const res = {
+    setHeader: (name: string, value: string) => headers.set(name, value),
+  } as unknown as Response;
+  createSecurityHeadersMiddleware(true)({} as Request, res, (() => {}) as NextFunction);
+  assert.ok((headers.get("Content-Security-Policy") || "").includes(hash));
+  assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>/i);
 });

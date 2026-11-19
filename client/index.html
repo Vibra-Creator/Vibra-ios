@@ -10,14 +10,7 @@
     <meta name="description" content="Vibra Hub riunisce community, social, marketplace, mobilità, casa e lavoro. Il dating cosmico è facoltativo." />
     <meta name="google-site-verification" content="XeZZBRLjP062OxHDyTQFpuJlK1Sv_d30SlMCTVQsJ8w" />
     <link rel="canonical" href="https://vibraalienmatch.com/" />
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-H6CMPZGP2W"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-H6CMPZGP2W', { send_page_view: false });
-    </script>
+    <script defer src="/bootstrap.js"></script>
     <meta property="og:site_name" content="Vibra Hub" />
     <meta property="og:title" content="Vibra Hub - Community, servizi e connessioni" />
     <meta property="og:description" content="Esplora community, social, marketplace e servizi in un unico hub. Vibra Dating è facoltativo." />
@@ -82,13 +75,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://app.trysoro.com">
     <link rel="dns-prefetch" href="https://app.trysoro.com">
-    <link rel="preload" href="/vibra-logo.webp" as="image" type="image/webp">
+    <link rel="preload" href="/vibra-logo.png" as="image" type="image/png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.webp" type="image/webp">
   </head>
   <body style="margin:0;padding:0;background:#0a0118;min-height:100vh;min-height:100dvh;">
     <div id="html-splash" style="position:fixed;inset:0;z-index:99999;background:#0a0118;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease-out;">
       <div style="width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,0.35) 0%,rgba(168,85,247,0.12) 50%,transparent 70%);display:flex;align-items:center;justify-content:center;animation:html-splash-pulse 2s ease-in-out infinite;">
-        <img src="/vibra-logo.webp" alt="" style="width:120px;height:120px;object-fit:contain;border-radius:50%;filter:drop-shadow(0 0 25px rgba(139,92,246,0.7));" onerror="this.src='/vibra-logo.png'" />
+        <img src="/vibra-logo.png" alt="" style="width:120px;height:120px;object-fit:contain;border-radius:50%;filter:drop-shadow(0 0 25px rgba(139,92,246,0.7));" />
       </div>
       <div style="margin-top:16px;width:32px;height:32px;border:3px solid rgba(139,92,246,0.2);border-top-color:rgb(139,92,246);border-radius:50%;animation:html-splash-spin 0.8s linear infinite;"></div>
     </div>
@@ -97,14 +90,7 @@
       @keyframes html-splash-pulse { 0%,100% { transform:scale(1);opacity:0.8; } 50% { transform:scale(1.08);opacity:1; } }
     </style>
     <div id="root"></div>
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').then(function(reg) {
-          reg.update();
-        }).catch(function() {});
-      }
-    </script>
     <script type="module" src="/src/main.tsx"></script>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" />
   </body>
 </html>
