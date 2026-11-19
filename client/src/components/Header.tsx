@@ -7,7 +7,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useGuest } from "@/hooks/use-guest";
 import { useLanguage } from "@/i18n/LanguageContext";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import { VIBRA_LOGO_SRC as vibraLogo } from "@/lib/brand";
 import type { Profile } from "@shared/schema";
 
 const PHRASES = [

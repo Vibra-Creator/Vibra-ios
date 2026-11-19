@@ -14,7 +14,7 @@ import { useLocation, Link } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import { VIBRA_LOGO_SRC as vibraLogo } from "@/lib/brand";
 
 export default function Register() {
   useEffect(() => {

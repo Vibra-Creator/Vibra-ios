@@ -134,7 +134,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       })}
 
       <img
-        src="/vibra-logo.png"
+        src="/vibra-logo.webp"
         alt="Vibra"
         data-testid="splash-vibra-logo"
         style={{

@@ -23,6 +23,12 @@ For this publishing-size investigation, the user declined modifying or excluding
 
 **Why:** The user selected “No, non modificare gli allegati” when asked whether unused attachments could be excluded from publishing while preserving originals.
 
+The user approved optimized UI derivative copies while keeping every original image, GIF, video, and attachment untouched. This approval covers lighter assets used by the interface; it does not authorize removing originals or excluding attachments from the publishing input.
+
+**Why:** The user explicitly chose to optimize copies after reviewing the measured UI media costs.
+
+**How to apply:** Convert or recompress a separate runtime copy, point only the relevant UI view to it, and verify playback/rendering. Preserve source files and `.replitignore` scope unless the user separately approves a packaging change.
+
 Deleting files inside the build command does not shrink the image: the uploaded workspace snapshot is already a layer. Exclude heavy non-runtime paths via `.replitignore` instead (never `dist`, which the build regenerates and the app serves).
 
 **Why:** cache/.git removal in the build step succeeded yet every publish still exceeded 8 GiB.

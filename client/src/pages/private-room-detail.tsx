@@ -176,7 +176,9 @@ export default function PrivateRoomDetail() {
   return (
     <div className="flex flex-col h-full relative z-10">
       <div className="fixed inset-0 z-0">
-        <img src="/images/private-rooms-bg.gif" alt="" className="w-full h-full object-cover" />
+        <video autoPlay loop muted playsInline preload="metadata" poster="/images/private-rooms-bg-poster.webp" aria-hidden="true" className="w-full h-full object-cover">
+          <source src="/images/private-rooms-bg.mp4" type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/60" />
       </div>
 

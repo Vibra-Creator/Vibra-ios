@@ -1,4 +1,4 @@
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import { VIBRA_LOGO_SRC as vibraLogo } from "@/lib/brand";
 
 interface VortexLogoProps {
   size?: "sm" | "md" | "lg" | "xl";

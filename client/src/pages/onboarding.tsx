@@ -70,7 +70,7 @@ export default function Onboarding() {
     <div className="relative min-h-screen flex flex-col">
       <div className="fixed inset-0 z-0">
         <img
-          src="/images/onboarding-bg.gif"
+          src="/images/onboarding-bg.webp"
           alt=""
           className="w-full h-full object-cover"
         />

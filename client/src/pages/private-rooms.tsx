@@ -143,7 +143,9 @@ export default function PrivateRooms() {
   return (
     <div className="flex-1 p-4 pb-8 overflow-y-auto relative z-10">
       <div className="fixed inset-0 z-0">
-        <img src="/images/private-rooms-bg.gif" alt="" className="w-full h-full object-cover" />
+        <video autoPlay loop muted playsInline preload="metadata" poster="/images/private-rooms-bg-poster.webp" aria-hidden="true" className="w-full h-full object-cover">
+          <source src="/images/private-rooms-bg.mp4" type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
       </div>
 

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import { VIBRA_LOGO_SRC as vibraLogo } from "@/lib/brand";
 import type { BlogPost } from "@shared/schema";
 
 const CATEGORIES = [

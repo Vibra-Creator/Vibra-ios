@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import { VIBRA_LOGO_SRC as vibraLogo } from "@/lib/brand";
 
 interface Resource {
   label: string;

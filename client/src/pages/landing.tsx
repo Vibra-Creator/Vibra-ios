@@ -8,7 +8,7 @@ import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useDeferredVideo } from "@/hooks/use-deferred-video";
-import vibraLogo from "@assets/Gemini_Generated_Image_adkxs1adkxs1adkx_1770480122018.png";
+import { VIBRA_LOGO_SRC as vibraLogo } from "@/lib/brand";
 
 export default function Landing() {
   const { videoRef, shouldLoadVideo } = useDeferredVideo(1800);
