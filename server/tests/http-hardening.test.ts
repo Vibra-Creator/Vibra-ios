@@ -111,6 +111,7 @@ test("enforced CSP allows Replit preview framing and blocks inline scripts", () 
   assert.match(csp, /frame-ancestors 'self'.*https:\/\/\*\.replit\.dev/);
   assert.match(csp, /script-src-attr 'none'/);
   assert.match(csp, /script-src[^;]*unsafe-inline/);
+  assert.doesNotMatch(csp, /script-src[^;]*sha256-/);
   assert.equal(headers.has("Content-Security-Policy-Report-Only"), false);
   assert.equal(headers.has("X-Frame-Options"), false);
   assert.equal(headers.has("Strict-Transport-Security"), false);
@@ -132,6 +133,7 @@ test("production CSP restricts framing and includes HTTPS protections", () => {
   assert.match(csp, /frame-ancestors 'self'(;|$)/);
   assert.doesNotMatch(csp, /frame-ancestors[^;]*replit/i);
   assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/);
+  assert.match(csp, /script-src[^;]*sha256-/);
   assert.match(csp, /https:\/\/www\.tiktok\.com/);
   assert.equal(headers.get("X-Frame-Options"), "SAMEORIGIN");
   assert.equal(headers.get("Strict-Transport-Security"), "max-age=31536000");

@@ -42,7 +42,7 @@ function buildContentSecurityPolicy(isProduction: boolean): string {
     ? "wss://vibraalienmatch.com wss://www.vibraalienmatch.com"
     : "ws: wss:";
   // Vite React Refresh injects an inline module preamble in development only.
-  const developmentScriptSource = isProduction ? "" : " 'unsafe-inline'";
+  const inlineScriptSource = isProduction ? ` ${JSON_LD_SCRIPT_HASH}` : " 'unsafe-inline'";
 
   return [
     "default-src 'self'",
@@ -50,7 +50,7 @@ function buildContentSecurityPolicy(isProduction: boolean): string {
     "object-src 'none'",
     "form-action 'self' https://accounts.google.com https://appleid.apple.com",
     `frame-ancestors ${frameAncestors}`,
-    `script-src 'self' https://www.googletagmanager.com https://accounts.google.com https://appleid.cdn-apple.com ${JSON_LD_SCRIPT_HASH}${developmentScriptSource}`,
+    `script-src 'self' https://www.googletagmanager.com https://accounts.google.com https://appleid.cdn-apple.com${inlineScriptSource}`,
     "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
