@@ -79,11 +79,6 @@ function reportClientError(error: Error, errorInfo: React.ErrorInfo, scope: stri
       body: JSON.stringify({
         scope,
         name: error?.name,
-        message: error?.message,
-        stack: error?.stack,
-        componentStack: errorInfo?.componentStack,
-        path: window.location.pathname,
-        userAgent: navigator.userAgent,
       }),
     }).catch(() => {});
   } catch {}

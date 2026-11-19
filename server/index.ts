@@ -3,8 +3,15 @@ import compression from "compression";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
+import {
+  createApiRequestLogger,
+  createSecurityHeadersMiddleware,
+  summarizeClientError,
+} from "./http-hardening";
 
 const app = express();
+app.disable("x-powered-by");
+app.use(createSecurityHeadersMiddleware());
 
 const httpServer = createServer(app);
 
@@ -32,22 +39,7 @@ app.post("/api/client-errors", (req, res) => {
     return res.status(403).json({ message: "Forbidden" });
   }
 
-  const text = (value: unknown, maxLength: number) =>
-    typeof value === "string" ? value.slice(0, maxLength) : "";
-  const message = text(req.body?.message, 1000);
-  if (!message) {
-    return res.status(400).json({ message: "Missing error message" });
-  }
-
-  console.error("[client-error]", JSON.stringify({
-    scope: text(req.body?.scope, 120),
-    name: text(req.body?.name, 120),
-    message,
-    path: text(req.body?.path, 500),
-    userAgent: text(req.body?.userAgent, 500),
-    stack: text(req.body?.stack, 6000),
-    componentStack: text(req.body?.componentStack, 6000),
-  }));
+  console.error("[client-error]", JSON.stringify(summarizeClientError(req.body)));
   return res.status(204).end();
 });
 
@@ -72,31 +64,7 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
+app.use(createApiRequestLogger((message) => log(message)));
 
 // ── Avvio rapido ────────────────────────────────────────────────────────────
 // Il server inizia ad ascoltare subito, così il controllo di salute della
