@@ -1,7 +1,7 @@
 {
-  "name": "Vibra - Incontri Cosmici",
+  "name": "Vibra Hub - Community e servizi",
   "short_name": "Vibra",
-  "description": "L'app di incontri con tema alieno. Trova la tua connessione cosmica.",
+  "description": "Community, social, marketplace e servizi in un unico hub. Vibra Dating è facoltativo.",
   "version": "1.0.8",
   "version_code": 8,
   "start_url": "https://vibraalienmatch.com",
@@ -158,7 +158,7 @@
   ],
   "shortcuts": [
     {
-      "name": "Swipa Profili",
+      "name": "Esplora Vibra Hub",
       "url": "/",
       "icons": [
         {
@@ -192,7 +192,7 @@
     {
       "name": "Vibra",
       "short_name": "Vibra",
-      "description": "Trova la tua connessione cosmica",
+      "description": "Community e servizi a portata di tap.",
       "tag": "vibra-widget",
       "ms_ac_template": "widget/ac-template.json",
       "data": "widget/data.json",
