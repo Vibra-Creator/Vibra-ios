@@ -29,6 +29,12 @@ The user approved optimized UI derivative copies while keeping every original im
 
 **How to apply:** Convert or recompress a separate runtime copy, point only the relevant UI view to it, and verify playback/rendering. Preserve source files and `.replitignore` scope unless the user separately approves a packaging change.
 
+The user separately approved adding a tracked copy of the official QR image to the application asset tree, while preserving its original attachment and all other attachments.
+
+**Why:** The public QR download route needs to work from a GitHub checkout that does not contain globally ignored attachments.
+
+**How to apply:** Keep the route pointed at the versionable application copy; this exception applies only to the QR image and does not authorize copying or excluding the other attachments.
+
 Deleting files inside the build command does not shrink the image: the uploaded workspace snapshot is already a layer. Exclude heavy non-runtime paths via `.replitignore` instead (never `dist`, which the build regenerates and the app serves).
 
 **Why:** cache/.git removal in the build step succeeded yet every publish still exceeded 8 GiB.

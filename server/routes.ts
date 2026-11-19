@@ -1168,7 +1168,7 @@ ${urlEntries}
   app.use("/uploads", express.static(uploadsDir));
 
   app.get("/api/qrcode-vibra.png", (_req, res) => {
-    const qrPath = path.join(process.cwd(), "attached_assets", "vibra_qrcode_official.jpeg");
+    const qrPath = path.join(process.cwd(), "client", "public", "images", "vibra_qrcode_official.jpeg");
     res.setHeader("Content-Disposition", "attachment; filename=qrcode-vibra.jpg");
     res.setHeader("Content-Type", "image/jpeg");
     res.sendFile(qrPath);
