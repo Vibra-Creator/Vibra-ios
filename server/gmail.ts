@@ -1,5 +1,6 @@
 // Gmail integration via Replit connector (google-mail)
 import { google } from 'googleapis';
+import { safeErrorType } from "./http-hardening";
 
 let connectionSettings: any;
 
@@ -174,7 +175,7 @@ export async function sendWelcomeEmail(toEmail: string, userName: string): Promi
         requestBody: { raw },
       });
 
-      console.log(`[welcome-email] Sent to ${toEmail}`);
+      console.log("[welcome-email] Sent");
       return true;
     } catch (error: any) {
       if (attempt === 0 && (error.code === 401 || error.message?.includes('invalid_grant'))) {
@@ -182,7 +183,7 @@ export async function sendWelcomeEmail(toEmail: string, userName: string): Promi
         connectionSettings = null;
         continue;
       }
-      console.error(`[welcome-email] Failed to send to ${toEmail}:`, error.message);
+      console.error("[welcome-email] Delivery failed:", safeErrorType(error));
       return false;
     }
   }
@@ -233,7 +234,7 @@ export async function sendCustomEmail(toEmail: string, subject: string, htmlBody
         requestBody: { raw },
       });
 
-      console.log(`[custom-email] Sent to ${toEmail}`);
+      console.log("[custom-email] Sent");
       return true;
     } catch (error: any) {
       if (attempt === 0 && (error.code === 401 || error.message?.includes('invalid_grant'))) {
@@ -241,7 +242,7 @@ export async function sendCustomEmail(toEmail: string, subject: string, htmlBody
         connectionSettings = null;
         continue;
       }
-      console.error(`[custom-email] Failed to send to ${toEmail}:`, error.message);
+      console.error("[custom-email] Delivery failed:", safeErrorType(error));
       return false;
     }
   }
@@ -316,14 +317,14 @@ export async function sendVerificationEmail(toEmail: string, userName: string, t
     try {
       const gmail = await getUncachableGmailClient();
       await gmail.users.messages.send({ userId: 'me', requestBody: { raw: rawEncoded } });
-      console.log(`[verify-email] Sent to ${toEmail}`);
+      console.log("[verify-email] Sent");
       return true;
     } catch (error: any) {
       if (attempt === 0 && (error.code === 401 || error.message?.includes('invalid_grant'))) {
         connectionSettings = null;
         continue;
       }
-      console.error(`[verify-email] Failed:`, error.message);
+      console.error("[verify-email] Delivery failed:", safeErrorType(error));
       return false;
     }
   }

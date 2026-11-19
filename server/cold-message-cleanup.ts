@@ -1,3 +1,5 @@
+import { safeErrorType } from "./http-hardening";
+
 export const COLD_MESSAGE_CLEANUP_TTL_DAYS = 90;
 export const COLD_MESSAGE_CLEANUP_STALE_AFTER_MS = 26 * 60 * 60 * 1000;
 
@@ -67,7 +69,7 @@ export function markColdMessageCleanupFailed(
     ...state,
     status: "failure",
     consecutiveFailures: state.consecutiveFailures + 1,
-    lastError: error instanceof Error ? error.message : String(error),
+    lastError: safeErrorType(error),
   };
 }
 

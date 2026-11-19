@@ -1,4 +1,5 @@
 import type { Express, RequestHandler } from "express";
+import { safeErrorType } from "./http-hardening";
 
 export const ADMIN_BOT_IMAGE_FIX_PATH = "/api/admin/fix-bot-images";
 
@@ -59,7 +60,7 @@ export function createAdminBotImageFixHandler(
       const botsWebp = await store.countFixedBotImages();
       return res.json({ success: true, botsWebp });
     } catch (error) {
-      console.error("Fix bot images error:", error);
+      console.error("Bot image fix failed:", safeErrorType(error));
       return res.status(500).json({ error: "Failed to fix bot images" });
     }
   };

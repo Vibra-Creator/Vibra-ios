@@ -11,6 +11,7 @@ import {
 import { insertSwipeSchema, insertProfileSchema, updateProfileSchema, insertMessageSchema, swipes, matches, messages, profiles, sentGifts, challengeSubmissions, dailyChallenges, roomMembers, roomMessages, privateRooms, privateRoomMessages, privateRoomRequests, profileRatings, blockedUsers, reports, vibingSessions, locationShares, users, referrals, vibrappMessages, pushSubscriptions, hubPosts, insertHubPostSchema, events, insertEventSchema, blogPosts, insertBlogPostSchema, profileViews, coldMessages } from "@shared/schema";
 import { isValidLocationCoordinates } from "@shared/location-sharing";
 import { db } from "./db";
+import { safeErrorType } from "./http-hardening";
 import { eq, or, and, ne, sql, lt, gt, desc, asc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { createBlockedProfileReportData } from "./report-moderation";
@@ -168,7 +169,7 @@ export function createReportCleanupFailureNotifier(
         try {
           await dependencies.persistState(notifiedState);
         } catch (stateError) {
-          console.error("[report-cleanup] alert state persistence failed:", stateError);
+          console.error("[report-cleanup] Alert-state persistence failed:", safeErrorType(stateError));
         }
         console.warn(
           `[report-cleanup] failure alert sent=${result.sent} failed=${result.failed} ` +
@@ -179,7 +180,7 @@ export function createReportCleanupFailureNotifier(
 
       console.error("[report-cleanup] failure alert could not be sent to any admin");
     } catch (notificationError) {
-      console.error("[report-cleanup] failure alert error:", notificationError);
+      console.error("[report-cleanup] Failure alert failed:", safeErrorType(notificationError));
     }
 
     return state;
@@ -272,7 +273,7 @@ async function moderateVideoThumbnail(thumbnailBase64: string): Promise<{ approv
     }
     return { approved: true, reason: "" };
   } catch (err: any) {
-    console.error("[video-moderation] AI error, defaulting to approved:", err?.message);
+    console.error("[video-moderation] AI check failed; defaulting to approved:", safeErrorType(err));
     return { approved: true, reason: "" };
   }
 }
@@ -334,7 +335,7 @@ VIETATO:
 
     return response.choices[0]?.message?.content?.trim() || "mh nn so cosa dirti lol";
   } catch (error) {
-    console.error("Error generating bot reply:", error);
+    console.error("[bot-reply] Generation failed:", safeErrorType(error));
     const fallbackReplies = [
       "boh, nn sono sicuro/a di quello che dici",
       "mh dipende, non è così scontato",
@@ -621,7 +622,7 @@ export async function postColdMessageReplyHandler(
     notifyReply?.(dmMsg, msg.fromProfileId, myProfile.name);
     return res.json({ dm: dmMsg, privateRoomId: null });
   } catch (err) {
-    console.error("[cold-messages reply]", err);
+      console.error("[cold-messages reply] Request failed:", safeErrorType(err));
     return res.status(500).json({ error: "Errore" });
   }
 }
@@ -650,7 +651,7 @@ export function registerColdMessageListRoutes(app: Express): void {
       const messages = await storage.getSentColdMessages(myProfile.id);
       res.json(messages);
     } catch (err) {
-      console.error("[cold-messages sent]", err);
+      console.error("[cold-messages sent] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -664,7 +665,7 @@ export function registerColdMessageListRoutes(app: Express): void {
       const messages = await storage.getColdMessagesReceived(myProfile.id);
       res.json(messages);
     } catch (err) {
-      console.error("[cold-messages received]", err);
+      console.error("[cold-messages received] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -762,12 +763,12 @@ export function registerBlockedUserRoute(
             void notifyAdminsOfNewUserReport(report.id);
           }
         } catch (reportError) {
-          console.error("[ugc-moderation] User was blocked, but the moderation report could not be created:", reportError);
+          console.error("[ugc-moderation] Report creation failed after blocking:", safeErrorType(reportError));
         }
       }
       res.json(block);
     } catch (error) {
-      console.error("Error blocking user:", error);
+      console.error("[block-user] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to block user" });
     }
   });
@@ -833,7 +834,7 @@ export async function registerRoutes(
         lastError: coldMessageCleanupStatus.lastError,
       });
     } catch (stateError) {
-      console.error("[cold-message-cleanup] status persistence failed:", stateError);
+      console.error("[cold-message-cleanup] Status persistence failed:", safeErrorType(stateError));
     }
   }
 
@@ -982,7 +983,7 @@ ${urlEntries}
     getUser: (userId) => storage.getUser(userId),
     getActiveSuspension: (userId) => storage.getActiveSuspension(userId),
     adminEmails: ADMIN_EMAILS,
-    logError: (message, error) => console.error(message, error),
+    logError: (_message, error) => console.error("[validation] Request failed:", safeErrorType(error)),
   }));
   registerObjectStorageRoutes(app);
 
@@ -999,7 +1000,7 @@ ${urlEntries}
       req.body = filterUgcTextPayload(req.body, await getBannedWordsForFiltering());
       return next();
     } catch (error) {
-      console.error("[ugc-moderation] Could not load the banned-word list:", error);
+      console.error("[ugc-moderation] Could not load the banned-word list:", safeErrorType(error));
       return res.status(503).json({
         error: "Content moderation is temporarily unavailable. Please try again shortly.",
       });
@@ -1031,7 +1032,7 @@ ${urlEntries}
       const result = await db.delete(roomMembers).where(lt(roomMembers.joinedAt, cutoff));
       console.log(`[room-cleanup] Cleaned expired room members`);
     } catch (e) {
-      console.error("[room-cleanup] Error:", e);
+      console.error("[room-cleanup] Cleanup failed:", safeErrorType(e));
     }
   }
   cleanExpiredRoomMembers();
@@ -1060,7 +1061,7 @@ ${urlEntries}
       });
     }
   } catch (e) {
-    console.error("[migrate] migration error:", e);
+      console.error("[migrate] Migration failed:", safeErrorType(e));
     throw e;
   }
   void notifyAdminsOfNewUserReport();
@@ -1075,7 +1076,7 @@ ${urlEntries}
       const count = (result as any).rowCount ?? 0;
       if (count > 0) console.log(`[vibrapp-cleanup] Deleted ${count} messages older than 24h`);
     } catch (e) {
-      console.error("[vibrapp-cleanup] Error:", e);
+      console.error("[vibrapp-cleanup] Cleanup failed:", safeErrorType(e));
     }
   }
   cleanOldVibrappMessages();
@@ -1096,25 +1097,24 @@ ${urlEntries}
       try {
         await persistReportCleanupAlertState();
       } catch (stateError) {
-        console.error("[report-cleanup] alert state reset persistence failed:", stateError);
+        console.error("[report-cleanup] Alert-state reset failed:", safeErrorType(stateError));
       }
       console.log(
         `[report-cleanup] status=success deleted=${deleted} ttlDays=${REPORT_CLEANUP_TTL_DAYS} ` +
         `attemptedAt=${attemptAt} completedAt=${completedAt}`
       );
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
+      const errorType = safeErrorType(e);
       reportCleanupStatus = markReportCleanupFailed(reportCleanupStatus, e);
       try {
         await persistReportCleanupAlertState();
       } catch (stateError) {
-        console.error("[report-cleanup] alert state persistence failed:", stateError);
+        console.error("[report-cleanup] Alert-state persistence failed:", safeErrorType(stateError));
       }
       console.error(
         `[report-cleanup] status=failure ttlDays=${REPORT_CLEANUP_TTL_DAYS} ` +
         `attemptedAt=${attemptAt} consecutiveFailures=${reportCleanupStatus.consecutiveFailures} ` +
-        `error=${errorMessage}`,
-        e
+        `error=${errorType}`,
       );
       reportCleanupStatus = await notifyAdminsOfReportCleanupFailure(reportCleanupStatus);
     }
@@ -1146,12 +1146,10 @@ ${urlEntries}
     } catch (e) {
       coldMessageCleanupStatus = markColdMessageCleanupFailed(coldMessageCleanupStatus, e);
       await persistColdMessageCleanupStatus();
-      const errorMessage = e instanceof Error ? e.message : String(e);
       console.error(
         `[cold-message-cleanup] status=failure ttlDays=${COLD_MESSAGE_CLEANUP_TTL_DAYS} ` +
         `attemptedAt=${attemptAt} consecutiveFailures=${coldMessageCleanupStatus.consecutiveFailures} ` +
-        `error=${errorMessage}`,
-        e,
+        `error=${safeErrorType(e)}`,
       );
     }
   }
@@ -1189,18 +1187,17 @@ ${urlEntries}
         if (photos && photos.length > 0 && isDefaultAvatar) {
           await db.update(profiles).set({ imageUrl: photos[0], lastActiveAt: new Date() }).where(eq(profiles.id, profile.id));
           profile = { ...profile, imageUrl: photos[0] };
-          console.log(`[/api/profiles/me] Auto-fixed profile photo for "${profile.name}" -> ${photos[0]}`);
+          console.log("[profiles/me] Repaired a default profile photo");
         } else {
           db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, profile.id)).execute().catch(() => {});
         }
-        console.log(`[/api/profiles/me] userId=${userId} profileId=${profile.id} points=${profile.points}`);
         storage.logActivity(profile.id).catch(() => {});
       } else {
-        console.log(`[/api/profiles/me] userId=${userId} NO PROFILE FOUND`);
+        console.log("[profiles/me] No profile is associated with the authenticated user");
       }
       res.json(profile || null);
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("[profiles/me] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch profile" });
     }
   });
@@ -1229,7 +1226,7 @@ ${urlEntries}
       
       res.json(myProfileId ? profiles.filter(p => p.id !== myProfileId) : profiles);
     } catch (error) {
-      console.error("Error fetching profiles:", error);
+      console.error("[profiles] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch profiles" });
     }
   });
@@ -1306,8 +1303,6 @@ ${urlEntries}
         return true;
       });
 
-      console.log(`[SWIPABLE] user=${myProfile?.name} total=${allProfiles.length} afterSelf=${afterSelf} afterBlocked=${afterBlocked} afterGender=${afterGender} afterAge=${afterAge} afterDist=${afterDist} final=${swipable.length} | prefs: gender=${myProfile?.preferredGender} ageMin=${myProfile?.preferredAgeMin} ageMax=${myProfile?.preferredAgeMax} maxDist=${myProfile?.maxDistanceKm}`);
-
       const now = new Date();
       const favSet = new Set(favoriteIds);
       const isFav = (p: any) => favSet.has(p.id);
@@ -1361,7 +1356,7 @@ ${urlEntries}
 
       res.json({ profiles: profilesWithDistance, likedIds });
     } catch (error) {
-      console.error("Error fetching swipable profiles:", error);
+      console.error("[swipable-profiles] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch profiles" });
     }
   });
@@ -1409,7 +1404,7 @@ ${urlEntries}
         page,
       });
     } catch (error) {
-      console.error("[feed/videos] error:", error);
+      console.error("[feed/videos] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nel caricamento del feed" });
     }
   });
@@ -1422,7 +1417,7 @@ ${urlEntries}
       const favorites = await storage.getFavorites(myProfile.id);
       res.json(favorites);
     } catch (error) {
-      console.error("[favorites] list error:", error);
+      console.error("[favorites] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nel recupero preferiti" });
     }
   });
@@ -1481,7 +1476,7 @@ ${urlEntries}
       const count = await storage.resetAllSwipes(userProfile.id);
       res.json({ reset: count });
     } catch (error) {
-      console.error("Error resetting disliked swipes:", error);
+      console.error("[swipes/reset] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to reset swipes" });
     }
   });
@@ -1516,7 +1511,7 @@ ${urlEntries}
 
       res.json({ undoneProfileId: lastSwipe.swipedId, direction: lastSwipe.liked ? "right" : "left" });
     } catch (error) {
-      console.error("[undo-swipe]", error);
+      console.error("[undo-swipe] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore annullamento swipe" });
     }
   });
@@ -1529,7 +1524,7 @@ ${urlEntries}
       }
       res.json(profile);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("[profile] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch profile" });
     }
   });
@@ -1595,7 +1590,7 @@ ${urlEntries}
         totalInterests: Math.max(myInterests.length, otherInterests.length)
       });
     } catch (error) {
-      console.error("Error calculating compatibility:", error);
+      console.error("[compatibility] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to calculate compatibility" });
     }
   });
@@ -1609,7 +1604,7 @@ ${urlEntries}
       const profile = await storage.getProfileByUserId(req.params.userId);
       res.json(profile || null);
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("[user-profile] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch profile" });
     }
   });
@@ -1681,7 +1676,7 @@ ${urlEntries}
       }).returning();
       res.status(201).json(created);
     } catch (error) {
-      console.error("Error saving hub choice:", error);
+      console.error("[hub-choice] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Impossibile salvare la scelta" });
     }
   });
@@ -1736,7 +1731,7 @@ ${urlEntries}
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid profile data", details: error.errors });
       }
-      console.error("Error creating profile:", error);
+      console.error("[profile-create] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to create profile" });
     }
   });
@@ -1786,7 +1781,7 @@ ${urlEntries}
 
       res.json({ success: true });
     } catch (error) {
-      console.error("Error deleting own profile:", error);
+      console.error("[profile-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to delete profile" });
     }
   });
@@ -1825,7 +1820,6 @@ ${urlEntries}
         if (missing.length) return res.status(400).json(datingFieldsError(missing));
       }
 
-      console.log(`[PROFILE UPDATE] id=${req.params.id} saving: gender=${validatedData.preferredGender} ageMin=${validatedData.preferredAgeMin} ageMax=${validatedData.preferredAgeMax} heightMin=${validatedData.preferredHeightMin} heightMax=${validatedData.preferredHeightMax} maxDist=${validatedData.maxDistanceKm}`);
       let profile = await storage.updateProfile(req.params.id, validatedData);
       if (validatedData.datingEnabled === true && existing.datingChoicePending) {
         [profile] = await db.update(profiles).set({ datingChoicePending: false }).where(eq(profiles.id, existing.id)).returning();
@@ -1833,10 +1827,10 @@ ${urlEntries}
       res.json(profile);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("[PROFILE UPDATE] Validation failed:", error.errors);
+        console.warn("[PROFILE UPDATE] Validation failed");
         return res.status(400).json({ error: "Invalid profile data", details: error.errors });
       }
-      console.error("Error updating profile:", error);
+      console.error("[PROFILE UPDATE] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to update profile" });
     }
   });
@@ -1903,7 +1897,7 @@ ${urlEntries}
       });
 
       if (!putResponse.ok) {
-        console.error("Object storage PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+        console.error(`[profile-photo-upload] Storage returned status ${putResponse.status}`);
         return res.status(500).json({ error: "Errore nel salvataggio della foto. Riprova." });
       }
 
@@ -1922,7 +1916,7 @@ ${urlEntries}
 
       res.json({ url: objectPath, photos: updatedPhotos });
     } catch (error: any) {
-      console.error("Error uploading profile photo:", error?.message || error);
+      console.error("[profile-photo-upload] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
     }
   });
@@ -1975,7 +1969,7 @@ ${urlEntries}
         ]);
         videoBuffer = fs.readFileSync(tmpOut);
       } catch (ffErr: any) {
-        console.error("[ffmpeg trim] error:", ffErr?.message || ffErr);
+        console.error("[profile-video-trim] Failed:", safeErrorType(ffErr));
         // fallback: usa il file originale senza taglio
         videoBuffer = req.file.buffer;
       } finally {
@@ -1997,7 +1991,7 @@ ${urlEntries}
       });
 
       if (!putResponse.ok) {
-        console.error("Video storage PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+        console.error(`[profile-video-upload] Storage returned status ${putResponse.status}`);
         return res.status(500).json({ error: "Errore nel salvataggio del video. Riprova." });
       }
 
@@ -2009,7 +2003,7 @@ ${urlEntries}
       await storage.updateProfile(userProfile.id, { profileVideoUrl: objectPath });
       res.json({ profileVideoUrl: objectPath });
     } catch (error: any) {
-      console.error("Error uploading profile video:", error?.message || error);
+      console.error("[profile-video-upload] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nel caricamento del video. Riprova." });
     }
   });
@@ -2034,7 +2028,7 @@ ${urlEntries}
       await storage.updateProfile(userProfile.id, { profileVideoUrl: videoUrl });
       res.json({ success: true, profileVideoUrl: videoUrl });
     } catch (error: any) {
-      console.error("Error setting main video:", error?.message || error);
+      console.error("[profile-video-main] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nel salvataggio." });
     }
   });
@@ -2064,7 +2058,7 @@ ${urlEntries}
       await storage.updateProfile(userProfile.id, { profileVideoUrl: null });
       res.json({ success: true });
     } catch (error: any) {
-      console.error("Error deleting profile video:", error?.message || error);
+      console.error("[profile-video-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nell'eliminazione del video." });
     }
   });
@@ -2097,7 +2091,7 @@ ${urlEntries}
 
       res.json({ photos: updatedPhotos });
     } catch (error) {
-      console.error("Error removing profile photo:", error);
+      console.error("[profile-photo-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to remove photo" });
     }
   });
@@ -2130,7 +2124,7 @@ ${urlEntries}
       await storage.updateProfile(userProfile.id, { imageUrl: photoUrl });
       res.json({ imageUrl: photoUrl });
     } catch (error) {
-      console.error("Error setting profile photo:", error);
+      console.error("[profile-photo-main] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to set profile photo" });
     }
   });
@@ -2153,7 +2147,6 @@ ${urlEntries}
         return res.status(400).json({ error: "Questo profilo non partecipa agli Swipe Cosmici" });
       }
       
-      console.log(`[SWIPE] ${validatedData.swiperId} -> ${validatedData.swipedId}, liked: ${validatedData.liked}`);
       db.update(profiles).set({ lastActiveAt: new Date() }).where(eq(profiles.id, validatedData.swiperId)).execute().catch(() => {});
       
       const existingSwipe = await storage.getSwipe(validatedData.swiperId, validatedData.swipedId);
@@ -2209,7 +2202,7 @@ ${urlEntries}
                     VALUES (${validatedData.swiperId}, ${validatedData.swipedId}, ${todayStr})
                     ON CONFLICT (real_profile_id, match_date) DO NOTHING`
               );
-              console.log(`[SWIPE] BOT MATCH (random) ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+              console.log("[SWIPE] Match created");
 
               // ── Bot invia il primo messaggio dopo il match (30–90 secondi) ─
               const botMatchId = matchData.id;
@@ -2231,9 +2224,9 @@ ${urlEntries}
                     icon: "/icons/icon-192.png",
                     url: `/chat/${botMatchId}`,
                   });
-                  console.log(`[BOT] Opener inviato da ${botProfileForOpener.name} → match ${botMatchId}`);
+                  console.log("[BOT] Match opener sent");
                 } catch (err) {
-                  console.error("[BOT] Opener error:", err);
+                  console.error("[BOT] Match opener failed:", safeErrorType(err));
                 }
               }, openerDelayMs);
             } else {
@@ -2242,11 +2235,8 @@ ${urlEntries}
           }
         } else {
           const isMutualLike = await storage.checkMutualLike(validatedData.swiperId, validatedData.swipedId);
-          console.log(`[SWIPE] Mutual like check: ${isMutualLike}`);
-          
           if (isMutualLike) {
             const existingMatch = await storage.getMatch(validatedData.swiperId, validatedData.swipedId);
-            console.log(`[SWIPE] Existing match: ${!!existingMatch}`);
             
             if (!existingMatch) {
               matchData = await storage.createMatch({
@@ -2254,7 +2244,7 @@ ${urlEntries}
                 profile2Id: validatedData.swipedId,
               });
               match = true;
-              console.log(`[SWIPE] MATCH CREATED! ${validatedData.swiperId} <-> ${validatedData.swipedId}`);
+              console.log("[SWIPE] Match created");
             }
           }
         }
@@ -2263,10 +2253,10 @@ ${urlEntries}
       res.json({ swipe, match, matchData });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("[SWIPE] Validation error:", error.errors);
+        console.warn("[SWIPE] Validation failed");
         return res.status(400).json({ error: "Invalid swipe data", details: error.errors });
       }
-      console.error("[SWIPE] Error:", error);
+      console.error("[SWIPE] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to create swipe" });
     }
   });
@@ -2289,7 +2279,7 @@ ${urlEntries}
       });
       res.json(filteredMatches);
     } catch (error) {
-      console.error("Error fetching matches:", error);
+      console.error("[matches] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch matches" });
     }
   });
@@ -2305,7 +2295,7 @@ ${urlEntries}
       const filtered = likers.filter(p => !blockedSet.has(p.id));
       res.json(filtered);
     } catch (error) {
-      console.error("Error fetching received likes:", error);
+      console.error("[received-likes] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch received likes" });
     }
   });
@@ -2329,7 +2319,7 @@ ${urlEntries}
       await db.delete(matches).where(eq(matches.id, matchId));
       res.json({ success: true });
     } catch (error) {
-      console.error("Error deleting match:", error);
+      console.error("[match-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to delete match" });
     }
   });
@@ -2361,7 +2351,7 @@ ${urlEntries}
       
       res.json(messages);
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error("[messages] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
@@ -2373,7 +2363,7 @@ ${urlEntries}
       const orphanedReportsOlderThanTtl = await storage.countOrphanedReports(REPORT_CLEANUP_TTL_DAYS);
       res.json(buildReportCleanupStatusResponse(reportCleanupStatus, orphanedReportsOlderThanTtl));
     } catch (error) {
-      console.error("[report-cleanup] status-check-failure:", error);
+        console.error("[report-cleanup] Status check failed:", safeErrorType(error));
       res.status(503).json(buildReportCleanupStatusFailure(reportCleanupStatus));
     }
   });
@@ -2391,7 +2381,7 @@ ${urlEntries}
         ),
       );
     } catch (error) {
-      console.error("[cold-message-cleanup] status-check-failure:", error);
+      console.error("[cold-message-cleanup] Status check failed:", safeErrorType(error));
       res.status(503).json(
         buildColdMessageCleanupStatusFailure(
           coldMessageCleanupStatus,
@@ -2421,7 +2411,7 @@ ${urlEntries}
       const myReferrals = await db.select().from(referrals).where(eq(referrals.referrerProfileId, profile.id));
       res.json({ code: profile.referralCode, referrals: myReferrals.length });
     } catch (error) {
-      console.error("Error fetching referral code:", error);
+      console.error("[referral-code] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch referral code" });
     }
   });
@@ -2457,7 +2447,7 @@ ${urlEntries}
       await storage.addPoints(referrerProfile.id, 50);
       res.json({ success: true, referrerName: referrerProfile.name });
     } catch (error) {
-      console.error("Error applying referral:", error);
+      console.error("[referral-apply] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to apply referral code" });
     }
   });
@@ -2494,7 +2484,7 @@ ${urlEntries}
       }
       res.json(Array.from(referrerStats.values()));
     } catch (error) {
-      console.error("Error fetching admin referrals:", error);
+      console.error("[admin-referrals] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch referrals" });
     }
   });
@@ -2518,7 +2508,7 @@ ${urlEntries}
         });
       res.json(result);
     } catch (error) {
-      console.error("Error fetching all codes:", error);
+      console.error("[admin-codes] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch codes" });
     }
   });
@@ -2540,11 +2530,11 @@ ${urlEntries}
           name: profileMap.get(String(u.id))?.name || u.firstName || "Esploratore",
         }));
 
-      console.log(`[email] Trovati ${realUsers.length} iscritti reali per invio email`);
+      console.log(`[email] Recipient count: ${realUsers.length}`);
       const result = await sendBulkWelcomeEmails(realUsers);
       res.json({ ...result, total: realUsers.length });
     } catch (error: any) {
-      console.error("Error sending welcome emails:", error);
+      console.error("[email] Welcome send failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to send welcome emails", message: error.message });
     }
   });
@@ -2570,11 +2560,11 @@ ${urlEntries}
           name: profileMap.get(String(u.id))?.name || u.firstName || "Esploratore",
         }));
 
-      console.log(`[custom-email] Sending to ${realUsers.length} users, subject: "${subject}"`);
+      console.log(`[custom-email] Recipient count: ${realUsers.length}`);
       const result = await sendBulkCustomEmails(realUsers, subject, htmlBody);
       res.json({ ...result, total: realUsers.length });
     } catch (error: any) {
-      console.error("Error sending custom email:", error);
+      console.error("[custom-email] Send failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to send custom email", message: error.message });
     }
   });
@@ -2584,7 +2574,7 @@ ${urlEntries}
       const backups = await getBackupList();
       res.json(backups);
     } catch (error) {
-      console.error("Error listing backups:", error);
+      console.error("[backup-list] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to list backups" });
     }
   });
@@ -2594,7 +2584,7 @@ ${urlEntries}
       const result = await createBackup();
       res.json(result);
     } catch (error) {
-      console.error("Error creating backup:", error);
+      console.error("[backup-create] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to create backup" });
     }
   });
@@ -2641,7 +2631,7 @@ ${urlEntries}
         recentMatches: realMatches.slice(0, 10),
       });
     } catch (error) {
-      console.error("Error fetching admin stats:", error);
+      console.error("[admin-stats] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch stats" });
     }
   });
@@ -2652,7 +2642,7 @@ ${urlEntries}
       const sanitizedUsers = users.map(({ password, ...u }) => u);
       res.json(sanitizedUsers);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("[admin-users] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch users" });
     }
   });
@@ -2662,7 +2652,7 @@ ${urlEntries}
       const profiles = await storage.getAllProfiles();
       res.json(profiles);
     } catch (error) {
-      console.error("Error fetching profiles:", error);
+      console.error("[admin-profiles] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch profiles" });
     }
   });
@@ -2672,7 +2662,7 @@ ${urlEntries}
       await storage.deleteProfile(req.params.id);
       res.json({ success: true });
     } catch (error) {
-      console.error("Error deleting profile:", error);
+      console.error("[admin-profile-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to delete profile" });
     }
   });
@@ -2683,7 +2673,7 @@ ${urlEntries}
       const profile = await storage.setProfileVerified(req.params.id, isVerified);
       res.json(profile);
     } catch (error) {
-      console.error("Error updating profile verification:", error);
+      console.error("[admin-profile-verification] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to update profile verification" });
     }
   });
@@ -2703,7 +2693,7 @@ ${urlEntries}
         res.json(profile);
       }
     } catch (error) {
-      console.error("Error updating profile highlight:", error);
+      console.error("[admin-profile-highlight] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to update profile highlight" });
     }
   });
@@ -2721,7 +2711,7 @@ ${urlEntries}
       (req.session as any).userId = user.id;
       res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, isAdmin: user.isAdmin } });
     } catch (error) {
-      console.error("Login-as error:", error);
+      console.error("[admin-login-as] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to impersonate user" });
     }
   });
@@ -2755,44 +2745,39 @@ ${urlEntries}
         return res.status(400).json({ error: err.message || "Errore upload" });
       }
       const profileId = req.params.profileId;
-      console.log(`[admin-video] upload for profileId=${profileId}, file=${req.file?.originalname}, size=${req.file?.size}`);
+      console.log("[admin-video] Upload started");
       try {
         if (!req.file) return res.status(400).json({ error: "Nessun video ricevuto" });
 
         const profile = await storage.getProfile(profileId);
         if (!profile) return res.status(404).json({ error: "Profilo non trovato" });
-        console.log(`[admin-video] Profile: ${profile.name}`);
 
         const MAX_VIDEOS = 10;
         const existingVideos = await storage.getProfileVideos(profile.id);
         if (existingVideos.length >= MAX_VIDEOS) {
           const sorted = [...existingVideos].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           const oldest = sorted[0];
-          console.log(`[admin-video] FIFO: deleting oldest ${oldest.id}`);
+          console.log("[admin-video] Replacing oldest video");
           try { await objectStorageService.deleteObject(oldest.videoUrl); } catch {}
           await storage.deleteProfileVideo(oldest.id);
         }
 
         const uploadURL = await objectStorageService.getObjectEntityUploadURL();
         const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-        console.log(`[admin-video] Uploading to GCS: ${objectPath}`);
-
         const putResponse = await fetch(uploadURL, {
           method: "PUT",
           body: req.file.buffer,
           headers: { "Content-Type": req.file.mimetype },
         });
         if (!putResponse.ok) {
-          const putErr = await putResponse.text().catch(() => putResponse.statusText);
-          console.error(`[admin-video] GCS PUT failed: ${putResponse.status}`, putErr);
+          console.error(`[admin-video] Storage upload failed with status ${putResponse.status}`);
           return res.status(500).json({ error: "Errore nel salvataggio del video. Riprova." });
         }
-        console.log(`[admin-video] GCS PUT OK`);
 
         try {
         await objectStorageService.trySetObjectEntityAclPolicy(objectPath, { visibility: "public", owner: null as any });
         } catch (aclErr: any) {
-          console.log(`[admin-video] ACL set FAILED (non-fatal): ${aclErr?.message}`);
+          console.warn("[admin-video] Could not update object access policy:", safeErrorType(aclErr));
         }
 
         const { caption, location, gifOverlayUrl } = req.body;
@@ -2804,11 +2789,11 @@ ${urlEntries}
           caption: caption || null,
           gifOverlayUrl: gifOverlayUrl || null,
         });
-        console.log(`[admin-video] Saved OK: ${video.id}`);
+        console.log("[admin-video] Upload saved");
         res.json(video);
       } catch (err: any) {
-        console.error("[admin-video] error:", err?.message || err);
-        res.status(500).json({ error: "Errore nel caricamento video", details: err?.message });
+        console.error("[admin-video] Upload failed:", safeErrorType(err));
+        res.status(500).json({ error: "Errore nel caricamento video" });
       }
     });
   });
@@ -2831,7 +2816,7 @@ ${urlEntries}
       const submissions = await storage.getAllChallengeSubmissions();
       res.json(submissions);
     } catch (error) {
-      console.error("Error fetching submissions:", error);
+      console.error("[admin-submissions] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch submissions" });
     }
   });
@@ -2869,7 +2854,7 @@ ${urlEntries}
 
       res.json(submission);
     } catch (error) {
-      console.error("Error updating submission:", error);
+      console.error("[admin-submission-update] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to update submission" });
     }
   });
@@ -2883,7 +2868,7 @@ ${urlEntries}
       await db.delete(challengeSubmissions).where(eq(challengeSubmissions.id, req.params.id));
       res.json({ success: true });
     } catch (error) {
-      console.error("Error deleting submission:", error);
+      console.error("[admin-submission-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to delete submission" });
     }
   });
@@ -2902,7 +2887,7 @@ ${urlEntries}
       }).returning();
       res.status(201).json(challenge);
     } catch (error) {
-      console.error("Error creating challenge:", error);
+      console.error("[challenge-create] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to create challenge" });
     }
   });
@@ -2952,7 +2937,7 @@ ${urlEntries}
         deleted: { swipes: totalSwipes, matches: totalMatches, messages: totalMessages },
       });
     } catch (error) {
-      console.error("Error resetting test data:", error);
+      console.error("[admin-test-data-reset] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to reset test data" });
     }
   });
@@ -3308,14 +3293,14 @@ ${urlEntries}
               icon: "/icons/icon-192.png",
               url: `/chat/${matchId}`,
             });
-            console.log(`[BOT] Match reply: ${otherProfile.name} (delay=${Math.round((readDelayMs)/1000)}s read + ${Math.round(typingMs/1000)}s typing)`);
+            console.log("[BOT] Match reply sent");
           } catch (err) {
-            console.error("Bot auto-reply error:", err);
+            console.error("[BOT] Match reply failed:", safeErrorType(err));
           }
         })();
       }
     } catch (error) {
-      console.error("Error creating message:", error);
+      console.error("[messages] Create request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to send message" });
     }
   });
@@ -3334,7 +3319,7 @@ ${urlEntries}
       }));
       res.json(roomsWithCounts);
     } catch (error) {
-      console.error("Error fetching rooms:", error);
+      console.error("[rooms] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch rooms" });
     }
   });
@@ -3345,7 +3330,7 @@ ${urlEntries}
       if (!room) return res.status(404).json({ error: "Room not found" });
       res.json(room);
     } catch (error) {
-      console.error("Error fetching room:", error);
+      console.error("[room] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch room" });
     }
   });
@@ -3355,7 +3340,7 @@ ${urlEntries}
       const msgs = await storage.getRoomMessages(req.params.id as string);
       res.json(msgs);
     } catch (error) {
-      console.error("Error fetching room messages:", error);
+      console.error("[room-messages] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
@@ -3379,7 +3364,7 @@ ${urlEntries}
       });
       res.status(201).json(message);
     } catch (error) {
-      console.error("Error sending room message:", error);
+      console.error("[room-message-send] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to send message" });
     }
   });
@@ -3396,7 +3381,7 @@ ${urlEntries}
       await db.delete(roomMessages).where(eq(roomMessages.id, req.params.msgId));
       res.json({ ok: true });
     } catch (error) {
-      console.error("Error deleting room message:", error);
+      console.error("[room-message-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to delete message" });
     }
   });
@@ -3415,7 +3400,7 @@ ${urlEntries}
       storage.trackRoomOrbit(userProfile.id, req.params.id).catch(() => {});
       res.json({ success: true });
     } catch (error) {
-      console.error("Error joining room:", error);
+      console.error("[room-join] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to join room" });
     }
   });
@@ -3450,7 +3435,7 @@ ${urlEntries}
 
       res.json(leaderboard);
     } catch (error) {
-      console.error("Error fetching leaderboard:", error);
+      console.error("[leaderboard] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch leaderboard" });
     }
   });
@@ -3461,7 +3446,7 @@ ${urlEntries}
       const gallery = await storage.getApprovedChallengeGallery();
       res.json(gallery.filter((submission) => !blockedProfileIds.has(submission.profileId)));
     } catch (error) {
-      console.error("Error fetching approved challenge gallery:", error);
+      console.error("[challenge-gallery] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch challenge gallery" });
     }
   });
@@ -3472,7 +3457,7 @@ ${urlEntries}
       const challenges = await storage.getChallenges();
       res.json(challenges);
     } catch (error) {
-      console.error("Error fetching challenges:", error);
+      console.error("[challenges] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch challenges" });
     }
   });
@@ -3539,7 +3524,7 @@ REGOLE:
           aiReason = parsed.reason || "";
         }
       } catch (aiErr: any) {
-        console.error("AI verification failed, defaulting to approved:", aiErr?.message);
+        console.error("AI verification failed; defaulting to approved:", safeErrorType(aiErr));
       }
 
       if (!aiApproved) {
@@ -3559,7 +3544,7 @@ REGOLE:
       });
 
       if (!putResponse.ok) {
-        console.error("Challenge storage PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+      console.error(`[challenge-submission] Storage returned status ${putResponse.status}`);
         return res.status(500).json({ error: "Errore nel salvataggio della foto. Riprova." });
       }
 
@@ -3576,10 +3561,10 @@ REGOLE:
       // VibraDNA: traccia completamento sfida (fire-and-forget)
       storage.trackDnaEvent(userProfile.id, 'challenge_complete', 1).catch(() => {});
 
-      console.log(`Challenge submission created: challengeId=${req.params.id} profileId=${userProfile.id} imageUrl=${objectPath} submissionId=${submission.id}`);
+      console.log("[challenge-submission] Submission created");
       res.status(201).json({ ...submission, status: "pending", message: "Foto caricata! In attesa di approvazione dall'admin." });
     } catch (error: any) {
-      console.error("Error submitting challenge:", error?.message || error, error?.stack);
+      console.error("[challenge-submission] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
     }
   });
@@ -3600,7 +3585,7 @@ REGOLE:
       await storage.deleteChallengeSubmission(sub.id);
       res.json({ success: true });
     } catch (error) {
-      console.error("Error deleting user submission:", error);
+      console.error("[challenge-submission-delete] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nell'eliminazione" });
     }
   });
@@ -3616,7 +3601,7 @@ REGOLE:
       const submissions = await storage.getChallengeSubmissions(userProfile.id);
       res.json(submissions);
     } catch (error) {
-      console.error("Error fetching submissions:", error);
+      console.error("[challenge-submissions] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch submissions" });
     }
   });
@@ -3652,7 +3637,7 @@ REGOLE:
       const rooms = await storage.getPrivateRooms();
       res.json(rooms);
     } catch (error) {
-      console.error("Error fetching private rooms:", error);
+      console.error("[private-rooms] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch private rooms" });
     }
   });
@@ -3723,7 +3708,7 @@ REGOLE:
         recentRequesters,
       });
     } catch (error) {
-      console.error("Error fetching categorized rooms:", error);
+      console.error("[categorized-rooms] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch categorized rooms" });
     }
   });
@@ -3787,7 +3772,7 @@ REGOLE:
       await storage.updateProfile(userProfile.id, { points: currentPoints - requiredPoints });
       res.json(room);
     } catch (error) {
-      console.error("Error creating private room:", error);
+      console.error("[private-room-create] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to create room" });
     }
   });
@@ -3804,7 +3789,7 @@ REGOLE:
       const request = await storage.requestPrivateRoomAccess(req.params.id, userProfile.id);
       res.json(request);
     } catch (error) {
-      console.error("Error requesting access:", error);
+      console.error("[private-room-access] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to request access" });
     }
   });
@@ -3923,15 +3908,15 @@ REGOLE:
                 content: botReplyText,
               });
             } catch (botErr) {
-              console.error("[BOT] Private room auto-reply error:", botErr);
+              console.error("[BOT] Private-room reply failed:", safeErrorType(botErr));
             }
           }, delayMs);
         }
       } catch (botCheckErr) {
-        console.error("[BOT] Private room member check error:", botCheckErr);
+        console.error("[BOT] Private-room member check failed:", safeErrorType(botCheckErr));
       }
     } catch (error) {
-      console.error("Error sending private room message:", error);
+      console.error("[private-room-message] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to send message" });
     }
   });
@@ -3942,7 +3927,7 @@ REGOLE:
       const gifts = await storage.getVirtualGifts();
       res.json(gifts);
     } catch (error) {
-      console.error("Error fetching gifts:", error);
+      console.error("[gifts] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch gifts" });
     }
   });
@@ -3956,7 +3941,7 @@ REGOLE:
       const gifts = await storage.getReceivedGifts(userProfile.id);
       res.json(gifts);
     } catch (error) {
-      console.error("Error fetching received gifts:", error);
+      console.error("[received-gifts] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch received gifts" });
     }
   });
@@ -3970,7 +3955,7 @@ REGOLE:
       const gifts = await storage.getSentGifts(userProfile.id);
       res.json(gifts);
     } catch (error) {
-      console.error("Error fetching sent gifts:", error);
+      console.error("[sent-gifts] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch sent gifts" });
     }
   });
@@ -4009,7 +3994,7 @@ REGOLE:
 
       res.status(201).json(sentGift);
     } catch (error) {
-      console.error("Error sending gift:", error);
+      console.error("[gift-send] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to send gift" });
     }
   });
@@ -4028,7 +4013,7 @@ REGOLE:
       await storage.markGiftSeen(req.params.id);
       res.json({ success: true });
     } catch (error) {
-      console.error("Error marking gift seen:", error);
+      console.error("[gift-seen] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to mark gift seen" });
     }
   });
@@ -4041,7 +4026,7 @@ REGOLE:
       if (!userProfile) return res.json({ points: 0 });
       res.json({ points: userProfile.points ?? 0 });
     } catch (error) {
-      console.error("Error fetching points:", error);
+      console.error("[points] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch points" });
     }
   });
@@ -4080,7 +4065,7 @@ REGOLE:
       });
       res.json(created);
     } catch (error) {
-      console.error("Error creating rating:", error);
+      console.error("[rating-create] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to create rating" });
     }
   });
@@ -4094,7 +4079,7 @@ REGOLE:
       const ratings = await storage.getReceivedRatings(profile.id);
       res.json(ratings);
     } catch (error) {
-      console.error("Error fetching ratings:", error);
+      console.error("[ratings] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch ratings" });
     }
   });
@@ -4161,7 +4146,7 @@ REGOLE:
 
       res.json({ rating: updated, match: matchData });
     } catch (error) {
-      console.error("Error replying to rating:", error);
+      console.error("[rating-reply] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to reply to rating" });
     }
   });
@@ -4424,7 +4409,7 @@ REGOLE:
       res.setHeader("Content-Disposition", "attachment; filename=vibra-data-export.json");
       res.json(exportData);
     } catch (error) {
-      console.error("Error exporting GDPR data:", error);
+      console.error("[gdpr-export] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to export data" });
     }
   });
@@ -4438,11 +4423,11 @@ REGOLE:
           await db.delete(privateRoomMessages).where(eq(privateRoomMessages.roomId, room.id));
           await db.delete(privateRoomRequests).where(eq(privateRoomRequests.roomId, room.id));
           await db.delete(privateRooms).where(eq(privateRooms.id, room.id));
-          console.log(`Expired private room "${room.name}" (${room.id}) deleted.`);
+          console.log("[private-room-cleanup] Expired room deleted");
         }
       }
     } catch (error) {
-      console.error("Error cleaning up expired private rooms:", error);
+      console.error("[private-room-cleanup] Failed:", safeErrorType(error));
     }
     try {
       const now = new Date();
@@ -4453,16 +4438,16 @@ REGOLE:
           for (const sub of subs) {
             if (sub.imageUrl) {
               await objectStorageService.deleteObject(sub.imageUrl);
-              console.log(`Deleted challenge photo from storage: ${sub.imageUrl}`);
+              console.log("[challenge-cleanup] Expired submission image deleted");
             }
           }
           await db.delete(challengeSubmissions).where(eq(challengeSubmissions.challengeId, challenge.id));
           await db.delete(dailyChallenges).where(eq(dailyChallenges.id, challenge.id));
-          console.log(`Expired challenge "${challenge.title}" (${challenge.id}) and its submissions deleted.`);
+          console.log("[challenge-cleanup] Expired challenge and submissions deleted");
         }
       }
     } catch (error) {
-      console.error("Error cleaning up expired challenges:", error);
+      console.error("[challenge-cleanup] Failed:", safeErrorType(error));
     }
   }, 5 * 60 * 1000);
 
@@ -4498,7 +4483,7 @@ REGOLE:
         newCompat: newCompat + (realLikes > 0 ? 1 : 0),
       });
     } catch (error) {
-      console.error("Error fetching vibration data:", error);
+      console.error("[vibration-data] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch vibration data" });
     }
   });
@@ -4590,7 +4575,7 @@ REGOLE:
 
       res.json({ onlineCount, events });
     } catch (error) {
-      console.error("Error fetching activity feed:", error);
+      console.error("[activity-feed] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch activity feed" });
     }
   });
@@ -4658,7 +4643,7 @@ REGOLE:
         liveEvents,
       });
     } catch (error) {
-      console.error("Error fetching radar data:", error);
+      console.error("[radar] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to fetch radar data" });
     }
   });
@@ -4689,7 +4674,7 @@ REGOLE:
         }
       }
     } catch (err) {
-      console.error("[push] sendPushToProfile error:", err);
+      console.error("[push] Delivery failed:", safeErrorType(err));
     }
   }
 
@@ -4717,7 +4702,7 @@ REGOLE:
 
       res.json({ success: true });
     } catch (err) {
-      console.error("[push] subscribe error:", err);
+      console.error("[push] Subscription failed:", safeErrorType(err));
       res.status(500).json({ error: "Failed to subscribe" });
     }
   });
@@ -4766,7 +4751,7 @@ REGOLE:
         if (suspension) return next(new Error("Account suspended"));
         return next();
       } catch (error) {
-        console.error("[ugc-moderation] Could not verify socket account status:", error);
+        console.error("[ugc-moderation] Could not verify socket account status:", safeErrorType(error));
         return next(new Error("Unable to verify account status"));
       }
     });
@@ -4926,11 +4911,11 @@ REGOLE:
               }
             }
           } catch (pushErr) {
-            console.error("[vibrapp] offline push error:", pushErr);
+            console.error("[vibrapp] Offline push failed:", safeErrorType(pushErr));
           }
         }
       } catch (err) {
-        console.error("[vibrapp] message error:", err);
+        console.error("[vibrapp] Message event failed:", safeErrorType(err));
       }
     });
 
@@ -4958,7 +4943,7 @@ REGOLE:
           io.emit("vibrapp:message-read", { messageId: data.messageId, profileId });
         }
       } catch (err) {
-        console.error("[vibrapp] read error:", err);
+        console.error("[vibrapp] Read event failed:", safeErrorType(err));
       }
     });
 
@@ -4984,7 +4969,7 @@ REGOLE:
           io.emit("vibrapp:reaction-update", { messageId: data.messageId, reactions });
         }
       } catch (err) {
-        console.error("[vibrapp] react error:", err);
+        console.error("[vibrapp] Reaction event failed:", safeErrorType(err));
       }
     });
 
@@ -4997,7 +4982,7 @@ REGOLE:
         await db.delete(vibrappMessages).where(eq(vibrappMessages.id, data.messageId));
         io.emit("vibrapp:message-deleted", { messageId: data.messageId });
       } catch (err) {
-        console.error("[vibrapp] delete error:", err);
+        console.error("[vibrapp] Delete event failed:", safeErrorType(err));
       }
     });
 
@@ -5073,15 +5058,15 @@ REGOLE:
               io.to(`user:${profileId}`).emit("vibrapp:dm-message", replyMsg);
               // Ferma il typing indicator
               io.to(`user:${profileId}`).emit("vibrapp:dm-bot-typing-stop", { fromProfileId: dmTarget.id });
-              console.log(`[BOT] DM reply: ${dmTarget.name} → ${userProfile.name} (read=${Math.round(readDelayMs/1000)}s typing=${Math.round(typingMs/1000)}s)`);
+              console.log("[BOT] Direct-message reply sent");
             } catch (botErr) {
-              console.error("[vibrapp] bot dm reply error:", botErr);
+              console.error("[vibrapp] Bot direct-message reply failed:", safeErrorType(botErr));
               io.to(`user:${profileId}`).emit("vibrapp:dm-bot-typing-stop", { fromProfileId: data.toProfileId });
             }
           })();
         }
       } catch (err) {
-        console.error("[vibrapp] dm-send error:", err);
+        console.error("[vibrapp] Direct-message event failed:", safeErrorType(err));
       }
     });
 
@@ -5152,7 +5137,7 @@ REGOLE:
         (!message.replyToSenderId || !blockedProfileIds.has(message.replyToSenderId))
       ).reverse());
     } catch (err) {
-      console.error("[vibrapp] fetch messages error:", err);
+      console.error("[vibrapp] Message fetch failed:", safeErrorType(err));
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
@@ -5178,7 +5163,7 @@ REGOLE:
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
       res.json({ uploadURL, objectPath, mediaType: isVideo ? "video" : isAudio ? "audio" : "image" });
     } catch (err) {
-      console.error("[vibrapp] request-upload error:", err);
+      console.error("[vibrapp] Upload request failed:", safeErrorType(err));
       res.status(500).json({ error: "Upload non disponibile" });
     }
   });
@@ -5238,7 +5223,7 @@ REGOLE:
                         url: `/vibrapp?coldMessageId=${coldMsgId}`,
                         type: "vibrapp",
                       });
-                      console.log(`[BOT] Cold message auto-reply: ${targetProfile.name} → ${myProfile.name} (read=${Math.round(readDelayMs/1000)}s typing=${Math.round(typingMs/1000)}s)`);
+                      console.log("[BOT] Cold-message auto-reply sent");
 
                       // 2. Bot mette like all'utente (se non lo ha già fatto)
                       const existingBotLike = await storage.getSwipe(targetProfile.id, myProfile.id);
@@ -5262,7 +5247,7 @@ REGOLE:
                           icon: "/icons/icon-192.png",
                           url: `/chat/${newMatch.id}`,
                         });
-                        console.log(`[BOT] Match creato dopo cold message: ${targetProfile.name} <-> ${myProfile.name}`);
+                        console.log("[BOT] Match created after cold message");
                       } else if (!userAlreadyLiked?.liked) {
                         sendPushToProfile(myProfile.id, {
                           title: `❤️ ${targetProfile.name} ti ha messo like!`,
@@ -5272,11 +5257,11 @@ REGOLE:
                         });
                       }
                     } catch (innerErr) {
-                      console.error("[BOT] Cold message save-reply error:", innerErr);
+                      console.error("[BOT] Cold-message reply failed:", safeErrorType(innerErr));
                     }
                 }
               } catch (botErr) {
-                console.error("[BOT] Cold message auto-reply error:", botErr);
+                console.error("[BOT] Cold-message automation failed:", safeErrorType(botErr));
               }
             })();
           }
@@ -5284,7 +5269,7 @@ REGOLE:
       }
       res.json(result);
     } catch (err) {
-      console.error("[cold-messages POST]", err);
+      console.error("[cold-messages POST] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5344,7 +5329,7 @@ REGOLE:
       await storage.deleteColdMessage(req.params.id, myProfile.id);
       res.json({ ok: true });
     } catch (err) {
-      console.error("[cold-messages delete]", err);
+      console.error("[cold-messages delete] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5359,7 +5344,7 @@ REGOLE:
       await storage.deleteSentColdMessage(myProfile.id, req.params.toProfileId);
       res.json({ ok: true });
     } catch (err) {
-      console.error("[cold-messages delete sent]", err);
+      console.error("[cold-messages delete sent] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5375,7 +5360,7 @@ REGOLE:
       await storage.markVibrappDmRead(myProfile.id, req.params.otherProfileId);
       res.json(thread);
     } catch (err) {
-      console.error("[vibrapp-dm thread]", err);
+      console.error("[vibrapp-dm thread] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5415,7 +5400,7 @@ REGOLE:
       const convos = await storage.getVibrappDmConversations(myProfile.id);
       res.json(convos);
     } catch (err) {
-      console.error("[vibrapp-dm conversations]", err);
+      console.error("[vibrapp-dm conversations] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5466,7 +5451,7 @@ REGOLE:
 
       res.json(dmMsg);
     } catch (err) {
-      console.error("[vibrapp-dm send]", err);
+      console.error("[vibrapp-dm send] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore invio messaggio" });
     }
   });
@@ -5481,7 +5466,7 @@ REGOLE:
       const reactions = await storage.getReceivedReactions(myProfile.id);
       res.json(reactions);
     } catch (err) {
-      console.error("[reactions/received]", err);
+      console.error("[reactions/received] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5498,7 +5483,7 @@ REGOLE:
       const data = await storage.getReactionCounts(profileId, viewerProfileId);
       res.json(data);
     } catch (err) {
-      console.error("[reactions GET]", err);
+      console.error("[reactions GET] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5516,7 +5501,7 @@ REGOLE:
       const result = await storage.upsertProfileReaction(myProfile.id, toProfileId, reaction as any);
       res.json({ status: result });
     } catch (err) {
-      console.error("[reactions POST]", err);
+      console.error("[reactions POST] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore" });
     }
   });
@@ -5549,11 +5534,11 @@ REGOLE:
         req.on("close", () => upstreamReq.destroy());
       });
       upstreamReq.on("error", (err) => {
-        console.error("[video-proxy] upstream error:", err.message);
+        console.error("[video-proxy] Upstream request failed:", safeErrorType(err));
         if (!res.headersSent) res.status(502).end();
       });
     } catch (err) {
-      console.error("[video-proxy] error:", err);
+      console.error("[video-proxy] Request failed:", safeErrorType(err));
       if (!res.headersSent) res.status(502).end();
     }
   });
@@ -5612,7 +5597,7 @@ REGOLE:
         file.createReadStream().pipe(res);
       }
     } catch (err) {
-      console.error("[video-stream-object]", err);
+      console.error("[video-stream-object] Request failed:", safeErrorType(err));
       if (!res.headersSent) res.status(500).end();
     }
   });
@@ -5662,7 +5647,7 @@ REGOLE:
         file.createReadStream().pipe(res);
       }
     } catch (err) {
-      console.error("[video-stream]", err);
+      console.error("[video-stream] Request failed:", safeErrorType(err));
       if (!res.headersSent) res.status(500).end();
     }
   });
@@ -5676,7 +5661,7 @@ REGOLE:
       ]);
       res.json(stories.filter((story) => !blockedProfileIds.has(story.profileId)));
     } catch (err) {
-      console.error("[stories] feed error:", err);
+      console.error("[stories] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel recupero storie" });
     }
   });
@@ -5698,7 +5683,7 @@ REGOLE:
       const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
       res.json({ uploadURL, objectPath });
     } catch (err) {
-      console.error("[profile-videos] request-upload error:", err);
+      console.error("[profile-videos] Upload request failed:", safeErrorType(err));
       res.status(500).json({ error: "Upload non disponibile" });
     }
   });
@@ -5749,7 +5734,7 @@ REGOLE:
 
       res.json(video);
     } catch (err: any) {
-      console.error("[profile-videos] save error:", err?.message || err);
+      console.error("[profile-videos] Save failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel salvataggio del video" });
     }
   });
@@ -5769,7 +5754,7 @@ REGOLE:
       await storage.deleteProfileVideo(req.params.videoId);
       res.json({ success: true });
     } catch (err) {
-      console.error("[profile-videos] delete error:", err);
+      console.error("[profile-videos] Delete failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nell'eliminazione" });
     }
   });
@@ -5783,7 +5768,7 @@ REGOLE:
       const videos = await storage.getProfileVideos(req.params.profileId);
       res.json(videos);
     } catch (err) {
-      console.error("[profile-videos] get error:", err);
+      console.error("[profile-videos] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel recupero video" });
     }
   });
@@ -5807,7 +5792,7 @@ REGOLE:
         );
       }
     } catch (err) {
-      console.error("[profile-videos] cleanup error:", err);
+      console.error("[profile-videos] Cleanup failed:", safeErrorType(err));
     }
   }
   setInterval(cleanInactiveProfileVideos, 60 * 60 * 1000);
@@ -5828,7 +5813,7 @@ REGOLE:
       );
       res.json({ ok: true });
     } catch (err) {
-      console.error("[vibrapp/mark-all-read]", err);
+      console.error("[vibrapp/mark-all-read] Request failed:", safeErrorType(err));
       res.json({ ok: true });
     }
   });
@@ -5849,7 +5834,7 @@ REGOLE:
         );
       res.json({ count: Number(row?.count ?? 0) });
     } catch (err) {
-      console.error("[vibrapp/unread-count]", err);
+      console.error("[vibrapp/unread-count] Request failed:", safeErrorType(err));
       res.json({ count: 0 });
     }
   });
@@ -5882,7 +5867,7 @@ REGOLE:
       const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
       res.json(feed.filter((signal) => !blockedProfileIds.has(signal.profileId)));
     } catch (err) {
-      console.error("[signals] feed error:", err);
+      console.error("[signals] Feed request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel recupero segnali" });
     }
   });
@@ -5912,7 +5897,7 @@ REGOLE:
       if (_sigUserId) { const _sigP = await storage.getProfileByUserId(_sigUserId).catch(() => null); if (_sigP) storage.trackQuestProgress(_sigP.id, 'signal_post').catch(() => {}); }
       res.json(signal);
     } catch (err) {
-      console.error("[signals] create error:", err);
+      console.error("[signals] Create request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nella creazione segnale" });
     }
   });
@@ -5925,7 +5910,7 @@ REGOLE:
       const signals = await storage.getReceivedDirectSignals(myProfile.id);
       res.json(signals);
     } catch (err) {
-      console.error("[signals] received error:", err);
+      console.error("[signals] Received-list request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel recupero signal ricevuti" });
     }
   });
@@ -5938,7 +5923,7 @@ REGOLE:
       await storage.deleteSignal(req.params.id, myProfile.id);
       res.json({ ok: true });
     } catch (err) {
-      console.error("[signals] delete error:", err);
+      console.error("[signals] Delete request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nella cancellazione" });
     }
   });
@@ -5951,7 +5936,7 @@ REGOLE:
       const result = await storage.toggleSignalLike(req.params.id, myProfile.id);
       res.json(result);
     } catch (err) {
-      console.error("[signals] like error:", err);
+      console.error("[signals] Like request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel like" });
     }
   });
@@ -5962,7 +5947,7 @@ REGOLE:
       const blockedProfileIds = await getBlockedProfileIdsForRequest(req);
       res.json(comments.filter((comment) => !blockedProfileIds.has(comment.profileId)));
     } catch (err) {
-      console.error("[signals] comments get error:", err);
+      console.error("[signals] Comment-list request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel recupero commenti" });
     }
   });
@@ -5981,7 +5966,7 @@ REGOLE:
       });
       res.json(comment);
     } catch (err) {
-      console.error("[signals] comment post error:", err);
+      console.error("[signals] Comment post failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel commento" });
     }
   });
@@ -5997,7 +5982,7 @@ REGOLE:
       const signals = await storage.getProfileSignals(req.params.profileId, 5);
       res.json(signals);
     } catch (err) {
-      console.error("[signals] profile signals error:", err);
+      console.error("[signals] Profile request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore nel recupero segnali" });
     }
   });
@@ -6022,7 +6007,7 @@ REGOLE:
       if (isAudio) mediaType = "audio";
       res.json({ uploadURL, objectPath, mediaType });
     } catch (err) {
-      console.error("[signals] request-upload error:", err);
+      console.error("[signals] Upload request failed:", safeErrorType(err));
       res.status(500).json({ error: "Upload non disponibile" });
     }
   });
@@ -6145,7 +6130,7 @@ REGOLE:
       res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
       res.send(svg);
     } catch (err) {
-      console.error("Badge error:", err);
+      console.error("[badge] Request failed:", safeErrorType(err));
       res.status(500).send("Error generating badge");
     }
   });
@@ -6232,7 +6217,7 @@ REGOLE:
       res.setHeader("Cache-Control", "public, max-age=60");
       res.json(pub);
     } catch (err) {
-      console.error("Public profile error:", err);
+      console.error("[public-profile] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Failed to fetch profile" });
     }
   });
@@ -6247,7 +6232,7 @@ REGOLE:
       const vector = await storage.getDna(profile.id);
       res.json({ profileId: profile.id, vector });
     } catch (err) {
-      console.error("[DNA] my-dna error:", err);
+      console.error("[DNA] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Failed to get DNA" });
     }
   });
@@ -6261,7 +6246,7 @@ REGOLE:
       const compat = await storage.getDnaCompatibility(myProfile.id, req.params.profileId);
       res.json(compat);
     } catch (err) {
-      console.error("[DNA] compatibility error:", err);
+      console.error("[DNA] Compatibility request failed:", safeErrorType(err));
       res.status(500).json({ error: "Failed to compute compatibility" });
     }
   });
@@ -6813,7 +6798,7 @@ REGOLE:
         });
 
         if (!putResponse.ok) {
-          console.error("Marketplace image PUT failed:", putResponse.status, await putResponse.text().catch(() => ""));
+          console.error(`[marketplace-image-upload] Storage returned status ${putResponse.status}`);
           return res.status(500).json({ error: "Errore nel salvataggio di una foto. Riprova." });
         }
 
@@ -6826,7 +6811,7 @@ REGOLE:
 
       res.json({ urls });
     } catch (error: any) {
-      console.error("Error uploading marketplace image:", error?.message || error);
+      console.error("[marketplace-image-upload] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore nel caricamento della foto. Riprova." });
     }
   });
@@ -6870,7 +6855,7 @@ REGOLE:
             if (error instanceof ObjectNotFoundError) {
               return res.status(400).json({ error: unavailablePhotosError });
             }
-            console.error("Error verifying Marketplace photo before publication:", error);
+            console.error("[marketplace-photo-verification] Failed:", safeErrorType(error));
             return res.status(503).json({ error: "Non è stato possibile verificare le foto. Riprova tra poco." });
           }
         }
@@ -6895,7 +6880,7 @@ REGOLE:
           await Promise.all(imageUrls.map((imageUrl) =>
             objectStorageService.setMarketplaceImageVisibility(imageUrl, userId, "private").catch(() => {}),
           ));
-          console.error("Error publishing Marketplace photos:", error);
+          console.error("[marketplace-photo-publication] Failed:", safeErrorType(error));
           return res.status(503).json({ error: "Non è stato possibile pubblicare le foto. Riprova tra poco." });
         }
       }
@@ -6936,7 +6921,7 @@ REGOLE:
       if (!updated) return res.status(409).json({ error: "L'annuncio è cambiato. Ricarica la pagina e riprova." });
       res.json(updated);
     } catch (error) {
-      console.error("Error updating Marketplace details:", error);
+      console.error("[marketplace-update] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore aggiornamento annuncio" });
     }
   });
@@ -7013,13 +6998,13 @@ REGOLE:
               imageUrls[0] ? eq(hubPosts.imageUrl, imageUrls[0]) : sql`${hubPosts.imageUrl} IS NULL`,
             ));
           await objectStorageService.setMarketplaceImageVisibility(imageUrls[imageIndex], userId, "private").catch(() => {});
-          console.error("Error publishing replacement Marketplace photo:", error);
+          console.error("[marketplace-photo-replacement] Publication failed:", safeErrorType(error));
           return res.status(503).json({ error: "Non è stato possibile pubblicare la nuova foto. Riprova tra poco." });
         }
       }
       res.json(updated);
     } catch (error) {
-      console.error("Error updating Marketplace photo:", error);
+      console.error("[marketplace-photo-update] Request failed:", safeErrorType(error));
       res.status(500).json({ error: "Errore aggiornamento foto" });
     }
   });
@@ -7052,7 +7037,7 @@ REGOLE:
       if (!deleted) return res.status(404).json({ error: "Post non trovato" });
       if (deleted.category === "marketplace") {
         const owner = await storage.getProfile(deleted.profileId).catch((error) => {
-          console.error("Marketplace image cleanup owner lookup failed:", { postId: deleted.id }, error);
+          console.error("[marketplace-image-cleanup] Owner lookup failed:", safeErrorType(error));
           return null;
         });
         const images = new Set([...(deleted.imageUrls || []), deleted.imageUrl].filter((url): url is string => typeof url === "string" && url.length > 0));
@@ -7067,7 +7052,7 @@ REGOLE:
               .limit(1);
             if (!reference && !profileReference && owner?.userId) await objectStorageService.deleteListingImage(image, owner.userId);
           } catch (error) {
-            console.error("Marketplace image cleanup failed:", { postId: deleted.id, image }, error);
+            console.error("[marketplace-image-cleanup] Object deletion failed:", safeErrorType(error));
           }
         }
       }
@@ -7272,7 +7257,7 @@ Rispondi SOLO con questo JSON (nessun altro testo):
       const result = JSON.parse(completion.choices[0].message.content || "{}");
       res.json(result);
     } catch (e) {
-      console.error("[ai-search] error:", e);
+      console.error("[ai-search] Request failed:", safeErrorType(e));
       // Keep the banner usable even when the AI provider is unavailable or slow.
       res.json(getAiSearchFallback(String(req.body?.query || "")));
     }
@@ -7324,7 +7309,7 @@ Rispondi SOLO con questo JSON (nessun altro testo):
 
       res.json({ ok: true });
     } catch (err) {
-      console.error("[profile-visit] error:", err);
+      console.error("[profile-visit] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore interno" });
     }
   });
@@ -7375,7 +7360,7 @@ Rispondi SOLO con questo JSON (nessun altro testo):
 
       res.json(visitors);
     } catch (err) {
-      console.error("[profile-visitors] error:", err);
+      console.error("[profile-visitors] Request failed:", safeErrorType(err));
       res.status(500).json({ error: "Errore interno" });
     }
   });
@@ -7432,9 +7417,9 @@ Rispondi SOLO con questo JSON (nessun altro testo):
                 url: `/chat/${match.id}`,
                 type: "bot-reengagement",
               });
-              console.log(`[bot-reengagement] Sent from ${botProfile.name} → ${realProfile.name}`);
+          console.log("[bot-reengagement] Message sent");
             } catch (e) {
-              console.error("[bot-reengagement] send error:", e);
+      console.error("[bot-reengagement] Send failed:", safeErrorType(e));
             }
           }, delayMs);
 
@@ -7444,7 +7429,7 @@ Rispondi SOLO con questo JSON (nessun altro testo):
       }
       console.log(`[bot-reengagement] Job done — queued ${sent} messages`);
     } catch (err) {
-      console.error("[bot-reengagement] job error:", err);
+      console.error("[bot-reengagement] Job failed:", safeErrorType(err));
     }
   }
 
@@ -7507,13 +7492,13 @@ Rispondi SOLO con questo JSON (nessun altro testo):
           });
 
           sent++;
-          console.log(`[bot-visit] ${bot.name} → ${realUser.name}`);
+          console.log("[bot-visit] Profile visit recorded");
         } catch {}
       }
 
       console.log(`[bot-visit] Job done — notified ${sent} users`);
     } catch (err) {
-      console.error("[bot-visit] job error:", err);
+      console.error("[bot-visit] Job failed:", safeErrorType(err));
     }
   }
 

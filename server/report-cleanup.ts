@@ -1,3 +1,5 @@
+import { safeErrorType } from "./http-hardening";
+
 export const REPORT_CLEANUP_TTL_DAYS = 90;
 export const REPORT_CLEANUP_STALE_AFTER_MS = 26 * 60 * 60 * 1000;
 export const REPORT_CLEANUP_ALERT_AFTER_FAILURES = 2;
@@ -79,7 +81,7 @@ export function markReportCleanupFailed(
     ...state,
     status: "failure",
     consecutiveFailures: state.consecutiveFailures + 1,
-    lastError: error instanceof Error ? error.message : String(error),
+    lastError: safeErrorType(error),
   };
 }
 

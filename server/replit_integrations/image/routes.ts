@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { openai } from "./client";
+import { safeErrorType } from "../../http-hardening";
 
 export function registerImageRoutes(app: Express): void {
   app.post("/api/generate-image", async (req: Request, res: Response) => {
@@ -26,7 +27,7 @@ export function registerImageRoutes(app: Express): void {
         b64_json: imageData.b64_json,
       });
     } catch (error) {
-      console.error("Error generating image:", error);
+      console.error("Image generation failed:", safeErrorType(error));
       res.status(500).json({ error: "Failed to generate image" });
     }
   });

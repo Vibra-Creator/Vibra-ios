@@ -1297,7 +1297,7 @@ export default function ProfileEdit() {
                               toast({ title: t("profileEdit.locationAcquired") || "Posizione acquisita!", description: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` });
                             },
                             (err) => {
-                              console.error("Geolocation error:", err);
+                              console.warn("[profile] Geolocation request failed with code", err.code);
                               setLocationSharingEnabled(false);
                               toast({ title: t("common.error"), description: t("profileEdit.locationError") || "Impossibile ottenere la posizione. Controlla i permessi del browser.", variant: "destructive" });
                             },

@@ -78,7 +78,7 @@ export function VibrappSocketProvider({
     try {
       socket = io(window.location.origin, { path: "/vibrapp-socket" });
     } catch (error) {
-      console.error("[vibrapp] socket initialization failed:", error);
+      console.error("[vibrapp] Socket initialization failed");
       return;
     }
     socketRef.current = socket;
@@ -105,7 +105,7 @@ export function VibrappSocketProvider({
         try {
           dmHandlerRef.current({ ...msg, fromProfileId, content });
         } catch (error) {
-          console.error("[vibrapp] DM handler failed:", error);
+          console.error("[vibrapp] Direct-message handler failed");
         }
         return;
       }

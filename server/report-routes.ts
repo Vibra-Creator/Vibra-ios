@@ -12,6 +12,7 @@ import {
   userSuspensions,
 } from "@shared/schema";
 import { db } from "./db";
+import { safeErrorType } from "./http-hardening";
 import { storage } from "./storage";
 import {
   getReportSuspensionExpiry,
@@ -531,7 +532,7 @@ export function registerReportRemovalRoute(
 
       disconnectUserSockets(result.targetProfileId);
       console.warn(
-        `[ugc-moderation] report=${req.params.id} contentRemoved=${result.contentRemoved} contentHidden=${result.contentHidden} ` +
+        `[ugc-moderation] contentRemoved=${result.contentRemoved} contentHidden=${result.contentHidden} ` +
         `authorSuspended=${result.authorSuspended} suspensionHours=${result.authorSuspended ? 24 : 0}`,
       );
       return res.json({
@@ -543,7 +544,7 @@ export function registerReportRemovalRoute(
         suspensionExpiresAt: result.expiresAt,
       });
     } catch (error) {
-      console.error("[ugc-moderation] remove-and-suspend action failed:", error);
+      console.error("[ugc-moderation] Remove-and-suspend action failed:", safeErrorType(error));
       return res.status(500).json({ error: "Failed to moderate reported content" });
     }
   });
@@ -619,7 +620,7 @@ export function registerReportSuspensionRoute(
       disconnectUserSockets(result.targetProfileId);
       return res.json({ success: true, authorSuspended: true, suspensionExpiresAt: result.expiresAt });
     } catch (error) {
-      console.error("[ugc-moderation] report suspension failed:", error);
+      console.error("[ugc-moderation] Suspension action failed:", safeErrorType(error));
       return res.status(500).json({ error: "Failed to suspend reported user" });
     }
   });

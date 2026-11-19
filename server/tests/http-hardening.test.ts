@@ -8,6 +8,8 @@ import {
   safeErrorType,
   summarizeClientError,
 } from "../http-hardening";
+import { createColdMessageCleanupState, markColdMessageCleanupFailed } from "../cold-message-cleanup";
+import { createReportCleanupState, markReportCleanupFailed } from "../report-cleanup";
 
 test("API request logger emits only a route template and response metadata", () => {
   const messages: string[] = [];
@@ -74,6 +76,16 @@ test("server error summaries keep only a known error type", () => {
   assert.equal(summary, "Error");
   assert.equal(safeErrorType({ name: "private-user@example.com", message: "secret" }), "Error");
   assert.equal(safeErrorType(new TypeError("private input")), "TypeError");
+});
+
+test("cleanup health stores an error category, not private exception text", () => {
+  const error = new Error("database failure for alice@example.com and private message body");
+  const reportState = markReportCleanupFailed(createReportCleanupState(), error);
+  const coldMessageState = markColdMessageCleanupFailed(createColdMessageCleanupState(), error);
+
+  assert.equal(reportState.lastError, "Error");
+  assert.equal(coldMessageState.lastError, "Error");
+  assert.doesNotMatch(JSON.stringify([reportState, coldMessageState]), /alice@example\.com|private message body/);
 });
 
 test("security headers are set without breaking Replit development framing", () => {

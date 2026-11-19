@@ -4,6 +4,7 @@ import { eq, or, sql, and, like } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
+import { safeErrorType } from "./http-hardening";
 
 const cityCoords: Record<string, { lat: number; lng: number }> = {
   Roma: { lat: 41.90, lng: 12.50 }, Milano: { lat: 45.46, lng: 9.19 }, Napoli: { lat: 40.85, lng: 14.27 },
@@ -1562,7 +1563,7 @@ async function cleanupUserByEmail(email: string) {
   try {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     if (!user) {
-      console.log(`Cleanup: user ${email} not found, skipping.`);
+      console.log("[seed-cleanup] Requested account was not found");
       return;
     }
     const [profile] = await db.select().from(profiles).where(eq(profiles.userId, user.id));
@@ -1586,12 +1587,12 @@ async function cleanupUserByEmail(email: string) {
       await db.delete(matches).where(or(eq(matches.profile1Id, profile.id), eq(matches.profile2Id, profile.id)));
       await db.delete(swipes).where(or(eq(swipes.swiperId, profile.id), eq(swipes.swipedId, profile.id)));
       await db.delete(profiles).where(eq(profiles.id, profile.id));
-      console.log(`Cleanup: deleted profile ${profile.name} and all related data for ${email}`);
+      console.log("[seed-cleanup] Profile and related records removed");
     }
     await db.delete(users).where(eq(users.id, user.id));
-    console.log(`Cleanup: deleted user ${email} (${user.id})`);
+    console.log("[seed-cleanup] Account removed");
   } catch (error) {
-    console.error(`Cleanup error for ${email}:`, error);
+    console.error("[seed-cleanup] Cleanup failed:", safeErrorType(error));
   }
 }
 
@@ -1619,9 +1620,9 @@ async function ensureAdminAccount() {
       lastName: "Vibra",
       isAdmin: true,
     });
-    console.log("Admin account created: admin@vibra.com");
+    console.log("Admin account created");
   } catch (error) {
-    console.error("Error creating admin account:", error);
+    console.error("Admin account creation failed:", safeErrorType(error));
   }
 }
 
@@ -1630,14 +1631,14 @@ async function promoteUserToAdmin(email: string) {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     if (user && !user.isAdmin) {
       await db.update(users).set({ isAdmin: true }).where(eq(users.id, user.id));
-      console.log(`User ${email} promoted to admin.`);
+      console.log("Account promoted to admin");
     } else if (user && user.isAdmin) {
-      console.log(`User ${email} is already admin.`);
+      console.log("Account already has admin privileges");
     } else {
-      console.log(`User ${email} not found yet, will be promoted on next restart after registration.`);
+      console.log("Account not found; promotion will be retried after registration");
     }
   } catch (error) {
-    console.error(`Error promoting ${email} to admin:`, error);
+    console.error("Admin promotion failed:", safeErrorType(error));
   }
 }
 
@@ -1814,9 +1815,9 @@ async function createBotUserAccounts() {
         isAdmin: false,
       });
       await db.update(profiles).set({ userId }).where(eq(profiles.id, bot.profileId));
-      console.log(`Bot account created: ${bot.email} (profile ${bot.profileId})`);
+      console.log("Bot account created");
     } catch (error) {
-      console.error(`Error creating bot account ${bot.email}:`, error);
+      console.error("Bot account creation failed:", safeErrorType(error));
     }
   }
 }
@@ -1865,7 +1866,7 @@ async function normalizeAllBotCredentials() {
     await db.execute(sql`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`);
     console.log("[normalizeAllBotCredentials] Dropped unique email constraint on users table");
   } catch (e) {
-    console.log("[normalizeAllBotCredentials] Constraint drop skipped or failed:", (e as any)?.message);
+    console.warn("[seed] Credential constraint adjustment was skipped");
   }
   const allBots = await db.select().from(profiles).where(eq(profiles.isBot, true));
   const sharedEmail = "nome@vibra.app";
@@ -1891,7 +1892,7 @@ async function normalizeAllBotCredentials() {
       updated++;
     }
   }
-  console.log(`[normalizeAllBotCredentials] Updated ${updated} bot accounts to ${sharedEmail} / Vibra2026. Total bots: ${allBots.length}`);
+  console.log(`[seed] Updated ${updated} bot accounts; total: ${allBots.length}`);
 }
 
 async function ensureAllBotAccounts() {
@@ -2483,7 +2484,7 @@ async function cleanupTestData() {
       console.log(`Cleaned up ${testEmails.length} test accounts.`);
     }
   } catch (error) {
-    console.error("Error cleaning up test data:", error);
+    console.error("[seed] Test-data cleanup failed:", safeErrorType(error));
   }
 }
 
@@ -2529,7 +2530,7 @@ export async function seedDatabase() {
         await db.delete(privateRooms).where(eq(privateRooms.ownerId, old.id));
 
         await db.delete(profiles).where(eq(profiles.id, old.id));
-        console.log(`  Deleted old bot: ${old.name} (${old.id})`);
+        console.log("Deleted an outdated bot profile");
       }
     }
     
@@ -2592,7 +2593,7 @@ export async function seedDatabase() {
       }
       console.log("Bot image extensions fixed to .webp!");
     } catch (e) {
-      console.error("Error fixing bot images:", e);
+          console.error("Bot image update failed:", safeErrorType(e));
     }
 
     const botProfiles = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.isBot, true));
@@ -2742,7 +2743,7 @@ export async function seedDatabase() {
         if (isDefaultAvatar) {
           await db.update(profiles).set({ imageUrl: photos[0] }).where(eq(profiles.id, p.id));
           fixedCount++;
-          console.log(`Auto-fixed profile photo for "${p.name}" (id: ${p.id}) -> ${photos[0]}`);
+          console.log("[seed] Repaired a default profile photo");
         }
       }
     }
@@ -2783,10 +2784,10 @@ export async function seedDatabase() {
         console.log(`[webp] Aggiornati ${webpFixed} bot imageUrl → .webp`);
       }
     } catch (e) {
-      console.log("Bot webp fix skipped:", e);
+      console.warn("Bot image format update was skipped:", safeErrorType(e));
     }
 
   } catch (error) {
-    console.error("Error seeding database:", error);
+    console.error("Database seeding failed:", safeErrorType(error));
   }
 }

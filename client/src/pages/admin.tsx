@@ -411,7 +411,7 @@ export default function Admin() {
       toast({ title: "Video caricato!", description: "Il video è stato aggiunto al profilo." });
     } catch (err: any) {
       const msg = err?.message || "";
-      console.error("[admin-upload] Error:", err);
+      console.error("[admin-upload] Request failed");
       toast({ title: "Errore upload", description: msg || "Impossibile caricare il video.", variant: "destructive" });
     } finally {
       setVideoUploadState(s => ({ ...s, [profileId]: "idle" }));

@@ -84,13 +84,15 @@ test("a temporary email failure keeps the report and persisted alert queued unti
   const afterTemporaryFailure = reports.get("report-1")!;
   assert.equal(afterTemporaryFailure.status, "pending", "the report itself must remain available");
   assert.equal(afterTemporaryFailure.notificationStatus, "pending", "the durable alert must be queued again");
-  assert.match(afterTemporaryFailure.notificationLastError ?? "", /delivery incomplete/);
+  assert.equal(afterTemporaryFailure.notificationLastError, "Error");
+  assert.doesNotMatch(afterTemporaryFailure.notificationLastError ?? "", /delivery incomplete|report-1/i);
   assert.equal(afterTemporaryFailure.notificationAttempts, 1);
   assert.equal(
     afterTemporaryFailure.notificationNextAttemptAt.getTime() - now.getTime(),
     getUserReportNotificationRetryDelayMs(1),
   );
   assert.equal(errors.length, 1);
+  assert.doesNotMatch(errors[0], /report-1/i);
 
   now = new Date(afterTemporaryFailure.notificationNextAttemptAt);
   await notify("report-1");

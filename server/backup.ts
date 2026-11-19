@@ -156,11 +156,11 @@ export function startAutoBackup(): void {
   console.log("[backup] Auto-backup scheduled every 24 hours");
 
   setTimeout(() => {
-    createBackup().catch((err) => console.error("[backup] Auto-backup error:", err));
+    createBackup().catch((err) => console.error("[backup] Auto-backup failed:", safeErrorType(err)));
   }, 60 * 1000);
 
   backupInterval = setInterval(() => {
-    createBackup().catch((err) => console.error("[backup] Auto-backup error:", err));
+    createBackup().catch((err) => console.error("[backup] Auto-backup failed:", safeErrorType(err)));
   }, BACKUP_INTERVAL_MS);
 }
 

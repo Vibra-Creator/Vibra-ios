@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { safeErrorType } from "./http-hardening";
 import { sql } from "drizzle-orm";
 
 /**
@@ -90,6 +91,6 @@ export async function removeBotProfiles(): Promise<void> {
       console.log(`[bot-cleanup] Removed ${count} simulated profiles`);
     });
   } catch (error) {
-    console.error("[bot-cleanup] Cleanup failed:", error);
+    console.error("[bot-cleanup] Cleanup failed:", safeErrorType(error));
   }
 }

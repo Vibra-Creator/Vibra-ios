@@ -60,7 +60,7 @@ export function usePushNotifications() {
         }
       }
     } catch (err) {
-      console.error("[push] auto-subscribe error:", err);
+      console.error("[push] Automatic subscription failed");
     }
   };
 
@@ -155,7 +155,7 @@ export function usePushNotifications() {
       setIsSubscribed(true);
       return true;
     } catch (err) {
-      console.error("[push] subscribe error:", err);
+      console.error("[push] Subscription failed");
       return false;
     }
   }, []);
@@ -174,7 +174,7 @@ export function usePushNotifications() {
       }
       return result;
     } catch (err) {
-      console.error("[push] subscribe error:", err);
+      console.error("[push] Subscription failed");
       return false;
     }
   }, [isSupported, performSubscribe]);
@@ -195,7 +195,7 @@ export function usePushNotifications() {
       }
       setIsSubscribed(false);
     } catch (err) {
-      console.error("[push] unsubscribe error:", err);
+      console.error("[push] Unsubscription failed");
     }
   }, []);
 

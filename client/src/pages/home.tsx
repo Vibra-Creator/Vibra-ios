@@ -163,7 +163,7 @@ export default function Home() {
       // Lo stato locale `swipedProfiles` già rimuove la card dall'UI.
     },
     onError: (error: Error) => {
-      console.error("[Swipe error]", error.message);
+      console.error("[swipe] Request failed");
       // Silenzia errori 400 (duplicati, validazione) — non mostrare banner rosso
       if (error.message.startsWith("400") || error.message.includes("Already swiped")) {
         return;

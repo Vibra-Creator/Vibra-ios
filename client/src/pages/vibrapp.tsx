@@ -539,7 +539,7 @@ export default function Vibrapp() {
           setSearchResults(profiles.filter((p: any) => p.id !== profile?.id).slice(0, 8));
         }
       } catch (err) {
-        console.error("[vibrapp] search error:", err);
+        console.error("[vibrapp] Search request failed");
       }
     }, 300);
 
@@ -564,7 +564,7 @@ export default function Vibrapp() {
         setHasMore(msgs.length >= 50);
         setTimeout(() => scrollToBottom(), 100);
       })
-      .catch(console.error);
+      .catch(() => console.error("[vibrapp] Message-list request failed"));
   }, [profile?.id]);
 
   // ── Attach socket listeners on the shared global socket ──────────────────
@@ -721,7 +721,7 @@ export default function Vibrapp() {
         });
       }
     } catch (err) {
-      console.error("loadOlder error:", err);
+      console.error("[vibrapp] Older-message request failed");
     }
   }, [messages, hasMore]);
 
@@ -961,7 +961,7 @@ export default function Vibrapp() {
         clearMedia();
       } catch (err) {
         alert("Errore durante l'upload");
-        console.error(err);
+        console.error("[vibrapp] Media upload failed");
       } finally {
         setIsUploading(false);
       }

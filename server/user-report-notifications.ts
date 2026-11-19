@@ -1,3 +1,5 @@
+import { safeErrorType } from "./http-hardening";
+
 export type UserReportNotification = {
   id: string;
   notificationAttempts: number;
@@ -36,7 +38,8 @@ export function createUserReportNotificationProcessor(
 ): (reportId?: string) => Promise<void> {
   let processing = false;
   const now = dependencies.now ?? (() => new Date());
-  const logError = dependencies.logError ?? ((message, error) => console.error(message, error));
+  const logError = dependencies.logError ?? ((_message, error) =>
+    console.error("[ugc-moderation] Notification processing failed:", safeErrorType(error)));
 
   return async (reportId?: string): Promise<void> => {
     if (processing) return;
@@ -70,12 +73,12 @@ export function createUserReportNotificationProcessor(
             await dependencies.scheduleRetry(
               report.id,
               retryAt,
-              error instanceof Error ? error.message : String(error),
+              safeErrorType(error),
             );
           } catch (scheduleError) {
-            logError(`[ugc-moderation] Could not persist retry for report ${report.id}`, scheduleError);
+            logError("[ugc-moderation] Could not persist notification retry", scheduleError);
           }
-          logError(`[ugc-moderation] Could not notify admins about report ${report.id}`, error);
+          logError("[ugc-moderation] Could not notify admins about a pending report", error);
         }
       }
     } catch (error) {
